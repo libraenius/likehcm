@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   getCareerTracks,
   createCareerTrack,
@@ -30,9 +30,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, X, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, X, AlertCircle, Search } from "lucide-react";
 import type { SkillLevel } from "@/types";
+import { CareerTalentTree } from "@/components/career-talent-tree";
+import { getUserProfile } from "@/lib/data";
+import { calculateCareerTrackProgress } from "@/lib/calculations";
 
 export default function CareerTracksPage() {
   const [tracks, setTracks] = useState<CareerTrack[]>([]);
@@ -43,6 +45,7 @@ export default function CareerTracksPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [trackToDelete, setTrackToDelete] = useState<string | null>(null);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -57,6 +60,23 @@ export default function CareerTracksPage() {
   const loadTracks = () => {
     setTracks(getCareerTracks());
   };
+
+  // Фильтрация треков по поисковому запросу
+  const filteredTracks = useMemo(() => {
+    if (!searchQuery.trim()) return tracks;
+    
+    const query = searchQuery.toLowerCase();
+    return tracks.filter((track) => {
+      const profile = getProfileById(track.profileId);
+      const profileName = profile?.name || "";
+      
+      return (
+        track.name.toLowerCase().includes(query) ||
+        track.description.toLowerCase().includes(query) ||
+        profileName.toLowerCase().includes(query)
+      );
+    });
+  }, [tracks, searchQuery]);
 
   const handleCreate = () => {
     setEditingTrack(null);
@@ -184,8 +204,8 @@ export default function CareerTracksPage() {
       )}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Карьерные треки</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Карьерные треки</h1>
+          <p className="text-muted-foreground">
             Справочник карьерных треков с уровнями развития
           </p>
         </div>
@@ -396,8 +416,51 @@ export default function CareerTracksPage() {
         </Dialog>
       </div>
 
+      {/* Поиск */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Поиск по названию, описанию или профилю..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+        {searchQuery && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
+            onClick={() => setSearchQuery("")}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
       <div className="space-y-6">
-        {tracks.map((track) => {
+        {filteredTracks.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-12">
+                <h3 className="text-lg font-semibold mb-2">
+                  {searchQuery ? "Карьерные треки не найдены" : "Нет карьерных треков"}
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery
+                    ? "Попробуйте изменить поисковый запрос"
+                    : "Создайте первый карьерный трек, чтобы начать работу"}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={handleCreate}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Добавить карьерный трек
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredTracks.map((track) => {
           const profile = getProfileById(track.profileId);
           return (
             <Card key={track.id}>
@@ -431,50 +494,36 @@ export default function CareerTracksPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue={`level-${track.levels[0]?.level || 1}`} className="w-full">
-                  <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${track.levels.length}, 1fr)` }}>
-                    {track.levels.map((level) => (
-                      <TabsTrigger key={level.level} value={`level-${level.level}`}>
-                        Уровень {level.level}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {track.levels.map((level) => (
-                    <TabsContent key={level.level} value={`level-${level.level}`} className="space-y-4 mt-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">{level.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{level.description}</p>
-                        <div className="mt-3">
-                          <Badge variant="secondary">
-                            Минимальное соответствие: {level.minMatchPercentage}%
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-sm">Требуемые навыки:</h4>
-                        <div className="space-y-2">
-                          {Object.entries(level.requiredSkills).map(([competenceId, requiredLevel]) => {
-                            const comp = getCompetenceById(competenceId);
-                            if (!comp) return null;
-                            return (
-                              <div
-                                key={competenceId}
-                                className="flex items-center justify-between text-sm p-2 bg-muted rounded"
-                              >
-                                <span>{comp.name}</span>
-                                <Badge>Уровень {requiredLevel}</Badge>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                <div className="rounded-lg border bg-muted/30 p-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold mb-2">Дерево развития талантов</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Визуализация карьерного пути в виде дерева талантов. Разблокируйте уровни, развивая необходимые навыки.
+                    </p>
+                  </div>
+                  <CareerTalentTree
+                    careerTrack={track}
+                    progress={(() => {
+                      const userProfile = getUserProfile();
+                      if (!userProfile) return null;
+                      return calculateCareerTrackProgress(userProfile, track);
+                    })()}
+                    userSkills={(() => {
+                      const userProfile = getUserProfile();
+                      if (!userProfile) return {};
+                      const skills: Record<string, number> = {};
+                      userProfile.skills.forEach((skill) => {
+                        skills[skill.competenceId] = skill.selfAssessment;
+                      });
+                      return skills;
+                    })()}
+                  />
+                </div>
               </CardContent>
             </Card>
           );
-        })}
+          })
+        )}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

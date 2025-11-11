@@ -26,12 +26,27 @@ export interface Profile {
   name: string;
   description: string;
   requiredCompetences: ProfileCompetence[];
+  levels?: ProfileLevel[];
+  experts?: ProfileExpert[];
+}
+
+export interface ProfileExpert {
+  avatar?: string;
+  fullName: string;
+  position: string;
+}
+
+export interface ProfileLevel {
+  level: "trainee" | "junior" | "middle" | "senior" | "lead";
+  name: string;
+  description: string;
+  responsibilities: string[]; // Типовые должностные обязанности
+  requiredSkills: Record<string, SkillLevel>; // competenceId -> requiredLevel
 }
 
 export interface ProfileCompetence {
   competenceId: string;
   requiredLevel: SkillLevel;
-  weight: number; // Вес компетенции в профиле (1-10)
 }
 
 export interface CareerTrack {

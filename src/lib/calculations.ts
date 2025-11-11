@@ -17,22 +17,18 @@ export function calculateProfileMatch(
 ): number {
   if (profileCompetences.length === 0) return 0;
 
-  let totalWeight = 0;
-  let matchedWeight = 0;
+  let totalMatch = 0;
 
   for (const profileComp of profileCompetences) {
     const userLevel = userSkills[profileComp.competenceId] || 0;
     const requiredLevel = profileComp.requiredLevel;
-    const weight = profileComp.weight;
-
-    totalWeight += weight;
 
     // Вычисляем процент соответствия для этой компетенции
     const matchPercentage = Math.min(1, userLevel / requiredLevel);
-    matchedWeight += matchPercentage * weight;
+    totalMatch += matchPercentage;
   }
 
-  return totalWeight > 0 ? Math.round((matchedWeight / totalWeight) * 100) : 0;
+  return Math.round((totalMatch / profileCompetences.length) * 100);
 }
 
 /**

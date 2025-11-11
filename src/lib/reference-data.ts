@@ -592,34 +592,39 @@ const defaultCompetences: Competence[] = [
   {
     id: "comp-17",
     name: "Perl",
-    description: "Знание языка программирования Perl",
+    description: "Знание языка программирования Perl, включая регулярные выражения, ООП, CPAN и обработку данных",
     type: "профессиональные компетенции",
     levels: {
-      level1: "Базовый синтаксис Perl, переменные, типы данных, операторы, базовые структуры данных",
-      level2: "Работа с массивами и хешами, регулярные выражения, функции, работа с файлами",
-      level3: "Продвинутые регулярные выражения, ссылки, пакеты и модули, обработка ошибок",
-      level4: "Объектно-ориентированное программирование, работа с CPAN, оптимизация кода, продвинутые паттерны",
-      level5: "Экспертные знания Perl, создание модулей CPAN, системное программирование, менторинг",
+      level1: "Базовый синтаксис Perl, переменные, типы данных, операторы, базовые структуры данных, простые регулярные выражения",
+      level2: "Работа с массивами и хешами, продвинутые регулярные выражения, функции, работа с файлами, базовое ООП, установка модулей CPAN",
+      level3: "Продвинутые регулярные выражения, ссылки, пакеты и модули, обработка ошибок, ООП с Moose/Moo, работа с CPAN, парсинг JSON/XML/CSV",
+      level4: "Объектно-ориентированное программирование, создание модулей CPAN, оптимизация кода, продвинутые паттерны, обработка больших объемов данных",
+      level5: "Экспертные знания Perl, создание модулей CPAN, системное программирование, сложные парсеры, менторинг",
     },
     resources: {
       literature: [
         { name: "Learning Perl - Рэндал Шварц, Брайан Фой, Том Феникс", level: 1 },
         { name: "Intermediate Perl - Рэндал Шварц, Брайан Фой", level: 2 },
         { name: "Programming Perl - Ларри Уолл, Том Кристиансен, Джон Орвант", level: 3 },
+        { name: "Mastering Regular Expressions - Джеффри Фридл", level: 3 },
         { name: "Effective Perl Programming - Джозеф Холл", level: 4 },
-        { name: "Perl Best Practices - Дэмиан Конуэй", level: 4 }
+        { name: "Perl Best Practices - Дэмиан Конуэй", level: 4 },
+        { name: "Data Munging with Perl - Дэвид Кросс", level: 3 }
       ],
       videos: [
         { name: "Perl Tutorial for Beginners - ProgrammingKnowledge", level: 1 },
         { name: "Perl Programming - Derek Banas", level: 2 },
+        { name: "Perl Regular Expressions Tutorial - Tutorial", level: 2 },
         { name: "Advanced Perl Programming - O'Reilly", level: 3 },
-        { name: "Perl Regular Expressions - Tutorial", level: 3 },
-        { name: "Perl Object-Oriented Programming - Tutorial", level: 4 }
+        { name: "Perl Object-Oriented Programming - Tutorial", level: 3 },
+        { name: "Creating Perl Modules - YouTube", level: 3 },
+        { name: "JSON Parsing in Perl - YouTube", level: 2 }
       ],
       courses: [
         { name: "Perl для начинающих - Stepik", level: 1 },
         { name: "Learn Perl - Codecademy", level: 2 },
         { name: "Perl Programming - Udemy", level: 2 },
+        { name: "Регулярные выражения в Perl - Stepik", level: 2 },
         { name: "Advanced Perl Programming - Pluralsight", level: 4 },
         { name: "Mastering Perl - O'Reilly", level: 5 }
       ],
@@ -627,98 +632,28 @@ const defaultCompetences: Competence[] = [
   },
   {
     id: "comp-18",
-    name: "Регулярные выражения в Perl",
-    description: "Владение регулярными выражениями в Perl",
-    type: "профессиональные компетенции",
-    levels: {
-      level1: "Базовые регулярные выражения, простые паттерны, метасимволы, квантификаторы",
-      level2: "Группировка, захват групп, модификаторы, работа с Unicode, замена текста",
-      level3: "Продвинутые конструкции, lookahead/lookbehind, рекурсивные паттерны, оптимизация",
-      level4: "Сложные регулярные выражения, парсинг сложных структур, производительность, отладка",
-      level5: "Экспертные знания regex, создание сложных парсеров, оптимизация производительности",
-    },
-    resources: {
-      literature: [
-        { name: "Mastering Regular Expressions - Джеффри Фридл", level: 3 },
-        { name: "Regular Expressions Cookbook - Ян Гойвертс, Стивен Левитан", level: 3 },
-        { name: "Learning Perl - глава о regex - Рэндал Шварц", level: 2 },
-        { name: "Programming Perl - глава о регулярных выражениях - Ларри Уолл", level: 3 },
-        { name: "Perl Regular Expressions - официальная документация", level: 2 }
-      ],
-      videos: [
-        { name: "Perl Regular Expressions Tutorial - Tutorial", level: 2 },
-        { name: "Advanced Perl Regex - O'Reilly", level: 3 },
-        { name: "Regex Mastery in Perl - YouTube", level: 4 },
-        { name: "Perl Regex Patterns - Tutorial", level: 2 },
-        { name: "Complex Regex in Perl - Tutorial", level: 4 }
-      ],
-      courses: [
-        { name: "Регулярные выражения в Perl - Stepik", level: 2 },
-        { name: "Perl Regular Expressions - Udemy", level: 2 },
-        { name: "Mastering Regex in Perl - Pluralsight", level: 3 },
-        { name: "Advanced Perl Regex - O'Reilly", level: 4 },
-        { name: "Regex Expert in Perl - Coursera", level: 5 }
-      ],
-    },
-  },
-  {
-    id: "comp-19",
-    name: "Работа с базами данных в Perl",
-    description: "Владение Perl DBI и работой с базами данных",
-    type: "профессиональные компетенции",
-    levels: {
-      level1: "Базовое подключение к БД, простые SELECT запросы, работа с DBI",
-      level2: "INSERT, UPDATE, DELETE операции, подготовленные запросы, обработка ошибок",
-      level3: "Транзакции, работа с несколькими БД, оптимизация запросов, использование ORM",
-      level4: "Продвинутые паттерны работы с БД, пулы соединений, репликация, производительность",
-      level5: "Экспертные знания DBI, проектирование схем БД, оптимизация на уровне БД",
-    },
-    resources: {
-      literature: [
-        { name: "Programming the Perl DBI - Тим Банс, Аллардсейс", level: 3 },
-        { name: "Perl DBI - официальная документация", level: 2 },
-        { name: "Database Programming with Perl - Дэвид Розенберг", level: 3 },
-        { name: "Perl and MySQL - Tutorial", level: 2 },
-        { name: "Advanced DBI Programming - O'Reilly", level: 4 }
-      ],
-      videos: [
-        { name: "Perl DBI Tutorial - Tutorial", level: 2 },
-        { name: "Database Programming with Perl - YouTube", level: 3 },
-        { name: "Perl MySQL Connection - Tutorial", level: 2 },
-        { name: "Advanced DBI Techniques - O'Reilly", level: 4 },
-        { name: "Perl Database Best Practices - Tutorial", level: 3 }
-      ],
-      courses: [
-        { name: "Работа с БД в Perl - Stepik", level: 2 },
-        { name: "Perl DBI Programming - Udemy", level: 2 },
-        { name: "Database Programming with Perl - Pluralsight", level: 3 },
-        { name: "Advanced Perl DBI - O'Reilly", level: 4 },
-        { name: "Perl Database Expert - Coursera", level: 5 }
-      ],
-    },
-  },
-  {
-    id: "comp-20",
     name: "Веб-разработка на Perl",
-    description: "Создание веб-приложений на Perl",
+    description: "Создание веб-приложений на Perl, включая работу с базами данных",
     type: "профессиональные компетенции",
     levels: {
-      level1: "Базовый CGI, обработка форм, простые веб-страницы, работа с HTTP",
-      level2: "PSGI/Plack, базовые фреймворки (Dancer, Mojolicious), роутинг, шаблонизация",
-      level3: "RESTful API, аутентификация, сессии, работа с JSON/XML, middleware",
-      level4: "Архитектура веб-приложений, масштабирование, кэширование, безопасность",
-      level5: "Экспертные знания веб-фреймворков, создание собственных фреймворков, оптимизация",
+      level1: "Базовый CGI, обработка форм, простые веб-страницы, работа с HTTP, базовое подключение к БД",
+      level2: "PSGI/Plack, базовые фреймворки (Dancer, Mojolicious), роутинг, шаблонизация, работа с DBI, INSERT/UPDATE/DELETE операции",
+      level3: "RESTful API, аутентификация, сессии, работа с JSON/XML, middleware, транзакции, оптимизация запросов",
+      level4: "Архитектура веб-приложений, масштабирование, кэширование, безопасность, продвинутые паттерны работы с БД, пулы соединений",
+      level5: "Экспертные знания веб-фреймворков, создание собственных фреймворков, оптимизация, проектирование схем БД",
     },
     resources: {
       literature: [
         { name: "Mojolicious: Perl Web Framework - официальная документация", level: 2 },
         { name: "Dancer - официальная документация", level: 2 },
         { name: "PSGI/Plack - официальная документация", level: 3 },
+        { name: "Programming the Perl DBI - Тим Банс, Аллардсейс", level: 3 },
         { name: "Web Development with Perl - Дэвид Кросс", level: 3 },
         { name: "Modern Perl Web Development - О'Рейли", level: 4 }
       ],
       videos: [
         { name: "Perl CGI Tutorial - Tutorial", level: 1 },
+        { name: "Perl DBI Tutorial - Tutorial", level: 2 },
         { name: "Mojolicious Web Framework - Tutorial", level: 2 },
         { name: "Dancer Framework Tutorial - YouTube", level: 2 },
         { name: "PSGI/Plack Introduction - O'Reilly", level: 3 },
@@ -727,14 +662,14 @@ const defaultCompetences: Competence[] = [
       courses: [
         { name: "Веб-разработка на Perl - Stepik", level: 2 },
         { name: "Perl Web Development - Udemy", level: 2 },
+        { name: "Perl DBI Programming - Udemy", level: 2 },
         { name: "Mojolicious Framework - Pluralsight", level: 3 },
-        { name: "Advanced Perl Web Apps - O'Reilly", level: 4 },
-        { name: "Perl Web Expert - Coursera", level: 5 }
+        { name: "Advanced Perl Web Apps - O'Reilly", level: 4 }
       ],
     },
   },
   {
-    id: "comp-21",
+    id: "comp-19",
     name: "Тестирование в Perl",
     description: "Написание тестов для Perl приложений",
     type: "профессиональные компетенции",
@@ -769,165 +704,171 @@ const defaultCompetences: Competence[] = [
       ],
     },
   },
-  {
-    id: "comp-22",
-    name: "Модули CPAN",
-    description: "Работа с модулями CPAN и создание собственных модулей",
-    type: "профессиональные компетенции",
-    levels: {
-      level1: "Установка модулей через cpan/cpanm, базовое использование модулей, поиск модулей",
-      level2: "Понимание структуры модулей, работа с зависимостями, версионирование, документация",
-      level3: "Создание простых модулей, публикация на CPAN, работа с PAUSE, тестирование модулей",
-      level4: "Создание сложных модулей, XS модули, оптимизация, поддержка модулей",
-      level5: "Экспертные знания CPAN, создание популярных модулей, менторинг сообщества",
-    },
-    resources: {
-      literature: [
-        { name: "CPAN - официальный сайт", level: 1 },
-        { name: "How to Contribute to CPAN - документация", level: 3 },
-        { name: "Perl Module Development - документация", level: 3 },
-        { name: "Extending and Embedding Perl - Тим Дженс, Саймон Коузенс", level: 4 },
-        { name: "Advanced Perl Programming - Саймон Коузенс", level: 4 }
-      ],
-      videos: [
-        { name: "CPAN Introduction - Tutorial", level: 1 },
-        { name: "Creating Perl Modules - YouTube", level: 3 },
-        { name: "Publishing to CPAN - Tutorial", level: 3 },
-        { name: "Advanced Module Development - O'Reilly", level: 4 },
-        { name: "Perl XS Programming - Tutorial", level: 5 }
-      ],
-      courses: [
-        { name: "Работа с CPAN - Stepik", level: 1 },
-        { name: "Perl Module Development - Udemy", level: 3 },
-        { name: "Creating CPAN Modules - Pluralsight", level: 3 },
-        { name: "Advanced Perl Modules - O'Reilly", level: 4 },
-        { name: "CPAN Expert - Coursera", level: 5 }
-      ],
-    },
-  },
-  {
-    id: "comp-23",
-    name: "Обработка данных и парсинг в Perl",
-    description: "Обработка и парсинг различных форматов данных в Perl",
-    type: "профессиональные компетенции",
-    levels: {
-      level1: "Работа с текстовыми файлами, простой парсинг CSV, базовые операции с данными",
-      level2: "Парсинг JSON, XML, CSV, работа с кодировками, обработка больших файлов",
-      level3: "Сложный парсинг, работа с бинарными форматами, потоковая обработка, оптимизация",
-      level4: "Парсинг сложных структур, ETL процессы, работа с большими объемами данных",
-      level5: "Экспертные знания парсинга, создание парсеров, оптимизация производительности",
-    },
-    resources: {
-      literature: [
-        { name: "Perl Data Structures - документация", level: 2 },
-        { name: "JSON::XS - официальная документация", level: 2 },
-        { name: "XML::LibXML - официальная документация", level: 3 },
-        { name: "Text::CSV - официальная документация", level: 2 },
-        { name: "Data Munging with Perl - Дэвид Кросс", level: 3 }
-      ],
-      videos: [
-        { name: "Perl Data Processing - Tutorial", level: 2 },
-        { name: "JSON Parsing in Perl - YouTube", level: 2 },
-        { name: "XML Parsing with Perl - Tutorial", level: 3 },
-        { name: "Advanced Data Processing - O'Reilly", level: 4 },
-        { name: "Perl ETL Processes - Tutorial", level: 4 }
-      ],
-      courses: [
-        { name: "Обработка данных в Perl - Stepik", level: 2 },
-        { name: "Perl Data Processing - Udemy", level: 2 },
-        { name: "Advanced Parsing in Perl - Pluralsight", level: 3 },
-        { name: "Data Munging with Perl - O'Reilly", level: 4 },
-        { name: "Perl Data Expert - Coursera", level: 5 }
-      ],
-    },
-  },
-  {
-    id: "comp-24",
-    name: "Объектно-ориентированное программирование в Perl",
-    description: "ООП в Perl и использование Moose/Moo",
-    type: "профессиональные компетенции",
-    levels: {
-      level1: "Базовое ООП в Perl, пакеты, bless, методы, конструкторы",
-      level2: "Наследование, инкапсуляция, полиморфизм, работа с классами и объектами",
-      level3: "Moose/Moo фреймворки, атрибуты, роли, метаклассы, продвинутые паттерны",
-      level4: "Сложные ООП паттерны, создание фреймворков, оптимизация, архитектура",
-      level5: "Экспертные знания ООП в Perl, проектирование систем, менторинг",
-    },
-    resources: {
-      literature: [
-        { name: "Intermediate Perl - глава об ООП - Рэндал Шварц", level: 2 },
-        { name: "Moose - официальная документация", level: 3 },
-        { name: "Moo - официальная документация", level: 3 },
-        { name: "Modern Perl - Хроман", level: 3 },
-        { name: "Object Oriented Perl - Дэмиан Конуэй", level: 4 }
-      ],
-      videos: [
-        { name: "Perl OOP Tutorial - Tutorial", level: 2 },
-        { name: "Moose Framework Introduction - YouTube", level: 3 },
-        { name: "Advanced Perl OOP - O'Reilly", level: 3 },
-        { name: "Moo vs Moose - Tutorial", level: 3 },
-        { name: "Perl OOP Patterns - Tutorial", level: 4 }
-      ],
-      courses: [
-        { name: "ООП в Perl - Stepik", level: 2 },
-        { name: "Perl Object-Oriented Programming - Udemy", level: 2 },
-        { name: "Moose Framework - Pluralsight", level: 3 },
-        { name: "Advanced Perl OOP - O'Reilly", level: 4 },
-        { name: "Perl OOP Expert - Coursera", level: 5 }
-      ],
-    },
-  },
 ];
 
 const defaultProfiles: Profile[] = [
   {
     id: "profile-1",
-    name: "Frontend Developer",
-    description: "Разработчик фронтенд приложений",
-    requiredCompetences: [
-      { competenceId: "comp-1", requiredLevel: 4, weight: 10 },
-      { competenceId: "comp-2", requiredLevel: 3, weight: 8 },
-      { competenceId: "comp-3", requiredLevel: 4, weight: 10 },
-      { competenceId: "comp-7", requiredLevel: 3, weight: 6 },
+    name: "Разработчик Perl",
+    description: "Разработчик приложений на языке Perl",
+    requiredCompetences: [], // Будет автоматически сформировано из levels
+    levels: [
+      {
+        level: "trainee",
+        name: "Trainee Perl Developer",
+        description: "Стажер-разработчик Perl. Начальный уровень, изучение основ языка и инструментов разработки под руководством ментора.",
+        responsibilities: [
+          "Изучение основ синтаксиса Perl и базовых конструкций языка",
+          "Выполнение простых задач по написанию скриптов под руководством",
+          "Изучение работы с регулярными выражениями на базовом уровне",
+          "Освоение работы с файлами и базовыми структурами данных",
+          "Изучение основ работы с системой контроля версий (Git)",
+          "Участие в код-ревью для изучения лучших практик",
+          "Изучение основ тестирования и написание простых unit-тестов",
+          "Работа с документацией и изучение существующего кода",
+        ],
+        requiredSkills: {
+          "comp-17": 1, // Perl - начальный уровень
+          "comp-9": 1, // Коммуникация - начальный уровень
+          "comp-10": 1, // Работа в команде - начальный уровень
+          "comp-13": 1, // Управление временем - начальный уровень
+        },
+      },
+      {
+        level: "junior",
+        name: "Junior Perl Developer",
+        description: "Младший разработчик Perl. Базовый уровень, способен выполнять задачи средней сложности под минимальным руководством.",
+        responsibilities: [
+          "Разработка простых скриптов и утилит на Perl",
+          "Работа с регулярными выражениями для обработки текста",
+          "Разработка простых веб-приложений с использованием PSGI/Plack",
+          "Работа с базами данных через DBI (SELECT, INSERT, UPDATE, DELETE)",
+          "Написание unit-тестов с использованием Test::More",
+          "Исправление багов в существующем коде",
+          "Участие в планировании задач и оценке времени",
+          "Работа с модулями CPAN и их интеграция в проекты",
+          "Парсинг JSON, XML, CSV файлов",
+          "Участие в код-ревью и следование стандартам кодирования",
+        ],
+        requiredSkills: {
+          "comp-17": 2, // Perl - базовый уровень
+          "comp-18": 2, // Веб-разработка на Perl - базовый уровень
+          "comp-19": 1, // Тестирование в Perl - начальный уровень
+          "comp-5": 2, // Базы данных - базовый уровень
+          "comp-9": 2, // Коммуникация - базовый уровень
+          "comp-10": 2, // Работа в команде - базовый уровень
+          "comp-12": 2, // Решение проблем - базовый уровень
+          "comp-13": 2, // Управление временем - базовый уровень
+        },
+      },
+      {
+        level: "middle",
+        name: "Middle Perl Developer",
+        description: "Разработчик Perl среднего уровня. Способен самостоятельно решать сложные задачи, проектировать модули и компоненты системы.",
+        responsibilities: [
+          "Разработка сложных модулей и компонентов на Perl",
+          "Проектирование архитектуры отдельных частей системы",
+          "Разработка RESTful API с использованием Mojolicious или Dancer",
+          "Оптимизация производительности кода и запросов к БД",
+          "Работа с асинхронным программированием (AnyEvent, Mojo::IOLoop)",
+          "Создание и поддержка модулей CPAN",
+          "Написание интеграционных тестов и организация тестового покрытия",
+          "Рефакторинг legacy кода и улучшение его качества",
+          "Менторинг junior разработчиков",
+          "Участие в техническом планировании и архитектурных решениях",
+          "Работа с системами очередей (RabbitMQ, Redis)",
+          "Интеграция с внешними API и сервисами",
+        ],
+        requiredSkills: {
+          "comp-17": 3, // Perl - средний уровень
+          "comp-18": 3, // Веб-разработка на Perl - средний уровень
+          "comp-19": 2, // Тестирование в Perl - базовый уровень
+          "comp-5": 3, // Базы данных - средний уровень
+          "comp-6": 2, // Архитектура - базовый уровень
+          "comp-7": 2, // Тестирование - базовый уровень
+          "comp-9": 3, // Коммуникация - средний уровень
+          "comp-10": 3, // Работа в команде - средний уровень
+          "comp-12": 3, // Решение проблем - средний уровень
+          "comp-15": 3, // Критическое мышление - средний уровень
+          "comp-13": 3, // Управление временем - средний уровень
+        },
+      },
+      {
+        level: "senior",
+        name: "Senior Perl Developer",
+        description: "Старший разработчик Perl. Экспертный уровень, способен проектировать сложные системы, принимать архитектурные решения и руководить командой.",
+        responsibilities: [
+          "Проектирование архитектуры сложных распределенных систем",
+          "Принятие ключевых технических решений и выбор технологий",
+          "Разработка высоконагруженных веб-приложений и API",
+          "Оптимизация производительности на уровне системы и БД",
+          "Проектирование и реализация микросервисной архитектуры",
+          "Создание технических стандартов и best practices для команды",
+          "Проведение технических интервью и оценка кандидатов",
+          "Менторинг middle и junior разработчиков",
+          "Участие в стратегическом планировании продуктов",
+          "Работа с legacy системами и их модернизация",
+          "Внедрение CI/CD процессов и автоматизации",
+          "Исследование новых технологий и их внедрение в проекты",
+          "Работа с системами мониторинга и логирования",
+        ],
+        requiredSkills: {
+          "comp-17": 4, // Perl - продвинутый уровень
+          "comp-18": 4, // Веб-разработка на Perl - продвинутый уровень
+          "comp-19": 3, // Тестирование в Perl - средний уровень
+          "comp-5": 4, // Базы данных - продвинутый уровень
+          "comp-6": 4, // Архитектура - продвинутый уровень
+          "comp-7": 3, // Тестирование - средний уровень
+          "comp-8": 2, // DevOps - базовый уровень
+          "comp-9": 4, // Коммуникация - продвинутый уровень
+          "comp-10": 4, // Работа в команде - продвинутый уровень
+          "comp-11": 3, // Лидерство - средний уровень
+          "comp-12": 4, // Решение проблем - продвинутый уровень
+          "comp-15": 4, // Критическое мышление - продвинутый уровень
+          "comp-13": 4, // Управление временем - продвинутый уровень
+        },
+      },
+      {
+        level: "lead",
+        name: "Lead Perl Developer",
+        description: "Ведущий разработчик Perl. Экспертный уровень, отвечает за техническое направление, архитектуру систем и развитие команды разработки.",
+        responsibilities: [
+          "Определение технической стратегии и архитектурного видения",
+          "Проектирование масштабируемых и отказоустойчивых систем",
+          "Руководство командой разработчиков и распределение задач",
+          "Принятие критических технических решений",
+          "Разработка технических стандартов и процессов разработки",
+          "Проведение технических аудитов и оценка качества кода",
+          "Менторинг senior разработчиков и развитие экспертизы в команде",
+          "Взаимодействие с бизнесом и стейкхолдерами по техническим вопросам",
+          "Планирование технического долга и его устранение",
+          "Исследование и внедрение инновационных решений",
+          "Участие в конференциях и развитие профессионального сообщества",
+          "Создание и поддержка open-source проектов",
+          "Управление техническими рисками и их митигация",
+        ],
+        requiredSkills: {
+          "comp-17": 5, // Perl - экспертный уровень
+          "comp-18": 5, // Веб-разработка на Perl - экспертный уровень
+          "comp-19": 4, // Тестирование в Perl - продвинутый уровень
+          "comp-5": 5, // Базы данных - экспертный уровень
+          "comp-6": 5, // Архитектура - экспертный уровень
+          "comp-7": 4, // Тестирование - продвинутый уровень
+          "comp-8": 3, // DevOps - средний уровень
+          "comp-9": 5, // Коммуникация - экспертный уровень
+          "comp-10": 5, // Работа в команде - экспертный уровень
+          "comp-11": 5, // Лидерство - экспертный уровень
+          "comp-12": 5, // Решение проблем - экспертный уровень
+          "comp-15": 5, // Критическое мышление - экспертный уровень
+          "comp-13": 5, // Управление временем - экспертный уровень
+        },
+      },
     ],
-  },
-  {
-    id: "profile-2",
-    name: "Backend Developer",
-    description: "Разработчик бэкенд приложений",
-    requiredCompetences: [
-      { competenceId: "comp-1", requiredLevel: 4, weight: 9 },
-      { competenceId: "comp-4", requiredLevel: 4, weight: 10 },
-      { competenceId: "comp-5", requiredLevel: 4, weight: 10 },
-      { competenceId: "comp-6", requiredLevel: 3, weight: 8 },
-      { competenceId: "comp-7", requiredLevel: 3, weight: 7 },
-      { competenceId: "comp-8", requiredLevel: 2, weight: 6 },
-    ],
-  },
-  {
-    id: "profile-3",
-    name: "Fullstack Developer",
-    description: "Полноценный разработчик",
-    requiredCompetences: [
-      { competenceId: "comp-1", requiredLevel: 4, weight: 10 },
-      { competenceId: "comp-2", requiredLevel: 4, weight: 9 },
-      { competenceId: "comp-3", requiredLevel: 4, weight: 9 },
-      { competenceId: "comp-4", requiredLevel: 4, weight: 9 },
-      { competenceId: "comp-5", requiredLevel: 4, weight: 9 },
-      { competenceId: "comp-6", requiredLevel: 3, weight: 8 },
-      { competenceId: "comp-7", requiredLevel: 3, weight: 7 },
-      { competenceId: "comp-8", requiredLevel: 2, weight: 6 },
-    ],
-  },
-  {
-    id: "profile-4",
-    name: "DevOps Engineer",
-    description: "Инженер по инфраструктуре",
-    requiredCompetences: [
-      { competenceId: "comp-4", requiredLevel: 3, weight: 8 },
-      { competenceId: "comp-5", requiredLevel: 3, weight: 7 },
-      { competenceId: "comp-6", requiredLevel: 4, weight: 10 },
-      { competenceId: "comp-8", requiredLevel: 5, weight: 10 },
+    experts: [
+      {
+        fullName: "Глебкин Роман Игоревич",
+        position: "Исполнительный директор по разработке",
+      },
     ],
   },
 ];
@@ -935,116 +876,98 @@ const defaultProfiles: Profile[] = [
 const defaultCareerTracks: CareerTrack[] = [
   {
     id: "track-1",
-    name: "Frontend Developer Track",
-    description: "Карьерный трек для фронтенд разработчиков",
+    name: "Perl Developer Track",
+    description: "Карьерный трек для разработчиков Perl",
     profileId: "profile-1",
     levels: [
       {
         level: 1,
-        name: "Junior Frontend Developer",
-        description: "Начальный уровень фронтенд разработки",
+        name: "Trainee Perl Developer",
+        description: "Стажер-разработчик Perl. Начальный уровень, изучение основ языка и инструментов разработки под руководством ментора.",
         requiredSkills: {
-          "comp-1": 2,
-          "comp-3": 2,
-          "comp-7": 1,
+          "comp-17": 1, // Perl - начальный уровень
+          "comp-9": 1, // Коммуникация - начальный уровень
+          "comp-10": 1, // Работа в команде - начальный уровень
+          "comp-13": 1, // Управление временем - начальный уровень
         },
         minMatchPercentage: 60,
       },
       {
         level: 2,
-        name: "Middle Frontend Developer",
-        description: "Средний уровень фронтенд разработки",
+        name: "Junior Perl Developer",
+        description: "Младший разработчик Perl. Базовый уровень, способен выполнять задачи средней сложности под минимальным руководством.",
         requiredSkills: {
-          "comp-1": 3,
-          "comp-2": 3,
-          "comp-3": 3,
-          "comp-7": 2,
+          "comp-17": 2, // Perl - базовый уровень
+          "comp-18": 2, // Веб-разработка на Perl - базовый уровень
+          "comp-19": 1, // Тестирование в Perl - начальный уровень
+          "comp-5": 2, // Базы данных - базовый уровень
+          "comp-9": 2, // Коммуникация - базовый уровень
+          "comp-10": 2, // Работа в команде - базовый уровень
+          "comp-12": 2, // Решение проблем - базовый уровень
+          "comp-13": 2, // Управление временем - базовый уровень
+        },
+        minMatchPercentage: 65,
+      },
+      {
+        level: 3,
+        name: "Middle Perl Developer",
+        description: "Разработчик Perl среднего уровня. Способен самостоятельно решать сложные задачи, проектировать модули и компоненты системы.",
+        requiredSkills: {
+          "comp-17": 3, // Perl - средний уровень
+          "comp-18": 3, // Веб-разработка на Perl - средний уровень
+          "comp-19": 2, // Тестирование в Perl - базовый уровень
+          "comp-5": 3, // Базы данных - средний уровень
+          "comp-6": 2, // Архитектура - базовый уровень
+          "comp-7": 2, // Тестирование - базовый уровень
+          "comp-9": 3, // Коммуникация - средний уровень
+          "comp-10": 3, // Работа в команде - средний уровень
+          "comp-12": 3, // Решение проблем - средний уровень
+          "comp-15": 3, // Критическое мышление - средний уровень
+          "comp-13": 3, // Управление временем - средний уровень
         },
         minMatchPercentage: 70,
       },
       {
-        level: 3,
-        name: "Senior Frontend Developer",
-        description: "Высокий уровень фронтенд разработки",
+        level: 4,
+        name: "Senior Perl Developer",
+        description: "Старший разработчик Perl. Экспертный уровень, способен проектировать сложные системы, принимать архитектурные решения и руководить командой.",
         requiredSkills: {
-          "comp-1": 4,
-          "comp-2": 4,
-          "comp-3": 4,
-          "comp-7": 3,
+          "comp-17": 4, // Perl - продвинутый уровень
+          "comp-18": 4, // Веб-разработка на Perl - продвинутый уровень
+          "comp-19": 3, // Тестирование в Perl - средний уровень
+          "comp-5": 4, // Базы данных - продвинутый уровень
+          "comp-6": 4, // Архитектура - продвинутый уровень
+          "comp-7": 3, // Тестирование - средний уровень
+          "comp-8": 2, // DevOps - базовый уровень
+          "comp-9": 4, // Коммуникация - продвинутый уровень
+          "comp-10": 4, // Работа в команде - продвинутый уровень
+          "comp-11": 3, // Лидерство - средний уровень
+          "comp-12": 4, // Решение проблем - продвинутый уровень
+          "comp-15": 4, // Критическое мышление - продвинутый уровень
+          "comp-13": 4, // Управление временем - продвинутый уровень
+        },
+        minMatchPercentage: 75,
+      },
+      {
+        level: 5,
+        name: "Lead Perl Developer",
+        description: "Ведущий разработчик Perl. Экспертный уровень, отвечает за техническое направление, архитектуру систем и развитие команды разработки.",
+        requiredSkills: {
+          "comp-17": 5, // Perl - экспертный уровень
+          "comp-18": 5, // Веб-разработка на Perl - экспертный уровень
+          "comp-19": 4, // Тестирование в Perl - продвинутый уровень
+          "comp-5": 5, // Базы данных - экспертный уровень
+          "comp-6": 5, // Архитектура - экспертный уровень
+          "comp-7": 4, // Тестирование - продвинутый уровень
+          "comp-8": 3, // DevOps - средний уровень
+          "comp-9": 5, // Коммуникация - экспертный уровень
+          "comp-10": 5, // Работа в команде - экспертный уровень
+          "comp-11": 5, // Лидерство - экспертный уровень
+          "comp-12": 5, // Решение проблем - экспертный уровень
+          "comp-15": 5, // Критическое мышление - экспертный уровень
+          "comp-13": 5, // Управление временем - экспертный уровень
         },
         minMatchPercentage: 80,
-      },
-      {
-        level: 4,
-        name: "Lead Frontend Developer",
-        description: "Ведущий фронтенд разработчик",
-        requiredSkills: {
-          "comp-1": 5,
-          "comp-2": 5,
-          "comp-3": 5,
-          "comp-6": 4,
-          "comp-7": 4,
-        },
-        minMatchPercentage: 85,
-      },
-    ],
-  },
-  {
-    id: "track-2",
-    name: "Backend Developer Track",
-    description: "Карьерный трек для бэкенд разработчиков",
-    profileId: "profile-2",
-    levels: [
-      {
-        level: 1,
-        name: "Junior Backend Developer",
-        description: "Начальный уровень бэкенд разработки",
-        requiredSkills: {
-          "comp-1": 2,
-          "comp-4": 2,
-          "comp-5": 2,
-        },
-        minMatchPercentage: 60,
-      },
-      {
-        level: 2,
-        name: "Middle Backend Developer",
-        description: "Средний уровень бэкенд разработки",
-        requiredSkills: {
-          "comp-1": 3,
-          "comp-4": 3,
-          "comp-5": 3,
-          "comp-7": 2,
-        },
-        minMatchPercentage: 70,
-      },
-      {
-        level: 3,
-        name: "Senior Backend Developer",
-        description: "Высокий уровень бэкенд разработки",
-        requiredSkills: {
-          "comp-1": 4,
-          "comp-4": 4,
-          "comp-5": 4,
-          "comp-6": 3,
-          "comp-7": 3,
-          "comp-8": 2,
-        },
-        minMatchPercentage: 80,
-      },
-      {
-        level: 4,
-        name: "Lead Backend Developer",
-        description: "Ведущий бэкенд разработчик",
-        requiredSkills: {
-          "comp-1": 5,
-          "comp-4": 5,
-          "comp-5": 5,
-          "comp-6": 4,
-          "comp-7": 4,
-          "comp-8": 3,
-        },
-        minMatchPercentage: 85,
       },
     ],
   },
@@ -1197,21 +1120,48 @@ export function getCompetences(): Competence[] {
     return result;
   });
   
+  // Создаем карту ID компетенций из defaultCompetences для быстрого поиска
+  const defaultIds = new Set(defaultCompetences.map(comp => comp.id));
+  
+  // Обновляем существующие компетенции данными из defaultCompetences
+  const updated = migrated.map((comp: Competence) => {
+    const defaultComp = defaultCompetencesMap.get(comp.id);
+    if (defaultComp) {
+      // Если компетенция есть в defaultCompetences, обновляем её данными оттуда
+      needsMigration = true;
+      return defaultComp;
+    }
+    return comp;
+  });
+  
+  // Удаляем компетенции, которых больше нет в defaultCompetences (кроме пользовательских)
+  // Пользовательские компетенции имеют ID, которых нет в defaultCompetences
+  const filtered = updated.filter((comp: Competence) => {
+    // Если это компетенция из defaultCompetences, но её больше нет там - удаляем
+    // Если это пользовательская компетенция (ID не начинается с comp- или не в списке) - оставляем
+    const isDefaultId = comp.id.startsWith('comp-') && comp.id.match(/^comp-\d+$/);
+    if (isDefaultId && !defaultIds.has(comp.id)) {
+      needsMigration = true;
+      return false; // Удаляем
+    }
+    return true; // Оставляем
+  });
+  
   // Добавляем недостающие компетенции из defaultCompetences
-  const storedIds = new Set(migrated.map((c: Competence) => c.id));
-  const missingCompetences = defaultCompetences.filter(comp => !storedIds.has(comp.id));
+  const filteredIds = new Set(filtered.map((c: Competence) => c.id));
+  const missingCompetences = defaultCompetences.filter(comp => !filteredIds.has(comp.id));
   
   if (missingCompetences.length > 0) {
-    migrated.push(...missingCompetences);
+    filtered.push(...missingCompetences);
     needsMigration = true;
   }
   
   // Сохраняем мигрированные данные обратно в localStorage
   if (needsMigration) {
-    saveToStorage(COMPETENCES_KEY, migrated);
+    saveToStorage(COMPETENCES_KEY, filtered);
   }
   
-  return migrated;
+  return filtered;
 }
 
 export function getCompetenceById(id: string): Competence | undefined {
@@ -1280,8 +1230,130 @@ export function deleteCompetence(id: string): boolean {
 
 // === ПРОФИЛИ ===
 
+// Функция для актуализации требуемых компетенций на основе уровней профиля
+function updateRequiredCompetencesFromLevels(profile: Profile): Profile {
+  if (!profile.levels || profile.levels.length === 0) {
+    return profile;
+  }
+
+  // Собираем все компетенции из всех уровней
+  const competencesMap = new Map<string, SkillLevel>();
+
+  profile.levels.forEach((level) => {
+    Object.entries(level.requiredSkills).forEach(([competenceId, levelValue]) => {
+      const currentLevel = competencesMap.get(competenceId);
+      // Берем максимальный уровень для каждой компетенции
+      if (!currentLevel || levelValue > currentLevel) {
+        competencesMap.set(competenceId, levelValue);
+      }
+    });
+  });
+
+  // Формируем массив требуемых компетенций
+  const requiredCompetences: ProfileCompetence[] = Array.from(competencesMap.entries()).map(
+    ([competenceId, requiredLevel]) => ({
+      competenceId,
+      requiredLevel,
+    })
+  );
+
+  return {
+    ...profile,
+    requiredCompetences,
+  };
+}
+
 export function getProfiles(): Profile[] {
-  return getFromStorage(PROFILES_KEY, defaultProfiles);
+  const stored = getFromStorage<Profile[]>(PROFILES_KEY, []);
+  // Если в хранилище нет данных, используем данные по умолчанию
+  if (stored.length === 0) {
+    return defaultProfiles.map(profile => updateRequiredCompetencesFromLevels(profile));
+  }
+  
+  // Создаем карту ID профилей из defaultProfiles для быстрого поиска
+  // Актуализируем профили перед созданием карты
+  const updatedDefaultProfiles = defaultProfiles.map(profile => updateRequiredCompetencesFromLevels(profile));
+  const defaultProfilesMap = new Map(updatedDefaultProfiles.map(profile => [profile.id, profile]));
+  const defaultIds = new Set(updatedDefaultProfiles.map(profile => profile.id));
+  
+  let needsMigration = false;
+  
+  // Обновляем существующие профили данными из defaultProfiles
+  // Также удаляем поле weight из компетенций (миграция)
+  const updated = stored.map((profile: any) => {
+    const defaultProfile = defaultProfilesMap.get(profile.id);
+    
+    // Удаляем weight из компетенций, если оно есть
+    const hasWeight = profile.requiredCompetences?.some((comp: any) => 'weight' in comp);
+    if (hasWeight) {
+      needsMigration = true;
+      profile.requiredCompetences = profile.requiredCompetences.map((comp: any) => {
+        const { weight, ...rest } = comp;
+        return rest;
+      });
+    }
+    
+    let finalProfile: Profile;
+    if (defaultProfile) {
+      // Если профиль есть в defaultProfiles, обновляем его данными оттуда
+      needsMigration = true;
+      finalProfile = defaultProfile;
+    } else {
+      finalProfile = profile;
+    }
+    
+    // Актуализируем требуемые компетенции на основе уровней профиля
+    if (finalProfile.levels && finalProfile.levels.length > 0) {
+      const updatedProfile = updateRequiredCompetencesFromLevels(finalProfile);
+      if (JSON.stringify(updatedProfile.requiredCompetences) !== JSON.stringify(finalProfile.requiredCompetences)) {
+        needsMigration = true;
+        return updatedProfile;
+      }
+    }
+    
+    return finalProfile;
+  });
+  
+  // Удаляем профили, которых больше нет в defaultProfiles (кроме пользовательских)
+  // Пользовательские профили имеют ID, которых нет в defaultProfiles
+  const filtered = updated.filter((profile: Profile) => {
+    // Если это профиль из defaultProfiles, но его больше нет там - удаляем
+    // Если это пользовательский профиль (ID не начинается с profile- или не в списке) - оставляем
+    const isDefaultId = profile.id.startsWith('profile-') && profile.id.match(/^profile-\d+$/);
+    if (isDefaultId && !defaultIds.has(profile.id)) {
+      needsMigration = true;
+      return false; // Удаляем
+    }
+    return true; // Оставляем
+  });
+  
+  // Добавляем недостающие профили из defaultProfiles
+  const filteredIds = new Set(filtered.map((p: Profile) => p.id));
+  const missingProfiles = updatedDefaultProfiles.filter(profile => !filteredIds.has(profile.id));
+  
+  if (missingProfiles.length > 0) {
+    filtered.push(...missingProfiles);
+    needsMigration = true;
+  }
+  
+  // Актуализируем требуемые компетенции для всех профилей на основе их уровней
+  const finalProfiles = filtered.map(profile => {
+    if (profile.levels && profile.levels.length > 0) {
+      const updated = updateRequiredCompetencesFromLevels(profile);
+      if (JSON.stringify(updated.requiredCompetences) !== JSON.stringify(profile.requiredCompetences)) {
+        needsMigration = true;
+        return updated;
+      }
+    }
+    return profile;
+  });
+  
+  // Сохраняем мигрированные данные обратно в localStorage
+  if (needsMigration) {
+    saveToStorage(PROFILES_KEY, finalProfiles);
+  }
+  
+  return finalProfiles;
 }
 
 export function getProfileById(id: string): Profile | undefined {
@@ -1329,7 +1401,57 @@ export function deleteProfile(id: string): boolean {
 // === КАРЬЕРНЫЕ ТРЕКИ ===
 
 export function getCareerTracks(): CareerTrack[] {
-  return getFromStorage(CAREER_TRACKS_KEY, defaultCareerTracks);
+  const stored = getFromStorage<CareerTrack[]>(CAREER_TRACKS_KEY, []);
+  // Если в хранилище нет данных, используем данные по умолчанию
+  if (stored.length === 0) {
+    return defaultCareerTracks;
+  }
+  
+  // Создаем карту ID треков из defaultCareerTracks для быстрого поиска
+  const defaultTracksMap = new Map(defaultCareerTracks.map(track => [track.id, track]));
+  const defaultIds = new Set(defaultCareerTracks.map(track => track.id));
+  
+  let needsMigration = false;
+  
+  // Обновляем существующие треки данными из defaultCareerTracks
+  const updated = stored.map((track: CareerTrack) => {
+    const defaultTrack = defaultTracksMap.get(track.id);
+    if (defaultTrack) {
+      // Если трек есть в defaultCareerTracks, обновляем его данными оттуда
+      needsMigration = true;
+      return defaultTrack;
+    }
+    return track;
+  });
+  
+  // Удаляем треки, которых больше нет в defaultCareerTracks (кроме пользовательских)
+  // Пользовательские треки имеют ID, которых нет в defaultCareerTracks
+  const filtered = updated.filter((track: CareerTrack) => {
+    // Если это трек из defaultCareerTracks, но его больше нет там - удаляем
+    // Если это пользовательский трек (ID не начинается с track- или не в списке) - оставляем
+    const isDefaultId = track.id.startsWith('track-') && track.id.match(/^track-\d+$/);
+    if (isDefaultId && !defaultIds.has(track.id)) {
+      needsMigration = true;
+      return false; // Удаляем
+    }
+    return true; // Оставляем
+  });
+  
+  // Добавляем недостающие треки из defaultCareerTracks
+  const filteredIds = new Set(filtered.map((t: CareerTrack) => t.id));
+  const missingTracks = defaultCareerTracks.filter(track => !filteredIds.has(track.id));
+  
+  if (missingTracks.length > 0) {
+    filtered.push(...missingTracks);
+    needsMigration = true;
+  }
+  
+  // Сохраняем мигрированные данные обратно в localStorage
+  if (needsMigration) {
+    saveToStorage(CAREER_TRACKS_KEY, filtered);
+  }
+  
+  return filtered;
 }
 
 export function getCareerTrackById(id: string): CareerTrack | undefined {
