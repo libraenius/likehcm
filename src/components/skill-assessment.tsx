@@ -1,120 +1,293 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
   getProfileById,
   getCompetenceById,
-  getProfiles,
   getCompetences,
 } from "@/lib/data";
-import { calculateProfileMatch } from "@/lib/calculations";
-import type { UserProfile, SkillLevel, ProfileCompetence } from "@/types";
+import type { UserProfile, SkillLevel, ProfileCompetence, Competence } from "@/types";
+import { CheckCircle2, TrendingUp, BookOpen, Users, MessageSquare } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SkillAssessmentProps {
   userProfile: UserProfile;
-  onSkillUpdate: (skills: Array<{ competenceId: string; selfAssessment: SkillLevel }>) => void;
+  onSkillUpdate: (skills: Array<{ competenceId: string; selfAssessment: SkillLevel; comment?: string }>) => void;
   onClose?: () => void;
+}
+
+interface CompetenceCardProps {
+  competence: Competence;
+  competenceId: string;
+  requirement: ProfileCompetence | null;
+  requiredLevel: number;
+  actualLevel: number;
+  levelNames: Record<number, string>;
+  onSkillChange: (competenceId: string, level: number) => void;
+  onCommentChange: (competenceId: string, comment: string) => void;
+  comment?: string;
+  isCorporate: boolean;
+}
+
+// Компонент для выбора уровня с улучшенным UX
+function LevelSelector({
+  value,
+  onChange,
+  levelNames,
+  className,
+}: {
+  value: number;
+  onChange: (level: number) => void;
+  levelNames: Record<number, string>;
+  className?: string;
+}) {
+  return (
+    <div className={cn("w-full", className)}>
+      {/* Кнопки для выбора уровня */}
+      <div className="grid grid-cols-5 gap-2">
+        {[1, 2, 3, 4, 5].map((level) => {
+          const isSelected = value === level;
+          return (
+            <Button
+              key={level}
+              type="button"
+              variant={isSelected ? "default" : "outline"}
+              size="sm"
+              onClick={() => onChange(level)}
+              className={cn(
+                "flex items-center justify-center h-auto py-3 transition-all",
+                isSelected && "shadow-md scale-105"
+              )}
+            >
+              <span className="text-base font-semibold">
+                {levelNames[level]}
+              </span>
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CompetenceCard({
+  competence,
+  competenceId,
+  requirement,
+  requiredLevel,
+  actualLevel,
+  levelNames,
+  onSkillChange,
+  onCommentChange,
+  comment,
+  isCorporate,
+}: CompetenceCardProps) {
+  const [isCommentOpen, setIsCommentOpen] = useState(!!comment);
+
+  useEffect(() => {
+    if (comment && !isCommentOpen) {
+      setIsCommentOpen(true);
+    }
+  }, [comment, isCommentOpen]);
+
+  return (
+    <div className="border rounded-lg p-4 space-y-4 bg-card">
+      {/* Заголовок компетенции */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className={cn(
+            "p-1.5 rounded shrink-0",
+            isCorporate 
+              ? "bg-cyan-100 dark:bg-cyan-950" 
+              : "bg-purple-100 dark:bg-purple-950"
+          )}>
+            {isCorporate ? (
+              <Users className="h-4 w-4 text-cyan-700 dark:text-cyan-300" />
+            ) : (
+              <BookOpen className="h-4 w-4 text-purple-700 dark:text-purple-300" />
+            )}
+          </div>
+          <Label className="text-base font-semibold break-words flex-1">
+            {competence.name}
+          </Label>
+          {actualLevel > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => setIsCommentOpen(!isCommentOpen)}
+              title={isCommentOpen ? "Скрыть комментарий" : "Добавить комментарий"}
+            >
+              <MessageSquare className={cn(
+                "h-4 w-4",
+                comment ? "text-primary" : "text-muted-foreground"
+              )} />
+            </Button>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground break-words">
+          {competence.description}
+        </p>
+      </div>
+
+      {/* Выбор уровня */}
+      <div className="space-y-4">
+        <LevelSelector
+          value={actualLevel}
+          onChange={(level) => onSkillChange(competenceId, level)}
+          levelNames={levelNames}
+        />
+      </div>
+
+      {actualLevel > 0 && (() => {
+        const selectedLevelKey = `level${actualLevel}` as keyof typeof competence.levels;
+        const levelDescription = competence.levels?.[selectedLevelKey] || "";
+        return levelDescription ? (
+          <div className="mt-6 p-3 bg-muted/50 rounded-md w-full min-w-0 border">
+            <p className="text-sm font-semibold mb-2 break-words">Описание уровня {levelNames[actualLevel]}:</p>
+            <p className="text-sm text-muted-foreground break-words">{levelDescription}</p>
+          </div>
+        ) : null;
+      })()}
+
+      {/* Поле для комментария */}
+      {isCommentOpen && actualLevel > 0 && (
+        <div className="space-y-2 mt-4">
+          <Label htmlFor={`comment-${competenceId}`} className="text-sm font-medium">
+            Комментарий (необязательно)
+          </Label>
+          <Textarea
+            id={`comment-${competenceId}`}
+            value={comment || ""}
+            onChange={(e) => onCommentChange(competenceId, e.target.value)}
+            placeholder="Добавьте комментарий к вашей оценке..."
+            className="min-h-[80px] resize-none"
+            maxLength={500}
+          />
+          {comment && (
+            <p className="text-xs text-muted-foreground">
+              {comment.length} / 500 символов
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function SkillAssessment({ userProfile, onSkillUpdate, onClose }: SkillAssessmentProps) {
   // Используем number вместо SkillLevel, чтобы поддерживать 0 (не выбран)
   const [skills, setSkills] = useState<Record<string, number>>({});
+  const [comments, setComments] = useState<Record<string, string>>({});
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const skillsMap: Record<string, number> = {};
+    const commentsMap: Record<string, string> = {};
     userProfile.skills.forEach((skill) => {
       skillsMap[skill.competenceId] = skill.selfAssessment;
+      if (skill.comment) {
+        commentsMap[skill.competenceId] = skill.comment;
+      }
     });
     setSkills(skillsMap);
+    setComments(commentsMap);
     setIsSaved(false);
   }, [userProfile]);
 
   // Функция для получения текущего уровня
-  // Если навык не установлен в сохраненных данных, по умолчанию возвращаем 1 (дефолтное состояние - чекбокс не нажат)
+  // Если компетенция не установлена в сохраненных данных, по умолчанию возвращаем 0 (не выбрано)
   const getCurrentLevel = (competenceId: string): number => {
-    // Если навык явно установлен на 0 (чекбокс "Не выбран" нажат), возвращаем 0
-    if (skills[competenceId] === 0) {
-      return 0;
+    // Если компетенция установлена, возвращаем ее значение
+    if (skills[competenceId] !== undefined && skills[competenceId] >= 0) {
+      return skills[competenceId];
     }
-    // Если навык установлен, возвращаем его значение
-    if (skills[competenceId] && skills[competenceId] > 0) {
-      return skills[competenceId] as SkillLevel;
-    }
-    // По умолчанию возвращаем 1 (чекбокс не нажат, уровень установлен на 1)
-    return 1;
+    // По умолчанию возвращаем 0 (не выбрано)
+    return 0;
   };
 
   const mainProfile = getProfileById(userProfile.mainProfileId);
   if (!mainProfile) return null;
 
-  // Собираем все компетенции из основного и дополнительных профилей
-  const allCompetenceIds = new Set<string>();
-  mainProfile.requiredCompetences.forEach((c) =>
-    allCompetenceIds.add(c.competenceId)
-  );
-  userProfile.additionalProfileIds.forEach((profileId) => {
-    const profile = getProfileById(profileId);
-    profile?.requiredCompetences.forEach((c) =>
-      allCompetenceIds.add(c.competenceId)
+  // Собираем компетенции основного профиля и уникальные компетенции дополнительных профилей
+  const { mainProfileCompetenceIds, additionalProfileCompetenceIds, allCompetenceIds } = useMemo(() => {
+    // Собираем компетенции основного профиля
+    const mainIds = new Set<string>();
+    mainProfile.requiredCompetences.forEach((c) =>
+      mainIds.add(c.competenceId)
     );
-  });
+
+    // Собираем уникальные компетенции дополнительных профилей (не входящие в основной)
+    const additionalIds = new Set<string>();
+    userProfile.additionalProfileIds.forEach((profileId) => {
+      const profile = getProfileById(profileId);
+      profile?.requiredCompetences.forEach((c) => {
+        // Добавляем только если компетенция не входит в основной профиль
+        if (!mainIds.has(c.competenceId)) {
+          additionalIds.add(c.competenceId);
+        }
+      });
+    });
+
+    // Все компетенции для расчета статистики и сохранения
+    const allIds = new Set<string>();
+    mainIds.forEach((id) => allIds.add(id));
+    additionalIds.forEach((id) => allIds.add(id));
+
+    return {
+      mainProfileCompetenceIds: mainIds,
+      additionalProfileCompetenceIds: additionalIds,
+      allCompetenceIds: allIds,
+    };
+  }, [userProfile.mainProfileId, userProfile.additionalProfileIds, mainProfile]);
 
   const handleSkillChange = (competenceId: string, level: number) => {
-    // Сохраняем уровень навыка
-    if (level > 0 && level <= 5) {
+    // Сохраняем уровень компетенции (0-5)
+    if (level >= 0 && level <= 5) {
       setSkills({ ...skills, [competenceId]: level });
-    } else {
-      const newSkills = { ...skills };
-      delete newSkills[competenceId];
-      setSkills(newSkills);
     }
     setIsSaved(false);
   };
 
-  const handleNotSelectedToggle = (competenceId: string, checked: boolean) => {
-    if (checked) {
-      // Если чекбокс "Не выбран" отмечен, устанавливаем уровень 0
-      setSkills({ ...skills, [competenceId]: 0 });
+  const handleCommentChange = (competenceId: string, comment: string) => {
+    if (comment.trim()) {
+      setComments({ ...comments, [competenceId]: comment.trim() });
     } else {
-      // Если чекбокс снят (дефолтное состояние), устанавливаем уровень по умолчанию - 1
-      setSkills({ ...skills, [competenceId]: 1 });
+      const newComments = { ...comments };
+      delete newComments[competenceId];
+      setComments(newComments);
     }
     setIsSaved(false);
   };
 
   const handleSave = () => {
-    // Сохраняем все компетенции из профилей
-    // Если навык установлен на 0 (чекбокс нажат), не сохраняем его
-    // Если навык не установлен явно, сохраняем его со значением 1 (дефолтное состояние)
-    const skillsArray: Array<{ competenceId: string; selfAssessment: SkillLevel }> = [];
+    // Сохраняем только компетенции с выбранным уровнем (1-5)
+    // Компетенции с уровнем 0 или не выбранные не сохраняем
+    const skillsArray: Array<{ competenceId: string; selfAssessment: SkillLevel; comment?: string }> = [];
     
     Array.from(allCompetenceIds).forEach((competenceId) => {
       const skillValue = skills[competenceId];
-      // Если навык установлен на 0, пропускаем его (не сохраняем)
-      if (skillValue === 0) {
-        return;
-      }
-      // Если навык установлен (1-5), сохраняем его значение
+      // Сохраняем только компетенции с уровнем 1-5
       if (skillValue && skillValue > 0 && skillValue <= 5) {
-        skillsArray.push({
+        const skillData: { competenceId: string; selfAssessment: SkillLevel; comment?: string } = {
           competenceId,
           selfAssessment: skillValue as SkillLevel,
-        });
-      } else {
-        // Если навык не установлен явно, сохраняем со значением 1 (дефолтное состояние)
-        skillsArray.push({
-          competenceId,
-          selfAssessment: 1 as SkillLevel,
-        });
+        };
+        // Добавляем комментарий, если он есть
+        if (comments[competenceId]) {
+          skillData.comment = comments[competenceId];
+        }
+        skillsArray.push(skillData);
       }
+      // Компетенции с уровнем 0 или не выбранные не сохраняем
     });
     
     onSkillUpdate(skillsArray);
@@ -128,39 +301,6 @@ export function SkillAssessment({ userProfile, onSkillUpdate, onClose }: SkillAs
     }
   };
 
-  // Преобразуем skills в формат для calculateProfileMatch
-  // Для навыков, которые не установлены явно (undefined), используем уровень 1 по умолчанию
-  // Навыки с уровнем 0 (чекбокс "Не выбран" нажат) не включаются в расчет
-  const skillsForCalculation: Record<string, SkillLevel> = {};
-  Array.from(allCompetenceIds).forEach((competenceId) => {
-    const skillValue = skills[competenceId];
-    // Если навык установлен на 0 (чекбокс "Не выбран" нажат), не включаем его в расчет
-    if (skillValue === 0) {
-      return;
-    }
-    // Если навык установлен (1-5), используем его значение
-    if (skillValue && skillValue > 0 && skillValue <= 5) {
-      skillsForCalculation[competenceId] = skillValue as SkillLevel;
-    } else {
-      // Если навык не установлен явно (undefined), используем уровень 1 по умолчанию
-      skillsForCalculation[competenceId] = 1 as SkillLevel;
-    }
-  });
-
-  // Вычисляем соответствие основному профилю
-  const mainProfileMatch = calculateProfileMatch(
-    skillsForCalculation,
-    mainProfile.requiredCompetences
-  );
-
-  // Вычисляем соответствие дополнительным профилям
-  const allProfiles = getProfiles();
-  const additionalMatches = userProfile.additionalProfileIds.map((profileId) => {
-    const profile = getProfileById(profileId);
-    if (!profile) return null;
-    const match = calculateProfileMatch(skillsForCalculation, profile.requiredCompetences);
-    return { profileId, profile, match };
-  }).filter(Boolean) as Array<{ profileId: string; profile: typeof allProfiles[0]; match: number }>;
 
   const getCompetenceRequirement = (competenceId: string): ProfileCompetence | null => {
     // Сначала проверяем основной профиль
@@ -181,157 +321,413 @@ export function SkillAssessment({ userProfile, onSkillUpdate, onClose }: SkillAs
     return null;
   };
 
+  // Функция для получения и сортировки компетенций
+  const getFilteredCompetences = (competenceIds: Set<string>) => {
+    return Array.from(competenceIds)
+      .map((competenceId) => {
+        const competence = getCompetenceById(competenceId);
+        if (!competence) return null;
+        return { competenceId, competence };
+      })
+      .filter((item): item is { competenceId: string; competence: Competence } => item !== null)
+      .sort((a, b) => {
+        // Сначала профессиональные, потом корпоративные
+        if (a.competence.type !== b.competence.type) {
+          if (a.competence.type === "профессиональные компетенции") return -1;
+          return 1;
+        }
+        // Затем по названию
+        return a.competence.name.localeCompare(b.competence.name);
+      });
+  };
+
+  // Компетенции основного профиля
+  const mainProfileCompetences = useMemo(() => {
+    return getFilteredCompetences(mainProfileCompetenceIds);
+  }, [mainProfileCompetenceIds, userProfile.mainProfileId]);
+
+  // Уникальные компетенции дополнительных профилей
+  const additionalProfileCompetences = useMemo(() => {
+    return getFilteredCompetences(additionalProfileCompetenceIds);
+  }, [additionalProfileCompetenceIds, userProfile.additionalProfileIds, userProfile.mainProfileId]);
+
+  // Все компетенции для статистики
+  const allCompetences = useMemo(() => {
+    return getFilteredCompetences(allCompetenceIds);
+  }, [allCompetenceIds, userProfile.mainProfileId, userProfile.additionalProfileIds]);
+
+  // Разделение компетенций основного профиля на профессиональные и корпоративные
+  const mainProfessionalCompetences = useMemo(() => {
+    return mainProfileCompetences.filter(
+      ({ competence }) => competence.type === "профессиональные компетенции"
+    );
+  }, [mainProfileCompetences]);
+
+  const mainCorporateCompetences = useMemo(() => {
+    return mainProfileCompetences.filter(
+      ({ competence }) => competence.type === "корпоративные компетенции"
+    );
+  }, [mainProfileCompetences]);
+
+  // Разделение уникальных компетенций дополнительных профилей на профессиональные и корпоративные
+  const additionalProfessionalCompetences = useMemo(() => {
+    return additionalProfileCompetences.filter(
+      ({ competence }) => competence.type === "профессиональные компетенции"
+    );
+  }, [additionalProfileCompetences]);
+
+  const additionalCorporateCompetences = useMemo(() => {
+    return additionalProfileCompetences.filter(
+      ({ competence }) => competence.type === "корпоративные компетенции"
+    );
+  }, [additionalProfileCompetences]);
+
+  // Статистика заполнения (для всех компетенций)
+  const assessmentStats = useMemo(() => {
+    const total = allCompetences.length;
+    const assessed = allCompetences.filter(({ competenceId }) => {
+      const level = skills[competenceId];
+      return level !== undefined && level > 0;
+    }).length;
+    
+    return {
+      total,
+      assessed,
+      progress: total > 0 ? Math.round((assessed / total) * 100) : 0,
+    };
+  }, [allCompetences, skills]);
+
   return (
     <div className="space-y-6 w-full overflow-x-hidden">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-        {Array.from(allCompetenceIds).map((competenceId) => {
-              const competence = getCompetenceById(competenceId);
-              const requirement = getCompetenceRequirement(competenceId);
-              if (!competence) return null;
-
-              const actualLevel: number = getCurrentLevel(competenceId);
-              const requiredLevel = requirement?.requiredLevel || 0;
-
-          const selectedLevelKey = actualLevel > 0 ? `level${actualLevel}` as keyof typeof competence.levels : null;
-          const selectedLevelDescription = selectedLevelKey ? competence.levels?.[selectedLevelKey] || "" : "";
-          const levelNames: Record<number, string> = {
-            1: "Начальный",
-            2: "Базовый",
-            3: "Средний",
-            4: "Продвинутый",
-            5: "Экспертный",
-          };
-
-          return (
-            <div key={competenceId} className="space-y-4 p-4 border rounded-lg w-full min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-1 flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Label className="text-base font-semibold break-words">
-                    {competence.name}
-                  </Label>
-                  {requirement && (
-                    <Badge variant="outline" className="shrink-0">
-                      Требуется: {requiredLevel}
-                    </Badge>
-                  )}
-                  <div className="flex items-center gap-2 ml-auto shrink-0">
-                    <Checkbox
-                      id={`not-selected-${competenceId}`}
-                      checked={actualLevel === 0}
-                      onCheckedChange={(checked) => {
-                        handleNotSelectedToggle(competenceId, checked as boolean);
-                      }}
-                    />
-                    <Label
-                      htmlFor={`not-selected-${competenceId}`}
-                      className="text-sm font-medium cursor-pointer whitespace-nowrap"
-                    >
-                      Не выбран
-                    </Label>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground break-words">
-                  {competence.description}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3 w-full min-w-0">
-              {actualLevel > 0 && (
-                <>
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <Label className="text-sm font-medium break-words">
-                      Ваш уровень: {actualLevel} ({levelNames[actualLevel]})
-                    </Label>
-                    <Badge variant="secondary" className="text-xs shrink-0">
-                      {levelNames[actualLevel]}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-2 w-full min-w-0">
-                    <div className="w-full px-1 relative">
-                      <Slider
-                        value={[actualLevel]}
-                        onValueChange={(value) => {
-                          const newLevel = value[0];
-                          // Автоматически снимаем чекбокс "Не выбран" при выборе уровня
-                          if (newLevel > 0) {
-                            handleSkillChange(competenceId, newLevel);
-                          }
-                        }}
-                        min={1}
-                        max={5}
-                        step={1}
-                        className="w-full"
-                      />
-                      {/* Акцентные точки на уровнях */}
-                      <div className="absolute top-1/2 -translate-y-1/2 left-1 right-1 pointer-events-none" style={{ height: '8px' }}>
-                        {[1, 2, 3, 4, 5].map((level) => {
-                          // Вычисляем позицию точки в процентах (0%, 25%, 50%, 75%, 100%)
-                          const position = ((level - 1) / 4) * 100;
-                          return (
-                            <div
-                              key={level}
-                              className={cn(
-                                "absolute rounded-full border-2 transition-all duration-200 -translate-x-1/2",
-                                actualLevel === level
-                                  ? "w-3 h-3 bg-primary border-primary z-10 shadow-md shadow-primary/30"
-                                  : "w-2.5 h-2.5 bg-background border-muted-foreground/60 hover:border-muted-foreground/80"
-                              )}
-                              style={{ left: `${position}%`, top: '50%', transform: 'translate(-50%, -50%)' }}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                    
-                    <div className="w-full grid grid-cols-5 items-start gap-0.5">
-                      {[1, 2, 3, 4, 5].map((level) => (
-                        <div key={level} className="flex flex-col items-center justify-start">
-                          <span className={actualLevel === level ? "font-semibold text-foreground text-xs mb-0.5" : "text-muted-foreground text-xs mb-0.5"}>{level}</span>
-                          <span className="text-[9px] text-muted-foreground text-center leading-[1.1] px-0.5">{levelNames[level]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {actualLevel > 0 && (() => {
-                    const selectedLevelKey = `level${actualLevel}` as keyof typeof competence.levels;
-                    const levelDescription = competence.levels?.[selectedLevelKey] || "";
-                    return levelDescription ? (
-                      <div className="mt-2 p-2 bg-muted/50 rounded-md w-full min-w-0">
-                        <p className="text-xs font-semibold mb-1 break-words">Описание уровня {actualLevel}:</p>
-                        <p className="text-xs text-muted-foreground line-clamp-3 break-words">{levelDescription}</p>
-                      </div>
-                    ) : null;
-                  })()}
-
-                  {actualLevel > 0 && requirement && (
-                    <div className="space-y-1 w-full min-w-0">
-                      <div className="flex justify-between text-sm gap-2">
-                        <span className="break-words">Соответствие требованию</span>
-                        <span className="font-semibold shrink-0">
-                          {Math.min(100, Math.round((actualLevel / requiredLevel) * 100))}%
-                        </span>
-                      </div>
-                      <Progress
-                        value={Math.min(100, (actualLevel / requiredLevel) * 100)}
-                        className="h-2 w-full"
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+      {/* Статистика и фильтры */}
+      <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-sm font-semibold">Прогресс заполнения</Label>
           </div>
-        );
-      })}
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-muted-foreground">
+              Оценено: <span className="font-semibold text-foreground">{assessmentStats.assessed}</span> из {assessmentStats.total}
+            </span>
+          </div>
+        </div>
+        <Progress value={assessmentStats.progress} className="h-2 w-full" />
       </div>
 
-      <Button onClick={handleSave} className="w-full" size="lg">
-        Сохранить самооценку
-      </Button>
+
+      {/* Вкладки для основного и дополнительных профилей */}
+      {additionalProfileCompetences.length > 0 ? (
+        <Tabs defaultValue="main" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="main">
+              Основной профиль
+            </TabsTrigger>
+            <TabsTrigger value="additional">
+              Дополнительные профили
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="main" className="mt-4">
+            {/* Компетенции основного профиля */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              {/* Профессиональные компетенции основного профиля */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="h-5 w-5 text-purple-700 dark:text-purple-300" />
+                  <Label className="text-lg font-semibold">Профессиональные компетенции</Label>
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300">
+                    {mainProfessionalCompetences.length}
+                  </Badge>
+                </div>
+                {mainProfessionalCompetences.length === 0 ? (
+                  <div className="text-center py-8 border rounded-lg">
+                    <p className="text-muted-foreground text-sm">Нет профессиональных компетенций</p>
+                  </div>
+                ) : (
+                  mainProfessionalCompetences.map(({ competenceId, competence }) => {
+                    const requirement = getCompetenceRequirement(competenceId);
+                    const actualLevel: number = getCurrentLevel(competenceId);
+                    const requiredLevel = requirement?.requiredLevel || 0;
+                    const levelNames: Record<number, string> = {
+                      1: "Начальный",
+                      2: "Базовый",
+                      3: "Средний",
+                      4: "Продвинутый",
+                      5: "Экспертный",
+                    };
+
+                    return (
+                      <CompetenceCard
+                        key={competenceId}
+                        competence={competence}
+                        competenceId={competenceId}
+                        requirement={requirement}
+                        requiredLevel={requiredLevel}
+                        actualLevel={actualLevel}
+                        levelNames={levelNames}
+                        onSkillChange={handleSkillChange}
+                        onCommentChange={handleCommentChange}
+                        comment={comments[competenceId]}
+                        isCorporate={false}
+                      />
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Корпоративные компетенции основного профиля */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />
+                  <Label className="text-lg font-semibold">Корпоративные компетенции</Label>
+                  <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-300">
+                    {mainCorporateCompetences.length}
+                  </Badge>
+                </div>
+                {mainCorporateCompetences.length === 0 ? (
+                  <div className="text-center py-8 border rounded-lg">
+                    <p className="text-muted-foreground text-sm">Нет корпоративных компетенций</p>
+                  </div>
+                ) : (
+                  mainCorporateCompetences.map(({ competenceId, competence }) => {
+                    const requirement = getCompetenceRequirement(competenceId);
+                    const actualLevel: number = getCurrentLevel(competenceId);
+                    const requiredLevel = requirement?.requiredLevel || 0;
+                    const levelNames: Record<number, string> = {
+                      1: "Начальный",
+                      2: "Базовый",
+                      3: "Средний",
+                      4: "Продвинутый",
+                      5: "Экспертный",
+                    };
+
+                    return (
+                      <CompetenceCard
+                        key={competenceId}
+                        competence={competence}
+                        competenceId={competenceId}
+                        requirement={requirement}
+                        requiredLevel={requiredLevel}
+                        actualLevel={actualLevel}
+                        levelNames={levelNames}
+                        onSkillChange={handleSkillChange}
+                        onCommentChange={handleCommentChange}
+                        comment={comments[competenceId]}
+                        isCorporate={true}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="additional" className="mt-4">
+            {/* Уникальные компетенции дополнительных профилей */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+              {/* Профессиональные компетенции дополнительных профилей */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="h-5 w-5 text-purple-700 dark:text-purple-300" />
+                  <Label className="text-lg font-semibold">Профессиональные компетенции</Label>
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300">
+                    {additionalProfessionalCompetences.length}
+                  </Badge>
+                </div>
+                {additionalProfessionalCompetences.length === 0 ? (
+                  <div className="text-center py-8 border rounded-lg">
+                    <p className="text-muted-foreground text-sm">Нет профессиональных компетенций</p>
+                  </div>
+                ) : (
+                  additionalProfessionalCompetences.map(({ competenceId, competence }) => {
+                    const requirement = getCompetenceRequirement(competenceId);
+                    const actualLevel: number = getCurrentLevel(competenceId);
+                    const requiredLevel = requirement?.requiredLevel || 0;
+                    const levelNames: Record<number, string> = {
+                      1: "Начальный",
+                      2: "Базовый",
+                      3: "Средний",
+                      4: "Продвинутый",
+                      5: "Экспертный",
+                    };
+
+                    return (
+                      <CompetenceCard
+                        key={competenceId}
+                        competence={competence}
+                        competenceId={competenceId}
+                        requirement={requirement}
+                        requiredLevel={requiredLevel}
+                        actualLevel={actualLevel}
+                        levelNames={levelNames}
+                        onSkillChange={handleSkillChange}
+                        onCommentChange={handleCommentChange}
+                        comment={comments[competenceId]}
+                        isCorporate={false}
+                      />
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Корпоративные компетенции дополнительных профилей */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />
+                  <Label className="text-lg font-semibold">Корпоративные компетенции</Label>
+                  <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-300">
+                    {additionalCorporateCompetences.length}
+                  </Badge>
+                </div>
+                {additionalCorporateCompetences.length === 0 ? (
+                  <div className="text-center py-8 border rounded-lg">
+                    <p className="text-muted-foreground text-sm">Нет корпоративных компетенций</p>
+                  </div>
+                ) : (
+                  additionalCorporateCompetences.map(({ competenceId, competence }) => {
+                    const requirement = getCompetenceRequirement(competenceId);
+                    const actualLevel: number = getCurrentLevel(competenceId);
+                    const requiredLevel = requirement?.requiredLevel || 0;
+                    const levelNames: Record<number, string> = {
+                      1: "Начальный",
+                      2: "Базовый",
+                      3: "Средний",
+                      4: "Продвинутый",
+                      5: "Экспертный",
+                    };
+
+                    return (
+                      <CompetenceCard
+                        key={competenceId}
+                        competence={competence}
+                        competenceId={competenceId}
+                        requirement={requirement}
+                        requiredLevel={requiredLevel}
+                        actualLevel={actualLevel}
+                        levelNames={levelNames}
+                        onSkillChange={handleSkillChange}
+                        onCommentChange={handleCommentChange}
+                        comment={comments[competenceId]}
+                        isCorporate={true}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        /* Если нет дополнительных профилей, показываем компетенции основного профиля без вкладок */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          {/* Профессиональные компетенции */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <BookOpen className="h-5 w-5 text-purple-700 dark:text-purple-300" />
+              <Label className="text-lg font-semibold">Профессиональные компетенции</Label>
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300">
+                {mainProfessionalCompetences.length}
+              </Badge>
+            </div>
+            {mainProfessionalCompetences.length === 0 ? (
+              <div className="text-center py-8 border rounded-lg">
+                <p className="text-muted-foreground text-sm">Нет профессиональных компетенций</p>
+              </div>
+            ) : (
+              mainProfessionalCompetences.map(({ competenceId, competence }) => {
+                const requirement = getCompetenceRequirement(competenceId);
+                const actualLevel: number = getCurrentLevel(competenceId);
+                const requiredLevel = requirement?.requiredLevel || 0;
+                const levelNames: Record<number, string> = {
+                  1: "Начальный",
+                  2: "Базовый",
+                  3: "Средний",
+                  4: "Продвинутый",
+                  5: "Экспертный",
+                };
+
+                return (
+                  <CompetenceCard
+                    key={competenceId}
+                    competence={competence}
+                    competenceId={competenceId}
+                    requirement={requirement}
+                    requiredLevel={requiredLevel}
+                    actualLevel={actualLevel}
+                    levelNames={levelNames}
+                    onSkillChange={handleSkillChange}
+                    onCommentChange={handleCommentChange}
+                    comment={comments[competenceId]}
+                    isCorporate={false}
+                  />
+                );
+              })
+            )}
+          </div>
+
+          {/* Корпоративные компетенции */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />
+              <Label className="text-lg font-semibold">Корпоративные компетенции</Label>
+              <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-300">
+                {mainCorporateCompetences.length}
+              </Badge>
+            </div>
+            {mainCorporateCompetences.length === 0 ? (
+              <div className="text-center py-8 border rounded-lg">
+                <p className="text-muted-foreground text-sm">Нет корпоративных компетенций</p>
+              </div>
+            ) : (
+              mainCorporateCompetences.map(({ competenceId, competence }) => {
+                const requirement = getCompetenceRequirement(competenceId);
+                const actualLevel: number = getCurrentLevel(competenceId);
+                const requiredLevel = requirement?.requiredLevel || 0;
+                const levelNames: Record<number, string> = {
+                  1: "Начальный",
+                  2: "Базовый",
+                  3: "Средний",
+                  4: "Продвинутый",
+                  5: "Экспертный",
+                };
+
+                return (
+                  <CompetenceCard
+                    key={competenceId}
+                    competence={competence}
+                    competenceId={competenceId}
+                    requirement={requirement}
+                    requiredLevel={requiredLevel}
+                    actualLevel={actualLevel}
+                    levelNames={levelNames}
+                    onSkillChange={handleSkillChange}
+                    onCommentChange={handleCommentChange}
+                    comment={comments[competenceId]}
+                    isCorporate={true}
+                  />
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      <Separator />
+
+      {/* Кнопка сохранения */}
+      <div className="flex items-center justify-between gap-4 p-4 bg-muted/30 rounded-lg border">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold">Готовы сохранить самооценку?</p>
+          <p className="text-xs text-muted-foreground">
+            Оценено {assessmentStats.assessed} из {assessmentStats.total} компетенций
+          </p>
+        </div>
+        <Button onClick={handleSave} size="lg" className="shrink-0">
+          <CheckCircle2 className="mr-2 h-4 w-4" />
+          Сохранить самооценку
+        </Button>
+      </div>
 
       {isSaved && (
         <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg w-full">
@@ -340,38 +736,6 @@ export function SkillAssessment({ userProfile, onSkillUpdate, onClose }: SkillAs
           </p>
         </div>
       )}
-
-      {/* Показываем соответствие профилям */}
-      <div className="grid gap-4 md:grid-cols-2 w-full min-w-0">
-        <div className="p-4 border rounded-lg w-full min-w-0">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-sm break-words">Основной профиль</p>
-                <p className="text-xs text-muted-foreground break-words">{mainProfile.name}</p>
-              </div>
-              <span className="font-bold text-lg shrink-0">{mainProfileMatch}%</span>
-            </div>
-            <Progress value={mainProfileMatch} className="h-3 w-full" />
-          </div>
-        </div>
-
-        {additionalMatches.map(({ profileId, profile, match }) => (
-          <div key={profileId} className="p-4 border rounded-lg w-full min-w-0">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm break-words">Дополнительный профиль</p>
-                  <p className="text-xs text-muted-foreground break-words">{profile.name}</p>
-                </div>
-                <span className="font-bold text-lg shrink-0">{match}%</span>
-              </div>
-              <Progress value={match} className="h-3 w-full" />
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
-

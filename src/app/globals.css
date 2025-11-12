@@ -45,73 +45,73 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.15 0.02 250);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.15 0.02 250);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* ФИОЛЕТОВАЯ СОВРЕМЕННАЯ ТЕМА */
-  --primary: oklch(0.50 0.20 300);
+  --popover-foreground: oklch(0.15 0.02 250);
+  /* ГАЗПРОМБАНК ТЕМА - Синий и оранжевый */
+  --primary: oklch(0.45 0.10 250); /* Синий Газпромбанка (менее яркий) */
   --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.92 0.04 300);
-  --accent-foreground: oklch(0.30 0.15 300);
+  --secondary: oklch(0.97 0.01 60); /* Светлый оранжевый */
+  --secondary-foreground: oklch(0.25 0.08 60);
+  --muted: oklch(0.96 0.005 250);
+  --muted-foreground: oklch(0.50 0.05 250);
+  --accent: oklch(0.65 0.12 60); /* Оранжевый акцент (менее яркий) */
+  --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.50 0.20 300);
-  --chart-1: oklch(0.50 0.20 300);
-  --chart-2: oklch(0.55 0.22 280);
-  --chart-3: oklch(0.45 0.18 320);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.50 0.20 300);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.92 0.04 300);
-  --sidebar-accent-foreground: oklch(0.30 0.15 300);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.50 0.20 300);
+  --border: oklch(0.90 0.01 250);
+  --input: oklch(0.95 0.01 250);
+  --ring: oklch(0.45 0.10 250);
+  --chart-1: oklch(0.45 0.10 250); /* Синий */
+  --chart-2: oklch(0.65 0.12 60); /* Оранжевый */
+  --chart-3: oklch(0.50 0.08 240); /* Синий светлее */
+  --chart-4: oklch(0.70 0.14 50); /* Оранжевый светлее */
+  --chart-5: oklch(0.55 0.14 230);
+  --sidebar: oklch(0.98 0.01 250);
+  --sidebar-foreground: oklch(0.15 0.02 250);
+  --sidebar-primary: oklch(0.45 0.10 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.65 0.12 60);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.90 0.01 250);
+  --sidebar-ring: oklch(0.45 0.10 250);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  /* ФИОЛЕТОВАЯ СОВРЕМЕННАЯ ТЕМА (темный режим) */
-  --primary: oklch(0.65 0.20 300);
-  --primary-foreground: oklch(0.15 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.25 0.08 300);
-  --accent-foreground: oklch(0.95 0 0);
+  --background: oklch(0.15 0.02 250);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.20 0.02 250);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.20 0.02 250);
+  --popover-foreground: oklch(0.98 0 0);
+  /* ГАЗПРОМБАНК ТЕМА (темный режим) - Синий и оранжевый */
+  --primary: oklch(0.55 0.12 250); /* Синий светлее для темного режима (менее яркий) */
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.30 0.08 60);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.25 0.02 250);
+  --muted-foreground: oklch(0.70 0.05 250);
+  --accent: oklch(0.70 0.14 60); /* Оранжевый для темного режима (менее яркий) */
+  --accent-foreground: oklch(0.15 0.02 250);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.20 300);
-  --chart-1: oklch(0.65 0.20 300);
-  --chart-2: oklch(0.70 0.22 280);
-  --chart-3: oklch(0.60 0.18 320);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.65 0.20 300);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.25 0.08 300);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.65 0.20 300);
+  --border: oklch(0.30 0.03 250);
+  --input: oklch(0.25 0.02 250);
+  --ring: oklch(0.55 0.12 250);
+  --chart-1: oklch(0.55 0.12 250); /* Синий */
+  --chart-2: oklch(0.70 0.14 60); /* Оранжевый */
+  --chart-3: oklch(0.60 0.10 240);
+  --chart-4: oklch(0.75 0.16 50);
+  --chart-5: oklch(0.65 0.16 230);
+  --sidebar: oklch(0.18 0.02 250);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.55 0.12 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.70 0.14 60);
+  --sidebar-accent-foreground: oklch(0.15 0.02 250);
+  --sidebar-border: oklch(0.30 0.03 250);
+  --sidebar-ring: oklch(0.55 0.12 250);
 }
 
 @layer base {
@@ -120,5 +120,24 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Градиенты Газпромбанка */
+  .gradient-primary {
+    background: linear-gradient(135deg, oklch(0.45 0.10 250) 0%, oklch(0.50 0.12 240) 100%);
+  }
+  
+  .gradient-accent {
+    background: linear-gradient(135deg, oklch(0.65 0.12 60) 0%, oklch(0.70 0.14 50) 100%);
+  }
+  
+  .gradient-card {
+    background: linear-gradient(135deg, oklch(1 0 0) 0%, oklch(0.98 0.01 250) 100%);
+  }
+  
+  .gradient-card-unlocked {
+    background: linear-gradient(135deg, oklch(0.98 0.02 250) 0%, oklch(0.96 0.03 250) 100%);
   }
 }

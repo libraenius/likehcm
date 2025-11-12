@@ -1,4 +1,4 @@
-// Типы для системы управления навыками
+// Типы для системы управления компетенциями
 
 export type SkillLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -25,6 +25,7 @@ export interface Profile {
   id: string;
   name: string;
   description: string;
+  tfr?: string; // Типовая функциональная роль
   requiredCompetences: ProfileCompetence[];
   levels?: ProfileLevel[];
   experts?: ProfileExpert[];
@@ -69,6 +70,7 @@ export interface UserSkill {
   competenceId: string;
   selfAssessment: SkillLevel;
   lastUpdated: Date;
+  comment?: string;
 }
 
 export interface UserProfile {
@@ -95,7 +97,11 @@ export interface SkillGap {
 
 export interface TeamMember {
   id: string;
-  name: string;
+  name: string; // Полное ФИО
+  lastName: string;
+  firstName: string;
+  middleName?: string;
+  position: string; // Должность
   email: string;
   mainProfileId: string;
   additionalProfileIds: string[];

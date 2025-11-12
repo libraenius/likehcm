@@ -680,7 +680,7 @@ export default function CompetencesPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Профессиональные — технические навыки (hard skills), Корпоративные — личностные навыки (soft skills)
+                    Профессиональные — технические компетенции (hard skills), Корпоративные — личностные компетенции (soft skills)
                   </p>
                 </div>
 

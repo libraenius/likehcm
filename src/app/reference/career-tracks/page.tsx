@@ -30,11 +30,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, X, AlertCircle, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, X, AlertCircle, Search, User, ChevronDown, ChevronRight } from "lucide-react";
 import type { SkillLevel } from "@/types";
 import { CareerTalentTree } from "@/components/career-talent-tree";
-import { getUserProfile } from "@/lib/data";
-import { calculateCareerTrackProgress } from "@/lib/calculations";
 
 export default function CareerTracksPage() {
   const [tracks, setTracks] = useState<CareerTrack[]>([]);
@@ -46,6 +44,7 @@ export default function CareerTracksPage() {
   const [trackToDelete, setTrackToDelete] = useState<string | null>(null);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedTracks, setExpandedTracks] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -191,6 +190,18 @@ export default function CareerTracksPage() {
     const trackLevel = formData.levels[levelIndex];
     const updatedSkills = { ...trackLevel.requiredSkills, [competenceId]: level };
     updateLevel(levelIndex, "requiredSkills", updatedSkills);
+  };
+
+  const toggleTrack = (trackId: string) => {
+    setExpandedTracks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(trackId)) {
+        newSet.delete(trackId);
+      } else {
+        newSet.add(trackId);
+      }
+      return newSet;
+    });
   };
 
   return (
@@ -340,7 +351,7 @@ export default function CareerTracksPage() {
                           </div>
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <Label className="text-xs">Требуемые навыки</Label>
+                              <Label className="text-xs">Требуемые компетенции</Label>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -348,7 +359,7 @@ export default function CareerTracksPage() {
                                 onClick={() => addSkillToLevel(actualIndex)}
                               >
                                 <Plus className="mr-2 h-3 w-3" />
-                                Добавить навык
+                                Добавить компетенцию
                               </Button>
                             </div>
                             <div className="space-y-2">
@@ -388,7 +399,7 @@ export default function CareerTracksPage() {
                               })}
                               {Object.keys(level.requiredSkills).length === 0 && (
                                 <p className="text-xs text-muted-foreground text-center py-2">
-                                  Нет добавленных навыков
+                                  Нет добавленных компетенций
                                 </p>
                               )}
                             </div>
@@ -462,17 +473,35 @@ export default function CareerTracksPage() {
         ) : (
           filteredTracks.map((track) => {
           const profile = getProfileById(track.profileId);
+          const isExpanded = expandedTracks.has(track.id);
           return (
             <Card key={track.id}>
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle>{track.name}</CardTitle>
-                    <CardDescription>{track.description}</CardDescription>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => toggleTrack(track.id)}
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <CardTitle className="cursor-pointer" onClick={() => toggleTrack(track.id)}>
+                        {track.name}
+                      </CardTitle>
+                    </div>
+                    <CardDescription className="mt-2">{track.description}</CardDescription>
                     {profile && (
-                      <Badge variant="outline" className="w-fit mt-2">
-                        Профиль: {profile.name}
-                      </Badge>
+                      <div className="flex items-center gap-2 mt-3 px-3 py-1.5 rounded-md bg-muted/50 border border-border/50 w-fit">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">{profile.name}</span>
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -493,33 +522,21 @@ export default function CareerTracksPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="rounded-lg border bg-muted/30 p-6">
+              {isExpanded && (
+                <CardContent className="overflow-visible pb-8">
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold mb-2">Дерево развития талантов</h3>
                     <p className="text-sm text-muted-foreground">
-                      Визуализация карьерного пути в виде дерева талантов. Разблокируйте уровни, развивая необходимые навыки.
+                      Визуализация карьерного пути в виде дерева талантов. Разблокируйте уровни, развивая необходимые компетенции.
                     </p>
                   </div>
-                  <CareerTalentTree
-                    careerTrack={track}
-                    progress={(() => {
-                      const userProfile = getUserProfile();
-                      if (!userProfile) return null;
-                      return calculateCareerTrackProgress(userProfile, track);
-                    })()}
-                    userSkills={(() => {
-                      const userProfile = getUserProfile();
-                      if (!userProfile) return {};
-                      const skills: Record<string, number> = {};
-                      userProfile.skills.forEach((skill) => {
-                        skills[skill.competenceId] = skill.selfAssessment;
-                      });
-                      return skills;
-                    })()}
-                  />
-                </div>
-              </CardContent>
+                  <div className="overflow-visible">
+                    <CareerTalentTree
+                      careerTrack={track}
+                    />
+                  </div>
+                </CardContent>
+              )}
             </Card>
           );
           })

@@ -53,3 +53,12 @@ export function saveUserProfile(profile: UserProfile): void {
     console.error("Failed to save user profile:", e);
   }
 }
+
+export function resetUserProfile(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("userProfile");
+  } catch (e) {
+    console.error("Failed to reset user profile:", e);
+  }
+}

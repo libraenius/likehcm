@@ -4,7 +4,7 @@ import "./globals.css";
 import { SidebarProvider } from "@/components/sidebar-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppBreadcrumb } from "@/components/app-breadcrumb";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SkillMap - Система управления навыками",
-  description: "Система управления навыками и карьерными треками",
+  title: "SkillMap - Система управления компетенциями",
+  description: "Система управления компетенциями и карьерными треками",
 };
 
 export default function RootLayout({
@@ -36,9 +36,6 @@ export default function RootLayout({
           <SidebarInset>
             <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
               <AppBreadcrumb />
-              <div className="ml-auto">
-                <SidebarTrigger className="-ml-1" />
-              </div>
             </header>
             <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
               {children}

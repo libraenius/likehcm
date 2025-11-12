@@ -48,11 +48,11 @@ const levelColors = [
 ];
 
 const profileLevelColors = {
-  trainee: "bg-slate-100 text-slate-700 border-slate-300",
-  junior: "bg-blue-100 text-blue-700 border-blue-300",
-  middle: "bg-purple-100 text-purple-700 border-purple-300",
-  senior: "bg-purple-200 text-purple-700 border-purple-400",
-  lead: "bg-purple-300 text-purple-700 border-purple-600",
+  trainee: "bg-gradient-to-r from-slate-100 to-slate-200 text-black border-slate-300 dark:from-slate-700 dark:to-slate-800 dark:text-white",
+  junior: "bg-gradient-to-r from-slate-200 to-slate-300 text-black border-slate-400 dark:from-slate-600 dark:to-slate-700 dark:text-white",
+  middle: "bg-gradient-to-r from-slate-300 to-slate-400 text-black border-slate-500 dark:from-slate-500 dark:to-slate-600 dark:text-white",
+  senior: "bg-gradient-to-r from-slate-400 to-slate-500 text-black border-slate-600 dark:from-slate-400 dark:to-slate-500 dark:text-white",
+  lead: "bg-gradient-to-r from-slate-500 to-slate-600 text-black border-slate-700 dark:from-slate-300 dark:to-slate-400 dark:text-white",
 };
 
 function ProfileLevelCard({
@@ -121,22 +121,17 @@ function ProfileLevelCard({
 
           <Separator className="my-2" />
 
-          {/* Навыки */}
+          {/* Компетенции */}
           <div className="space-y-1.5">
             <h4 className="font-semibold text-xs flex items-center gap-1.5">
               <Info className="h-3 w-3 text-muted-foreground" />
-              Навыки:
+              Компетенции:
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {/* Профессиональные навыки */}
+            <div className="space-y-3">
+              {/* Профессиональные компетенции */}
               <div className="space-y-1">
-                <h5 className="font-semibold text-[10px] flex items-center gap-1 text-purple-700">
-                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300 text-[10px] px-1 py-0">
-                    Проф.
-                  </Badge>
-                  Профессиональные:
-                </h5>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
+                <p className="text-xs font-medium text-muted-foreground">Профессиональные компетенции:</p>
+                <div className="flex flex-wrap gap-1">
                   {Object.entries(profileLevel.requiredSkills)
                     .filter(([competenceId]) => {
                       const comp = getCompetenceById(competenceId);
@@ -146,45 +141,31 @@ function ProfileLevelCard({
                       const comp = getCompetenceById(competenceId);
                       if (!comp) return null;
 
-                      const levelName = levelNames[requiredLevel - 1];
-                      const skillLevelColor = levelColors[requiredLevel - 1];
+                      const professionalColor = "bg-purple-50 text-purple-700 border-purple-300";
 
                       return (
-                        <div
+                        <Badge
                           key={competenceId}
-                          className="p-1.5 border rounded-md space-y-1 bg-muted/20 hover:bg-muted/40 transition-colors"
+                          variant="outline"
+                          className={`text-xs border ${professionalColor}`}
                         >
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-medium text-[10px] leading-tight">{comp.name}</span>
-                            <Badge variant="outline" className={`text-[10px] px-1 py-0 ${skillLevelColor}`}>
-                              {levelName}
-                            </Badge>
-                          </div>
-                          <Progress
-                            value={(requiredLevel / 5) * 100}
-                            className="h-1 [&>div]:bg-purple-500"
-                          />
-                        </div>
+                          {comp.name} {requiredLevel}
+                        </Badge>
                       );
                     })}
                   {Object.entries(profileLevel.requiredSkills).filter(([competenceId]) => {
                     const comp = getCompetenceById(competenceId);
                     return comp && comp.type === "профессиональные компетенции";
                   }).length === 0 && (
-                    <p className="text-[10px] text-muted-foreground italic">Нет профессиональных навыков</p>
+                    <p className="text-xs text-muted-foreground italic">Нет профессиональных компетенций</p>
                   )}
                 </div>
               </div>
 
-              {/* Корпоративные навыки */}
+              {/* Корпоративные компетенции */}
               <div className="space-y-1">
-                <h5 className="font-semibold text-[10px] flex items-center gap-1 text-cyan-700">
-                  <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-300 text-[10px] px-1 py-0">
-                    Корп.
-                  </Badge>
-                  Корпоративные:
-                </h5>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
+                <p className="text-xs font-medium text-muted-foreground">Корпоративные компетенции:</p>
+                <div className="flex flex-wrap gap-1">
                   {Object.entries(profileLevel.requiredSkills)
                     .filter(([competenceId]) => {
                       const comp = getCompetenceById(competenceId);
@@ -194,39 +175,23 @@ function ProfileLevelCard({
                       const comp = getCompetenceById(competenceId);
                       if (!comp) return null;
 
-                      const levelName = levelNames[requiredLevel - 1];
-                      const corporateColors = [
-                        "bg-slate-100 text-slate-700 border-slate-300",
-                        "bg-cyan-50 text-cyan-700 border-cyan-300",
-                        "bg-cyan-100 text-cyan-700 border-cyan-400",
-                        "bg-cyan-200 text-cyan-700 border-cyan-500",
-                        "bg-cyan-300 text-cyan-700 border-cyan-600",
-                      ];
-                      const finalColor = corporateColors[requiredLevel - 1];
+                      const corporateColor = "bg-cyan-50 text-cyan-700 border-cyan-300";
 
                       return (
-                        <div
+                        <Badge
                           key={competenceId}
-                          className="p-1.5 border rounded-md space-y-1 bg-muted/20 hover:bg-muted/40 transition-colors"
+                          variant="outline"
+                          className={`text-xs border ${corporateColor}`}
                         >
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-medium text-[10px] leading-tight">{comp.name}</span>
-                            <Badge variant="outline" className={`text-[10px] px-1 py-0 ${finalColor}`}>
-                              {levelName}
-                            </Badge>
-                          </div>
-                          <Progress
-                            value={(requiredLevel / 5) * 100}
-                            className="h-1 [&>div]:bg-cyan-500"
-                          />
-                        </div>
+                          {comp.name} {requiredLevel}
+                        </Badge>
                       );
                     })}
                   {Object.entries(profileLevel.requiredSkills).filter(([competenceId]) => {
                     const comp = getCompetenceById(competenceId);
                     return comp && comp.type === "корпоративные компетенции";
                   }).length === 0 && (
-                    <p className="text-[10px] text-muted-foreground italic">Нет корпоративных навыков</p>
+                    <p className="text-xs text-muted-foreground italic">Нет корпоративных компетенций</p>
                   )}
                 </div>
               </div>
@@ -253,6 +218,7 @@ export default function ProfilesPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    tfr: "",
     requiredCompetences: [] as ProfileCompetence[],
     experts: [] as Array<{ avatar: string; fullName: string; position: string }>,
     levels: [] as Array<{
@@ -297,10 +263,13 @@ export default function ProfilesPage() {
         .join(" ")
         .toLowerCase();
       
+      const tfrMatch = profile.tfr?.toLowerCase().includes(query) || false;
+      
       return (
         profile.name.toLowerCase().includes(query) ||
         profile.description.toLowerCase().includes(query) ||
-        compNames.includes(query)
+        compNames.includes(query) ||
+        tfrMatch
       );
     });
   }, [profiles, searchQuery]);
@@ -312,6 +281,7 @@ export default function ProfilesPage() {
     setFormData({
       name: "",
       description: "",
+      tfr: "",
       requiredCompetences: [],
       experts: [],
       levels: [],
@@ -326,6 +296,7 @@ export default function ProfilesPage() {
     setFormData({
       name: profile.name,
       description: profile.description,
+      tfr: profile.tfr || "",
       requiredCompetences: [...profile.requiredCompetences],
       experts: profile.experts
         ? profile.experts.map((expert) => ({
@@ -408,6 +379,7 @@ export default function ProfilesPage() {
     const profileData: Partial<Omit<Profile, "id">> = {
       name: formData.name,
       description: formData.description,
+      tfr: formData.tfr.trim() || undefined,
       requiredCompetences: formData.requiredCompetences,
     };
 
@@ -666,14 +638,14 @@ export default function ProfilesPage() {
                     onClick={() => setSelectedProfile(profile)}
                     className={`p-2 rounded-md cursor-pointer transition-colors ${
                       selectedProfile?.id === profile.id
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-accent text-accent-foreground"
                         : "hover:bg-muted"
                     }`}
                   >
                     <div className="font-medium text-sm">{profile.name}</div>
                     <div className={`text-xs mt-0.5 ${
                       selectedProfile?.id === profile.id
-                        ? "text-primary-foreground/80"
+                        ? "text-accent-foreground/80"
                         : "text-muted-foreground"
                     }`}>
                       {profile.description.length > 50
@@ -693,7 +665,14 @@ export default function ProfilesPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-xl mb-1">{selectedProfile.name}</CardTitle>
+                      <div className="flex items-center gap-2 mb-1">
+                        <CardTitle className="text-xl">{selectedProfile.name}</CardTitle>
+                        {selectedProfile.tfr && (
+                          <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800">
+                            ТФР: {selectedProfile.tfr}
+                          </Badge>
+                        )}
+                      </div>
                       <CardDescription className="text-sm">
                         {selectedProfile.description}
                       </CardDescription>
@@ -974,6 +953,28 @@ export default function ProfilesPage() {
                   <p className="text-xs text-muted-foreground">Добавьте описание профиля для лучшего понимания его назначения</p>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="tfr">
+                    ТФР (Типовая функциональная роль)
+                  </Label>
+                  {formData.tfr && (
+                    <span className="text-xs text-muted-foreground">{formData.tfr.length} символов</span>
+                  )}
+                </div>
+                <Input
+                  id="tfr"
+                  value={formData.tfr}
+                  onChange={(e) => setFormData({ ...formData, tfr: e.target.value })}
+                  placeholder="Например, Разработчик, Аналитик, Тестировщик"
+                  className="text-base"
+                  maxLength={100}
+                />
+                {!formData.tfr && (
+                  <p className="text-xs text-muted-foreground">Укажите типовую функциональную роль (опционально)</p>
+                )}
+              </div>
             </div>
 
             <Separator />
@@ -1243,7 +1244,7 @@ export default function ProfilesPage() {
                     Нет добавленных компетенций
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Выберите компетенции из списка выше. Компетенции определяют необходимые навыки для профиля.
+                    Выберите компетенции из списка выше. Компетенции определяют необходимые компетенции для профиля.
                   </p>
                 </div>
               )}
@@ -1404,10 +1405,10 @@ export default function ProfilesPage() {
                             )}
                           </div>
 
-                          {/* Навыки уровня */}
+                          {/* Компетенции уровня */}
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <Label>Требуемые навыки</Label>
+                              <Label>Требуемые компетенции</Label>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -1416,11 +1417,11 @@ export default function ProfilesPage() {
                                 disabled={Object.keys(level.requiredSkills).length >= competences.length}
                               >
                                 <Plus className="mr-2 h-3 w-3" />
-                                Добавить навык
+                                Добавить компетенцию
                               </Button>
                             </div>
                             
-                            {/* Форма добавления навыка */}
+                            {/* Форма добавления компетенции */}
                             {addingSkillToLevel === levelIndex && (() => {
                               const levelSkills = new Set(Object.keys(level.requiredSkills));
                               const availableComps = competences.filter((c) => c.id && !levelSkills.has(c.id));
@@ -1481,7 +1482,7 @@ export default function ProfilesPage() {
                             })()}
 
                             {Object.keys(level.requiredSkills).length === 0 && addingSkillToLevel !== levelIndex ? (
-                              <p className="text-xs text-muted-foreground italic">Нет навыков. Нажмите "Добавить навык" для добавления.</p>
+                              <p className="text-xs text-muted-foreground italic">Нет компетенций. Нажмите "Добавить компетенцию" для добавления.</p>
                             ) : (
                               <div className="space-y-2">
                                 {Object.entries(level.requiredSkills).map(([competenceId, skillLevel]) => {

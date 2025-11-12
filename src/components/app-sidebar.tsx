@@ -8,7 +8,6 @@ import {
   TrendingUp,
   FolderOpen,
   ChevronRight,
-  Map,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,6 +27,8 @@ import {
   SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
+  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 const menuItems = [
@@ -63,6 +64,7 @@ const referenceItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { state } = useSidebar();
   const [isReferenceOpen, setIsReferenceOpen] = React.useState(
     pathname.startsWith("/reference")
   );
@@ -71,21 +73,34 @@ export function AppSidebar() {
     setIsReferenceOpen(pathname.startsWith("/reference"));
   }, [pathname]);
 
+  const isCollapsed = state === "collapsed";
+
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-sidebar-border bg-sidebar-accent/50">
-            <Map className="h-5 w-5 text-sidebar-foreground" />
+      <SidebarHeader className="border-b border-sidebar-border p-2 group-data-[collapsible=icon]:p-1 relative">
+        <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:h-full">
+          <div className="flex aspect-square h-10 w-10 group-data-[collapsible=icon]:size-9 items-center justify-center rounded-lg border-2 border-sidebar-border bg-sidebar-accent/50 overflow-hidden shrink-0">
+            <img
+              src="/cheburashka.png"
+              alt="Cheburashka Logo"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback если изображение не найдено
+                console.error('Logo image not found');
+              }}
+            />
           </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden flex-1 min-w-0">
             <span className="text-base font-bold text-sidebar-foreground">
               SkillMap
             </span>
             <span className="text-xs text-sidebar-foreground/70">
-              Управление навыками
+              Управление компетенциями
             </span>
           </div>
+          {!isCollapsed && (
+            <SidebarTrigger className="ml-auto" />
+          )}
         </div>
       </SidebarHeader>
 
@@ -203,13 +218,19 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4">
-        <div className="flex items-center gap-2 text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
-          <div className="flex items-center gap-1.5">
-            <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-            <span>Система активна</span>
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        {!isCollapsed ? (
+          <div className="flex items-center gap-2 text-xs text-sidebar-foreground/60">
+            <div className="flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span>Система активна</span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-center items-center w-full">
+            <SidebarTrigger className="size-8" />
+          </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );

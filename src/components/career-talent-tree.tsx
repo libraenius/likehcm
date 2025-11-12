@@ -6,8 +6,7 @@ import { getCompetenceById } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2, Lock, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CareerTalentTreeProps {
@@ -31,89 +30,36 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
     requiredLevel: reqLevel,
   }));
 
+  // Разделяем компетенции на профессиональные и корпоративные
+  const professional = competences.filter(
+    (item) => item.competence && item.competence.type === "профессиональные компетенции"
+  );
+  const corporate = competences.filter(
+    (item) => item.competence && item.competence.type === "корпоративные компетенции"
+  );
+
+  // Цвета для профессиональных и корпоративных компетенций
+  const professionalColor = "bg-purple-50 text-purple-700 border-purple-300";
+  const corporateColor = "bg-cyan-50 text-cyan-700 border-cyan-300";
+
   return (
     <div
       className="relative flex flex-col items-center"
       style={{
         position: "absolute",
-        left: `${position.x}%`,
-        top: `${position.y}px`,
-        transform: "translate(-50%, -50%)",
+        left: `${position.x}px`,
+        top: "0px",
+        transform: "translateX(-50%)",
       }}
     >
-      {/* Линия соединения к следующему узлу - теперь рисуется в SVG */}
-
-      {/* Узел таланта */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              "relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-4 transition-all duration-300 cursor-pointer",
-              isUnlocked
-                ? "border-primary bg-primary/10 shadow-lg shadow-primary/20 hover:scale-110 hover:shadow-xl hover:shadow-primary/30 active:scale-95"
-                : "border-muted-foreground/30 bg-muted/50 cursor-not-allowed",
-              isCurrent && "ring-4 ring-primary/50 ring-offset-2 animate-pulse"
-            )}
-            disabled={!isUnlocked}
-          >
-            {isUnlocked ? (
-              <CheckCircle2 className="h-10 w-10 text-primary animate-in zoom-in-50 duration-300" />
-            ) : (
-              <Lock className="h-8 w-8 text-muted-foreground" />
-            )}
-            
-            {/* Индикатор уровня */}
-            <div
-              className={cn(
-                "absolute -bottom-2 left-1/2 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full border-2 text-xs font-bold",
-                isUnlocked
-                  ? "border-primary bg-primary text-primary-foreground shadow-md"
-                  : "border-muted-foreground/30 bg-muted text-muted-foreground"
-              )}
-            >
-              {level.level}
-            </div>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-sm p-4">
-          <div className="space-y-2">
-            <div>
-              <h4 className="font-semibold">{level.name}</h4>
-              <p className="text-xs text-muted-foreground">{level.description}</p>
-            </div>
-            <div className="border-t pt-2">
-              <p className="text-xs font-medium mb-1">Требуемые навыки:</p>
-              <div className="space-y-1">
-                {competences.map(({ competence, requiredLevel }) => (
-                  <div key={competence?.id} className="flex items-center justify-between text-xs">
-                    <span>{competence?.name || "Неизвестно"}</span>
-                    <Badge variant="outline" className="ml-2">
-                      Ур. {requiredLevel}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="border-t pt-2">
-              <div className="flex items-center justify-between text-xs">
-                <span>Соответствие:</span>
-                <span className="font-semibold">{matchPercentage}%</span>
-              </div>
-              <Progress value={matchPercentage} className="mt-1 h-1.5" />
-            </div>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-
-      {/* Карточка с информацией под узлом */}
+      {/* Карточка с информацией */}
       <Card
         className={cn(
-          "absolute top-full left-1/2 -translate-x-1/2 mt-6 w-56 border-2 transition-all duration-300 hover:shadow-lg",
+          "w-80 border-2 transition-all duration-300 hover:shadow-lg",
           isUnlocked
-            ? "border-primary/50 bg-primary/5 shadow-md hover:border-primary/70"
+            ? "border-primary/50 shadow-md hover:border-primary/70 gradient-card-unlocked"
             : "border-muted bg-muted/30 opacity-75",
-          isCurrent && "ring-2 ring-primary shadow-lg"
+          isCurrent && "ring-2 ring-primary shadow-lg ring-accent/30"
         )}
       >
         <CardHeader className="pb-3">
@@ -122,7 +68,7 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
               <CardTitle className="text-sm font-semibold leading-tight">
                 {level.name}
               </CardTitle>
-              <CardDescription className="text-xs mt-1 line-clamp-2">
+              <CardDescription className="text-xs mt-1">
                 {level.description}
               </CardDescription>
             </div>
@@ -135,35 +81,58 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Прогресс */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Соответствие</span>
-              <span className="font-semibold">{matchPercentage}%</span>
+          {/* Прогресс - показываем только если есть данные пользователя */}
+          {matchPercentage > 0 && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Соответствие</span>
+                <span className="font-semibold">{matchPercentage}%</span>
+              </div>
+              <Progress value={matchPercentage} className="h-2" />
             </div>
-            <Progress value={matchPercentage} className="h-2" />
-          </div>
+          )}
 
-          {/* Требуемые навыки */}
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Навыки:</p>
-            <div className="flex flex-wrap gap-1">
-              {competences.slice(0, 3).map(({ competence, requiredLevel }) => (
-                <Badge
-                  key={competence?.id}
-                  variant={isUnlocked ? "default" : "outline"}
-                  className="text-xs"
-                >
-                  {competence?.name || "?"} {requiredLevel}
-                </Badge>
-              ))}
-              {competences.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{competences.length - 3}
-                </Badge>
-              )}
+          {/* Профессиональные компетенции */}
+          {professional.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Профессиональные компетенции:</p>
+              <div className="flex flex-wrap gap-1">
+                {professional.map(({ competence, requiredLevel }) => (
+                  <Badge
+                    key={competence?.id}
+                    variant="outline"
+                    className={cn(
+                      "text-xs border",
+                      isUnlocked ? professionalColor : `${professionalColor} opacity-60`
+                    )}
+                  >
+                    {competence?.name || "?"} {requiredLevel}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Корпоративные компетенции */}
+          {corporate.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Корпоративные компетенции:</p>
+              <div className="flex flex-wrap gap-1">
+                {corporate.map(({ competence, requiredLevel }) => (
+                  <Badge
+                    key={competence?.id}
+                    variant="outline"
+                    className={cn(
+                      "text-xs border",
+                      isUnlocked ? corporateColor : `${corporateColor} opacity-60`
+                    )}
+                  >
+                    {competence?.name || "?"} {requiredLevel}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Минимальное соответствие */}
           <div className="flex items-center justify-between text-xs pt-1 border-t">
@@ -204,20 +173,28 @@ export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: Car
   }, []);
 
   // Вычисляем прогресс для каждого уровня
+  // В справочнике (без userSkills и progress) не показываем прогресс пользователя
   const levelsWithProgress = useMemo(() => {
+    const hasUserData = userSkills && Object.keys(userSkills).length > 0;
+    
     return careerTrack.levels.map((level) => {
       let levelMatch = 0;
       let totalRequired = 0;
 
-      for (const [competenceId, requiredLevel] of Object.entries(level.requiredSkills)) {
-        const userLevel = userSkills[competenceId] || 0;
-        levelMatch += Math.min(userLevel, requiredLevel);
-        totalRequired += requiredLevel;
+      if (hasUserData) {
+        for (const [competenceId, requiredLevel] of Object.entries(level.requiredSkills)) {
+          const userLevel = userSkills[competenceId] || 0;
+          levelMatch += Math.min(userLevel, requiredLevel);
+          totalRequired += requiredLevel;
+        }
+      } else {
+        // В справочнике просто считаем общее количество требуемых компетенций
+        totalRequired = Object.values(level.requiredSkills).reduce((sum, level) => sum + level, 0);
       }
 
       const matchPercentage = totalRequired > 0 ? Math.round((levelMatch / totalRequired) * 100) : 0;
-      const isUnlocked = matchPercentage >= level.minMatchPercentage;
-      const isCurrent = progress?.currentLevel === level.level;
+      const isUnlocked = hasUserData ? matchPercentage >= level.minMatchPercentage : false;
+      const isCurrent = hasUserData && progress ? progress.currentLevel === level.level : false;
 
       return {
         level,
@@ -228,62 +205,130 @@ export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: Car
     });
   }, [careerTrack.levels, userSkills, progress]);
 
-  // Позиционирование узлов (горизонтальное дерево)
-  const nodePositions = useMemo(() => {
+  // Позиционирование узлов (горизонтальное дерево) - центрированное
+  const { nodePositions, totalWidth } = useMemo(() => {
     const numLevels = careerTrack.levels.length;
-    // Используем процентное позиционирование для адаптивности
-    const startPercent = 8; // Начальная позиция слева в процентах
-    const endPercent = 92; // Конечная позиция справа в процентах
+    if (numLevels === 0) {
+      return { nodePositions: [], totalWidth: 1000 };
+    }
     
-    // Вычисляем spacing динамически, чтобы все узлы равномерно распределились
-    const spacing = numLevels > 1 ? (endPercent - startPercent) / (numLevels - 1) : 50;
+    // Фиксированное расстояние между центрами карточек в пикселях
+    const fixedSpacing = 360;
+    // Ширина карточки
+    const cardWidth = 320; // w-80 = 320px
     
-    return careerTrack.levels.map((level, index) => ({
-      x: startPercent + index * spacing,
-      y: 100, // Центр по вертикали в пикселях
+    // Рассчитываем общую ширину контента (все карточки + расстояния между ними)
+    // Если N карточек, то нужно (N-1) расстояний между ними
+    const contentWidth = cardWidth + (numLevels - 1) * fixedSpacing;
+    
+    // Отступы слева и справа (одинаковые для центрирования)
+    const sidePadding = 40;
+    
+    // Общая ширина контейнера
+    const containerWidth = contentWidth + sidePadding * 2;
+    
+    // Позиция первой карточки (центр карточки)
+    const firstCardCenterX = sidePadding + cardWidth / 2;
+    
+    // Позиции всех карточек (центры)
+    const positions = careerTrack.levels.map((level, index) => ({
+      x: firstCardCenterX + index * fixedSpacing,
+      y: 0,
     }));
+    
+    return {
+      nodePositions: positions,
+      totalWidth: containerWidth,
+    };
   }, [careerTrack.levels.length]);
-
-  const containerHeight = 500; // Фиксированная высота для горизонтального дерева
+  
+  // Вычисляем высоту контейнера на основе максимальной высоты карточек
+  const containerHeight = useMemo(() => {
+    // Находим уровень с максимальным количеством компетенций
+    const maxCompetences = Math.max(
+      ...careerTrack.levels.map(level => Object.keys(level.requiredSkills).length),
+      0
+    );
+    
+    // Вычисляем высоту секции компетенций
+    // Каждая компетенция занимает примерно 24px (высота Badge + gap)
+    // Учитываем переносы строк (ширина карточки 320px, Badge примерно 100-150px)
+    const badgesPerRow = Math.floor(320 / 120); // Примерно 2-3 бейджа в строке
+    const competenceRows = Math.ceil(maxCompetences / badgesPerRow);
+    const competenceSectionHeight = 20 + (competenceRows * 24); // Заголовок + строки
+    
+    // Общая высота карточки (учитываем padding Card: py-6 = 24px сверху и снизу)
+    const cardHeight = 
+      24 + // Padding сверху от Card (py-6)
+      80 + // CardHeader (название + описание)
+      40 + // Progress section
+      competenceSectionHeight + // Competences section
+      30 + // Минимальное соответствие
+      24; // Padding снизу от Card (py-6)
+    
+    // Высота контейнера = отступ сверху (20px) + самая длинная карточка + дополнительный отступ снизу (100px для больших карточек)
+    return 20 + cardHeight + 100;
+  }, [careerTrack.levels]);
 
   return (
-    <div className="w-full overflow-x-visible overflow-y-visible">
+    <div className="w-full overflow-visible">
       <div
         ref={containerRef}
         className="relative mx-auto"
         style={{
-          width: "100%",
+          width: `${totalWidth}px`,
           maxWidth: "100%",
           minHeight: `${containerHeight}px`,
-          padding: "20px 0",
+          padding: "20px 0 100px 0",
+          overflow: "visible",
         }}
       >
-        {/* Фоновые линии соединения */}
+        {/* Фоновые линии соединения со стрелками */}
         <svg
-          className="absolute inset-0 pointer-events-none"
-          style={{ width: "100%", height: `${containerHeight}px` }}
+          className="absolute pointer-events-none"
+          style={{ 
+            width: `${totalWidth}px`, 
+            height: `${containerHeight}px`,
+            top: 0,
+            left: 0,
+            overflow: "visible"
+          }}
         >
           {nodePositions.map((pos, index) => {
             if (index === nodePositions.length - 1) return null;
             const nextPos = nodePositions[index + 1];
             const isUnlocked = levelsWithProgress[index]?.isUnlocked || false;
             
-            // Конвертируем проценты в пиксели для SVG
-            const x1 = (pos.x / 100) * containerWidth;
-            const x2 = (nextPos.x / 100) * containerWidth;
+            // Позиции узлов уже в пикселях
+            const x1 = pos.x;
+            const x2 = nextPos.x;
+            const y1 = pos.y;
+            const y2 = nextPos.y;
+            
+            // Отступаем от узлов
+            const nodeRadius = 40; // Радиус узла
+            
+            // Вычисляем центр между узлами
+            const centerY = (y1 + y2) / 2;
+            
+            // Правый край левого узла и левый край правого узла
+            const leftNodeRightEdgeX = x1 + nodeRadius;
+            const rightNodeLeftEdgeX = x2 - nodeRadius;
             
             return (
-              <line
-                key={index}
-                x1={x1}
-                y1={pos.y}
-                x2={x2}
-                y2={nextPos.y}
-                stroke={isUnlocked ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"}
-                strokeWidth="2"
-                strokeDasharray={isUnlocked ? "0" : "5,5"}
-                className="transition-colors duration-300"
-              />
+              <g key={`connection-${index}`}>
+                {/* Горизонтальная линия от правого края левого узла до левого края правого узла */}
+                <line
+                  x1={leftNodeRightEdgeX}
+                  y1={centerY}
+                  x2={rightNodeLeftEdgeX}
+                  y2={centerY}
+                  stroke={isUnlocked ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"}
+                  strokeWidth="2"
+                  strokeDasharray={isUnlocked ? "0" : "5,5"}
+                  className="transition-colors duration-300"
+                />
+              </g>
             );
           })}
         </svg>

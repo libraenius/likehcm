@@ -9,7 +9,7 @@ import type {
 import { getCompetenceById, getCareerTrackByProfileId } from "./reference-data";
 
 /**
- * Вычисляет процент соответствия навыков пользователя профилю
+ * Вычисляет процент соответствия компетенций пользователя профилю
  */
 export function calculateProfileMatch(
   userSkills: Record<string, SkillLevel>,
@@ -32,7 +32,7 @@ export function calculateProfileMatch(
 }
 
 /**
- * Определяет текущий уровень в карьерном треке на основе навыков пользователя
+ * Определяет текущий уровень в карьерном треке на основе компетенций пользователя
  */
 export function calculateCareerTrackProgress(
   userProfile: UserProfile,
@@ -44,11 +44,15 @@ export function calculateCareerTrackProgress(
   });
 
   // Находим максимальный достижимый уровень
+  // Сортируем уровни по убыванию (от высшего к низшему)
+  const sortedLevels = [...careerTrack.levels].sort((a, b) => b.level - a.level);
+  
   let currentLevel = 0;
   let maxMatchPercentage = 0;
   const skillGaps: SkillGap[] = [];
 
-  for (const trackLevel of careerTrack.levels) {
+  // Ищем максимальный достижимый уровень (от высшего к низшему)
+  for (const trackLevel of sortedLevels) {
     const levelGaps: SkillGap[] = [];
     let levelMatch = 0;
     let totalRequired = 0;
@@ -77,14 +81,13 @@ export function calculateCareerTrackProgress(
       totalRequired > 0 ? Math.round((levelMatch / totalRequired) * 100) : 0;
 
     // Проверяем, достижим ли этот уровень
-    if (
-      matchPercentage >= trackLevel.minMatchPercentage &&
-      matchPercentage > maxMatchPercentage
-    ) {
+    // Выбираем первый (самый высокий) уровень, который достигнут
+    if (matchPercentage >= trackLevel.minMatchPercentage) {
       currentLevel = trackLevel.level;
       maxMatchPercentage = matchPercentage;
       skillGaps.length = 0;
       skillGaps.push(...levelGaps);
+      break; // Нашли максимальный достижимый уровень, выходим
     }
   }
 
