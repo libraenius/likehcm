@@ -33,8 +33,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { Plus, Pencil, Trash2, X, AlertCircle, Search, Filter, Info, Users, ChevronDown, ChevronRight, Briefcase } from "lucide-react";
+import { Plus, Pencil, Trash2, X, AlertCircle, Search, Filter, Info, Users, ChevronDown, ChevronRight, Briefcase, Link2, GitCompare } from "lucide-react";
 import type { SkillLevel, ProfileLevel } from "@/types";
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select";
 
@@ -48,11 +49,11 @@ const levelColors = [
 ];
 
 const profileLevelColors = {
-  trainee: "bg-gradient-to-r from-slate-100 to-slate-200 text-black border-slate-300 dark:from-slate-700 dark:to-slate-800 dark:text-white",
-  junior: "bg-gradient-to-r from-slate-200 to-slate-300 text-black border-slate-400 dark:from-slate-600 dark:to-slate-700 dark:text-white",
-  middle: "bg-gradient-to-r from-slate-300 to-slate-400 text-black border-slate-500 dark:from-slate-500 dark:to-slate-600 dark:text-white",
-  senior: "bg-gradient-to-r from-slate-400 to-slate-500 text-black border-slate-600 dark:from-slate-400 dark:to-slate-500 dark:text-white",
-  lead: "bg-gradient-to-r from-slate-500 to-slate-600 text-black border-slate-700 dark:from-slate-300 dark:to-slate-400 dark:text-white",
+  trainee: "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700",
+  junior: "bg-slate-200 text-slate-700 border-slate-400 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600",
+  middle: "bg-slate-300 text-slate-800 border-slate-500 dark:bg-slate-600 dark:text-slate-200 dark:border-slate-500",
+  senior: "bg-slate-400 text-slate-900 border-slate-600 dark:bg-slate-500 dark:text-slate-100 dark:border-slate-400",
+  lead: "bg-slate-500 text-slate-950 border-slate-700 dark:bg-slate-400 dark:text-slate-50 dark:border-slate-300",
 };
 
 function ProfileLevelCard({
@@ -89,29 +90,29 @@ function ProfileLevelCard({
               <ChevronRight className="h-3.5 w-3.5" />
             )}
           </Button>
-          <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 ${levelColor}`}>
+          <Badge variant="outline" className={`text-xs px-2 py-0.5 ${levelColor}`}>
             {levelLabel}
           </Badge>
-          <span className="font-semibold text-xs">{profileLevel.name}</span>
+          <span className="font-semibold text-sm">{profileLevel.name}</span>
           {!isExpanded && (
-            <span className="text-xs text-muted-foreground truncate ml-2">
+            <span className="text-sm text-muted-foreground truncate ml-2">
               {profileLevel.description}
             </span>
           )}
         </div>
       </div>
 
-      {isExpanded && (
+          {isExpanded && (
         <div className="border-t bg-muted/30 p-2.5 space-y-2.5">
           {/* Обязанности */}
           <div className="space-y-1.5">
-            <h4 className="font-semibold text-xs flex items-center gap-1.5">
-              <Briefcase className="h-3 w-3 text-muted-foreground" />
+            <h4 className="font-semibold text-sm flex items-center gap-1.5">
+              <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
               Обязанности:
             </h4>
             <ul className="space-y-1 ml-4">
               {profileLevel.responsibilities.map((responsibility, idx) => (
-                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                <li key={idx} className="text-sm text-muted-foreground flex items-start gap-1.5">
                   <span className="text-foreground mt-0.5">•</span>
                   <span>{responsibility}</span>
                 </li>
@@ -121,16 +122,39 @@ function ProfileLevelCard({
 
           <Separator className="my-2" />
 
+          {/* Требования к образованию и стажу */}
+          <div className="space-y-1.5">
+            <h4 className="font-semibold text-sm flex items-center gap-1.5">
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+              Требования:
+            </h4>
+            <div className="space-y-2 ml-4">
+              <div className="text-sm">
+                <span className="font-medium text-foreground">Образование: </span>
+                <span className="text-muted-foreground">
+                  {profileLevel.education || "Не указано"}
+                </span>
+              </div>
+              <div className="text-sm">
+                <span className="font-medium text-foreground">Стаж: </span>
+                <span className="text-muted-foreground">
+                  {profileLevel.experience || "Не указано"}
+                </span>
+              </div>
+            </div>
+          </div>
+          <Separator className="my-2" />
+
           {/* Компетенции */}
           <div className="space-y-1.5">
-            <h4 className="font-semibold text-xs flex items-center gap-1.5">
-              <Info className="h-3 w-3 text-muted-foreground" />
+            <h4 className="font-semibold text-sm flex items-center gap-1.5">
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
               Компетенции:
             </h4>
             <div className="space-y-3">
               {/* Профессиональные компетенции */}
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Профессиональные компетенции:</p>
+                <p className="text-sm font-medium text-muted-foreground">Профессиональные компетенции:</p>
                 <div className="flex flex-wrap gap-1">
                   {Object.entries(profileLevel.requiredSkills)
                     .filter(([competenceId]) => {
@@ -147,7 +171,7 @@ function ProfileLevelCard({
                         <Badge
                           key={competenceId}
                           variant="outline"
-                          className={`text-xs border ${professionalColor}`}
+                          className={`text-sm border ${professionalColor}`}
                         >
                           {comp.name} {requiredLevel}
                         </Badge>
@@ -157,14 +181,14 @@ function ProfileLevelCard({
                     const comp = getCompetenceById(competenceId);
                     return comp && comp.type === "профессиональные компетенции";
                   }).length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">Нет профессиональных компетенций</p>
+                    <p className="text-sm text-muted-foreground italic">Нет профессиональных компетенций</p>
                   )}
                 </div>
               </div>
 
               {/* Корпоративные компетенции */}
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Корпоративные компетенции:</p>
+                <p className="text-sm font-medium text-muted-foreground">Корпоративные компетенции:</p>
                 <div className="flex flex-wrap gap-1">
                   {Object.entries(profileLevel.requiredSkills)
                     .filter(([competenceId]) => {
@@ -181,7 +205,7 @@ function ProfileLevelCard({
                         <Badge
                           key={competenceId}
                           variant="outline"
-                          className={`text-xs border ${corporateColor}`}
+                          className={`text-sm border ${corporateColor}`}
                         >
                           {comp.name} {requiredLevel}
                         </Badge>
@@ -191,7 +215,7 @@ function ProfileLevelCard({
                     const comp = getCompetenceById(competenceId);
                     return comp && comp.type === "корпоративные компетенции";
                   }).length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">Нет корпоративных компетенций</p>
+                    <p className="text-sm text-muted-foreground italic">Нет корпоративных компетенций</p>
                   )}
                 </div>
               </div>
@@ -215,6 +239,7 @@ export default function ProfilesPage() {
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [addingSkillToLevel, setAddingSkillToLevel] = useState<number | null>(null);
   const [selectedCompetenceForSkill, setSelectedCompetenceForSkill] = useState<string>("");
+  const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -226,6 +251,8 @@ export default function ProfilesPage() {
       name: string;
       description: string;
       responsibilities: string[];
+      education?: string;
+      experience?: string;
       requiredSkills: Record<string, SkillLevel>;
     }>,
   });
@@ -311,6 +338,8 @@ export default function ProfilesPage() {
             name: level.name,
             description: level.description,
             responsibilities: [...level.responsibilities],
+            education: level.education || "",
+            experience: level.experience || "",
             requiredSkills: { ...level.requiredSkills },
           }))
         : [],
@@ -404,6 +433,8 @@ export default function ProfilesPage() {
         name: level.name.trim(),
         description: level.description.trim(),
         responsibilities: level.responsibilities.filter((r) => r.trim()),
+        education: level.education?.trim() || undefined,
+        experience: level.experience?.trim() || undefined,
         requiredSkills: level.requiredSkills,
       }));
 
@@ -482,6 +513,8 @@ export default function ProfilesPage() {
             name: "",
             description: "",
             responsibilities: [],
+            education: "",
+            experience: "",
             requiredSkills: {},
           },
         ],
@@ -665,15 +698,8 @@ export default function ProfilesPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className="text-xl">{selectedProfile.name}</CardTitle>
-                        {selectedProfile.tfr && (
-                          <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800">
-                            ТФР: {selectedProfile.tfr}
-                          </Badge>
-                        )}
-                      </div>
-                      <CardDescription className="text-sm">
+                      <CardTitle className="text-xl mb-1">{selectedProfile.name}</CardTitle>
+                      <CardDescription className="text-base">
                         {selectedProfile.description}
                       </CardDescription>
                     </div>
@@ -701,9 +727,23 @@ export default function ProfilesPage() {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-4">
+                    {/* ТФР */}
+                    {selectedProfile.tfr && (
+                      <>
+                        <Separator />
+                        <div className="space-y-2">
+                          <Label className="text-sm font-semibold">ТФР (Типовая функциональная роль)</Label>
+                          <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800">
+                            {selectedProfile.tfr}
+                          </Badge>
+                        </div>
+                        <Separator />
+                      </>
+                    )}
+
                     {/* Компетенции - Облако тегов */}
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-sm flex items-center gap-2">
+                      <h3 className="font-semibold text-base flex items-center gap-2">
                         <Info className="h-4 w-4 text-muted-foreground" />
                         Обязательные компетенции:
                       </h3>
@@ -794,7 +834,7 @@ export default function ProfilesPage() {
                       <>
                         <Separator />
                         <div className="space-y-3">
-                          <h3 className="font-semibold text-sm flex items-center gap-2">
+                          <h3 className="font-semibold text-base flex items-center gap-2">
                             <Briefcase className="h-4 w-4 text-muted-foreground" />
                             Уровни профиля:
                           </h3>
@@ -834,12 +874,27 @@ export default function ProfilesPage() {
                       </>
                     )}
 
+                    {/* Ссылка для сравнения уровней и экспертов */}
+                    {selectedProfile.levels && selectedProfile.levels.length > 0 && (
+                      <div className="flex items-center justify-center py-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setComparisonDialogOpen(true)}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Link2 className="h-4 w-4 mr-2" />
+                          Матрица верификации различий между уровнями профиля
+                        </Button>
+                      </div>
+                    )}
+
                     {/* Информация об экспертах */}
                     {selectedProfile.experts && selectedProfile.experts.length > 0 && (
                       <>
                         <Separator />
                         <div className="space-y-2">
-                          <h3 className="font-semibold text-sm flex items-center gap-2">
+                          <h3 className="font-semibold text-base flex items-center gap-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
                             Эксперты (владельцы профиля):
                           </h3>
@@ -860,8 +915,8 @@ export default function ProfilesPage() {
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-semibold text-sm">{expert.fullName}</div>
-                                  <div className="text-xs text-muted-foreground">{expert.position}</div>
+                                  <div className="font-semibold text-base">{expert.fullName}</div>
+                                  <div className="text-sm text-muted-foreground">{expert.position}</div>
                                 </div>
                               </div>
                             ))}
@@ -1405,6 +1460,33 @@ export default function ProfilesPage() {
                             )}
                           </div>
 
+                          {/* Требования к образованию и стажу */}
+                          <div className="space-y-3">
+                            <div className="space-y-2">
+                              <Label>Требования к образованию</Label>
+                              <Input
+                                value={level.education || ""}
+                                onChange={(e) => updateLevel(levelIndex, "education", e.target.value)}
+                                placeholder="Например, Высшее техническое образование"
+                                className="text-base"
+                                maxLength={200}
+                              />
+                              <p className="text-xs text-muted-foreground">Укажите требования к образованию для данного уровня (необязательно)</p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Требования к стажу</Label>
+                              <Input
+                                value={level.experience || ""}
+                                onChange={(e) => updateLevel(levelIndex, "experience", e.target.value)}
+                                placeholder="Например, Опыт работы от 1 года"
+                                className="text-base"
+                                maxLength={200}
+                              />
+                              <p className="text-xs text-muted-foreground">Укажите требования к стажу работы для данного уровня (необязательно)</p>
+                            </div>
+                          </div>
+
                           {/* Компетенции уровня */}
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
@@ -1576,6 +1658,291 @@ export default function ProfilesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Диалог сравнения уровней и экспертов */}
+      <Dialog open={comparisonDialogOpen} onOpenChange={setComparisonDialogOpen}>
+        <DialogContent className="max-w-[95vw] w-full max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center gap-2">
+              <GitCompare className="h-5 w-5" />
+              Матрица верификации различий между уровнями профиля
+            </DialogTitle>
+            <DialogDescription>
+              Горизонтальное сравнение всех атрибутов между уровнями профиля
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedProfile && selectedProfile.levels && selectedProfile.levels.length > 0 && (
+            <Tabs defaultValue="responsibilities" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="responsibilities">Обязанности и требования к образованию и стажу</TabsTrigger>
+                <TabsTrigger value="competences">Компетенции</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="responsibilities" className="mt-4">
+                <div className="py-4 overflow-x-auto">
+                  {(() => {
+                    const levelOrder = ["trainee", "junior", "middle", "senior", "lead"];
+                    const levelLabels = {
+                      trainee: "Стажер",
+                      junior: "Младший",
+                      middle: "Средний",
+                      senior: "Старший",
+                      lead: "Ведущий",
+                    };
+                    
+                    const sortedLevels = [...selectedProfile.levels].sort((a, b) => {
+                      const indexA = levelOrder.indexOf(a.level);
+                      const indexB = levelOrder.indexOf(b.level);
+                      return indexA - indexB;
+                    });
+
+                    return (
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="bg-muted/50">
+                                <th className="border p-2 text-left font-semibold text-sm sticky left-0 bg-muted/50 z-10 min-w-[250px]">
+                                  Обязанности и требования
+                                </th>
+                                {sortedLevels.map((level) => {
+                                  const levelLabel = levelLabels[level.level] || level.level;
+                                  const levelColor = profileLevelColors[level.level] || "bg-slate-100 text-slate-700 border-slate-300";
+                                  return (
+                                    <th
+                                      key={level.level}
+                                      className="border p-2 text-center font-semibold text-sm min-w-[200px] align-top"
+                                    >
+                                      <Badge variant="outline" className={`text-base px-4 py-1.5 font-semibold ${levelColor}`}>
+                                        {levelLabel}
+                                      </Badge>
+                                    </th>
+                                  );
+                                })}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {/* Обязанности */}
+                              <tr className="hover:bg-muted/30 transition-colors">
+                                <td className="border p-2 text-sm font-medium sticky left-0 bg-background z-10">
+                                  Обязанности
+                                </td>
+                                {sortedLevels.map((level) => (
+                                  <td key={level.level} className="border p-2 text-sm text-left align-top">
+                                    {level.responsibilities && level.responsibilities.length > 0 ? (
+                                      <ul className="space-y-1">
+                                        {level.responsibilities.map((resp, idx) => (
+                                          <li key={idx} className="flex items-start gap-1.5">
+                                            <span className="text-foreground mt-0.5">•</span>
+                                            <span>{resp}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </td>
+                                ))}
+                              </tr>
+                              
+                              {/* Образование */}
+                              <tr className="hover:bg-muted/30 transition-colors">
+                                <td className="border p-2 text-sm font-medium sticky left-0 bg-background z-10">
+                                  Образование
+                                </td>
+                                {sortedLevels.map((level) => (
+                                  <td key={level.level} className="border p-2 text-sm text-left">
+                                    {level.education || <span className="text-muted-foreground">Не указано</span>}
+                                  </td>
+                                ))}
+                              </tr>
+                              
+                              {/* Стаж */}
+                              <tr className="hover:bg-muted/30 transition-colors">
+                                <td className="border p-2 text-sm font-medium sticky left-0 bg-background z-10">
+                                  Стаж
+                                </td>
+                                {sortedLevels.map((level) => (
+                                  <td key={level.level} className="border p-2 text-sm text-left">
+                                    {level.experience || <span className="text-muted-foreground">Не указано</span>}
+                                  </td>
+                                ))}
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="competences" className="mt-4">
+                <div className="py-4 overflow-x-auto">
+                  {(() => {
+                    const levelOrder = ["trainee", "junior", "middle", "senior", "lead"];
+                    const levelLabels = {
+                      trainee: "Стажер",
+                      junior: "Младший",
+                      middle: "Средний",
+                      senior: "Старший",
+                      lead: "Ведущий",
+                    };
+                    
+                    const sortedLevels = [...selectedProfile.levels].sort((a, b) => {
+                      const indexA = levelOrder.indexOf(a.level);
+                      const indexB = levelOrder.indexOf(b.level);
+                      return indexA - indexB;
+                    });
+
+                    // Собираем все уникальные компетенции из всех уровней
+                    const allCompetenceIds = new Set<string>();
+                    sortedLevels.forEach(level => {
+                      Object.keys(level.requiredSkills).forEach(id => allCompetenceIds.add(id));
+                    });
+
+                    // Создаем карту компетенций по уровням
+                    const competenceMap = new Map<string, Map<string, SkillLevel>>();
+                    allCompetenceIds.forEach(competenceId => {
+                      const levelMap = new Map<string, SkillLevel>();
+                      sortedLevels.forEach(level => {
+                        if (level.requiredSkills[competenceId]) {
+                          levelMap.set(level.level, level.requiredSkills[competenceId]);
+                        }
+                      });
+                      competenceMap.set(competenceId, levelMap);
+                    });
+
+                    // Сортируем все компетенции: сначала профессиональные, потом корпоративные
+                    const allCompetencesSorted = Array.from(allCompetenceIds).sort((a, b) => {
+                      const compA = getCompetenceById(a);
+                      const compB = getCompetenceById(b);
+                      if (!compA || !compB) return 0;
+                      
+                      // Профессиональные компетенции идут первыми
+                      if (compA.type === "профессиональные компетенции" && compB.type === "корпоративные компетенции") return -1;
+                      if (compA.type === "корпоративные компетенции" && compB.type === "профессиональные компетенции") return 1;
+                      
+                      // Внутри одного типа сортируем по имени
+                      return compA.name.localeCompare(compB.name);
+                    });
+
+                    return (
+                      <TooltipProvider>
+                        <div className="border rounded-lg overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse">
+                              <thead>
+                                <tr className="bg-muted/50">
+                                  <th className="border p-2 text-left font-semibold text-sm sticky left-0 bg-muted/50 z-10 min-w-[200px]">
+                                    Компетенция
+                                  </th>
+                                  <th className="border p-2 text-left font-semibold text-sm sticky left-[200px] bg-muted/50 z-10 min-w-[120px]">
+                                    Тип компетенции
+                                  </th>
+                                  {sortedLevels.map((level) => {
+                                    const levelLabel = levelLabels[level.level] || level.level;
+                                    const levelColor = profileLevelColors[level.level] || "bg-slate-100 text-slate-700 border-slate-300";
+                                    return (
+                                      <th
+                                        key={level.level}
+                                        className="border p-2 text-center font-semibold text-sm min-w-[200px] align-top"
+                                      >
+                                        <Badge variant="outline" className={`text-base px-4 py-1.5 font-semibold ${levelColor}`}>
+                                          {levelLabel}
+                                        </Badge>
+                                      </th>
+                                    );
+                                  })}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {allCompetencesSorted.map((competenceId) => {
+                                  const comp = getCompetenceById(competenceId);
+                                  if (!comp) return null;
+                                  const levelMap = competenceMap.get(competenceId)!;
+                                  const isCorporate = comp.type === "корпоративные компетенции";
+                                  const typeBadgeColor = isCorporate
+                                    ? "bg-cyan-50 text-cyan-700 border-cyan-300"
+                                    : "bg-purple-50 text-purple-700 border-purple-300";
+                                  const skillBadgeColor = isCorporate
+                                    ? "bg-cyan-50 text-cyan-700 border-cyan-300"
+                                    : "bg-purple-50 text-purple-700 border-purple-300";
+                                  
+                                  return (
+                                    <tr key={competenceId} className="hover:bg-muted/30 transition-colors">
+                                      <td className="border p-2 text-sm font-medium sticky left-0 bg-background z-10">
+                                        {comp.name}
+                                      </td>
+                                      <td className="border p-2 text-sm sticky left-[200px] bg-background z-10">
+                                        <Badge variant="outline" className={`text-xs ${typeBadgeColor}`}>
+                                          {isCorporate ? "Корп." : "Проф."}
+                                        </Badge>
+                                      </td>
+                                      {sortedLevels.map((level) => {
+                                        const skillLevel = levelMap.get(level.level);
+                                        return (
+                                          <td key={level.level} className="border p-2 text-center">
+                                            {skillLevel ? (
+                                              <TooltipPrimitive.Root>
+                                                <TooltipTrigger asChild>
+                                                  <Badge
+                                                    variant="outline"
+                                                    className={`${skillBadgeColor} text-xs cursor-help`}
+                                                  >
+                                                    {skillLevel}
+                                                  </Badge>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="max-w-xs bg-popover text-popover-foreground border shadow-md [&>svg]:bg-popover [&>svg]:fill-popover">
+                                                  <div className="space-y-2">
+                                                    <div className="font-semibold text-sm">
+                                                      {comp.name} - {levelNames[skillLevel - 1]}
+                                                    </div>
+                                                    <div className="text-xs opacity-80">
+                                                      Уровень навыка: {skillLevel} из 5
+                                                    </div>
+                                                    {comp.levels && comp.levels[`level${skillLevel}` as keyof typeof comp.levels] && (
+                                                      <div className="text-xs border-t pt-2 mt-2">
+                                                        <div className="font-semibold mb-1">Описание уровня:</div>
+                                                        <div className="opacity-90">
+                                                          {comp.levels[`level${skillLevel}` as keyof typeof comp.levels]}
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </TooltipContent>
+                                              </TooltipPrimitive.Root>
+                                            ) : (
+                                              <span className="text-muted-foreground text-xs">—</span>
+                                            )}
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </TooltipProvider>
+                    );
+                  })()}
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+
+          {selectedProfile && (!selectedProfile.levels || selectedProfile.levels.length === 0) && (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground">
+                Нет уровней профиля для сравнения
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

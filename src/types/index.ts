@@ -42,6 +42,8 @@ export interface ProfileLevel {
   name: string;
   description: string;
   responsibilities: string[]; // Типовые должностные обязанности
+  education?: string; // Требования к образованию
+  experience?: string; // Требования к стажу
   requiredSkills: Record<string, SkillLevel>; // competenceId -> requiredLevel
 }
 

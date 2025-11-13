@@ -105,6 +105,29 @@ function ProfileLevelCard({
 
           <Separator className="my-2" />
 
+          {/* Требования к образованию и стажу */}
+          <div className="space-y-1.5">
+            <h4 className="font-semibold text-xs flex items-center gap-1.5">
+              <Info className="h-3 w-3 text-muted-foreground" />
+              Требования:
+            </h4>
+            <div className="space-y-2 ml-4">
+              <div className="text-xs">
+                <span className="font-medium text-foreground">Образование: </span>
+                <span className="text-muted-foreground">
+                  {profileLevel.education || "Не указано"}
+                </span>
+              </div>
+              <div className="text-xs">
+                <span className="font-medium text-foreground">Стаж: </span>
+                <span className="text-muted-foreground">
+                  {profileLevel.experience || "Не указано"}
+                </span>
+              </div>
+            </div>
+          </div>
+          <Separator className="my-2" />
+
           {/* Компетенции */}
           <div className="space-y-1.5">
             <h4 className="font-semibold text-xs flex items-center gap-1.5">
