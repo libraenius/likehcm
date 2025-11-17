@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SkillMap - Система управления компетенциями
 
-## Getting Started
+Система управления компетенциями и карьерными треками для разработчиков.
 
-First, run the development server:
+## Возможности
+
+- 📊 Управление компетенциями (профессиональные и корпоративные)
+- 👤 Управление профилями разработчиков
+- 📈 Карьерные треки с отслеживанием прогресса
+- 🎯 Самооценка навыков
+- 👥 Управление командой
+- 💾 Экспорт и импорт данных
+- 🔄 Версионирование данных и миграции
+
+## Технологии
+
+- **Next.js 16** - React фреймворк
+- **React 19** - UI библиотека
+- **TypeScript** - Типизация
+- **Tailwind CSS** - Стилизация
+- **Radix UI** - Компоненты
+- **Zod** - Валидация данных
+- **React Hook Form** - Управление формами
+
+## Установка
 
 ```bash
+# Установка зависимостей
+npm install
+
+# Запуск в режиме разработки
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Сборка для продакшена
+npm run build
+
+# Запуск продакшен версии
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Тестирование
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Запуск тестов
+npm test
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Запуск тестов в watch режиме
+npm run test:watch
 
-## Learn More
+# Запуск тестов с покрытием
+npm run test:coverage
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Структура проекта
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/              # Next.js App Router страницы
+├── components/        # React компоненты
+│   ├── ui/          # UI компоненты (shadcn/ui)
+│   └── ...          # Бизнес компоненты
+├── lib/              # Утилиты и бизнес-логика
+│   ├── services/    # Сервисы для работы с данными
+│   ├── __tests__/   # Unit тесты
+│   └── ...          # Утилиты
+├── hooks/            # React хуки
+├── contexts/         # React контексты
+└── types/            # TypeScript типы
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Основные компоненты
 
-## Deploy on Vercel
+### Компоненты
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `ProfileLevelCard` - Карточка уровня профиля (переиспользуемый компонент)
+- `ErrorBoundary` - Обработка ошибок React
+- `ToastProvider` - Система уведомлений
+- `DataExportImport` - Экспорт/импорт данных
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Сервисы
+
+- `profile-service.ts` - Работа с профилями
+- `competence-service.ts` - Работа с компетенциями
+
+### Утилиты
+
+- `storage.ts` - Абстракция для localStorage с версионированием
+- `validation.ts` - Схемы валидации Zod
+- `calculations.ts` - Бизнес-логика расчетов
+- `constants.ts` - Константы приложения
+
+## Хранение данных
+
+Приложение использует `localStorage` для хранения данных. Все данные версионируются и могут быть мигрированы при обновлении схемы.
+
+### Экспорт/Импорт
+
+Данные можно экспортировать в JSON файл и импортировать обратно через компонент `DataExportImport`.
+
+## Валидация
+
+Все данные валидируются с помощью Zod схем перед сохранением. Схемы находятся в `src/lib/validation.ts`.
+
+## Обработка ошибок
+
+- Глобальный `ErrorBoundary` перехватывает ошибки React
+- Toast уведомления для пользовательских ошибок
+- Валидация данных перед сохранением
+
+## Производительность
+
+- Мемоизация тяжелых вычислений
+- Debounce для поиска
+- React.memo для компонентов
+- useMemo для фильтрации и сортировки
+
+## Разработка
+
+### Добавление новой компетенции
+
+1. Откройте страницу "Справочники > Компетенции"
+2. Нажмите "Добавить компетенцию"
+3. Заполните все обязательные поля
+4. Сохраните
+
+### Добавление нового профиля
+
+1. Откройте страницу "Справочники > Профили"
+2. Нажмите "Добавить профиль"
+3. Заполните информацию и добавьте компетенции
+4. Сохраните
+
+## Лицензия
+
+MIT

@@ -9,6 +9,8 @@ import {
   getProfileById,
   getCareerTrackByProfileId,
 } from "./reference-data";
+import { getFromStorage, saveToStorage, removeFromStorage, STORAGE_KEYS } from "./storage";
+import { userProfileSchema, safeValidate } from "./validation";
 
 // Реэкспортируем функции из reference-data
 export {
@@ -20,45 +22,78 @@ export {
   getCareerTracks,
 };
 
-
-// Функции для работы с данными пользователя
+/**
+ * Получить профиль пользователя из localStorage
+ * @returns Профиль пользователя или null если не найден
+ */
 export function getUserProfile(): UserProfile | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem("userProfile");
-    if (!stored) return null;
-    const profile = JSON.parse(stored);
-    // Убеждаемся, что skills всегда является массивом
-    if (!profile.skills) {
-      profile.skills = [];
+  const stored = getFromStorage<UserProfile | null>(STORAGE_KEYS.USER_PROFILE, null);
+  
+  if (!stored) return null;
+
+  // Преобразуем строки дат обратно в объекты Date ДО валидации
+  if (stored && typeof stored === 'object' && 'skills' in stored) {
+    if (Array.isArray(stored.skills)) {
+      stored.skills = stored.skills.map((skill: unknown) => {
+        if (skill && typeof skill === 'object' && 'lastUpdated' in skill) {
+          const skillObj = skill as { lastUpdated: unknown; [key: string]: unknown };
+          return {
+            ...skillObj,
+            // Преобразуем строку в Date, если это не уже Date объект
+            lastUpdated: skillObj.lastUpdated instanceof Date 
+              ? skillObj.lastUpdated 
+              : typeof skillObj.lastUpdated === 'string'
+              ? new Date(skillObj.lastUpdated)
+              : skillObj.lastUpdated,
+          };
+        }
+        return skill;
+      });
     }
-    // Преобразуем строки дат обратно в объекты Date
-    if (profile.skills && Array.isArray(profile.skills)) {
-      profile.skills = profile.skills.map((skill: any) => ({
-        ...skill,
-        lastUpdated: skill.lastUpdated ? new Date(skill.lastUpdated) : new Date(),
-      }));
-    }
-    return profile;
-  } catch (e) {
+  }
+
+  // Валидация данных
+  const validation = safeValidate(userProfileSchema, stored);
+  if (!validation.success) {
+    console.error("Invalid user profile data:", validation.errors);
     return null;
   }
+
+  const profile = validation.data;
+
+  // Убеждаемся, что skills всегда является массивом
+  if (!profile.skills) {
+    profile.skills = [];
+  }
+
+  return profile;
 }
 
-export function saveUserProfile(profile: UserProfile): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem("userProfile", JSON.stringify(profile));
-  } catch (e) {
-    console.error("Failed to save user profile:", e);
+/**
+ * Сохранить профиль пользователя в localStorage
+ * @param profile - Профиль пользователя для сохранения
+ * @returns Результат сохранения с информацией об ошибках
+ */
+export function saveUserProfile(profile: UserProfile): { success: boolean; error?: string } {
+  // Валидация перед сохранением
+  const validation = safeValidate(userProfileSchema, profile);
+  if (!validation.success) {
+    const firstError = validation.errors.errors[0]?.message || "Ошибка валидации";
+    return { success: false, error: firstError };
   }
+
+  const result = saveToStorage(STORAGE_KEYS.USER_PROFILE, validation.data);
+  
+  if (!result.success && result.error) {
+    return { success: false, error: result.error.message };
+  }
+
+  return { success: true };
 }
 
-export function resetUserProfile(): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem("userProfile");
-  } catch (e) {
-    console.error("Failed to reset user profile:", e);
-  }
+/**
+ * Сбросить профиль пользователя
+ */
+export function resetUserProfile(): boolean {
+  return removeFromStorage(STORAGE_KEYS.USER_PROFILE);
 }

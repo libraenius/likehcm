@@ -5,11 +5,12 @@ import type {
   ProfileCompetence,
   SkillLevel,
 } from "@/types";
+import { getFromStorage, saveToStorage, STORAGE_KEYS, migrateData } from "./storage";
 
-// Ключи для localStorage
-const COMPETENCES_KEY = "skillmap_competences";
-const PROFILES_KEY = "skillmap_profiles";
-const CAREER_TRACKS_KEY = "skillmap_career_tracks";
+// Ключи для localStorage (используем из constants)
+const COMPETENCES_KEY = STORAGE_KEYS.COMPETENCES;
+const PROFILES_KEY = STORAGE_KEYS.PROFILES;
+const CAREER_TRACKS_KEY = STORAGE_KEYS.CAREER_TRACKS;
 
 // Начальные данные по умолчанию
 const defaultCompetences: Competence[] = [
@@ -1783,27 +1784,7 @@ const defaultCareerTracks: CareerTrack[] = [
   },
 ];
 
-// Утилиты для работы с localStorage
-function getFromStorage<T>(key: string, defaultValue: T): T {
-  if (typeof window === "undefined") return defaultValue;
-  try {
-    const stored = localStorage.getItem(key);
-    if (!stored) return defaultValue;
-    return JSON.parse(stored);
-  } catch (e) {
-    return defaultValue;
-  }
-}
-
-function saveToStorage<T>(key: string, data: T): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    console.error(`Failed to save to ${key}:`, e);
-  }
-}
-
+// Утилиты
 function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }

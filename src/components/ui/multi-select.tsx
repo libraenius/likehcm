@@ -76,7 +76,7 @@ export function MultiSelect({
         role="combobox"
         aria-expanded={open}
         className={cn(
-          "w-full justify-between text-left font-normal",
+          "w-full justify-between text-left font-normal min-h-10 h-auto py-2 items-start",
           !selected.length && "text-muted-foreground"
         )}
         onClick={() => setOpen(!open)}
@@ -84,7 +84,7 @@ export function MultiSelect({
         <div className="flex flex-wrap gap-1 flex-1 min-w-0">
           {selected.length === 0 ? (
             <span className="text-muted-foreground">{placeholder}</span>
-          ) : selected.length <= 2 ? (
+          ) : (
             selectedOptions.map((option) => (
               <Badge
                 key={option.value}
@@ -96,10 +96,14 @@ export function MultiSelect({
                 {option.badge && (
                   <span className={cn("ml-1", option.badgeClassName)}>{option.badge}</span>
                 )}
-                <button
-                  className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                <span
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Удалить"
+                  className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer inline-flex items-center justify-center"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
                       removeOption(option.value, e as any)
                     }
                   }}
@@ -110,13 +114,9 @@ export function MultiSelect({
                   onClick={(e) => removeOption(option.value, e)}
                 >
                   <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                </button>
+                </span>
               </Badge>
             ))
-          ) : (
-            <Badge variant="secondary" className="mr-1">
-              Выбрано: {selected.length}
-            </Badge>
           )}
         </div>
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

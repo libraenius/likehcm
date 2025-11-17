@@ -9,11 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SkillAssessment } from "@/components/skill-assessment";
-import { getProfileById, getUserProfile, getCompetenceById, getCareerTrackByProfileId } from "@/lib/data";
+import { getProfileById, getUserProfile, getCompetenceById, getCareerTrackByProfileId, getProfiles, getCareerTracks, getCompetences } from "@/lib/data";
 import { calculateProfileMatch, calculateCareerTrackProgress } from "@/lib/calculations";
-import { Users, Mail, User, TrendingUp, BookOpen, Info, Briefcase, ChevronDown, ChevronRight, Building2, Search, X, Edit, Star, CheckCircle2 } from "lucide-react";
+import { Users, Mail, User, TrendingUp, BookOpen, Info, Briefcase, ChevronDown, ChevronRight, Building2, Search, X, Edit, Star, CheckCircle2, ClipboardCheck, Target, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TeamMember, UserProfile, SkillLevel, Profile, ProfileLevel } from "@/types";
 
@@ -431,6 +435,26 @@ export default function TeamPage() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [expandedDepartments, setExpandedDepartments] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [filters, setFilters] = useState<{
+    departmentIds: string[];
+    profileIds: string[];
+    additionalProfileIds: string[];
+    levelNames: string[];
+  }>({
+    departmentIds: [],
+    profileIds: [],
+    additionalProfileIds: [],
+    levelNames: [],
+  });
+  const [competenceFilterDialogOpen, setCompetenceFilterDialogOpen] = useState(false);
+  const [competenceFilters, setCompetenceFilters] = useState<{
+    competenceTypes: string[];
+    competenceIds: string[];
+  }>({
+    competenceTypes: [],
+    competenceIds: [],
+  });
   const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
   const [isProfileInfoDialogOpen, setIsProfileInfoDialogOpen] = useState(false);
   const [selectedProfileForInfo, setSelectedProfileForInfo] = useState<Profile | null>(null);
@@ -596,13 +620,47 @@ export default function TeamPage() {
       });
     }
 
+    // Фильтрация по подразделениям
+    if (filters.departmentIds.length > 0) {
+      filtered = filtered.filter(({ member }) => {
+        const memberWithDept = member as TeamMember & { departmentId?: string };
+        return memberWithDept.departmentId && filters.departmentIds.includes(memberWithDept.departmentId);
+      });
+    }
+
+    // Фильтрация по профилям
+    if (filters.profileIds.length > 0) {
+      filtered = filtered.filter(({ member }) => {
+        return filters.profileIds.includes(member.mainProfileId);
+      });
+    }
+
+    // Фильтрация по дополнительным профилям
+    if (filters.additionalProfileIds.length > 0) {
+      filtered = filtered.filter(({ member }) => {
+        if (!member.additionalProfileIds || member.additionalProfileIds.length === 0) {
+          return false;
+        }
+        return member.additionalProfileIds.some((profileId) => 
+          filters.additionalProfileIds.includes(profileId)
+        );
+      });
+    }
+
+    // Фильтрация по уровням
+    if (filters.levelNames.length > 0) {
+      filtered = filtered.filter(({ levelName }) => {
+        return levelName && filters.levelNames.includes(levelName);
+      });
+    }
+
     // Сортировка: сначала с таким же профилем, затем по соответствию
     return filtered.sort((a, b) => {
       if (a.isSameProfile && !b.isSameProfile) return -1;
       if (!a.isSameProfile && b.isSameProfile) return 1;
       return b.mainProfileMatch - a.mainProfileMatch;
     });
-  }, [membersWithMatch, searchQuery]);
+  }, [membersWithMatch, searchQuery, filters]);
 
   const selectedMemberData = selectedMember
     ? membersWithMatch.find(({ member }) => member.id === selectedMember.id)
@@ -670,28 +728,45 @@ export default function TeamPage() {
         </p>
       </div>
 
-      {/* Поиск */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Поиск по ФИО, email или профилю..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
-            onClick={() => setSearchQuery("")}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+      <Tabs defaultValue="assessment" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="assessment" className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            <span>Оценка сотрудников</span>
+          </TabsTrigger>
+          <TabsTrigger value="competences-members" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            <span>Компетенции команды (сотрудники)</span>
+          </TabsTrigger>
+          <TabsTrigger value="competences-competences" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            <span>Компетенции команды (компетенции)</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Основной контент - двухколоночный макет */}
+        <TabsContent value="assessment" className="space-y-4">
+          {/* Поиск */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск по ФИО, email или профилю..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {/* Основной контент - двухколоночный макет */}
       {filteredAndSortedMembers.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -1004,26 +1079,26 @@ export default function TeamPage() {
             {selectedMember && selectedMemberData ? (
               <Card className="w-full">
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Avatar className="h-20 w-20">
+                      <div className="flex items-start gap-3 mb-2">
+                        <Avatar className="h-20 w-20 shrink-0">
                           {selectedMember.avatar && (
                             <AvatarImage src={selectedMember.avatar} alt={getFullName(selectedMember)} />
                           )}
                           <AvatarFallback className="bg-primary text-primary-foreground text-lg">
                             {getInitials(selectedMember)}
                           </AvatarFallback>
-                  </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-xl">{getFullName(selectedMember)}</CardTitle>
-                          <CardDescription className="text-sm mt-1">
+                        </Avatar>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <CardTitle className="text-xl break-words">{getFullName(selectedMember)}</CardTitle>
+                          <CardDescription className="text-sm break-words">
                             {selectedMember.position}
                           </CardDescription>
-                          <CardDescription className="text-sm flex items-center gap-1 mt-1">
-                            <Mail className="h-3 w-3" />
+                          <CardDescription className="text-sm flex items-center gap-1 break-words">
+                            <Mail className="h-3 w-3 shrink-0" />
                             <span className="break-all">{selectedMember.email}</span>
-                    </CardDescription>
+                          </CardDescription>
                         </div>
                       </div>
                     </div>
@@ -1101,9 +1176,9 @@ export default function TeamPage() {
                         return (
                           <div className="space-y-3">
                             <div className="p-3 border rounded-lg bg-muted/20">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="default" className="text-sm">
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <Badge variant="default" className="text-sm truncate">
                                     {mainProfile.name}
                                   </Badge>
                                   <Button
@@ -1121,7 +1196,7 @@ export default function TeamPage() {
                                 </div>
                               </div>
                               {mainProfile.description && (
-                                <p className="text-xs text-muted-foreground mt-2">
+                                <p className="text-xs text-muted-foreground mt-2 break-words">
                                   {mainProfile.description}
                                 </p>
                               )}
@@ -1130,12 +1205,12 @@ export default function TeamPage() {
                               <div className="mt-3 space-y-2">
                                 {/* Уровень самооценки */}
                                 {selfLevel > 0 && (
-                                  <div className="flex items-center justify-between p-2 bg-background rounded-md border">
-                                    <div className="flex items-center gap-2">
-                                      <Star className="h-4 w-4 text-muted-foreground" />
-                                      <span className="text-sm font-medium">Самооценка:</span>
+                                  <div className="flex items-center justify-between gap-2 p-2 bg-background rounded-md border">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      <Star className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <span className="text-sm font-medium truncate">Самооценка:</span>
                                     </div>
-                                    <Badge variant="secondary" className="text-sm">
+                                    <Badge variant="secondary" className="text-sm shrink-0">
                                       {selfLevel} - {levelNames[selfLevel - 1]}
                                     </Badge>
                                   </div>
@@ -1143,12 +1218,12 @@ export default function TeamPage() {
                                 
                                 {/* Уровень оценки руководителя */}
                                 {managerLevel > 0 && (
-                                  <div className="flex items-center justify-between p-2 bg-background rounded-md border">
-                                    <div className="flex items-center gap-2">
-                                      <Edit className="h-4 w-4 text-muted-foreground" />
-                                      <span className="text-sm font-medium">Оценка руководителя:</span>
+                                  <div className="flex items-center justify-between gap-2 p-2 bg-background rounded-md border">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      <Edit className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <span className="text-sm font-medium truncate">Оценка руководителя:</span>
                                     </div>
-                                    <Badge variant="secondary" className="text-sm">
+                                    <Badge variant="secondary" className="text-sm shrink-0">
                                       {managerLevel} - {levelNames[managerLevel - 1]}
                                     </Badge>
                                   </div>
@@ -1226,8 +1301,8 @@ export default function TeamPage() {
                                               className="p-2.5 border rounded-md bg-card space-y-2"
                                             >
                                               {/* Заголовок компетенции */}
-                <div>
-                                                <div className="font-semibold text-sm mb-0.5">{comp.name}</div>
+                                              <div>
+                                                <div className="font-semibold text-sm mb-0.5 break-words">{comp.name}</div>
                                               </div>
                                               
                                               {/* Оценки в виде горизонтальных баров */}
@@ -1235,9 +1310,9 @@ export default function TeamPage() {
                                                 {/* Самооценка */}
                                                 {selfLevel > 0 && (
                                                   <div className="space-y-1">
-                                                    <div className="flex items-center justify-between">
-                                                      <span className="text-xs font-medium text-muted-foreground">Самооценка</span>
-                                                      <span className="text-xs font-semibold text-muted-foreground">{levelNames[selfLevel - 1]}</span>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                      <span className="text-xs font-medium text-muted-foreground truncate">Самооценка</span>
+                                                      <span className="text-xs font-semibold text-muted-foreground shrink-0">{levelNames[selfLevel - 1]}</span>
                                                     </div>
                                                     <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
                                                       <div
@@ -1255,9 +1330,9 @@ export default function TeamPage() {
                                                 {/* Оценка руководителя */}
                                                 {managerLevel > 0 && (
                                                   <div className="space-y-1">
-                                                    <div className="flex items-center justify-between">
-                                                      <span className="text-xs font-medium text-muted-foreground">Руководитель</span>
-                                                      <span className="text-xs font-semibold text-muted-foreground">{levelName}</span>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                      <span className="text-xs font-medium text-muted-foreground truncate">Руководитель</span>
+                                                      <span className="text-xs font-semibold text-muted-foreground shrink-0">{levelName}</span>
                                                     </div>
                                                     <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
                                                       <div
@@ -1780,6 +1855,787 @@ export default function TeamPage() {
           </div>
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="competences-members" className="space-y-4">
+          {/* Поиск и фильтрация */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по ФИО, email или профилю..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Фильтры
+                  {(filters.departmentIds.length > 0 || filters.profileIds.length > 0 || filters.additionalProfileIds.length > 0 || filters.levelNames.length > 0) && (
+                    <Badge variant="secondary" className="ml-2">
+                      {filters.departmentIds.length + filters.profileIds.length + filters.additionalProfileIds.length + filters.levelNames.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader className="pb-3">
+                  <DialogTitle className="text-lg">Фильтры</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  {/* Фильтр по подразделениям */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Подразделения</Label>
+                    <MultiSelect
+                      options={mockDepartments.map((department) => ({
+                        value: department.id,
+                        label: department.name,
+                      }))}
+                      selected={filters.departmentIds}
+                      onChange={(selected) => {
+                        setFilters({
+                          ...filters,
+                          departmentIds: selected,
+                        });
+                      }}
+                      placeholder="Выберите подразделения..."
+                    />
+                  </div>
+
+                  {/* Фильтр по профилям */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Основные профили</Label>
+                    <MultiSelect
+                      options={getProfiles().map((profile) => ({
+                        value: profile.id,
+                        label: profile.name,
+                      }))}
+                      selected={filters.profileIds}
+                      onChange={(selected) => {
+                        setFilters({
+                          ...filters,
+                          profileIds: selected,
+                        });
+                      }}
+                      placeholder="Выберите основные профили..."
+                    />
+                  </div>
+
+                  {/* Фильтр по дополнительным профилям */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Дополнительные профили</Label>
+                    <MultiSelect
+                      options={getProfiles().map((profile) => ({
+                        value: profile.id,
+                        label: profile.name,
+                      }))}
+                      selected={filters.additionalProfileIds}
+                      onChange={(selected) => {
+                        setFilters({
+                          ...filters,
+                          additionalProfileIds: selected,
+                        });
+                      }}
+                      placeholder="Выберите дополнительные профили..."
+                    />
+                  </div>
+
+                  {/* Фильтр по уровням */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Уровни карьерного трека</Label>
+                    <MultiSelect
+                      options={(() => {
+                        // Собираем все уникальные уровни из всех карьерных треков
+                        const allLevels = new Map<string, string>();
+                        getCareerTracks().forEach((track) => {
+                          track.levels.forEach((level) => {
+                            allLevels.set(level.name, level.name);
+                          });
+                        });
+                        return Array.from(allLevels.entries()).map(([value, label]) => ({
+                          value,
+                          label,
+                        }));
+                      })()}
+                      selected={filters.levelNames}
+                      onChange={(selected) => {
+                        setFilters({
+                          ...filters,
+                          levelNames: selected,
+                        });
+                      }}
+                      placeholder="Выберите уровни..."
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFilters({ 
+                        departmentIds: [], 
+                        profileIds: [], 
+                        additionalProfileIds: [],
+                        levelNames: [],
+                      });
+                    }}
+                  >
+                    Сбросить
+                  </Button>
+                  <Button size="sm" onClick={() => setFilterDialogOpen(false)}>
+                    Применить
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Компетенции команды (сотрудники)</CardTitle>
+              <CardDescription>
+                Анализ компетенций всей команды и выявление пробелов
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {filteredAndSortedMembers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-semibold mb-2">Члены команды не найдены</p>
+                  <p className="text-sm text-muted-foreground text-center">
+                    В команде пока нет участников или не найдено совпадений по поисковому запросу
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[1400px]">
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="min-w-[180px] px-4 whitespace-normal">Сотрудник</TableHead>
+                        <TableHead className="min-w-[200px] px-4 whitespace-normal">Должность / Подразделение</TableHead>
+                        <TableHead className="min-w-[150px] px-4 whitespace-normal">Профиль</TableHead>
+                        <TableHead className="min-w-[150px] px-4 whitespace-normal">Уровень профиля</TableHead>
+                        <TableHead className="min-w-[180px] px-4 whitespace-normal">Дополнительные профили</TableHead>
+                        <TableHead className="min-w-[250px] px-4 whitespace-normal">Профессиональные компетенции</TableHead>
+                        <TableHead className="min-w-[250px] px-4 whitespace-normal">Корпоративные компетенции</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {filteredAndSortedMembers.map(({ member, levelName }) => {
+                      const profile = getProfileById(member.mainProfileId);
+                      const department = mockDepartments.find((d) => d.id === member.departmentId);
+                      
+                      // Получаем самооценку сотрудника
+                      const selfAssessmentToUse = member.id === "member-5" && userProfile?.skills && userProfile.skills.length > 0
+                        ? userProfile.skills.reduce((acc, skill) => {
+                            acc[skill.competenceId] = skill.selfAssessment;
+                            return acc;
+                          }, {} as Record<string, number>)
+                        : memberSelfAssessments[member.id] || {};
+                      
+                      // Получаем оценку руководителя
+                      const managerAssessment = memberSkills[member.id] || {};
+                      
+                      // Собираем все компетенции (из обеих оценок)
+                      const allCompetenceIds = new Set([
+                        ...Object.keys(selfAssessmentToUse),
+                        ...Object.keys(managerAssessment),
+                      ]);
+                      
+                      // Разделяем компетенции на профессиональные и корпоративные
+                      const professionalCompetences: Array<{ 
+                        competence: ReturnType<typeof getCompetenceById>; 
+                        selfLevel: number | null;
+                        managerLevel: number | null;
+                      }> = [];
+                      const corporateCompetences: Array<{ 
+                        competence: ReturnType<typeof getCompetenceById>; 
+                        selfLevel: number | null;
+                        managerLevel: number | null;
+                      }> = [];
+                      
+                      allCompetenceIds.forEach((competenceId) => {
+                        const competence = getCompetenceById(competenceId);
+                        if (competence) {
+                          const selfLevel = competenceId in selfAssessmentToUse ? selfAssessmentToUse[competenceId] : null;
+                          const managerLevel = competenceId in managerAssessment ? managerAssessment[competenceId] : null;
+                          
+                          const competenceData = {
+                            competence,
+                            selfLevel,
+                            managerLevel,
+                          };
+                          
+                          if (competence.type === "профессиональные компетенции") {
+                            professionalCompetences.push(competenceData);
+                          } else if (competence.type === "корпоративные компетенции") {
+                            corporateCompetences.push(competenceData);
+                          }
+                        }
+                      });
+                      
+                      return (
+                        <TableRow key={member.id}>
+                          <TableCell className="px-4 whitespace-normal">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10 shrink-0">
+                                {member.avatar ? (
+                                  <AvatarImage src={member.avatar} alt={getFullName(member)} />
+                                ) : null}
+                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                  {getInitials(member)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-medium">{getFullName(member)}</span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium">{member.position}</span>
+                              {department && (
+                                <div className="text-sm text-muted-foreground">
+                                  {department.name}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {profile && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="default" className="w-fit">
+                                    {profile.name}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-md">
+                                  <div className="space-y-2">
+                                    <p className="font-semibold">{profile.name}</p>
+                                    {profile.description && (
+                                      <p className="text-sm">{profile.description}</p>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {levelName ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="w-fit">
+                                    {levelName}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-md">
+                                  <div className="space-y-2">
+                                    <p className="font-semibold">{levelName}</p>
+                                    {(() => {
+                                      const careerTrack = getCareerTrackByProfileId(member.mainProfileId);
+                                      if (careerTrack) {
+                                        const level = careerTrack.levels.find(l => l.name === levelName);
+                                        if (level?.description) {
+                                          return <p className="text-sm">{level.description}</p>;
+                                        }
+                                      }
+                                      return null;
+                                    })()}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {member.additionalProfileIds && member.additionalProfileIds.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {member.additionalProfileIds.map((profileId) => {
+                                  const additionalProfile = getProfileById(profileId);
+                                  return additionalProfile ? (
+                                    <Tooltip key={profileId}>
+                                      <TooltipTrigger asChild>
+                                        <Badge variant="secondary" className="w-fit text-xs">
+                                          {additionalProfile.name}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-md">
+                                        <div className="space-y-2">
+                                          <p className="font-semibold">{additionalProfile.name}</p>
+                                          {additionalProfile.description && (
+                                            <p className="text-sm">{additionalProfile.description}</p>
+                                          )}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  ) : null;
+                                })}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {professionalCompetences.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {professionalCompetences.map(({ competence, selfLevel, managerLevel }) => {
+                                  const displayText = selfLevel !== null && managerLevel !== null
+                                    ? `${competence.name} ${selfLevel}/${managerLevel}`
+                                    : selfLevel !== null
+                                    ? `${competence.name} ${selfLevel}/—`
+                                    : managerLevel !== null
+                                    ? `${competence.name} —/${managerLevel}`
+                                    : competence.name;
+                                  
+                                  const levelNames = ["Начальный", "Базовый", "Средний", "Продвинутый", "Экспертный"];
+                                  
+                                  return (
+                                    <Tooltip key={competence.id}>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800"
+                                        >
+                                          {displayText}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-md">
+                                        <div className="space-y-2">
+                                          <p className="font-semibold">{competence.name}</p>
+                                          {competence.description && (
+                                            <p className="text-sm">{competence.description}</p>
+                                          )}
+                                          <div className="space-y-1 text-sm">
+                                            {selfLevel !== null && (
+                                              <p>
+                                                <span className="font-medium">Самооценка:</span> {selfLevel} - {levelNames[selfLevel - 1]}
+                                              </p>
+                                            )}
+                                            {managerLevel !== null && (
+                                              <p>
+                                                <span className="font-medium">Оценка руководителя:</span> {managerLevel} - {levelNames[managerLevel - 1]}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {corporateCompetences.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {corporateCompetences.map(({ competence, selfLevel, managerLevel }) => {
+                                  const displayText = selfLevel !== null && managerLevel !== null
+                                    ? `${competence.name} ${selfLevel}/${managerLevel}`
+                                    : selfLevel !== null
+                                    ? `${competence.name} ${selfLevel}/—`
+                                    : managerLevel !== null
+                                    ? `${competence.name} —/${managerLevel}`
+                                    : competence.name;
+                                  
+                                  const levelNames = ["Начальный", "Базовый", "Средний", "Продвинутый", "Экспертный"];
+                                  
+                                  return (
+                                    <Tooltip key={competence.id}>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs bg-cyan-50 text-cyan-700 border-cyan-300 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800"
+                                        >
+                                          {displayText}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-md">
+                                        <div className="space-y-2">
+                                          <p className="font-semibold">{competence.name}</p>
+                                          {competence.description && (
+                                            <p className="text-sm">{competence.description}</p>
+                                          )}
+                                          <div className="space-y-1 text-sm">
+                                            {selfLevel !== null && (
+                                              <p>
+                                                <span className="font-medium">Самооценка:</span> {selfLevel} - {levelNames[selfLevel - 1]}
+                                              </p>
+                                            )}
+                                            {managerLevel !== null && (
+                                              <p>
+                                                <span className="font-medium">Оценка руководителя:</span> {managerLevel} - {levelNames[managerLevel - 1]}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="competences-competences" className="space-y-4">
+          {/* Поиск и фильтрация */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по компетенциям..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <Dialog open={competenceFilterDialogOpen} onOpenChange={setCompetenceFilterDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Фильтры
+                  {(competenceFilters.competenceTypes.length > 0 || competenceFilters.competenceIds.length > 0) && (
+                    <Badge variant="secondary" className="ml-2">
+                      {competenceFilters.competenceTypes.length + competenceFilters.competenceIds.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader className="pb-3">
+                  <DialogTitle className="text-lg">Фильтры</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  {/* Фильтр по типам компетенций */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Типы компетенций</Label>
+                    <MultiSelect
+                      options={[
+                        { value: "профессиональные компетенции", label: "Профессиональные компетенции" },
+                        { value: "корпоративные компетенции", label: "Корпоративные компетенции" },
+                      ]}
+                      selected={competenceFilters.competenceTypes}
+                      onChange={(selected) => {
+                        setCompetenceFilters({
+                          ...competenceFilters,
+                          competenceTypes: selected,
+                        });
+                      }}
+                      placeholder="Выберите типы компетенций..."
+                    />
+                  </div>
+
+                  {/* Фильтр по компетенциям */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Компетенции</Label>
+                    <MultiSelect
+                      options={getCompetences().map((competence) => ({
+                        value: competence.id,
+                        label: competence.name,
+                      }))}
+                      selected={competenceFilters.competenceIds}
+                      onChange={(selected) => {
+                        setCompetenceFilters({
+                          ...competenceFilters,
+                          competenceIds: selected,
+                        });
+                      }}
+                      placeholder="Выберите компетенции..."
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCompetenceFilters({ 
+                        competenceTypes: [],
+                        competenceIds: [],
+                      });
+                    }}
+                  >
+                    Сбросить
+                  </Button>
+                  <Button size="sm" onClick={() => setCompetenceFilterDialogOpen(false)}>
+                    Применить
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Компетенции команды (компетенции)</CardTitle>
+              <CardDescription>
+                Анализ компетенций, сгруппированных по типам компетенций
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {filteredAndSortedMembers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-semibold mb-2">Члены команды не найдены</p>
+                  <p className="text-sm text-muted-foreground text-center">
+                    В команде пока нет участников или не найдено совпадений по поисковому запросу
+                  </p>
+                </div>
+              ) : (() => {
+                // Собираем все уникальные компетенции из всех сотрудников
+                const allCompetenceIds = new Set<string>();
+                
+                filteredAndSortedMembers.forEach(({ member }) => {
+                  // Получаем самооценку сотрудника
+                  const selfAssessmentToUse = member.id === "member-5" && userProfile?.skills && userProfile.skills.length > 0
+                    ? userProfile.skills.reduce((acc, skill) => {
+                        acc[skill.competenceId] = skill.selfAssessment;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    : memberSelfAssessments[member.id] || {};
+                  
+                  // Получаем оценку руководителя
+                  const managerAssessment = memberSkills[member.id] || {};
+                  
+                  // Добавляем все компетенции
+                  Object.keys(selfAssessmentToUse).forEach(id => allCompetenceIds.add(id));
+                  Object.keys(managerAssessment).forEach(id => allCompetenceIds.add(id));
+                });
+                
+                // Преобразуем в массив и получаем данные компетенций
+                const allCompetences = Array.from(allCompetenceIds)
+                  .map((competenceId) => {
+                    const competence = getCompetenceById(competenceId);
+                    if (!competence) return null;
+                    
+                    // Фильтрация по типам компетенций
+                    if (competenceFilters.competenceTypes.length > 0) {
+                      if (!competenceFilters.competenceTypes.includes(competence.type)) {
+                        return null;
+                      }
+                    }
+                    
+                    // Фильтрация по конкретным компетенциям
+                    if (competenceFilters.competenceIds.length > 0) {
+                      if (!competenceFilters.competenceIds.includes(competenceId)) {
+                        return null;
+                      }
+                    }
+                    
+                    // Фильтрация по поисковому запросу
+                    if (searchQuery.trim()) {
+                      const query = searchQuery.toLowerCase();
+                      if (!competence.name.toLowerCase().includes(query) && 
+                          !(competence.description?.toLowerCase().includes(query) ?? false)) {
+                        return null;
+                      }
+                    }
+                    
+                    return { competenceId, competence };
+                  })
+                  .filter((item): item is { competenceId: string; competence: NonNullable<ReturnType<typeof getCompetenceById>> } => item !== null)
+                  .sort((a, b) => {
+                    // Сначала профессиональные, потом корпоративные
+                    if (a.competence.type !== b.competence.type) {
+                      if (a.competence.type === "профессиональные компетенции") return -1;
+                      return 1;
+                    }
+                    // Затем по названию
+                    return a.competence.name.localeCompare(b.competence.name);
+                  });
+                
+                const levelNames = ["Начальный", "Базовый", "Средний", "Продвинутый", "Экспертный"];
+                
+                if (allCompetences.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <Target className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-lg font-semibold mb-2">Компетенции не найдены</p>
+                      <p className="text-sm text-muted-foreground text-center">
+                        Компетенции команды отсутствуют или не найдено совпадений по поисковому запросу
+                      </p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[800px]">
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="min-w-[250px] px-4 whitespace-normal">Компетенция</TableHead>
+                          <TableHead className="min-w-[120px] px-4 whitespace-normal">Тип</TableHead>
+                          <TableHead className="min-w-[400px] px-4 whitespace-normal">Сотрудники</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allCompetences.map(({ competenceId, competence }) => {
+                          const isCorporate = competence.type === "корпоративные компетенции";
+                          const badgeColor = isCorporate 
+                            ? "bg-cyan-50 text-cyan-700 border-cyan-300 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800"
+                            : "bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800";
+                          
+                          // Собираем сотрудников с оценками для этой компетенции
+                          const membersWithAssessments = filteredAndSortedMembers
+                            .map(({ member }) => {
+                              // Получаем самооценку сотрудника
+                              const selfAssessmentToUse = member.id === "member-5" && userProfile?.skills && userProfile.skills.length > 0
+                                ? userProfile.skills.reduce((acc, skill) => {
+                                    acc[skill.competenceId] = skill.selfAssessment;
+                                    return acc;
+                                  }, {} as Record<string, number>)
+                                : memberSelfAssessments[member.id] || {};
+                              
+                              // Получаем оценку руководителя
+                              const managerAssessment = memberSkills[member.id] || {};
+                              
+                              const selfLevel = competenceId in selfAssessmentToUse ? selfAssessmentToUse[competenceId] : null;
+                              const managerLevel = competenceId in managerAssessment ? managerAssessment[competenceId] : null;
+                              
+                              const hasAssessment = selfLevel !== null || managerLevel !== null;
+                              
+                              if (!hasAssessment) return null;
+                              
+                              return {
+                                member,
+                                selfLevel,
+                                managerLevel,
+                              };
+                            })
+                            .filter((item): item is { member: TeamMember; selfLevel: number | null; managerLevel: number | null } => item !== null);
+                          
+                          return (
+                            <TableRow key={competenceId}>
+                              <TableCell className="px-4 whitespace-normal">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="font-medium">{competence.name}</div>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-md">
+                                    <div className="space-y-2">
+                                      <p className="font-semibold">{competence.name}</p>
+                                      {competence.description && (
+                                        <p className="text-sm">{competence.description}</p>
+                                      )}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TableCell>
+                              <TableCell className="px-4 whitespace-normal">
+                                <Badge variant="outline" className={`text-xs ${badgeColor}`}>
+                                  {competence.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="px-4 whitespace-normal">
+                                {membersWithAssessments.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {membersWithAssessments.map(({ member, selfLevel, managerLevel }) => (
+                                      <Tooltip key={member.id}>
+                                        <TooltipTrigger asChild>
+                                          <div className="flex items-center gap-2 p-2 border rounded-md bg-card hover:bg-muted/50 transition-colors">
+                                            <Avatar className="h-6 w-6 shrink-0">
+                                              {member.avatar ? (
+                                                <AvatarImage src={member.avatar} alt={getFullName(member)} />
+                                              ) : null}
+                                              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                                                {getInitials(member)}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex flex-col gap-1 min-w-0">
+                                              <span className="font-medium text-xs">{getFullName(member)}</span>
+                                              {(selfLevel !== null || managerLevel !== null) && (
+                                                <Badge variant="secondary" className="text-[10px] px-1 py-0 w-fit">
+                                                  {selfLevel !== null && managerLevel !== null
+                                                    ? `С: ${selfLevel} / Р: ${managerLevel}`
+                                                    : selfLevel !== null
+                                                    ? `С: ${selfLevel}`
+                                                    : `Р: ${managerLevel}`}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-md">
+                                          <div className="space-y-2">
+                                            <p className="font-semibold">{competence.name}</p>
+                                            {competence.description && (
+                                              <p className="text-sm">{competence.description}</p>
+                                            )}
+                                            <div className="space-y-2 pt-2 border-t">
+                                              <p className="font-medium text-sm">{getFullName(member)}</p>
+                                              <p className="text-xs text-muted-foreground">{member.position}</p>
+                                              <div className="space-y-1 text-sm">
+                                                {selfLevel !== null && (
+                                                  <p>
+                                                    <span className="font-medium">Самооценка:</span> {selfLevel} - {levelNames[selfLevel - 1]}
+                                                  </p>
+                                                )}
+                                                {managerLevel !== null && (
+                                                  <p>
+                                                    <span className="font-medium">Оценка руководителя:</span> {managerLevel} - {levelNames[managerLevel - 1]}
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Модальное окно для оценки сотрудника */}
       <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
