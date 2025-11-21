@@ -17,14 +17,13 @@ import { Progress } from "@/components/ui/progress";
 import type { UserProfile, SkillLevel } from "@/types";
 import { SkillAssessment } from "@/components/skill-assessment";
 import { CareerTrackProgress } from "@/components/career-track-progress";
-import { ClipboardCheck, User, Users, TrendingUp, CheckCircle2, Sparkles, Briefcase, ChevronDown, ChevronRight, Trash2, Info } from "lucide-react";
+import { ClipboardCheck, User, Users, TrendingUp, CheckCircle2, Briefcase, ChevronDown, ChevronRight, Trash2, Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/types";
 import { ProfileLevelCard } from "@/components/profile-level-card";
 import { PROFILE_LEVEL_NAMES } from "@/lib/constants";
-import { useToast } from "@/contexts/toast-context";
 
 const profileLevelNames = PROFILE_LEVEL_NAMES;
 
@@ -141,12 +140,13 @@ export default function ProfilePage() {
   const [isSkillAssessmentOpen, setIsSkillAssessmentOpen] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isProfileInfoDialogOpen, setIsProfileInfoDialogOpen] = useState(false);
+  const [selectedProfileForInfo, setSelectedProfileForInfo] = useState<Profile | null>(null);
 
   useEffect(() => {
     const profile = getUserProfile();
     if (profile) {
       setUserProfile(profile);
-      setMainProfileId(profile.mainProfileId);
+      setMainProfileId(profile.mainProfileId || "");
       setAdditionalProfileIds(profile.additionalProfileIds || []);
     } else {
       // Создаем новый профиль
@@ -312,11 +312,13 @@ export default function ProfilePage() {
                       <Button
                         type="button"
                         variant="outline"
-                        size="icon"
-                        className="h-11 w-11 shrink-0"
-                        onClick={() => setIsProfileInfoDialogOpen(true)}
+                        className="h-6 w-6 shrink-0 p-0"
+                        onClick={() => {
+                          setSelectedProfileForInfo(mainProfile);
+                          setIsProfileInfoDialogOpen(true);
+                        }}
                       >
-                        <Info className="h-4 w-4" />
+                        <Info className="h-3 w-3" />
                       </Button>
                     )}
                   </div>
@@ -340,35 +342,71 @@ export default function ProfilePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">
-                    Дополнительные профили (максимум 2)
-                  </Label>
-                  <MultiSelect
-                    options={profiles
-                      .filter((p) => p.id !== mainProfileId)
-                      .map((profile) => ({
-                        value: profile.id,
-                        label: profile.name,
-                      }))}
-                    selected={additionalProfileIds}
-                    onChange={(selected) => {
-                      if (selected.length <= 2) {
-                        setAdditionalProfileIds(selected);
-                      }
-                    }}
-                    placeholder="Выберите дополнительные профили..."
-                    maxCount={2}
-                  />
-                  {profiles.filter((p) => p.id !== mainProfileId).length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Нет доступных дополнительных профилей
-                    </p>
-                  )}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      Дополнительные профили (максимум 2)
+                    </Label>
+                    <MultiSelect
+                      options={profiles
+                        .filter((p) => p.id !== mainProfileId)
+                        .map((profile) => ({
+                          value: profile.id,
+                          label: profile.name,
+                        }))}
+                      selected={additionalProfileIds}
+                      onChange={(selected) => {
+                        if (selected.length <= 2) {
+                          setAdditionalProfileIds(selected);
+                        }
+                      }}
+                      placeholder="Выберите дополнительные профили..."
+                      maxCount={2}
+                    />
+                    {profiles.filter((p) => p.id !== mainProfileId).length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Нет доступных дополнительных профилей
+                      </p>
+                    )}
+                    {additionalProfileIds.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Выбрано: {additionalProfileIds.length} из 2
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Выбранные дополнительные профили с кнопками Info */}
                   {additionalProfileIds.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Выбрано: {additionalProfileIds.length} из 2
-                    </p>
+                    <div className="space-y-2 pt-2 border-t">
+                      <Label className="text-xs font-medium text-muted-foreground">
+                        Выбранные дополнительные профили:
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {additionalProfileIds.map((profileId) => {
+                          const profile = profiles.find((p) => p.id === profileId);
+                          return profile ? (
+                            <div key={profileId} className="flex items-center gap-1.5">
+                              <Badge variant="secondary" className="px-3 py-1.5 text-sm">
+                                <Users className="mr-1.5 h-3.5 w-3.5" />
+                                {profile.name}
+                              </Badge>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="h-6 w-6 shrink-0 p-0"
+                                onClick={() => {
+                                  setSelectedProfileForInfo(profile);
+                                  setIsProfileInfoDialogOpen(true);
+                                }}
+                                title={`Информация о профиле: ${profile.name}`}
+                              >
+                                <Info className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : null;
+                        })}
+                      </div>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -394,76 +432,59 @@ export default function ProfilePage() {
             </Button>
           </div>
 
-          {/* Выбранные профили и следующее действие */}
+          {/* Самооценка компетенций */}
           {userProfile?.mainProfileId && (
-            <div className="space-y-4">
-              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">Ваши профили</CardTitle>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ClipboardCheck className="h-5 w-5" />
+                  Самооценка компетенций
+                </CardTitle>
+                <CardDescription>
+                  Оцените свой уровень владения компетенциями выбранного профиля
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {userProfile.skills && userProfile.skills.length === 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Пройдите самооценку компетенций, чтобы увидеть ваш карьерный прогресс
+                    </p>
+                    <Button
+                      onClick={() => setIsSkillAssessmentOpen(true)}
+                      className="w-full"
+                      size="lg"
+                    >
+                      <ClipboardCheck className="mr-2 h-4 w-4" />
+                      Пройти самооценку компетенций
+                    </Button>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="default" className="px-3 py-1.5 text-sm">
-                      <User className="mr-1.5 h-3.5 w-3.5" />
-                      Основной: {profiles.find((p) => p.id === userProfile.mainProfileId)?.name}
-                    </Badge>
-                    {userProfile.additionalProfileIds.map((id) => {
-                      const profile = profiles.find((p) => p.id === id);
-                      return profile ? (
-                        <Badge key={id} variant="secondary" className="px-3 py-1.5 text-sm">
-                          <Users className="mr-1.5 h-3.5 w-3.5" />
-                          {profile.name}
-                        </Badge>
-                      ) : null;
-                    })}
-                  </div>
-
-                  {userProfile.skills && userProfile.skills.length === 0 && (
-                    <div className="pt-4 border-t">
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="text-sm font-semibold">Самооценка пройдена</p>
+                          <p className="text-xs text-muted-foreground">
+                            Оценено {userProfile.skills?.length || 0} компетенций
+                          </p>
+                        </div>
+                      </div>
                       <Button
                         onClick={() => setIsSkillAssessmentOpen(true)}
-                        className="w-full"
-                        size="lg"
+                        variant="outline"
+                        size="sm"
                       >
-                        <ClipboardCheck className="mr-2 h-4 w-4" />
-                        Пройти самооценку компетенций
+                        Изменить
                       </Button>
-                      <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Пройдите самооценку, чтобы увидеть ваш карьерный прогресс
-                      </p>
                     </div>
-                  )}
-
-                  {userProfile.skills && userProfile.skills.length > 0 && (
-                    <div className="pt-4 border-t">
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                          <div>
-                            <p className="text-sm font-semibold">Самооценка пройдена</p>
-                            <p className="text-xs text-muted-foreground">
-                              Оценено {userProfile.skills.length} компетенций
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => setIsSkillAssessmentOpen(true)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          Изменить
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-            </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
+
         </TabsContent>
 
         <TabsContent value="progress" className="space-y-4">
@@ -535,16 +556,16 @@ export default function ProfilePage() {
       </Dialog>
 
       <Dialog open={isProfileInfoDialogOpen} onOpenChange={setIsProfileInfoDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-4xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-7xl">
           <DialogHeader>
-            <DialogTitle>{mainProfile?.name}</DialogTitle>
+            <DialogTitle>{selectedProfileForInfo?.name || mainProfile?.name}</DialogTitle>
             <DialogDescription>
               Подробная информация о профиле из справочника
             </DialogDescription>
           </DialogHeader>
-          {mainProfile && (
+          {(selectedProfileForInfo || mainProfile) && (
             <div className="overflow-x-hidden w-full">
-              <ProfileTooltipContent profile={mainProfile} />
+              <ProfileTooltipContent profile={selectedProfileForInfo || mainProfile!} />
             </div>
           )}
         </DialogContent>

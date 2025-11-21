@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ChevronDown, ChevronRight, Briefcase, Info } from "lucide-react";
+import { ChevronDown, ChevronRight, Briefcase, Info, ClipboardList } from "lucide-react";
 import type { ProfileLevel } from "@/types";
 import { getCompetenceById } from "@/lib/data";
 import {
@@ -103,10 +103,12 @@ export function ProfileLevelCard({
               {profileLevel.responsibilities.map((responsibility, idx) => (
                 <li
                   key={idx}
-                  className={cn(textSize, "text-muted-foreground flex items-start gap-1.5")}
+                  className={cn(textSize, "text-muted-foreground")}
                 >
-                  <span className="text-foreground mt-0.5">•</span>
-                  <span>{responsibility}</span>
+                  <div className="flex items-start gap-1.5">
+                    <span className="text-foreground mt-0.5 flex-shrink-0">•</span>
+                    <div className="flex-1 whitespace-pre-line break-words">{responsibility}</div>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -135,6 +137,33 @@ export function ProfileLevelCard({
               </div>
             </div>
           </div>
+
+          {/* Примеры задач */}
+          {profileLevel.taskExamples && profileLevel.taskExamples.length > 0 && (
+            <>
+              <Separator className="my-2" />
+              <div className="space-y-1.5">
+                <h4 className={cn("font-semibold flex items-center gap-1.5", textSize)}>
+                  <ClipboardList className={cn(iconSize, "text-muted-foreground")} />
+                  Уровень сложности решаемых задач:
+                </h4>
+                <ul className="space-y-1 ml-4">
+                  {profileLevel.taskExamples.map((task, idx) => (
+                    <li
+                      key={idx}
+                      className={cn(textSize, "text-muted-foreground")}
+                    >
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-foreground mt-0.5 flex-shrink-0 font-medium">{idx + 1}.</span>
+                        <div className="flex-1 whitespace-pre-line break-words">{task}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+
           <Separator className="my-2" />
 
           {/* Компетенции */}

@@ -191,9 +191,11 @@ function ProfileLevelCard({
             </h4>
             <ul className="space-y-1 ml-4">
               {profileLevel.responsibilities.map((responsibility: string, idx: number) => (
-                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1.5">
-                  <span className="text-foreground mt-0.5">•</span>
-                  <span>{responsibility}</span>
+                <li key={idx} className="text-xs text-muted-foreground">
+                  <div className="flex items-start gap-1.5">
+                    <span className="text-foreground mt-0.5 flex-shrink-0">•</span>
+                    <div className="flex-1 whitespace-pre-line break-words">{responsibility}</div>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -458,7 +460,9 @@ export default function TeamPage() {
   const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
   const [isProfileInfoDialogOpen, setIsProfileInfoDialogOpen] = useState(false);
   const [selectedProfileForInfo, setSelectedProfileForInfo] = useState<Profile | null>(null);
-  const [memberSkills, setMemberSkills] = useState<Record<string, Record<string, number>>>(mockMemberSkills);
+  // Оценки менеджера (в реальном приложении это будет из API)
+  // По умолчанию пустой объект - никто не оценен, пока менеджер не проведет оценку
+  const [memberSkills, setMemberSkills] = useState<Record<string, Record<string, number>>>({});
   // Самооценка сотрудников (в реальном приложении это будет из API)
   const [memberSelfAssessments, setMemberSelfAssessments] = useState<Record<string, Record<string, number>>>({
     "member-1": { "comp-1": 2, "comp-2": 3, "comp-3": 1 },
@@ -508,6 +512,26 @@ export default function TeamPage() {
     return member.middleName 
       ? `${member.lastName} ${member.firstName} ${member.middleName}`
       : `${member.lastName} ${member.firstName}`;
+  };
+
+  // Определяет статус оценки сотрудника
+  const getMemberAssessmentStatus = (member: TeamMember): { hasSelfAssessment: boolean; hasManagerAssessment: boolean } => {
+    // Проверяем самооценку
+    let hasSelfAssessment = false;
+    if (member.id === "member-5" && userProfile?.skills && userProfile.skills.length > 0) {
+      // Для текущего пользователя (Помыткина) используем userProfile
+      hasSelfAssessment = userProfile.skills.some(skill => skill.selfAssessment > 0);
+    } else {
+      // Для остальных используем memberSelfAssessments
+      const selfAssessment = memberSelfAssessments[member.id];
+      hasSelfAssessment = selfAssessment && Object.values(selfAssessment).some(level => level > 0);
+    }
+
+    // Проверяем оценку руководителя
+    const managerAssessment = memberSkills[member.id];
+    const hasManagerAssessment = managerAssessment && Object.values(managerAssessment).some(level => level > 0);
+
+    return { hasSelfAssessment, hasManagerAssessment };
   };
 
   // Вычисляем соответствие профилей и уровень для каждого члена команды
@@ -706,6 +730,42 @@ export default function TeamPage() {
     return rootDepartments;
   }, [filteredAndSortedMembers]);
 
+  // Функция для подсчета оцененных сотрудников в отделе
+  const countAssessedMembers = useMemo(() => {
+    const countMembers = (dept: typeof departmentHierarchy[0]): { total: number; assessed: number } => {
+      let total = dept.members.length;
+      let assessed = dept.members.filter(({ member }) => {
+        const managerAssessment = memberSkills[member.id];
+        // Считаем оцененным, если есть хотя бы одна оценка > 0
+        if (!managerAssessment || Object.keys(managerAssessment).length === 0) {
+          return false; // Нет оценок - требуется оценка, фиксируем как 0
+        }
+        // Проверяем, есть ли хотя бы одна оценка > 0
+        return Object.values(managerAssessment).some(level => level > 0);
+      }).length;
+      
+      dept.children.forEach(child => {
+        const childCounts = countMembers(child);
+        total += childCounts.total;
+        assessed += childCounts.assessed;
+      });
+      return { total, assessed };
+    };
+    
+    // Создаем Map для быстрого доступа к подсчетам по ID отдела
+    const countsMap = new Map<string, { total: number; assessed: number }>();
+    
+    const processDept = (dept: typeof departmentHierarchy[0]) => {
+      const counts = countMembers(dept);
+      countsMap.set(dept.id, counts);
+      dept.children.forEach(child => processDept(child));
+    };
+    
+    departmentHierarchy.forEach(dept => processDept(dept));
+    
+    return countsMap;
+  }, [departmentHierarchy, memberSkills]);
+
   const toggleDepartment = (deptId: string) => {
     setExpandedDepartments(prev => {
       const newSet = new Set(prev);
@@ -790,15 +850,10 @@ export default function TeamPage() {
                   const isExpanded = expandedDepartments.has(dept.id);
                   const hasChildren = dept.children.length > 0;
                   
-                  // Подсчитываем общее количество участников (включая дочерние подразделения)
-                  const countMembers = (dept: typeof departmentHierarchy[0]): number => {
-                    let count = dept.members.length;
-                    dept.children.forEach(child => {
-                      count += countMembers(child);
-                    });
-                    return count;
-                  };
-                  const totalMembers = countMembers(dept);
+                  // Получаем подсчет оцененных сотрудников из useMemo
+                  const memberCounts = countAssessedMembers.get(dept.id) || { total: 0, assessed: 0 };
+                  const totalMembers = memberCounts.total;
+                  const assessedMembers = memberCounts.assessed;
 
                   return (
                     <div key={dept.id} className="space-y-1">
@@ -833,8 +888,8 @@ export default function TeamPage() {
                           {dept.name}
                         </span>
                         {totalMembers > 0 && (
-                          <Badge variant="secondary" className="text-xs px-1.5 py-0.5 shrink-0">
-                            {totalMembers}
+                          <Badge variant="secondary" className="text-xs px-1.5 py-0.5 shrink-0 bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200">
+                            {assessedMembers}/{totalMembers}
                           </Badge>
                         )}
                       </div>
@@ -846,6 +901,9 @@ export default function TeamPage() {
                           {dept.children.map((childDept) => {
                             const childIsExpanded = expandedDepartments.has(childDept.id);
                             const childMembers = childDept.members;
+                            // Получаем подсчет оцененных сотрудников из useMemo для дочернего подразделения
+                            const childCounts = countAssessedMembers.get(childDept.id) || { total: 0, assessed: 0 };
+                            const childAssessedCount = childCounts.assessed;
 
           return (
                               <div key={childDept.id} className="space-y-1">
@@ -872,9 +930,9 @@ export default function TeamPage() {
                                   <span className="font-medium text-sm flex-1 min-w-0 truncate">
                                     {childDept.name}
                                   </span>
-                                  {childMembers.length > 0 && (
-                                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5 shrink-0">
-                                      {childMembers.length}
+                                  {childCounts.total > 0 && (
+                                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5 shrink-0 bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200">
+                                      {childAssessedCount}/{childCounts.total}
                                     </Badge>
                                   )}
                                 </div>
@@ -886,6 +944,7 @@ export default function TeamPage() {
                                       const mainProfile = getProfileById(member.mainProfileId);
                                       const memberData = filteredAndSortedMembers.find(m => m.member.id === member.id);
                                       const displayLevelName = memberData?.levelName || levelName;
+                                      const { hasSelfAssessment, hasManagerAssessment } = getMemberAssessmentStatus(member);
                                       return (
                                         <div
                                           key={member.id}
@@ -931,6 +990,33 @@ export default function TeamPage() {
                                                   {mainProfile.name}
                                                 </Badge>
                                               )}
+                                              {/* Индикатор статуса оценки */}
+                                              {hasSelfAssessment && !hasManagerAssessment && (
+                                                <Badge
+                                                  variant="outline"
+                                                  className={cn(
+                                                    "text-[10px] px-1.5 py-0.5 mt-0.5 bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800",
+                                                    selectedMember?.id === member.id
+                                                      ? "border-accent-foreground/30"
+                                                      : ""
+                                                  )}
+                                                >
+                                                  Есть самооценка, требуется оценка руководителя
+                                                </Badge>
+                                              )}
+                                              {!hasSelfAssessment && !hasManagerAssessment && (
+                                                <Badge
+                                                  variant="outline"
+                                                  className={cn(
+                                                    "text-[10px] px-1.5 py-0.5 mt-0.5 bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800",
+                                                    selectedMember?.id === member.id
+                                                      ? "border-accent-foreground/30"
+                                                      : ""
+                                                  )}
+                                                >
+                                                  Нет самооценки, нет оценки руководителя
+                                                </Badge>
+                                              )}
                                             </div>
                                           </div>
                                         </div>
@@ -947,6 +1033,7 @@ export default function TeamPage() {
                             const mainProfile = getProfileById(member.mainProfileId);
                             const memberData = filteredAndSortedMembers.find(m => m.member.id === member.id);
                             const displayLevelName = memberData?.levelName || levelName;
+                            const { hasSelfAssessment, hasManagerAssessment } = getMemberAssessmentStatus(member);
                             return (
                               <div
                                 key={member.id}
@@ -992,6 +1079,33 @@ export default function TeamPage() {
                                         {mainProfile.name}
                                       </Badge>
                                     )}
+                                    {/* Индикатор статуса оценки */}
+                                    {hasSelfAssessment && !hasManagerAssessment && (
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "text-[10px] px-1.5 py-0.5 mt-0.5 bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800",
+                                          selectedMember?.id === member.id
+                                            ? "border-primary-foreground/30"
+                                            : ""
+                                        )}
+                                      >
+                                        Есть самооценка, требуется оценка руководителя
+                                      </Badge>
+                                    )}
+                                    {!hasSelfAssessment && !hasManagerAssessment && (
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "text-[10px] px-1.5 py-0.5 mt-0.5 bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800",
+                                          selectedMember?.id === member.id
+                                            ? "border-primary-foreground/30"
+                                            : ""
+                                        )}
+                                      >
+                                        Нет самооценки, нет оценки руководителя
+                                      </Badge>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1017,6 +1131,7 @@ export default function TeamPage() {
                         const mainProfile = getProfileById(member.mainProfileId);
                         const memberData = filteredAndSortedMembers.find(m => m.member.id === member.id);
                         const displayLevelName = memberData?.levelName || levelName;
+                        const { hasSelfAssessment, hasManagerAssessment } = getMemberAssessmentStatus(member);
                         return (
                           <div
                             key={member.id}
@@ -1060,6 +1175,33 @@ export default function TeamPage() {
                                     )}
                                   >
                                     {mainProfile.name}
+                                  </Badge>
+                                )}
+                                {/* Индикатор статуса оценки */}
+                                {hasSelfAssessment && !hasManagerAssessment && (
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "text-[10px] px-1.5 py-0.5 mt-0.5 bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800",
+                                      selectedMember?.id === member.id
+                                        ? "border-primary-foreground/30"
+                                        : ""
+                                    )}
+                                  >
+                                    Есть самооценка, требуется оценка руководителя
+                                  </Badge>
+                                )}
+                                {!hasSelfAssessment && !hasManagerAssessment && (
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "text-[10px] px-1.5 py-0.5 mt-0.5 bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800",
+                                      selectedMember?.id === member.id
+                                        ? "border-primary-foreground/30"
+                                        : ""
+                                    )}
+                                  >
+                                    Нет самооценки, нет оценки руководителя
                                   </Badge>
                                 )}
                               </div>
@@ -1184,14 +1326,13 @@ export default function TeamPage() {
                                   <Button
                                     type="button"
                                     variant="outline"
-                                    size="icon"
-                                    className="h-6 w-6 shrink-0"
+                                    className="h-6 w-6 shrink-0 p-0"
                                     onClick={() => {
                                       setSelectedProfileForInfo(mainProfile);
                                       setIsProfileInfoDialogOpen(true);
                                     }}
                                   >
-                                    <Info className="h-3.5 w-3.5" />
+                                    <Info className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </div>
@@ -2194,6 +2335,7 @@ export default function TeamPage() {
                             {professionalCompetences.length > 0 ? (
                               <div className="flex flex-wrap gap-1.5">
                                 {professionalCompetences.map(({ competence, selfLevel, managerLevel }) => {
+                                  if (!competence) return null;
                                   const displayText = selfLevel !== null && managerLevel !== null
                                     ? `${competence.name} ${selfLevel}/${managerLevel}`
                                     : selfLevel !== null
@@ -2246,6 +2388,7 @@ export default function TeamPage() {
                             {corporateCompetences.length > 0 ? (
                               <div className="flex flex-wrap gap-1.5">
                                 {corporateCompetences.map(({ competence, selfLevel, managerLevel }) => {
+                                  if (!competence) return null;
                                   const displayText = selfLevel !== null && managerLevel !== null
                                     ? `${competence.name} ${selfLevel}/${managerLevel}`
                                     : selfLevel !== null
@@ -2515,7 +2658,7 @@ export default function TeamPage() {
                           
                           // Собираем сотрудников с оценками для этой компетенции
                           const membersWithAssessments = filteredAndSortedMembers
-                            .map(({ member }) => {
+                            .map(({ member, levelName }) => {
                               // Получаем самооценку сотрудника
                               const selfAssessmentToUse = member.id === "member-5" && userProfile?.skills && userProfile.skills.length > 0
                                 ? userProfile.skills.reduce((acc, skill) => {
@@ -2536,11 +2679,12 @@ export default function TeamPage() {
                               
                               return {
                                 member,
+                                levelName,
                                 selfLevel,
                                 managerLevel,
                               };
                             })
-                            .filter((item): item is { member: TeamMember; selfLevel: number | null; managerLevel: number | null } => item !== null);
+                            .filter((item): item is { member: TeamMember; levelName: string | null; selfLevel: number | null; managerLevel: number | null } => item !== null);
                           
                           return (
                             <TableRow key={competenceId}>
@@ -2567,58 +2711,90 @@ export default function TeamPage() {
                               <TableCell className="px-4 whitespace-normal">
                                 {membersWithAssessments.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
-                                    {membersWithAssessments.map(({ member, selfLevel, managerLevel }) => (
-                                      <Tooltip key={member.id}>
-                                        <TooltipTrigger asChild>
-                                          <div className="flex items-center gap-2 p-2 border rounded-md bg-card hover:bg-muted/50 transition-colors">
-                                            <Avatar className="h-6 w-6 shrink-0">
-                                              {member.avatar ? (
-                                                <AvatarImage src={member.avatar} alt={getFullName(member)} />
-                                              ) : null}
-                                              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                                                {getInitials(member)}
-                                              </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex flex-col gap-1 min-w-0">
-                                              <span className="font-medium text-xs">{getFullName(member)}</span>
-                                              {(selfLevel !== null || managerLevel !== null) && (
-                                                <Badge variant="secondary" className="text-[10px] px-1 py-0 w-fit">
-                                                  {selfLevel !== null && managerLevel !== null
-                                                    ? `С: ${selfLevel} / Р: ${managerLevel}`
-                                                    : selfLevel !== null
-                                                    ? `С: ${selfLevel}`
-                                                    : `Р: ${managerLevel}`}
-                                                </Badge>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-md">
-                                          <div className="space-y-2">
-                                            <p className="font-semibold">{competence.name}</p>
-                                            {competence.description && (
-                                              <p className="text-sm">{competence.description}</p>
-                                            )}
-                                            <div className="space-y-2 pt-2 border-t">
-                                              <p className="font-medium text-sm">{getFullName(member)}</p>
-                                              <p className="text-xs text-muted-foreground">{member.position}</p>
-                                              <div className="space-y-1 text-sm">
-                                                {selfLevel !== null && (
-                                                  <p>
-                                                    <span className="font-medium">Самооценка:</span> {selfLevel} - {levelNames[selfLevel - 1]}
-                                                  </p>
-                                                )}
-                                                {managerLevel !== null && (
-                                                  <p>
-                                                    <span className="font-medium">Оценка руководителя:</span> {managerLevel} - {levelNames[managerLevel - 1]}
-                                                  </p>
+                                    {membersWithAssessments.map(({ member, levelName, selfLevel, managerLevel }) => {
+                                      const profile = getProfileById(member.mainProfileId);
+                                      return (
+                                        <Tooltip key={member.id}>
+                                          <TooltipTrigger asChild>
+                                            <div className="flex items-center gap-2 p-2 border rounded-md bg-card hover:bg-muted/50 transition-colors">
+                                              <Avatar className="h-6 w-6 shrink-0">
+                                                {member.avatar ? (
+                                                  <AvatarImage src={member.avatar} alt={getFullName(member)} />
+                                                ) : null}
+                                                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                                                  {getInitials(member)}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <div className="flex flex-col gap-1 min-w-0">
+                                                <span className="font-medium text-xs">{getFullName(member)}</span>
+                                                {(selfLevel !== null || managerLevel !== null) && (
+                                                  <Badge variant="secondary" className="text-[10px] px-1 py-0 w-fit">
+                                                    {selfLevel !== null && managerLevel !== null
+                                                      ? `С: ${selfLevel} / Р: ${managerLevel}`
+                                                      : selfLevel !== null
+                                                      ? `С: ${selfLevel}`
+                                                      : `Р: ${managerLevel}`}
+                                                  </Badge>
                                                 )}
                                               </div>
                                             </div>
-                                          </div>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    ))}
+                                          </TooltipTrigger>
+                                          <TooltipContent className="max-w-md">
+                                            <div className="space-y-2">
+                                              <p className="font-semibold">{competence.name}</p>
+                                              {competence.description && (
+                                                <p className="text-sm">{competence.description}</p>
+                                              )}
+                                              <div className="space-y-2 pt-2 border-t">
+                                                <p className="font-medium text-sm">{getFullName(member)}</p>
+                                                <p className="text-xs text-muted-foreground">{member.position}</p>
+                                                {profile && (
+                                                  <div className="space-y-1">
+                                                    <p className="text-sm">
+                                                      <span className="font-medium">Профиль:</span> {profile.name}
+                                                    </p>
+                                                    {profile.description && (
+                                                      <p className="text-xs text-muted-foreground">{profile.description}</p>
+                                                    )}
+                                                  </div>
+                                                )}
+                                                {levelName && (
+                                                  <p className="text-sm">
+                                                    <span className="font-medium">Уровень профиля:</span> {levelName}
+                                                    {(() => {
+                                                      const careerTrack = getCareerTrackByProfileId(member.mainProfileId);
+                                                      if (careerTrack) {
+                                                        const level = careerTrack.levels.find(l => l.name === levelName);
+                                                        if (level?.description) {
+                                                          return (
+                                                            <span className="block text-xs text-muted-foreground mt-1">
+                                                              {level.description}
+                                                            </span>
+                                                          );
+                                                        }
+                                                      }
+                                                      return null;
+                                                    })()}
+                                                  </p>
+                                                )}
+                                                <div className="space-y-1 text-sm pt-1">
+                                                  {selfLevel !== null && (
+                                                    <p>
+                                                      <span className="font-medium">Самооценка:</span> {selfLevel} - {levelNames[selfLevel - 1]}
+                                                    </p>
+                                                  )}
+                                                  {managerLevel !== null && (
+                                                    <p>
+                                                      <span className="font-medium">Оценка руководителя:</span> {managerLevel} - {levelNames[managerLevel - 1]}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      );
+                                    })}
                                   </div>
                                 ) : (
                                   <span className="text-sm text-muted-foreground">—</span>
@@ -2691,7 +2867,7 @@ export default function TeamPage() {
 
       {/* Модальное окно для информации о профиле */}
       <Dialog open={isProfileInfoDialogOpen} onOpenChange={setIsProfileInfoDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-4xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-7xl">
           <DialogHeader>
             <DialogTitle>{selectedProfileForInfo?.name}</DialogTitle>
             <DialogDescription>

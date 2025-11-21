@@ -1,5 +1,6 @@
 import type {
   UserProfile,
+  UserSkill,
 } from "@/types";
 import {
   getCompetences,
@@ -10,7 +11,7 @@ import {
   getCareerTrackByProfileId,
 } from "./reference-data";
 import { getFromStorage, saveToStorage, removeFromStorage, STORAGE_KEYS } from "./storage";
-import { userProfileSchema, safeValidate } from "./validation";
+import { userProfileSchema, safeValidate, getFirstError } from "./validation";
 
 // Реэкспортируем функции из reference-data
 export {
@@ -34,7 +35,7 @@ export function getUserProfile(): UserProfile | null {
   // Преобразуем строки дат обратно в объекты Date ДО валидации
   if (stored && typeof stored === 'object' && 'skills' in stored) {
     if (Array.isArray(stored.skills)) {
-      stored.skills = stored.skills.map((skill: unknown) => {
+      stored.skills = stored.skills.map((skill: unknown): UserSkill => {
         if (skill && typeof skill === 'object' && 'lastUpdated' in skill) {
           const skillObj = skill as { lastUpdated: unknown; [key: string]: unknown };
           return {
@@ -45,9 +46,9 @@ export function getUserProfile(): UserProfile | null {
               : typeof skillObj.lastUpdated === 'string'
               ? new Date(skillObj.lastUpdated)
               : skillObj.lastUpdated,
-          };
+          } as UserSkill;
         }
-        return skill;
+        return skill as UserSkill;
       });
     }
   }
@@ -78,7 +79,7 @@ export function saveUserProfile(profile: UserProfile): { success: boolean; error
   // Валидация перед сохранением
   const validation = safeValidate(userProfileSchema, profile);
   if (!validation.success) {
-    const firstError = validation.errors.errors[0]?.message || "Ошибка валидации";
+    const firstError = getFirstError(validation.errors);
     return { success: false, error: firstError };
   }
 

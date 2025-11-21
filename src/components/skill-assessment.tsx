@@ -214,6 +214,7 @@ export function SkillAssessment({ userProfile, onSkillUpdate, onClose }: SkillAs
     return 0;
   };
 
+  if (!userProfile.mainProfileId) return null;
   const mainProfile = getProfileById(userProfile.mainProfileId);
   if (!mainProfile) return null;
 
@@ -227,7 +228,7 @@ export function SkillAssessment({ userProfile, onSkillUpdate, onClose }: SkillAs
 
     // Собираем уникальные компетенции дополнительных профилей (не входящие в основной)
     const additionalIds = new Set<string>();
-    userProfile.additionalProfileIds.forEach((profileId) => {
+    (userProfile.additionalProfileIds || []).forEach((profileId) => {
       const profile = getProfileById(profileId);
       profile?.requiredCompetences.forEach((c) => {
         // Добавляем только если компетенция не входит в основной профиль
@@ -310,7 +311,7 @@ export function SkillAssessment({ userProfile, onSkillUpdate, onClose }: SkillAs
     if (mainReq) return mainReq;
 
     // Затем проверяем дополнительные профили
-    for (const profileId of userProfile.additionalProfileIds) {
+    for (const profileId of userProfile.additionalProfileIds || []) {
       const profile = getProfileById(profileId);
       const req = profile?.requiredCompetences.find(
         (c) => c.competenceId === competenceId

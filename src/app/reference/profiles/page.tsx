@@ -35,9 +35,10 @@ import { Separator } from "@/components/ui/separator";
 import { TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { Plus, Pencil, Trash2, X, AlertCircle, Search, Filter, Info, Users, ChevronDown, ChevronRight, Briefcase, Link2, GitCompare } from "lucide-react";
+import { Plus, Pencil, Trash2, X, AlertCircle, Search, Filter, Info, Users, ChevronDown, ChevronRight, Briefcase, Link2, GitCompare, ClipboardList } from "lucide-react";
 import type { SkillLevel, ProfileLevel } from "@/types";
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select";
+import { ProfileCreationWizard } from "@/components/profile-creation-wizard";
 
 const levelNames = ["Начальный", "Базовый", "Средний", "Продвинутый", "Экспертный"];
 const levelColors = [
@@ -69,16 +70,16 @@ function ProfileLevelCard({
   const levelColor = profileLevelColors[profileLevel.level] || "bg-slate-100 text-slate-700 border-slate-300";
 
   return (
-    <div className="border rounded-md overflow-hidden bg-card">
+    <div className="border rounded-md overflow-hidden bg-card max-w-full">
       <div
-        className="p-2.5 cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between gap-2"
+        className="p-2.5 cursor-pointer hover:bg-muted/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex-1 min-w-0 flex items-center gap-2">
+        <div className="flex items-start gap-2">
           <Button
             variant="ghost"
             size="icon"
-            className="h-5 w-5 flex-shrink-0"
+            className="h-5 w-5 flex-shrink-0 mt-0.5"
             onClick={(e) => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
@@ -90,20 +91,24 @@ function ProfileLevelCard({
               <ChevronRight className="h-3.5 w-3.5" />
             )}
           </Button>
-          <Badge variant="outline" className={`text-xs px-2 py-0.5 ${levelColor}`}>
-            {levelLabel}
-          </Badge>
-          <span className="font-semibold text-sm">{profileLevel.name}</span>
-          {!isExpanded && (
-            <span className="text-sm text-muted-foreground truncate ml-2">
-              {profileLevel.description}
-            </span>
-          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className={`text-xs px-2 py-0.5 flex-shrink-0 ${levelColor}`}>
+                {levelLabel}
+              </Badge>
+              <span className="font-semibold text-sm break-words">{profileLevel.name}</span>
+            </div>
+            {!isExpanded && (
+              <div className="text-sm text-muted-foreground break-words mt-1">
+                {profileLevel.description}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
           {isExpanded && (
-        <div className="border-t bg-muted/30 p-2.5 space-y-2.5">
+        <div className="border-t bg-muted/30 p-2.5 space-y-2.5 overflow-x-hidden">
           {/* Обязанности */}
           <div className="space-y-1.5">
             <h4 className="font-semibold text-sm flex items-center gap-1.5">
@@ -112,9 +117,11 @@ function ProfileLevelCard({
             </h4>
             <ul className="space-y-1 ml-4">
               {profileLevel.responsibilities.map((responsibility, idx) => (
-                <li key={idx} className="text-sm text-muted-foreground flex items-start gap-1.5">
-                  <span className="text-foreground mt-0.5">•</span>
-                  <span>{responsibility}</span>
+                <li key={idx} className="text-sm text-muted-foreground">
+                  <div className="flex items-start gap-1.5">
+                    <span className="text-foreground mt-0.5 flex-shrink-0">•</span>
+                    <div className="flex-1 whitespace-pre-line break-words">{responsibility}</div>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -131,13 +138,13 @@ function ProfileLevelCard({
             <div className="space-y-2 ml-4">
               <div className="text-sm">
                 <span className="font-medium text-foreground">Образование: </span>
-                <span className="text-muted-foreground">
+                <span className="text-muted-foreground break-words">
                   {profileLevel.education || "Не указано"}
                 </span>
               </div>
               <div className="text-sm">
                 <span className="font-medium text-foreground">Стаж: </span>
-                <span className="text-muted-foreground">
+                <span className="text-muted-foreground break-words">
                   {profileLevel.experience || "Не указано"}
                 </span>
               </div>
@@ -221,6 +228,29 @@ function ProfileLevelCard({
               </div>
             </div>
           </div>
+
+          {/* Примеры задач */}
+          {profileLevel.taskExamples && profileLevel.taskExamples.length > 0 && (
+            <>
+              <Separator className="my-2" />
+              <div className="space-y-1.5">
+                <h4 className="font-semibold text-sm flex items-center gap-1.5">
+                  <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
+                  Уровень сложности решаемых задач:
+                </h4>
+                <ul className="space-y-2 ml-4">
+                  {profileLevel.taskExamples.map((task, idx) => (
+                    <li key={idx} className="text-sm text-muted-foreground">
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-foreground mt-0.5 flex-shrink-0 font-medium">{idx + 1}.</span>
+                        <div className="flex-1 whitespace-pre-line break-words">{task}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -657,9 +687,9 @@ export default function ProfilesPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="flex gap-4 min-h-[calc(100vh-280px)]">
-          {/* Левая колонка - список профилей (20%) */}
-          <div className="w-[20%] min-w-[200px] flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
+        <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
+          {/* Левая колонка - список профилей (фиксированная ширина) */}
+          <div className="w-[300px] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
             <div className="p-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Список профилей</h3>
             </div>
@@ -675,8 +705,8 @@ export default function ProfilesPage() {
                         : "hover:bg-muted"
                     }`}
                   >
-                    <div className="font-medium text-sm">{profile.name}</div>
-                    <div className={`text-xs mt-0.5 ${
+                    <div className="font-medium text-sm break-words">{profile.name}</div>
+                    <div className={`text-xs mt-0.5 break-words ${
                       selectedProfile?.id === profile.id
                         ? "text-accent-foreground/80"
                         : "text-muted-foreground"
@@ -691,15 +721,15 @@ export default function ProfilesPage() {
             </div>
           </div>
 
-          {/* Правая колонка - детальная информация (80%) */}
-          <div className="flex-1 overflow-y-auto h-[calc(100vh-280px)]">
+          {/* Правая колонка - детальная информация (оставшееся пространство) */}
+          <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-280px)]">
             {selectedProfile ? (
-              <Card className="w-full">
+              <Card className="w-full max-w-full overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-xl mb-1">{selectedProfile.name}</CardTitle>
-                      <CardDescription className="text-base">
+                      <CardTitle className="text-xl mb-1 break-words">{selectedProfile.name}</CardTitle>
+                      <CardDescription className="text-base break-words">
                         {selectedProfile.description}
                       </CardDescription>
                     </div>
@@ -725,8 +755,8 @@ export default function ProfilesPage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-4">
+                <CardContent className="pt-0 overflow-x-hidden">
+                  <div className="space-y-4 max-w-full">
                     {/* ТФР */}
                     {selectedProfile.tfr && (
                       <>
@@ -748,7 +778,7 @@ export default function ProfilesPage() {
                         Обязательные компетенции:
                       </h3>
                       <TooltipProvider>
-                        <div className="flex flex-wrap gap-1.5 p-3 border rounded-lg bg-muted/20 min-h-[80px]">
+                        <div className="flex flex-wrap gap-1.5 p-3 border rounded-lg bg-muted/20 min-h-[80px] overflow-x-hidden">
                           {selectedProfile.requiredCompetences.length === 0 ? (
                             <p className="text-xs text-muted-foreground italic">Нет компетенций</p>
                           ) : (
@@ -900,8 +930,8 @@ export default function ProfilesPage() {
                           </h3>
                           <div className="space-y-2">
                             {selectedProfile.experts.map((expert, index) => (
-                              <div key={index} className="flex items-center gap-3 p-3 border rounded-lg bg-muted/20">
-                                <Avatar className="h-12 w-12">
+                              <div key={index} className="flex items-center gap-3 p-3 border rounded-lg bg-muted/20 overflow-hidden">
+                                <Avatar className="h-12 w-12 flex-shrink-0">
                                   {expert.avatar ? (
                                     <AvatarImage src={expert.avatar} alt={expert.fullName} />
                                   ) : null}
@@ -915,8 +945,8 @@ export default function ProfilesPage() {
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-semibold text-base">{expert.fullName}</div>
-                                  <div className="text-sm text-muted-foreground">{expert.position}</div>
+                                  <div className="font-semibold text-base break-words">{expert.fullName}</div>
+                                  <div className="text-sm text-muted-foreground break-words">{expert.position}</div>
                                 </div>
                               </div>
                             ))}
@@ -944,697 +974,40 @@ export default function ProfilesPage() {
 
       {/* Диалог создания/редактирования */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">
+            <DialogTitle>
               {editingProfile ? "Редактировать профиль" : "Создать профиль"}
             </DialogTitle>
-            <DialogDescription>
-              {editingProfile
-                ? "Внесите изменения в профиль и его компетенции"
-                : "Заполните информацию о профиле и добавьте требуемые компетенции"}
-            </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            {/* Основная информация */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Info className="h-4 w-4 text-muted-foreground" />
-                <Label className="text-base font-semibold">Основная информация</Label>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="name">
-                    Название профиля <span className="text-destructive">*</span>
-                  </Label>
-                  {formData.name && (
-                    <span className="text-xs text-muted-foreground">{formData.name.length} символов</span>
-                  )}
-                </div>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Например, Разработчик Perl"
-                  className="text-base"
-                  maxLength={100}
-                />
-                {!formData.name && (
-                  <p className="text-xs text-muted-foreground">Введите название профиля разработчика</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="description">
-                    Описание <span className="text-destructive">*</span>
-                  </Label>
-                  {formData.description && (
-                    <span className="text-xs text-muted-foreground">{formData.description.length} символов</span>
-                  )}
-                </div>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Опишите профиль и его основные задачи, область применения, ключевые технологии"
-                  rows={4}
-                  className="text-base resize-none"
-                  maxLength={500}
-                />
-                {!formData.description && (
-                  <p className="text-xs text-muted-foreground">Добавьте описание профиля для лучшего понимания его назначения</p>
-                )}
-              </div>
+          {isDialogOpen && (
+            <ProfileCreationWizard
+              isOpen={isDialogOpen}
+              onClose={() => setIsDialogOpen(false)}
+              onSave={(profileData) => {
+                const profileDataWithLevels: Omit<Profile, "id"> = {
+                  name: profileData.name,
+                  description: profileData.description,
+                  tfr: profileData.tfr,
+                  requiredCompetences: profileData.requiredCompetences,
+                  experts: profileData.experts && profileData.experts.length > 0 ? profileData.experts : undefined,
+                  levels: profileData.levels && profileData.levels.length > 0 ? profileData.levels : undefined,
+                };
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="tfr">
-                    ТФР (Типовая функциональная роль)
-                  </Label>
-                  {formData.tfr && (
-                    <span className="text-xs text-muted-foreground">{formData.tfr.length} символов</span>
-                  )}
-                </div>
-                <Input
-                  id="tfr"
-                  value={formData.tfr}
-                  onChange={(e) => setFormData({ ...formData, tfr: e.target.value })}
-                  placeholder="Например, Разработчик, Аналитик, Тестировщик"
-                  className="text-base"
-                  maxLength={100}
-                />
-                {!formData.tfr && (
-                  <p className="text-xs text-muted-foreground">Укажите типовую функциональную роль (опционально)</p>
-                )}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Информация об экспертах */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <Label className="text-base font-semibold">Эксперты (владельцы профиля)</Label>
-                  {formData.experts.length > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {formData.experts.length} {formData.experts.length === 1 ? "эксперт" : formData.experts.length < 5 ? "эксперта" : "экспертов"}
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (formData.experts.length < 10) {
-                      setFormData({
-                        ...formData,
-                        experts: [
-                          ...formData.experts,
-                          { avatar: "", fullName: "", position: "" },
-                        ],
-                      });
-                    }
-                  }}
-                  disabled={formData.experts.length >= 10}
-                  title={formData.experts.length >= 10 ? "Максимум 10 экспертов" : "Добавить эксперта"}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Добавить эксперта
-                  {formData.experts.length > 0 && ` (${formData.experts.length}/10)`}
-                </Button>
-              </div>
-              
-              {formData.experts.length === 0 ? (
-                <div className="text-center py-6 border-2 border-dashed rounded-lg bg-muted/20">
-                  <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground mb-1">Нет добавленных экспертов</p>
-                  <p className="text-xs text-muted-foreground">Нажмите "Добавить эксперта" для добавления владельца профиля</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {formData.experts.map((expert, index) => (
-                    <div key={index} className="p-4 border rounded-lg space-y-3 bg-muted/20 hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-sm font-semibold">Эксперт {index + 1}</Label>
-                          {expert.fullName && expert.position && (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
-                              Заполнен
-                            </Badge>
-                          )}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => {
-                            setFormData({
-                              ...formData,
-                              experts: formData.experts.filter((_, i) => i !== index),
-                            });
-                          }}
-                          title="Удалить эксперта"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label htmlFor={`expert-fullName-${index}`}>
-                            ФИО эксперта <span className="text-muted-foreground text-xs">(рекомендуется)</span>
-                          </Label>
-                          <Input
-                            id={`expert-fullName-${index}`}
-                            value={expert.fullName}
-                            onChange={(e) => {
-                              const updatedExperts = [...formData.experts];
-                              updatedExperts[index] = { ...updatedExperts[index], fullName: e.target.value };
-                              setFormData({ ...formData, experts: updatedExperts });
-                            }}
-                            placeholder="Например, Глебкин Роман Игоревич"
-                            className="text-base"
-                            maxLength={100}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`expert-position-${index}`}>
-                            Должность <span className="text-muted-foreground text-xs">(рекомендуется)</span>
-                          </Label>
-                          <Input
-                            id={`expert-position-${index}`}
-                            value={expert.position}
-                            onChange={(e) => {
-                              const updatedExperts = [...formData.experts];
-                              updatedExperts[index] = { ...updatedExperts[index], position: e.target.value };
-                              setFormData({ ...formData, experts: updatedExperts });
-                            }}
-                            placeholder="Например, Исполнительный директор по разработке"
-                            className="text-base"
-                            maxLength={100}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor={`expert-avatar-${index}`}>
-                          URL аватарки <span className="text-muted-foreground text-xs">(необязательно)</span>
-                        </Label>
-                        <Input
-                          id={`expert-avatar-${index}`}
-                          value={expert.avatar}
-                          onChange={(e) => {
-                            const updatedExperts = [...formData.experts];
-                            updatedExperts[index] = { ...updatedExperts[index], avatar: e.target.value };
-                            setFormData({ ...formData, experts: updatedExperts });
-                          }}
-                          placeholder="https://example.com/avatar.jpg"
-                          className="text-base"
-                          type="url"
-                        />
-                        {expert.avatar && !expert.avatar.startsWith("http") && (
-                          <p className="text-xs text-amber-600">URL должен начинаться с http:// или https://</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Компетенции */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Info className="h-4 w-4 text-muted-foreground" />
-                <Label className="text-base font-semibold">Обязательные компетенции</Label>
-                {formData.requiredCompetences.length > 0 && (
-                  <Badge variant="outline" className="text-xs">
-                    {formData.requiredCompetences.length} {formData.requiredCompetences.length === 1 ? "компетенция" : formData.requiredCompetences.length < 5 ? "компетенции" : "компетенций"}
-                  </Badge>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Выберите компетенции <span className="text-destructive">*</span></Label>
-                <MultiSelect
-                  options={competences
-                    .filter((c): c is NonNullable<typeof c> => c !== null && c !== undefined && c.id !== undefined)
-                    .map((c) => ({
-                      value: c.id!,
-                      label: c.name,
-                      badge: c.type === "корпоративные компетенции" ? "Корп." : "Проф.",
-                      badgeClassName: c.type === "корпоративные компетенции"
-                        ? "bg-cyan-50 text-cyan-700 border-cyan-300"
-                        : "bg-purple-50 text-purple-700 border-purple-300",
-                    }))}
-                  selected={formData.requiredCompetences.map((c) => c.competenceId)}
-                  onChange={(selectedIds) => {
-                    // Добавляем новые компетенции с уровнем по умолчанию
-                    const currentIds = new Set(formData.requiredCompetences.map((c) => c.competenceId));
-                    const newIds = selectedIds.filter((id) => !currentIds.has(id));
-                    const removedIds = formData.requiredCompetences
-                      .map((c) => c.competenceId)
-                      .filter((id) => !selectedIds.includes(id));
-
-                    let updated = formData.requiredCompetences.filter(
-                      (c) => !removedIds.includes(c.competenceId)
-                    );
-
-                    // Добавляем новые компетенции (без указания уровня, используется значение по умолчанию)
-                    newIds.forEach((id) => {
-                      updated.push({
-                        competenceId: id,
-                        requiredLevel: 1 as SkillLevel, // Минимальный уровень по умолчанию
-                      });
-                    });
-
-                    setFormData({ ...formData, requiredCompetences: updated });
-                  }}
-                  placeholder="Выберите компетенции..."
-                  className="w-full"
-                />
-              </div>
-
-              {formData.requiredCompetences.length > 0 && (
-                <>
-                  <div className="bg-muted/30 p-3 rounded-lg border">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Всего компетенций: <span className="font-semibold text-foreground">{formData.requiredCompetences.length}</span>
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {(() => {
-                          const professional = formData.requiredCompetences.filter((reqComp) => {
-                            const comp = getCompetenceById(reqComp.competenceId);
-                            return comp && comp.type === "профессиональные компетенции";
-                          }).length;
-                          const corporate = formData.requiredCompetences.length - professional;
-                          return (
-                            <>
-                              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-300">
-                                Проф.: {professional}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs bg-cyan-50 text-cyan-700 border-cyan-300">
-                                Корп.: {corporate}
-                              </Badge>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {formData.requiredCompetences.map((reqComp, index) => {
-                      const comp = getCompetenceById(reqComp.competenceId);
-                      if (!comp) return null;
-
-                      return (
-                        <div
-                          key={reqComp.competenceId}
-                          className="flex items-center gap-2 p-2 border rounded-md bg-muted/20 hover:bg-muted/30 transition-colors"
-                        >
-                          <span className="text-sm font-medium">{comp.name}</span>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${
-                              comp.type === "корпоративные компетенции"
-                                ? "bg-cyan-50 text-cyan-700 border-cyan-300"
-                                : "bg-purple-50 text-purple-700 border-purple-300"
-                            }`}
-                          >
-                            {comp.type === "корпоративные компетенции" ? "Корп." : "Проф."}
-                          </Badge>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => removeCompetence(index)}
-                            title="Удалить компетенцию"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-
-              {formData.requiredCompetences.length === 0 && (
-                <div className="text-center py-8 border-2 border-dashed rounded-lg bg-muted/20">
-                  <Info className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Нет добавленных компетенций
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Выберите компетенции из списка выше. Компетенции определяют необходимые компетенции для профиля.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Уровни профиля */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-muted-foreground" />
-                  <Label className="text-base font-semibold">Уровни профиля</Label>
-                  {formData.levels.length > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {formData.levels.length} {formData.levels.length === 1 ? "уровень" : formData.levels.length < 5 ? "уровня" : "уровней"}
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addLevel}
-                  disabled={formData.levels.length >= 5}
-                  title={formData.levels.length >= 5 ? "Максимум 5 уровней" : "Добавить уровень"}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Добавить уровень
-                  {formData.levels.length > 0 && ` (${formData.levels.length}/5)`}
-                </Button>
-              </div>
-
-              {formData.levels.length === 0 ? (
-                <div className="text-center py-8 border-2 border-dashed rounded-lg bg-muted/20">
-                  <Briefcase className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Нет добавленных уровней
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Нажмите "Добавить уровень", чтобы начать. Уровни определяют карьерную прогрессию в профиле.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {formData.levels.map((level, levelIndex) => {
-                    const levelOption = levelOptions.find((opt) => opt.value === level.level);
-                    const usedLevels = new Set(formData.levels.map((l, i) => i !== levelIndex ? l.level : null).filter(Boolean));
-                    const availableLevelOptions = levelOptions.filter((opt) => !usedLevels.has(opt.value) || opt.value === level.level);
-
-                    return (
-                      <div key={levelIndex} className="p-4 border rounded-lg space-y-4 bg-muted/20">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-sm font-semibold">
-                              Уровень {levelIndex + 1}: {levelOption?.label || level.level}
-                            </Label>
-                            {level.name && level.description && (
-                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
-                                Заполнен
-                              </Badge>
-                            )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => removeLevel(levelIndex)}
-                            title="Удалить уровень"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="space-y-2">
-                            <Label>Тип уровня <span className="text-destructive">*</span></Label>
-                            <Select
-                              value={level.level}
-                              onValueChange={(value) => updateLevel(levelIndex, "level", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableLevelOptions.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Название уровня <span className="text-destructive">*</span></Label>
-                            <Input
-                              value={level.name}
-                              onChange={(e) => updateLevel(levelIndex, "name", e.target.value)}
-                              placeholder="Например, Trainee Perl Developer"
-                              className="text-base"
-                              maxLength={100}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Описание уровня <span className="text-destructive">*</span></Label>
-                            <Textarea
-                              value={level.description}
-                              onChange={(e) => updateLevel(levelIndex, "description", e.target.value)}
-                              placeholder="Опишите уровень и его основные характеристики"
-                              rows={3}
-                              className="text-base resize-none"
-                              maxLength={500}
-                            />
-                          </div>
-
-                          {/* Обязанности */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label>Типовые должностные обязанности</Label>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addResponsibility(levelIndex)}
-                              >
-                                <Plus className="mr-2 h-3 w-3" />
-                                Добавить обязанность
-                              </Button>
-                            </div>
-                            {level.responsibilities.length === 0 ? (
-                              <p className="text-xs text-muted-foreground italic">Нет обязанностей. Нажмите "Добавить обязанность" для добавления.</p>
-                            ) : (
-                              <div className="space-y-2">
-                                {level.responsibilities.map((resp, respIndex) => (
-                                  <div key={respIndex} className="flex items-center gap-2">
-                                    <Input
-                                      value={resp}
-                                      onChange={(e) => updateResponsibility(levelIndex, respIndex, e.target.value)}
-                                      placeholder="Введите обязанность"
-                                      className="text-sm"
-                                      maxLength={200}
-                                    />
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 text-destructive hover:text-destructive"
-                                      onClick={() => removeResponsibility(levelIndex, respIndex)}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Требования к образованию и стажу */}
-                          <div className="space-y-3">
-                            <div className="space-y-2">
-                              <Label>Требования к образованию</Label>
-                              <Input
-                                value={level.education || ""}
-                                onChange={(e) => updateLevel(levelIndex, "education", e.target.value)}
-                                placeholder="Например, Высшее техническое образование"
-                                className="text-base"
-                                maxLength={200}
-                              />
-                              <p className="text-xs text-muted-foreground">Укажите требования к образованию для данного уровня (необязательно)</p>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Требования к стажу</Label>
-                              <Input
-                                value={level.experience || ""}
-                                onChange={(e) => updateLevel(levelIndex, "experience", e.target.value)}
-                                placeholder="Например, Опыт работы от 1 года"
-                                className="text-base"
-                                maxLength={200}
-                              />
-                              <p className="text-xs text-muted-foreground">Укажите требования к стажу работы для данного уровня (необязательно)</p>
-                            </div>
-                          </div>
-
-                          {/* Компетенции уровня */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label>Требуемые компетенции</Label>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addLevelSkill(levelIndex)}
-                                disabled={Object.keys(level.requiredSkills).length >= competences.length}
-                              >
-                                <Plus className="mr-2 h-3 w-3" />
-                                Добавить компетенцию
-                              </Button>
-                            </div>
-                            
-                            {/* Форма добавления компетенции */}
-                            {addingSkillToLevel === levelIndex && (() => {
-                              const levelSkills = new Set(Object.keys(level.requiredSkills));
-                              const availableComps = competences.filter((c) => c.id && !levelSkills.has(c.id));
-                              
-                              return (
-                                <div className="p-3 border rounded-md bg-muted/30 space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <Select
-                                      value={selectedCompetenceForSkill}
-                                      onValueChange={setSelectedCompetenceForSkill}
-                                    >
-                                      <SelectTrigger className="flex-1">
-                                        <SelectValue placeholder="Выберите компетенцию" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {availableComps.map((comp) => (
-                                          <SelectItem key={comp.id} value={comp.id}>
-                                            <div className="flex items-center gap-2">
-                                              <span>{comp.name}</span>
-                                              <Badge
-                                                variant="outline"
-                                                className={`text-xs ${
-                                                  comp.type === "корпоративные компетенции"
-                                                    ? "bg-cyan-50 text-cyan-700 border-cyan-300"
-                                                    : "bg-purple-50 text-purple-700 border-purple-300"
-                                                }`}
-                                              >
-                                                {comp.type === "корпоративные компетенции" ? "Корп." : "Проф."}
-                                              </Badge>
-                                            </div>
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <Button
-                                      type="button"
-                                      variant="default"
-                                      size="sm"
-                                      onClick={() => confirmAddLevelSkill(levelIndex)}
-                                      disabled={!selectedCompetenceForSkill}
-                                    >
-                                      Добавить
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => {
-                                        setAddingSkillToLevel(null);
-                                        setSelectedCompetenceForSkill("");
-                                      }}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              );
-                            })()}
-
-                            {Object.keys(level.requiredSkills).length === 0 && addingSkillToLevel !== levelIndex ? (
-                              <p className="text-xs text-muted-foreground italic">Нет компетенций. Нажмите "Добавить компетенцию" для добавления.</p>
-                            ) : (
-                              <div className="space-y-2">
-                                {Object.entries(level.requiredSkills).map(([competenceId, skillLevel]) => {
-                                  const comp = getCompetenceById(competenceId);
-                                  if (!comp) return null;
-
-                                  return (
-                                    <div key={competenceId} className="p-3 border rounded-md bg-muted/10 flex items-center gap-3">
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <span className="text-sm font-medium">{comp.name}</span>
-                                          <Badge
-                                            variant="outline"
-                                            className={`text-xs ${
-                                              comp.type === "корпоративные компетенции"
-                                                ? "bg-cyan-50 text-cyan-700 border-cyan-300"
-                                                : "bg-purple-50 text-purple-700 border-purple-300"
-                                            }`}
-                                          >
-                                            {comp.type === "корпоративные компетенции" ? "Корп." : "Проф."}
-                                          </Badge>
-                                        </div>
-                                        <Select
-                                          value={skillLevel.toString()}
-                                          onValueChange={(value) => updateLevelSkill(levelIndex, competenceId, parseInt(value) as SkillLevel)}
-                                        >
-                                          <SelectTrigger className="w-full">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {[1, 2, 3, 4, 5].map((lvl) => (
-                                              <SelectItem key={lvl} value={lvl.toString()}>
-                                                {lvl}. {levelNames[lvl - 1]}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-destructive hover:text-destructive"
-                                        onClick={() => removeLevelSkill(levelIndex, competenceId)}
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Отмена
-            </Button>
-            <Button onClick={handleSave} disabled={!formData.name || !formData.description || formData.requiredCompetences.length === 0}>
-              {editingProfile ? "Сохранить изменения" : "Создать профиль"}
-            </Button>
-          </DialogFooter>
+                if (editingProfile) {
+                  updateProfile(editingProfile.id, profileDataWithLevels);
+                } else {
+                  createProfile(profileDataWithLevels);
+                }
+                loadProfiles();
+                setIsDialogOpen(false);
+                setEditingProfile(null);
+                setErrorAlert(null);
+              }}
+              editingProfile={editingProfile}
+              existingProfiles={profiles}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1674,9 +1047,10 @@ export default function ProfilesPage() {
 
           {selectedProfile && selectedProfile.levels && selectedProfile.levels.length > 0 && (
             <Tabs defaultValue="responsibilities" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="responsibilities">Обязанности и требования к образованию и стажу</TabsTrigger>
                 <TabsTrigger value="competences">Компетенции</TabsTrigger>
+                <TabsTrigger value="tasks">Уровень сложности решаемых задач</TabsTrigger>
               </TabsList>
               
               <TabsContent value="responsibilities" className="mt-4">
@@ -1733,9 +1107,11 @@ export default function ProfilesPage() {
                                     {level.responsibilities && level.responsibilities.length > 0 ? (
                                       <ul className="space-y-1">
                                         {level.responsibilities.map((resp, idx) => (
-                                          <li key={idx} className="flex items-start gap-1.5">
-                                            <span className="text-foreground mt-0.5">•</span>
-                                            <span>{resp}</span>
+                                          <li key={idx} className="text-sm">
+                                            <div className="flex items-start gap-1.5">
+                                              <span className="text-foreground mt-0.5 flex-shrink-0">•</span>
+                                              <div className="flex-1 whitespace-pre-line break-words">{resp}</div>
+                                            </div>
                                           </li>
                                         ))}
                                       </ul>
@@ -1927,6 +1303,82 @@ export default function ProfilesPage() {
                           </div>
                         </div>
                       </TooltipProvider>
+                    );
+                  })()}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="tasks" className="mt-4">
+                <div className="py-4 overflow-x-auto">
+                  {(() => {
+                    const levelOrder = ["trainee", "junior", "middle", "senior", "lead"];
+                    const levelLabels = {
+                      trainee: "Стажер",
+                      junior: "Младший",
+                      middle: "Средний",
+                      senior: "Старший",
+                      lead: "Ведущий",
+                    };
+                    
+                    const sortedLevels = [...selectedProfile.levels].sort((a, b) => {
+                      const indexA = levelOrder.indexOf(a.level);
+                      const indexB = levelOrder.indexOf(b.level);
+                      return indexA - indexB;
+                    });
+
+                    return (
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="bg-muted/50">
+                                <th className="border p-2 text-left font-semibold text-sm sticky left-0 bg-muted/50 z-10 min-w-[250px]">
+                                  Уровень сложности решаемых задач
+                                </th>
+                                {sortedLevels.map((level) => {
+                                  const levelLabel = levelLabels[level.level] || level.level;
+                                  const levelColor = profileLevelColors[level.level] || "bg-slate-100 text-slate-700 border-slate-300";
+                                  return (
+                                    <th
+                                      key={level.level}
+                                      className="border p-2 text-center font-semibold text-sm min-w-[200px] align-top"
+                                    >
+                                      <Badge variant="outline" className={`text-base px-4 py-1.5 font-semibold ${levelColor}`}>
+                                        {levelLabel}
+                                      </Badge>
+                                    </th>
+                                  );
+                                })}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr className="hover:bg-muted/30 transition-colors">
+                                <td className="border p-2 text-sm font-medium sticky left-0 bg-background z-10">
+                                  Примеры задач
+                                </td>
+                                {sortedLevels.map((level) => (
+                                  <td key={level.level} className="border p-2 text-sm text-left align-top">
+                                    {level.taskExamples && level.taskExamples.length > 0 ? (
+                                      <ul className="space-y-2">
+                                        {level.taskExamples.map((task, idx) => (
+                                          <li key={idx} className="text-sm">
+                                            <div className="flex items-start gap-1.5">
+                                              <span className="text-foreground mt-0.5 flex-shrink-0 font-medium">{idx + 1}.</span>
+                                              <div className="flex-1 whitespace-pre-line break-words">{task}</div>
+                                            </div>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </td>
+                                ))}
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     );
                   })()}
                 </div>

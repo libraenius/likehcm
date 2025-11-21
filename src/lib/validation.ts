@@ -82,6 +82,7 @@ export const profileLevelSchema = z.object({
   education: z.string().optional(),
   experience: z.string().optional(),
   requiredSkills: z.record(z.string(), skillLevelSchema),
+  taskExamples: z.array(z.string().min(1)).optional(),
 });
 
 // Валидация профиля
@@ -175,12 +176,12 @@ export function safeValidate<T>(
 
 // Функция для получения первой ошибки валидации
 export function getFirstError(errors: z.ZodError): string {
-  const firstError = errors.errors[0];
+  const firstError = errors.issues[0];
   return firstError?.message || "Ошибка валидации";
 }
 
 // Функция для получения всех ошибок валидации
 export function getAllErrors(errors: z.ZodError): string[] {
-  return errors.errors.map((err) => err.message);
+  return errors.issues.map((err) => err.message);
 }
 

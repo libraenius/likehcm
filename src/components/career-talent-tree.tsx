@@ -54,8 +54,9 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
     >
       {/* Карточка с информацией */}
       <Card
+        data-card-level={level.level}
         className={cn(
-          "w-80 border-2 transition-all duration-300 hover:shadow-lg",
+          "w-80 max-w-full border-2 transition-all duration-300 hover:shadow-lg overflow-hidden",
           isUnlocked
             ? "border-primary/50 shadow-md hover:border-primary/70 gradient-card-unlocked"
             : "border-muted bg-muted/30 opacity-75",
@@ -63,17 +64,17 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
         )}
       >
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-sm font-semibold leading-tight">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-sm font-semibold leading-tight break-words">
                 {level.name}
               </CardTitle>
-              <CardDescription className="text-xs mt-1">
+              <CardDescription className="text-xs mt-1 break-words line-clamp-3">
                 {level.description}
               </CardDescription>
             </div>
             {isCurrent && (
-              <Badge variant="default" className="ml-2">
+              <Badge variant="default" className="ml-2 flex-shrink-0">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 Текущий
               </Badge>
@@ -102,7 +103,7 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
                     key={competence?.id}
                     variant="outline"
                     className={cn(
-                      "text-xs border",
+                      "text-xs border max-w-full whitespace-normal break-words",
                       isUnlocked ? professionalColor : `${professionalColor} opacity-60`
                     )}
                   >
@@ -123,7 +124,7 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
                     key={competence?.id}
                     variant="outline"
                     className={cn(
-                      "text-xs border",
+                      "text-xs border max-w-full whitespace-normal break-words",
                       isUnlocked ? corporateColor : `${corporateColor} opacity-60`
                     )}
                   >
@@ -133,12 +134,6 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
               </div>
             </div>
           )}
-
-          {/* Минимальное соответствие */}
-          <div className="flex items-center justify-between text-xs pt-1 border-t">
-            <span className="text-muted-foreground">Минимум:</span>
-            <Badge variant="secondary">{level.minMatchPercentage}%</Badge>
-          </div>
         </CardContent>
       </Card>
     </div>
@@ -148,29 +143,63 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
 export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: CareerTalentTreeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1000);
+  const [containerHeight, setContainerHeight] = useState(400);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const updateWidth = () => {
+    const updateSize = () => {
       if (containerRef.current) {
         setContainerWidth(containerRef.current.clientWidth);
+        // Измеряем реальную высоту карточек
+        // Карточки позиционированы абсолютно, поэтому измеряем их напрямую
+        requestAnimationFrame(() => {
+          if (containerRef.current) {
+            // Находим все карточки внутри контейнера
+            const cards = containerRef.current.querySelectorAll('[data-card-level]');
+            let maxHeight = 0;
+            
+            cards.forEach((card) => {
+              const rect = card.getBoundingClientRect();
+              maxHeight = Math.max(maxHeight, rect.height);
+            });
+            
+            // Если карточки еще не отрендерились, используем минимальную высоту
+            if (maxHeight === 0) {
+              maxHeight = 400;
+            }
+            
+            // Добавляем отступы сверху и снизу (20px + 40px)
+            setContainerHeight(maxHeight + 60);
+          }
+        });
       }
     };
 
     // Используем ResizeObserver для более точного отслеживания
-    const resizeObserver = new ResizeObserver(updateWidth);
+    const resizeObserver = new ResizeObserver(updateSize);
     resizeObserver.observe(containerRef.current);
 
     // Также обновляем при изменении размера окна
-    window.addEventListener('resize', updateWidth);
-    updateWidth(); // Начальное обновление
+    window.addEventListener('resize', updateSize);
+    
+    // Обновляем размер после рендера карточек
+    // Используем несколько таймаутов для надежности
+    const timeoutId1 = setTimeout(updateSize, 0);
+    const timeoutId2 = setTimeout(updateSize, 100);
+    const timeoutId3 = setTimeout(updateSize, 300);
+    
+    // Также обновляем при изменении уровней или данных пользователя
+    updateSize();
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener('resize', updateWidth);
+      window.removeEventListener('resize', updateSize);
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
     };
-  }, []);
+  }, [careerTrack.levels, userSkills, progress]);
 
   // Вычисляем прогресс для каждого уровня
   // В справочнике (без userSkills и progress) не показываем прогресс пользователя
@@ -242,33 +271,6 @@ export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: Car
     };
   }, [careerTrack.levels.length]);
   
-  // Вычисляем высоту контейнера на основе максимальной высоты карточек
-  const containerHeight = useMemo(() => {
-    // Находим уровень с максимальным количеством компетенций
-    const maxCompetences = Math.max(
-      ...careerTrack.levels.map(level => Object.keys(level.requiredSkills).length),
-      0
-    );
-    
-    // Вычисляем высоту секции компетенций
-    // Каждая компетенция занимает примерно 24px (высота Badge + gap)
-    // Учитываем переносы строк (ширина карточки 320px, Badge примерно 100-150px)
-    const badgesPerRow = Math.floor(320 / 120); // Примерно 2-3 бейджа в строке
-    const competenceRows = Math.ceil(maxCompetences / badgesPerRow);
-    const competenceSectionHeight = 20 + (competenceRows * 24); // Заголовок + строки
-    
-    // Общая высота карточки (учитываем padding Card: py-6 = 24px сверху и снизу)
-    const cardHeight = 
-      24 + // Padding сверху от Card (py-6)
-      80 + // CardHeader (название + описание)
-      40 + // Progress section
-      competenceSectionHeight + // Competences section
-      30 + // Минимальное соответствие
-      24; // Padding снизу от Card (py-6)
-    
-    // Высота контейнера = отступ сверху (20px) + самая длинная карточка + дополнительный отступ снизу (100px для больших карточек)
-    return 20 + cardHeight + 100;
-  }, [careerTrack.levels]);
 
   return (
     <div className="w-full overflow-visible">
@@ -279,7 +281,7 @@ export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: Car
           width: `${totalWidth}px`,
           maxWidth: "100%",
           minHeight: `${containerHeight}px`,
-          padding: "20px 0 100px 0",
+          padding: "20px 0 40px 0",
           overflow: "visible",
         }}
       >

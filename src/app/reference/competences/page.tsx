@@ -36,7 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, AlertCircle, TrendingUp, ChevronLeft, ChevronsLeft, ChevronsRight, Search, Filter, X, BookOpen, Video, GraduationCap } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, AlertCircle, TrendingUp, ChevronLeft, ChevronsLeft, ChevronsRight, Search, Filter, X, BookOpen, Video, GraduationCap, ArrowUp, ArrowDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 const competenceTypes = [
@@ -392,6 +392,7 @@ export default function CompetencesPage() {
   }>({
     type: [],
   });
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -588,13 +589,41 @@ export default function CompetencesPage() {
     return true;
   });
 
-  // Сортируем компетенции: сначала по типу, затем по названию
-  const sortedCompetences = [...filteredCompetences].sort((a, b) => {
-    if (a.type !== b.type) {
-      return a.type.localeCompare(b.type);
-    }
-    return a.name.localeCompare(b.name);
-  });
+  // Функция для определения, является ли символ кириллическим
+  const isCyrillic = (char: string): boolean => {
+    if (!char || char.length === 0) return false;
+    const code = char.charCodeAt(0);
+    // Основной диапазон кириллицы: 0x0400-0x04FF (включая русский алфавит 0x0410-0x044F)
+    return (code >= 0x0400 && code <= 0x04FF) || (code >= 0x0500 && code <= 0x052F);
+  };
+
+  // Функция сортировки по названию с приоритетом кириллицы
+  const sortByName = (a: Competence, b: Competence): number => {
+    const nameA = a.name.trim();
+    const nameB = b.name.trim();
+    
+    if (nameA.length === 0 && nameB.length === 0) return 0;
+    if (nameA.length === 0) return 1;
+    if (nameB.length === 0) return -1;
+    
+    // Проверяем первый символ исходной строки (до toLowerCase)
+    const firstCharA = nameA[0];
+    const firstCharB = nameB[0];
+    
+    const isCyrillicA = isCyrillic(firstCharA);
+    const isCyrillicB = isCyrillic(firstCharB);
+    
+    // Если один кириллический, а другой латинский - кириллический идет первым
+    if (isCyrillicA && !isCyrillicB) return sortOrder === "asc" ? -1 : 1;
+    if (!isCyrillicA && isCyrillicB) return sortOrder === "asc" ? 1 : -1;
+    
+    // Если оба одного типа (оба кириллические или оба латинские), сортируем по алфавиту
+    const comparison = nameA.localeCompare(nameB, "ru", { sensitivity: "base", caseFirst: "upper" });
+    return sortOrder === "asc" ? comparison : -comparison;
+  };
+
+  // Сортируем компетенции по названию
+  const sortedCompetences = [...filteredCompetences].sort(sortByName);
 
   // Вычисляем пагинацию
   const totalPages = Math.ceil(sortedCompetences.length / itemsPerPage);
@@ -602,10 +631,10 @@ export default function CompetencesPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedCompetences = sortedCompetences.slice(startIndex, endIndex);
 
-  // Сбрасываем на первую страницу при изменении количества элементов, поиска или фильтров
+  // Сбрасываем на первую страницу при изменении количества элементов, поиска, фильтров или сортировки
   useEffect(() => {
     setCurrentPage(1);
-  }, [itemsPerPage, searchQuery, filters]);
+  }, [itemsPerPage, searchQuery, filters, sortOrder]);
 
   return (
     <div className="space-y-6">
@@ -1222,7 +1251,22 @@ export default function CompetencesPage() {
         <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-[200px] font-bold text-base text-foreground">Название</TableHead>
+                  <TableHead className="w-[200px] font-bold text-base text-foreground">
+                    <Button
+                      variant="ghost"
+                      className="h-auto p-0 font-bold hover:bg-transparent"
+                      onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                    >
+                      <div className="flex items-center gap-2">
+                        Название
+                        {sortOrder === "asc" ? (
+                          <ArrowUp className="h-4 w-4" />
+                        ) : (
+                          <ArrowDown className="h-4 w-4" />
+                        )}
+                      </div>
+                    </Button>
+                  </TableHead>
                   <TableHead className="w-[170px] font-bold text-base text-foreground">Тип</TableHead>
                   <TableHead className="w-[400px] font-bold text-base text-foreground">Описание</TableHead>
                   <TableHead className="w-[150px] text-right font-bold text-base text-foreground">Действия</TableHead>

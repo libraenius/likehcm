@@ -45,6 +45,7 @@ export interface ProfileLevel {
   education?: string; // Требования к образованию
   experience?: string; // Требования к стажу
   requiredSkills: Record<string, SkillLevel>; // competenceId -> requiredLevel
+  taskExamples?: string[]; // Примеры задач уровня сложности (3 задачи)
 }
 
 export interface ProfileCompetence {
@@ -77,8 +78,8 @@ export interface UserSkill {
 
 export interface UserProfile {
   userId: string;
-  mainProfileId: string;
-  additionalProfileIds: string[];
+  mainProfileId?: string;
+  additionalProfileIds?: string[];
   skills: UserSkill[];
   careerTrackProgress?: CareerTrackProgress;
 }
