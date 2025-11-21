@@ -61,8 +61,6 @@ const levelOptions: Array<{ value: "trainee" | "junior" | "middle" | "senior" | 
   { value: "lead", label: "Ведущий (Lead)" },
 ];
 
-const levelNames = ["Начальный", "Базовый", "Средний", "Продвинутый", "Экспертный"];
-
 export function ProfileCreationWizard({
   isOpen,
   onClose,

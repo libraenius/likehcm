@@ -30,24 +30,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { Plus, Pencil, Trash2, X, AlertCircle, Search, Filter, Info, Users, ChevronDown, ChevronRight, Briefcase, Link2, GitCompare, ClipboardList } from "lucide-react";
+import { Plus, Pencil, Trash2, X, AlertCircle, Search, Info, Users, ChevronDown, ChevronRight, Briefcase, Link2, GitCompare, ClipboardList } from "lucide-react";
 import type { SkillLevel, ProfileLevel } from "@/types";
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select";
 import { ProfileCreationWizard } from "@/components/profile-creation-wizard";
 
 const levelNames = ["Начальный", "Базовый", "Средний", "Продвинутый", "Экспертный"];
-const levelColors = [
-  "bg-slate-100 text-slate-700 border-slate-300",
-  "bg-blue-100 text-blue-700 border-blue-300",
-  "bg-purple-100 text-purple-700 border-purple-300",
-  "bg-purple-200 text-purple-700 border-purple-400",
-  "bg-purple-300 text-purple-700 border-purple-600",
-];
 
 const profileLevelColors = {
   trainee: "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700",
@@ -840,7 +832,7 @@ export default function ProfilesPage() {
                                     <TooltipContent className="max-w-xs bg-popover text-popover-foreground border shadow-md [&>svg]:bg-popover [&>svg]:fill-popover">
                                       <div className="space-y-1">
                                         <div className="font-semibold text-sm">
-                                          {comp.name} - {levelName}
+                                          {comp.name}
                                         </div>
                                         <div className="text-xs opacity-80 mb-1">
                                           {comp.type}

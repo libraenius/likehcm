@@ -142,10 +142,25 @@ export const careerTrackProgressSchema = z.object({
 // Валидация профиля пользователя
 export const userProfileSchema = z.object({
   userId: z.string().min(1, "ID пользователя обязателен"),
+  lastName: z.string().optional(),
+  firstName: z.string().optional(),
+  middleName: z.string().optional(),
+  grade: z.number().int().min(1).max(17).optional(),
+  position: z.string().optional(),
   mainProfileId: z.string().optional(),
   additionalProfileIds: z.array(z.string()).optional(),
   skills: z.array(userSkillSchema),
   careerTrackProgress: careerTrackProgressSchema.optional(),
+  avatar: z.string().optional().refine(
+    (val) => {
+      if (!val || val === "") return true; // Пустое значение допустимо
+      // Проверяем, что это либо URL, либо base64 data URL
+      return val.startsWith("http://") || 
+             val.startsWith("https://") || 
+             val.startsWith("data:image/");
+    },
+    { message: "Аватар должен быть URL или base64 data URL изображения" }
+  ),
 });
 
 // Валидация члена команды

@@ -483,12 +483,12 @@ export default function TeamPage() {
   // Обновляем профиль Помыткина на основе профиля пользователя
   const teamMembers = useMemo(() => {
     return mockTeamMembers.map((member) => {
-      // Если это Помыткин и у пользователя есть профиль, используем его профиль
-      if (member.id === "member-5" && userProfile?.mainProfileId) {
+      // Если это Помыткин, используем профиль пользователя (или значение по умолчанию, если профиля нет)
+      if (member.id === "member-5") {
         return {
           ...member,
-          mainProfileId: userProfile.mainProfileId,
-          additionalProfileIds: userProfile.additionalProfileIds || [],
+          mainProfileId: userProfile?.mainProfileId || "profile-1",
+          additionalProfileIds: userProfile?.additionalProfileIds || [],
         };
       }
       return member;
@@ -977,7 +977,7 @@ export default function TeamPage() {
                                               >
                                                 {member.position}
                                               </div>
-                                              {mainProfile && (
+                                              {member.mainProfileId && mainProfile && (
                                                 <Badge
                                                   variant="outline"
                                                   className={cn(
@@ -1066,7 +1066,7 @@ export default function TeamPage() {
                                     >
                                       {member.position}
                                     </div>
-                                    {mainProfile && (
+                                    {member.mainProfileId && mainProfile && (
                                       <Badge
                                         variant="outline"
                                         className={cn(
@@ -1164,7 +1164,7 @@ export default function TeamPage() {
                                 >
                                   {member.position}
                                 </div>
-                                {mainProfile && (
+                                {member.mainProfileId && mainProfile && (
                                   <Badge
                                     variant="outline"
                                     className={cn(

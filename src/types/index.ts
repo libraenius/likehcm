@@ -78,10 +78,16 @@ export interface UserSkill {
 
 export interface UserProfile {
   userId: string;
+  lastName?: string; // Фамилия
+  firstName?: string; // Имя
+  middleName?: string; // Отчество
+  grade?: number; // Грейд (от 1 до 17)
+  position?: string; // Должность
   mainProfileId?: string;
   additionalProfileIds?: string[];
   skills: UserSkill[];
   careerTrackProgress?: CareerTrackProgress;
+  avatar?: string; // URL или base64 data URL фотографии
 }
 
 export interface CareerTrackProgress {

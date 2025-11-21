@@ -2,8 +2,6 @@
  * Константы для системы управления компетенциями
  */
 
-export const LEVEL_NAMES = ["Начальный", "Базовый", "Средний", "Продвинутый", "Экспертный"] as const;
-
 export const PROFILE_LEVEL_NAMES = {
   trainee: "Стажер",
   junior: "Младший",
@@ -28,14 +26,6 @@ export const PROFILE_LEVEL_GRADIENT_COLORS = {
   lead: "bg-gradient-to-r from-slate-500 to-slate-600 text-black border-slate-700 dark:from-slate-300 dark:to-slate-400 dark:text-white",
 } as const;
 
-export const LEVEL_COLORS = [
-  "bg-slate-100 text-slate-700 border-slate-300",
-  "bg-blue-100 text-blue-700 border-blue-300",
-  "bg-purple-100 text-purple-700 border-purple-300",
-  "bg-purple-200 text-purple-700 border-purple-400",
-  "bg-purple-300 text-purple-700 border-purple-600",
-] as const;
-
 export const COMPETENCE_TYPE_COLORS = {
   "профессиональные компетенции": "bg-purple-50 text-purple-700 border-purple-300",
   "корпоративные компетенции": "bg-cyan-50 text-cyan-700 border-cyan-300",
@@ -55,8 +45,4 @@ export const DATA_SCHEMA_VERSION = 1;
 
 // Лимиты
 export const MAX_LOCALSTORAGE_SIZE = 5 * 1024 * 1024; // 5MB
-
-// Таймауты
-export const ERROR_ALERT_TIMEOUT = 5000; // 5 секунд
-export const DEBOUNCE_DELAY = 300; // 300ms для поиска
 

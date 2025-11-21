@@ -102,7 +102,7 @@ function CompetenceTableRow({
         }`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <TableCell className="font-medium w-[200px]">
+        <TableCell className="font-medium w-[250px]">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -122,7 +122,7 @@ function CompetenceTableRow({
             {competence.name}
           </div>
         </TableCell>
-        <TableCell className="w-[170px]">
+        <TableCell className="w-[120px]">
           <Badge 
             variant="outline" 
             className={`whitespace-nowrap ${
@@ -1251,7 +1251,7 @@ export default function CompetencesPage() {
         <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-[200px] font-bold text-base text-foreground">
+                  <TableHead className="w-[250px] font-bold text-base text-foreground">
                     <Button
                       variant="ghost"
                       className="h-auto p-0 font-bold hover:bg-transparent"
@@ -1267,7 +1267,7 @@ export default function CompetencesPage() {
                       </div>
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[170px] font-bold text-base text-foreground">Тип</TableHead>
+                  <TableHead className="w-[120px] font-bold text-base text-foreground">Тип</TableHead>
                   <TableHead className="w-[400px] font-bold text-base text-foreground">Описание</TableHead>
                   <TableHead className="w-[150px] text-right font-bold text-base text-foreground">Действия</TableHead>
                 </TableRow>

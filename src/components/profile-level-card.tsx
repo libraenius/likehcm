@@ -9,8 +9,6 @@ import type { ProfileLevel } from "@/types";
 import { getCompetenceById } from "@/lib/data";
 import {
   PROFILE_LEVEL_COLORS,
-  PROFILE_LEVEL_GRADIENT_COLORS,
-  PROFILE_LEVEL_NAMES,
   COMPETENCE_TYPE_COLORS,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
