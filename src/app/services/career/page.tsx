@@ -203,7 +203,7 @@ export default function CareerPage() {
   const hasCompletedSetup = !!userProfile?.mainProfileId && userProfile.skills && userProfile.skills.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* Заголовок */}
       <div>
         <h1 className="text-4xl font-bold text-foreground mb-2">Карьера</h1>

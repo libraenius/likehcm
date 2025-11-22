@@ -57,6 +57,7 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
         data-card-level={level.level}
         className={cn(
           "w-80 max-w-full border-2 transition-all duration-300 hover:shadow-lg overflow-hidden",
+          "max-w-[calc(100vw-2rem)]",
           isUnlocked
             ? "border-primary/50 shadow-md hover:border-primary/70 gradient-card-unlocked"
             : "border-muted bg-muted/30 opacity-75",
@@ -273,7 +274,7 @@ export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: Car
   
 
   return (
-    <div className="w-full overflow-visible">
+    <div className="w-full overflow-x-hidden max-w-full">
       <div
         ref={containerRef}
         className="relative mx-auto"
@@ -282,18 +283,20 @@ export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: Car
           maxWidth: "100%",
           minHeight: `${containerHeight}px`,
           padding: "20px 0 40px 0",
-          overflow: "visible",
+          overflowX: "hidden",
+          overflowY: "visible",
         }}
       >
         {/* Фоновые линии соединения со стрелками */}
         <svg
-          className="absolute pointer-events-none"
+          className="absolute pointer-events-none max-w-full"
           style={{ 
             width: `${totalWidth}px`, 
+            maxWidth: "100%",
             height: `${containerHeight}px`,
             top: 0,
             left: 0,
-            overflow: "visible"
+            overflow: "hidden"
           }}
         >
           {nodePositions.map((pos, index) => {

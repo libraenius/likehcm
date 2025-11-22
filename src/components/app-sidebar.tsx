@@ -134,9 +134,6 @@ export function AppSidebar() {
               Управление компетенциями
             </span>
           </div>
-          {!isCollapsed && (
-            <SidebarTrigger className="ml-auto" />
-          )}
         </div>
       </SidebarHeader>
 
@@ -325,16 +322,12 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-2">
-        {!isCollapsed ? (
+        {!isCollapsed && (
           <div className="flex items-center gap-2 text-xs text-sidebar-foreground/60">
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
               <span>Система активна</span>
             </div>
-          </div>
-        ) : (
-          <div className="flex justify-center items-center w-full">
-            <SidebarTrigger className="size-8" />
           </div>
         )}
       </SidebarFooter>

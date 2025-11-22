@@ -338,7 +338,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3 mb-2 flex-wrap justify-center">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="outline" className="text-sm font-semibold px-3 py-1 cursor-help">
+                <Badge variant="outline" className="text-sm font-semibold px-3 py-1 cursor-help bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
                   {grade}
                 </Badge>
               </TooltipTrigger>
@@ -354,7 +354,7 @@ export default function ProfilePage() {
             {mainProfileId && mainProfile ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge variant="outline" className="text-sm cursor-help">
+                  <Badge variant="default" className="text-sm cursor-help truncate">
                     {mainProfile.name}
                   </Badge>
                 </TooltipTrigger>

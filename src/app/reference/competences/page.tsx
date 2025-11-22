@@ -1247,7 +1247,7 @@ export default function CompetencesPage() {
         </Dialog>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card">
         <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-muted/50">

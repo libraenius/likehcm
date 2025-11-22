@@ -3,10 +3,10 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { SidebarProvider } from "@/components/sidebar-provider";
 import { AppSidebar } from "@/components/app-sidebar";
-import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { AppProviders } from "@/components/app-providers";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { AppHeader } from "@/components/app-header";
+import { AuroraBackground } from "@/components/aurora-background";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,16 +31,13 @@ export default function RootLayout({
         <AppProviders>
           <SidebarProvider>
             <AppSidebar />
-            <SidebarInset>
-              <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                <AppBreadcrumb />
-                <div className="ml-auto">
-                  <ThemeToggle />
+            <SidebarInset className="min-h-screen">
+              <AuroraBackground className="min-h-full w-full">
+                <AppHeader />
+                <div className="flex flex-1 flex-col gap-4 p-4 pt-6 overflow-x-hidden">
+                  {children}
                 </div>
-              </header>
-              <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-                {children}
-              </div>
+              </AuroraBackground>
             </SidebarInset>
           </SidebarProvider>
         </AppProviders>
