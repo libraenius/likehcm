@@ -6,7 +6,7 @@ export interface BreadcrumbItem {
 // Маппинг путей к названиям для breadcrumbs
 const pathLabels: Record<string, string> = {
   "/": "Главная",
-  "/profile": "Мой профиль",
+  "/profile": "Главная",
   "/team": "Моя команда",
   "/reference": "Справочники",
   "/reference/competences": "Компетенции",
@@ -21,7 +21,7 @@ const pathLabels: Record<string, string> = {
 
 // Маппинг английских названий сегментов к русским (для случаев, когда путь не найден в pathLabels)
 const segmentLabels: Record<string, string> = {
-  "profile": "Мой профиль",
+  "profile": "Главная",
   "team": "Моя команда",
   "reference": "Справочники",
   "competences": "Компетенции",

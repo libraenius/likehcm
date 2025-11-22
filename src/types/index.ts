@@ -76,6 +76,13 @@ export interface UserSkill {
   comment?: string;
 }
 
+export interface AgileRole {
+  role: string; // Agile роль
+  stream?: string; // Стрим
+  team?: string; // Команда
+  workload?: number; // Занятость в процентах (целое число)
+}
+
 export interface UserProfile {
   userId: string;
   lastName?: string; // Фамилия
@@ -83,11 +90,17 @@ export interface UserProfile {
   middleName?: string; // Отчество
   grade?: number; // Грейд (от 1 до 17)
   position?: string; // Должность
+  linearStructure?: string; // Линейная структура
+  agileRoles?: AgileRole[]; // Agile роли со стримами/командами
+  agileProject?: string; // Agile проект
   mainProfileId?: string;
   additionalProfileIds?: string[];
   skills: UserSkill[];
   careerTrackProgress?: CareerTrackProgress;
   avatar?: string; // URL или base64 data URL фотографии
+  tags?: string[]; // Теги пользователя
+  email?: string; // Email
+  phone?: string; // Телефон
 }
 
 export interface CareerTrackProgress {

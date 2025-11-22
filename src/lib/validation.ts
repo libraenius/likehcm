@@ -124,6 +124,14 @@ export const userSkillSchema = z.object({
   comment: z.string().optional(),
 });
 
+// Валидация Agile роли
+export const agileRoleSchema = z.object({
+  role: z.string().min(1, "Роль обязательна"),
+  stream: z.string().optional(),
+  team: z.string().optional(),
+  workload: z.number().int().min(0).max(100).optional(),
+});
+
 // Валидация прогресса карьерного трека
 export const careerTrackProgressSchema = z.object({
   careerTrackId: z.string().min(1),
@@ -147,6 +155,9 @@ export const userProfileSchema = z.object({
   middleName: z.string().optional(),
   grade: z.number().int().min(1).max(17).optional(),
   position: z.string().optional(),
+  linearStructure: z.string().optional(),
+  agileRoles: z.array(agileRoleSchema).optional(),
+  agileProject: z.string().optional(),
   mainProfileId: z.string().optional(),
   additionalProfileIds: z.array(z.string()).optional(),
   skills: z.array(userSkillSchema),
@@ -161,6 +172,7 @@ export const userProfileSchema = z.object({
     },
     { message: "Аватар должен быть URL или base64 data URL изображения" }
   ),
+  tags: z.array(z.string().min(1)).optional(),
 });
 
 // Валидация члена команды

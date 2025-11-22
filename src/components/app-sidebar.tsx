@@ -38,7 +38,7 @@ import {
 
 const menuItems = [
   {
-    title: "Мой профиль",
+    title: "Главная",
     icon: User,
     href: "/profile",
   },
