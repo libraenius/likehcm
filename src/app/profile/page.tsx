@@ -17,6 +17,7 @@ import { Trash2, Camera, X, Edit2, Save, Settings, Plus, User, Building, Trendin
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProfileWidgets } from "@/components/profile-widgets";
+import { AssessmentWidget } from "@/components/assessment-widget";
 import Link from "next/link";
 
 export default function ProfilePage() {
@@ -438,7 +439,7 @@ export default function ProfilePage() {
               <div className="w-3/4 flex flex-col gap-4">
                 {/* Оценка */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="border-b">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg font-bold">Оценка</CardTitle>
                       <Link href="/services/assessment" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -454,7 +455,7 @@ export default function ProfilePage() {
                 
                 {/* Ассессмент */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="border-b">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg font-bold">Ассессмент</CardTitle>
                       <Link href="/services/assessment-center" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -464,7 +465,7 @@ export default function ProfilePage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {/* Контент ассессмента */}
+                    <AssessmentWidget userProfile={userProfile} />
                   </CardContent>
                 </Card>
                 
