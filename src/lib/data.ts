@@ -1,7 +1,6 @@
 import type {
   UserProfile,
   UserSkill,
-  SkillLevel,
 } from "@/types";
 import {
   getCompetences,
@@ -98,91 +97,4 @@ export function saveUserProfile(profile: UserProfile): { success: boolean; error
  */
 export function resetUserProfile(): boolean {
   return removeFromStorage(STORAGE_KEYS.USER_PROFILE);
-}
-
-/**
- * Обновить профиль пользователя с тестовыми данными по оценке
- * Создает 3 оценочные процедуры с разными датами
- */
-export function updateProfileWithAssessmentData(): { success: boolean; error?: string } {
-  const currentProfile = getUserProfile();
-  
-  if (!currentProfile) {
-    return { success: false, error: "Профиль пользователя не найден" };
-  }
-
-  const profile = getProfileById(currentProfile.mainProfileId || "profile-1");
-  if (!profile) {
-    return { success: false, error: "Профиль не найден" };
-  }
-
-  // Получаем компетенции профиля
-  const profileCompetences = profile.requiredCompetences;
-  
-  if (profileCompetences.length === 0) {
-    return { success: false, error: "У профиля нет компетенций" };
-  }
-
-  // Создаем 3 оценочные процедуры с разными датами
-  const now = new Date();
-  const procedure1Date = new Date(now);
-  procedure1Date.setDate(now.getDate() - 5); // 5 дней назад
-  
-  const procedure2Date = new Date(now);
-  procedure2Date.setDate(now.getDate() - 15); // 15 дней назад
-  
-  const procedure3Date = new Date(now);
-  procedure3Date.setDate(now.getDate() - 30); // 30 дней назад
-
-  // Первая процедура - оценены все компетенции
-  const procedure1Skills: UserSkill[] = profileCompetences.map((comp, index) => ({
-    competenceId: comp.competenceId,
-    selfAssessment: Math.min(5, Math.max(1, comp.requiredLevel + Math.floor(Math.random() * 2) - 1)) as SkillLevel,
-    lastUpdated: procedure1Date,
-    comment: index % 3 === 0 ? "Хорошее понимание материала" : undefined,
-  }));
-
-  // Вторая процедура - оценены 80% компетенций
-  const procedure2Skills: UserSkill[] = profileCompetences
-    .slice(0, Math.floor(profileCompetences.length * 0.8))
-    .map((comp, index) => ({
-      competenceId: comp.competenceId,
-      selfAssessment: Math.min(5, Math.max(1, comp.requiredLevel - 1 + Math.floor(Math.random() * 2))) as SkillLevel,
-      lastUpdated: procedure2Date,
-      comment: index % 4 === 0 ? "Требуется дополнительное изучение" : undefined,
-    }));
-
-  // Третья процедура - оценены 60% компетенций
-  const procedure3Skills: UserSkill[] = profileCompetences
-    .slice(0, Math.floor(profileCompetences.length * 0.6))
-    .map((comp, index) => ({
-      competenceId: comp.competenceId,
-      selfAssessment: Math.min(5, Math.max(1, comp.requiredLevel - 1)) as SkillLevel,
-      lastUpdated: procedure3Date,
-    }));
-
-  // Объединяем все навыки, оставляя только последние оценки для каждой компетенции
-  const allSkills = [...procedure1Skills, ...procedure2Skills, ...procedure3Skills];
-  const skillsMap = new Map<string, UserSkill>();
-  
-  // Сортируем по дате (новые первыми) и оставляем последнюю оценку для каждой компетенции
-  allSkills.sort((a, b) => {
-    const dateA = a.lastUpdated instanceof Date ? a.lastUpdated : new Date(a.lastUpdated);
-    const dateB = b.lastUpdated instanceof Date ? b.lastUpdated : new Date(b.lastUpdated);
-    return dateB.getTime() - dateA.getTime();
-  });
-
-  allSkills.forEach((skill) => {
-    if (!skillsMap.has(skill.competenceId)) {
-      skillsMap.set(skill.competenceId, skill);
-    }
-  });
-
-  // Обновляем профиль
-  const updatedProfile: UserProfile = {
-    ...currentProfile,
-    skills: Array.from(skillsMap.values()),
-  };
-
-  return saveUserProfile(updatedProfile);
 }

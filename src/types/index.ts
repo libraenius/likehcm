@@ -2,6 +2,8 @@
 
 export type SkillLevel = 1 | 2 | 3 | 4 | 5;
 
+export type AssessmentRole = "самооценка" | "руководитель" | "коллега" | "подчиненный";
+
 export interface Competence {
   id: string;
   name: string;
@@ -74,6 +76,7 @@ export interface UserSkill {
   selfAssessment: SkillLevel;
   lastUpdated: Date;
   comment?: string;
+  role?: AssessmentRole; // Роль в оценочной процедуре
 }
 
 export interface AgileRole {
@@ -99,8 +102,6 @@ export interface UserProfile {
   careerTrackProgress?: CareerTrackProgress;
   avatar?: string; // URL или base64 data URL фотографии
   tags?: string[]; // Теги пользователя
-  email?: string; // Email
-  phone?: string; // Телефон
 }
 
 export interface CareerTrackProgress {
