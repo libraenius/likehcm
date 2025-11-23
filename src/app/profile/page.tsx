@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProfiles, getUserProfile, saveUserProfile, resetUserProfile, updateProfileWithAssessmentData } from "@/lib/data";
+import { getProfiles, getUserProfile, saveUserProfile, resetUserProfile } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -12,11 +12,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UserProfile, AgileRole } from "@/types";
-import { CheckCircle2, Trash2, Camera, X, Edit2, Save, Settings, Plus, User, Building, TrendingUp, Mail, Phone, Users, ArrowRight } from "lucide-react";
+import { CheckCircle2, Trash2, Camera, X, Edit2, Save, Settings, Plus, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProfileWidgets } from "@/components/profile-widgets";
-import Link from "next/link";
 
 export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -33,6 +31,7 @@ export default function ProfilePage() {
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAssessmentInfoDialogOpen, setIsAssessmentInfoDialogOpen] = useState(false);
 
   useEffect(() => {
     const profile = getUserProfile();
@@ -49,28 +48,6 @@ export default function ProfilePage() {
       setMainProfileId(profile.mainProfileId || "profile-1");
       setTags(profile.tags || []);
       
-      // Устанавливаем дефолтные значения для email и phone, если они не указаны
-      if (!profile.email || !profile.phone) {
-        const updatedProfile: UserProfile = {
-          ...profile,
-          email: profile.email || "latarho@gmail.com",
-          phone: profile.phone || "8-999-555-5555",
-        };
-        setUserProfile(updatedProfile);
-        saveUserProfile(updatedProfile);
-      }
-
-      // Автоматически обновляем данные по оценке при загрузке
-      if (profile.mainProfileId) {
-        const result = updateProfileWithAssessmentData();
-        if (result.success) {
-          const updatedProfile = getUserProfile();
-          if (updatedProfile) {
-            setUserProfile(updatedProfile);
-          }
-        }
-      }
-      
       // Если ФИО, грейд, должность, линейная структура, Agile или профиль не были сохранены, сохраняем дефолтные значения
       if (!profile.lastName || !profile.firstName || !profile.middleName || !profile.grade || !profile.position || !profile.linearStructure || !profile.agileRoles || profile.agileRoles.length === 0 || !profile.mainProfileId) {
         const updatedProfile: UserProfile = {
@@ -83,8 +60,6 @@ export default function ProfilePage() {
           linearStructure: profile.linearStructure || "ГО / Департамент автоматизации внешних сервисов / Управление развития некорпоратинвых систем / Отдел сложных систем",
           agileRoles: profile.agileRoles || [{ role: "Разработчик" }],
           mainProfileId: profile.mainProfileId || "profile-1",
-          email: profile.email || "latarho@gmail.com",
-          phone: profile.phone || "8-999-555-5555",
         };
         setUserProfile(updatedProfile);
         saveUserProfile(updatedProfile);
@@ -103,8 +78,6 @@ export default function ProfilePage() {
         mainProfileId: "profile-1",
         additionalProfileIds: [],
         skills: [],
-        email: "latarho@gmail.com",
-        phone: "8-999-555-5555",
       };
       setUserProfile(newProfile);
       setLastName("Помыткин");
@@ -135,8 +108,6 @@ export default function ProfilePage() {
       additionalProfileIds: [],
       skills: [],
       avatar: undefined,
-      email: "latarho@gmail.com",
-      phone: "8-999-555-5555",
     };
     setUserProfile(newProfile);
     setLastName("Помыткин");
@@ -256,20 +227,97 @@ export default function ProfilePage() {
     }
   };
 
-  const handleProfileUpdate = () => {
-    const profile = getUserProfile();
-    if (profile) {
-      setUserProfile(profile);
-    }
-  };
-
   const mainProfile = profiles.find((p) => p.id === mainProfileId);
 
   return (
     <div className="space-y-6">
       {/* Заголовок */}
       <div className="space-y-4">
-        <div className="flex items-start justify-end">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-6 flex-1">
+            {/* Аватар пользователя */}
+            <div className="relative group">
+              <Avatar className="h-48 w-48 border-4 border-background shadow-lg">
+                {userProfile?.avatar ? (
+                  <AvatarImage src={userProfile.avatar} alt="Фото профиля" className="object-cover" />
+                ) : null}
+                <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-semibold">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-md hover:shadow-lg transition-shadow"
+                onClick={() => setIsAvatarDialogOpen(true)}
+                title="Изменить фотографию"
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold text-foreground mb-2">{getFullName()}</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="text-sm font-semibold px-3 py-1 cursor-help">
+                      {grade}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">
+                      Грейд — это уровень должности сотрудника в системе грейдирования. 
+                      Значение может быть от 1 до 17, где более высокий грейд соответствует 
+                      более высокой должности и уровню ответственности.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+                <span className="text-sm font-bold text-muted-foreground">{position}</span>
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Профиль:</span>
+                {mainProfileId && mainProfile ? (
+                  <Badge variant="outline" className="text-sm">
+                    {mainProfile.name}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-sm text-muted-foreground">
+                    не выбран
+                  </Badge>
+                )}
+              </div>
+              <div className="mt-2">
+                <span className="text-sm text-muted-foreground">Линейная: </span>
+                <span className="text-sm text-foreground">{linearStructure}</span>
+              </div>
+              {agileRoles && agileRoles.length > 0 && (
+                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-muted-foreground">Agile: </span>
+                  {agileRoles.map((agileRole, index) => (
+                    <div key={index} className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="text-sm">
+                        {agileRole.role}
+                      </Badge>
+                      {(agileRole.stream || agileRole.team) && (
+                        <span className="text-sm text-foreground">
+                          {agileRole.stream && agileRole.team
+                            ? `${agileRole.stream} / ${agileRole.team}`
+                            : (agileRole.stream || agileRole.team)}
+                        </span>
+                      )}
+                      {agileRole.workload !== undefined && (
+                        <span className="text-sm text-foreground">
+                          {agileRole.workload}%
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
@@ -308,254 +356,37 @@ export default function ProfilePage() {
           </div>
         </div>
         
-        {/* Аватар пользователя по центру */}
-        <div className="flex justify-center">
-          <div className="relative group">
-            <Avatar className="h-40 w-40 border-4 border-background shadow-lg">
-              {userProfile?.avatar ? (
-                <AvatarImage src={userProfile.avatar} alt="Фото профиля" className="object-cover" />
-              ) : null}
-              <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-semibold">
-                {getInitials()}
-              </AvatarFallback>
-            </Avatar>
+        {/* Облако тегов */}
+        {tags && tags.length > 0 && (
+          <div className="w-full flex flex-wrap gap-2">
+            {tags.map((tag, index) => (
+              <Badge key={index} variant="secondary" className="text-sm">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Контейнер Оценка */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg">Оценка</CardTitle>
             <Button
-              type="button"
-              variant="secondary"
+              variant="ghost"
               size="icon"
-              className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full shadow-md hover:shadow-lg transition-shadow"
-              onClick={() => setIsAvatarDialogOpen(true)}
-              title="Изменить фотографию"
+              className="h-6 w-6"
+              onClick={() => setIsAssessmentInfoDialogOpen(true)}
             >
-              <Camera className="h-4 w-4" />
+              <Info className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-        
-        {/* Информация о профиле */}
-        <div className="flex flex-col items-center gap-4">
-          <h1 className="text-4xl font-bold text-foreground mb-2">{getFullName()}</h1>
-          <div className="flex items-center gap-3 mb-2 flex-wrap justify-center">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge variant="outline" className="text-sm font-semibold px-3 py-1 cursor-help bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
-                  {grade}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs">
-                  Грейд — это уровень должности сотрудника в системе грейдирования. 
-                  Значение может быть от 1 до 17, где более высокий грейд соответствует 
-                  более высокой должности и уровню ответственности.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-            <span className="text-sm font-bold text-muted-foreground">{position}</span>
-            {mainProfileId && mainProfile ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge variant="default" className="text-sm cursor-help truncate">
-                    {mainProfile.name}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="max-w-xs">
-                    {mainProfile.description || "Профиль разработчика"}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Badge variant="outline" className="text-sm text-muted-foreground">
-                не выбран
-              </Badge>
-            )}
-          </div>
-          {/* Горизонтальная линия на всю ширину экрана */}
-          <div className="w-full border-b -mx-4" />
-        </div>
-        
-        {/* Вкладки */}
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile">Мой профиль</TabsTrigger>
-            <TabsTrigger value="team">Моя команда</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="profile" className="space-y-4">
-            {/* Два контейнера: 1/4 и 3/4 */}
-            <div className="flex gap-4 w-full">
-              <div className="w-1/4">
-                <h2 className="text-lg font-bold mb-6 pt-6">Профиль</h2>
-                <div className="space-y-6">
-                  {/* Блок "Обо мне" */}
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Обо мне</h3>
-                    <div className="space-y-3">
-                      {/* ФИО */}
-                      <div className="flex items-center gap-3">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">{getFullName()}</span>
-                      </div>
-                      {/* Отдел/Линейная структура */}
-                      <div className="flex items-center gap-3">
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">
-                          {linearStructure || "Отдел не указан"}
-                        </span>
-                      </div>
-                      {/* Должность */}
-                      <div className="flex items-center gap-3">
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">{position || "Должность не указана"}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Блок "Контакты" */}
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Контакты</h3>
-                    <div className="space-y-3">
-                      {/* Email */}
-                      <div className="flex items-center gap-3">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">
-                          {userProfile?.email || "latarho@gmail.com"}
-                        </span>
-                      </div>
-                      {/* Телефон */}
-                      <div className="flex items-center gap-3">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">
-                          {userProfile?.phone || "8-999-555-5555"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Блок "Agile" */}
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Agile</h3>
-                    <div className="space-y-3">
-                      {agileRoles && agileRoles.length > 0 ? (
-                        agileRoles.map((agileRole, index) => (
-                          <div key={index} className="flex items-center gap-3">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <Badge variant="outline" className="text-sm">
-                              {agileRole.role}
-                            </Badge>
-                            {agileRole.stream && (
-                              <span className="text-sm text-foreground">{agileRole.stream}</span>
-                            )}
-                            {agileRole.team && (
-                              <span className="text-sm text-foreground">{agileRole.team}</span>
-                            )}
-                            {agileRole.workload !== undefined && (
-                              <span className="text-sm text-foreground">{agileRole.workload}%</span>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="flex items-center gap-3">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-foreground">Нет Agile ролей</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Правая колонка: Оценка и три контейнера */}
-              <div className="w-3/4 flex flex-col gap-4">
-                {/* Оценка */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg font-bold">Оценка</CardTitle>
-                      <Link href="/services/assessment" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        <span>Перейти в сервис "Оценка"</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <ProfileWidgets userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />
-                  </CardContent>
-                </Card>
-                
-                {/* Ассессмент */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg font-bold">Ассессмент</CardTitle>
-                      <Link href="/services/assessment-center" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        <span>Перейти в сервис "Ассессмент"</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Контент ассессмента */}
-                  </CardContent>
-                </Card>
-                
-                {/* Целеполагание (неактивный) */}
-                <Card className="opacity-50">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg font-bold text-muted-foreground">Целеполагание</CardTitle>
-                      <Link href="/services/goals" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors pointer-events-none">
-                        <span>Перейти в сервис "Целеполагание"</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Контент целеполагания */}
-                  </CardContent>
-                </Card>
-                
-                {/* Карьера */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg font-bold">Карьера</CardTitle>
-                      <Link href="/services/career" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        <span>Перейти в сервис "Карьера"</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Контент карьеры */}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-            
-            {/* Облако тегов */}
-            {tags && tags.length > 0 && (
-              <div className="w-full flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-sm">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-          </TabsContent>
-          
-          <TabsContent value="team" className="space-y-4">
-            <div className="flex flex-col items-center justify-center py-12">
-              <p className="text-muted-foreground mb-4">Просмотр информации о команде</p>
-              <Link href="/team">
-                <Button variant="outline">Перейти к команде</Button>
-              </Link>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+        </CardHeader>
+        <CardContent>
+          <ProfileWidgets userProfile={userProfile} />
+        </CardContent>
+      </Card>
 
       {/* Диалог для загрузки фотографии */}
       <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
@@ -761,8 +592,7 @@ export default function ProfilePage() {
                               value={agileRole.workload !== undefined ? agileRole.workload : ""}
                               onChange={(e) => {
                                 const newRoles = [...agileRoles];
-                                const parsedValue = e.target.value === "" ? undefined : Number.parseInt(e.target.value);
-                                const value = parsedValue !== undefined && !isNaN(parsedValue) ? parsedValue : undefined;
+                                const value = e.target.value === "" ? undefined : Number.parseInt(e.target.value) || 0;
                                 newRoles[index] = { ...newRoles[index], workload: value !== undefined && value >= 0 && value <= 100 ? value : undefined };
                                 setAgileRoles(newRoles);
                               }}
@@ -868,6 +698,127 @@ export default function ProfilePage() {
               <Save className="h-4 w-4" />
               Сохранить
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог с информацией о сервисе Оценка */}
+      <Dialog open={isAssessmentInfoDialogOpen} onOpenChange={setIsAssessmentInfoDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5" />
+              О сервисе "Оценка"
+            </DialogTitle>
+            <DialogDescription>
+              Подробное описание функциональности сервиса оценки компетенций
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Назначение сервиса</h3>
+              <p className="text-sm text-muted-foreground">
+                Сервис "Оценка" предназначен для проведения комплексной оценки компетенций сотрудников 
+                в различных ролях: самооценка, оценка руководителем, коллегами и подчиненными. 
+                Это позволяет получить многогранную картину профессионального развития сотрудника.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Основные возможности</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
+                <li>
+                  <strong>Самооценка:</strong> Сотрудник самостоятельно оценивает свой уровень владения 
+                  компетенциями, что способствует развитию навыков самоанализа и рефлексии.
+                </li>
+                <li>
+                  <strong>Оценка руководителем:</strong> Руководитель оценивает компетенции подчиненного 
+                  с точки зрения профессиональных требований и ожиданий от должности.
+                </li>
+                <li>
+                  <strong>Оценка коллегами:</strong> Коллеги по команде или проекту оценивают компетенции 
+                  сотрудника, что позволяет получить обратную связь от равных по статусу.
+                </li>
+                <li>
+                  <strong>Оценка подчиненными:</strong> Подчиненные оценивают компетенции руководителя, 
+                  что особенно важно для развития лидерских навыков и управленческих компетенций.
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Процесс оценки</h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Каждая оценочная процедура проходит через три основных этапа:
+                </p>
+                <ol className="list-decimal list-inside space-y-1 ml-4">
+                  <li>
+                    <strong>Проведение оценки:</strong> Участники процедуры оценивают компетенции 
+                    сотрудника по заданным критериям и шкалам.
+                  </li>
+                  <li>
+                    <strong>Калибровка:</strong> Результаты оценки проходят процесс калибровки, 
+                    где происходит согласование оценок между различными участниками и приведение 
+                    их к единым стандартам.
+                  </li>
+                  <li>
+                    <strong>Результаты оценки:</strong> После завершения калибровки формируются 
+                    итоговые результаты, которые отражают согласованный уровень компетенций 
+                    сотрудника.
+                  </li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Управление процедурами</h3>
+              <p className="text-sm text-muted-foreground">
+                Все оценочные процедуры разделены на две категории:
+              </p>
+              <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
+                <li>
+                  <strong>Активные процедуры:</strong> Текущие оценочные процедуры, которые находятся 
+                  в процессе проведения или недавно завершены. Эти процедуры требуют внимания и 
+                  активных действий.
+                </li>
+                <li>
+                  <strong>Архивные процедуры:</strong> Завершенные оценочные процедуры, которые 
+                  были проведены ранее. Архивные процедуры доступны для просмотра и анализа 
+                  исторических данных.
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Статусы оценки</h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Для каждой процедуры отображается статус вашей оценки:
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>
+                    <strong>Завершил:</strong> Оценка полностью завершена, все компетенции оценены. 
+                    Вы можете просмотреть результаты оценки.
+                  </li>
+                  <li>
+                    <strong>В процессе:</strong> Оценка начата, но еще не завершена. Вы можете 
+                    продолжить оценку и завершить ее.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-4 border-t">
+              <h3 className="font-semibold text-lg">Преимущества</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
+                <li>Комплексная оценка компетенций с разных точек зрения</li>
+                <li>Прозрачный процесс калибровки для согласования результатов</li>
+                <li>Исторический анализ развития компетенций через архивные процедуры</li>
+                <li>Удобный интерфейс для отслеживания статуса и прогресса оценки</li>
+                <li>Поддержка различных ролей оценки для получения полной картины</li>
+              </ul>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
