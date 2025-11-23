@@ -102,6 +102,8 @@ export interface UserProfile {
   careerTrackProgress?: CareerTrackProgress;
   avatar?: string; // URL или base64 data URL фотографии
   tags?: string[]; // Теги пользователя
+  email?: string; // Email
+  phone?: string; // Телефон
 }
 
 export interface CareerTrackProgress {

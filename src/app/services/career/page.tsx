@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { getProfiles, getUserProfile, saveUserProfile, getProfileById } from "@/lib/data";
+import { getProfiles, getUserProfile, saveUserProfile, getProfileById, createDefaultUserProfile } from "@/lib/data";
 import { getUserCareerTrackProgress } from "@/lib/calculations";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -143,19 +143,9 @@ export default function CareerPage() {
       setAdditionalProfileIds(profile.additionalProfileIds || []);
     } else {
       // Создаем новый профиль с дефолтным профилем
-      const newProfile: UserProfile = {
-        userId: "user-1",
-        lastName: "Помыткин",
-        firstName: "Сергей",
-        middleName: "Олегович",
-        grade: 12,
-        position: "Руководитель экспертизы по тестированию",
-        mainProfileId: "profile-1",
-        additionalProfileIds: [],
-        skills: [],
-      };
+      const newProfile = createDefaultUserProfile();
       setUserProfile(newProfile);
-      setMainProfileId("profile-1");
+      setMainProfileId(newProfile.mainProfileId || "profile-1");
       saveUserProfile(newProfile);
     }
     setProfiles(getProfiles());

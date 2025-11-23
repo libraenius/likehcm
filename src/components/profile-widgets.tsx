@@ -15,7 +15,9 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Calendar
+  Calendar,
+  AlertTriangle,
+  X
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -187,80 +189,175 @@ function CareerProgressWidget({ userProfile }: { userProfile: UserProfile | null
   );
 }
 
+// Функция для генерации тестовых процедур
+function generateTestProcedures(
+  userProfile: UserProfile | null,
+  roles: AssessmentRole[] | null,
+  count: number
+) {
+  const profile = userProfile?.mainProfileId ? getProfileById(userProfile.mainProfileId) : null;
+  const totalCompetences = profile?.requiredCompetences.length || 10; // Дефолтное значение если профиля нет
+  
+  // Определяем роль для тестовых процедур
+  const defaultRole = roles === null ? "самооценка" : roles[0] || "самооценка";
+  
+  const procedures = [];
+  const currentYear = new Date().getFullYear();
+  
+  for (let i = 0; i < count; i++) {
+    const year = currentYear - Math.floor(i / 4); // Меняем год каждые 4 процедуры
+    const month = 12 - (i % 12); // Месяцы от 12 до 1
+    const day = 15 - (i % 15); // Дни от 15 до 1
+    
+    const date = new Date(year, month - 1, day);
+    const dateKey = date.toISOString().split('T')[0];
+    
+    // Чередуем роли для разнообразия
+    const roleIndex = i % 4;
+    const role = roles === null 
+      ? "самооценка"
+      : roles[roleIndex % roles.length] || defaultRole;
+    
+    // Разные уровни прогресса для разнообразия (включая 0 для "не приступил")
+    const progressValues = [100, 0, 85, 70, 0, 50, 100, 90, 5, 75, 100, 95, 0, 55, 45, 100, 88, 10];
+    const progress = progressValues[i % progressValues.length];
+    
+    const period = year.toString();
+    const procedureName = `Блок ИТ и ЦТ ${period}`;
+    const procedureType = role === "самооценка" 
+      ? "Оценка для целей развития"
+      : role === "руководитель"
+      ? "Оценка руководителя"
+      : role === "коллега"
+      ? "Оценка коллеги"
+      : "Оценка подчиненного";
+    
+    procedures.push({
+      id: `test-${dateKey}-${i}`,
+      date: date,
+      assessedCount: Math.round((progress / 100) * totalCompetences),
+      totalCompetences,
+      progress,
+      skillsCount: Math.round((progress / 100) * totalCompetences),
+      period,
+      role,
+      procedureName,
+      procedureType,
+    });
+  }
+  
+  return procedures.sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+
 // Вспомогательная функция для получения оценочных процедур по роли
 function getAssessmentProceduresByRole(
   userProfile: UserProfile | null,
   roles: AssessmentRole[] | null // null означает самооценку (роль не указана или "самооценка")
 ) {
-  if (!userProfile?.skills || userProfile.skills.length === 0) {
-    return [];
-  }
-
-  // Фильтруем навыки по роли
-  const filteredSkills = userProfile.skills.filter((skill) => {
-    const skillRole = skill.role || "самооценка";
-    if (roles === null) {
-      return skillRole === "самооценка" || !skill.role;
-    }
-    return roles.includes(skillRole);
-  });
-
-  if (filteredSkills.length === 0) {
-    return [];
-  }
-
-  // Группируем навыки по дате обновления
-  const dateGroups = new Map<string, typeof filteredSkills>();
-  
-  filteredSkills.forEach((skill) => {
-    const dateKey = skill.lastUpdated instanceof Date 
-      ? skill.lastUpdated.toISOString().split('T')[0]
-      : new Date(skill.lastUpdated).toISOString().split('T')[0];
-    
-    if (!dateGroups.has(dateKey)) {
-      dateGroups.set(dateKey, []);
-    }
-    dateGroups.get(dateKey)!.push(skill);
-  });
-
-  // Преобразуем в массив процедур и сортируем по дате (новые первыми)
-  const profile = userProfile.mainProfileId ? getProfileById(userProfile.mainProfileId) : null;
+  const profile = userProfile?.mainProfileId ? getProfileById(userProfile.mainProfileId) : null;
   const totalCompetences = profile?.requiredCompetences.length || 0;
+  
+  let procedures: Array<{
+    id: string;
+    date: Date;
+    assessedCount: number;
+    totalCompetences: number;
+    progress: number;
+    skillsCount: number;
+    period: string;
+    role: AssessmentRole | "самооценка";
+    procedureName: string;
+    procedureType: string;
+  }> = [];
 
-  const procedures = Array.from(dateGroups.entries())
-    .map(([date, skills]) => {
-      const dateObj = new Date(date);
-      const assessedCount = skills.length;
-      const progress = totalCompetences > 0 ? Math.round((assessedCount / totalCompetences) * 100) : 0;
-      
-      // Получаем роль из первого навыка (все навыки в процедуре имеют одну роль)
-      const role = skills[0]?.role || "самооценка";
-      const period = dateObj.getFullYear().toString();
-      
-      // Генерируем название процедуры на основе даты и роли
-      const procedureName = `Блок ИТ и ЦТ ${period}`;
-      const procedureType = role === "самооценка" 
-        ? "Оценка для целей развития"
-        : role === "руководитель"
-        ? "Оценка руководителя"
-        : role === "коллега"
-        ? "Оценка коллеги"
-        : "Оценка подчиненного";
+  // Если есть реальные навыки, создаем процедуры из них
+  if (userProfile?.skills && userProfile.skills.length > 0) {
+    // Фильтруем навыки по роли
+    const filteredSkills = userProfile.skills.filter((skill) => {
+      const skillRole = skill.role || "самооценка";
+      if (roles === null) {
+        return skillRole === "самооценка" || !skill.role;
+      }
+      return roles.includes(skillRole);
+    });
 
-      return {
-        id: date,
-        date: dateObj,
-        assessedCount,
-        totalCompetences,
-        progress,
-        skillsCount: skills.length,
-        period,
-        role,
-        procedureName,
-        procedureType,
-      };
-    })
-    .sort((a, b) => b.date.getTime() - a.date.getTime());
+    if (filteredSkills.length > 0) {
+      // Группируем навыки по дате обновления
+      const dateGroups = new Map<string, typeof filteredSkills>();
+      
+      filteredSkills.forEach((skill) => {
+        const dateKey = skill.lastUpdated instanceof Date 
+          ? skill.lastUpdated.toISOString().split('T')[0]
+          : new Date(skill.lastUpdated).toISOString().split('T')[0];
+        
+        if (!dateGroups.has(dateKey)) {
+          dateGroups.set(dateKey, []);
+        }
+        dateGroups.get(dateKey)!.push(skill);
+      });
+
+      // Преобразуем в массив процедур
+      procedures = Array.from(dateGroups.entries())
+        .map(([date, skills]) => {
+          const dateObj = new Date(date);
+          const assessedCount = skills.length;
+          const progress = totalCompetences > 0 ? Math.round((assessedCount / totalCompetences) * 100) : 0;
+          
+          // Получаем роль из первого навыка (все навыки в процедуре имеют одну роль)
+          const role = skills[0]?.role || "самооценка";
+          const period = dateObj.getFullYear().toString();
+          
+          // Генерируем название процедуры на основе даты и роли
+          const procedureName = `Блок ИТ и ЦТ ${period}`;
+          const procedureType = role === "самооценка" 
+            ? "Оценка для целей развития"
+            : role === "руководитель"
+            ? "Оценка руководителя"
+            : role === "коллега"
+            ? "Оценка коллеги"
+            : "Оценка подчиненного";
+
+          return {
+            id: date,
+            date: dateObj,
+            assessedCount,
+            totalCompetences,
+            progress,
+            skillsCount: skills.length,
+            period,
+            role,
+            procedureName,
+            procedureType,
+          };
+        })
+        .sort((a, b) => b.date.getTime() - a.date.getTime());
+    }
+  }
+
+  // Если процедур меньше 18, добавляем тестовые процедуры
+  const neededCount = 18; // 3 активных + 15 архивных
+  if (procedures.length < neededCount) {
+    const existingDates = new Set(procedures.map(p => p.date.toISOString().split('T')[0]));
+    let attempts = 0;
+    let uniqueTestProcedures: typeof procedures = [];
+    
+    // Генерируем тестовые процедуры, пока не наберем нужное количество уникальных
+    while (uniqueTestProcedures.length < neededCount - procedures.length && attempts < 50) {
+      const testProcedures = generateTestProcedures(userProfile, roles, neededCount * 2);
+      const unique = testProcedures.filter(p => 
+        !existingDates.has(p.date.toISOString().split('T')[0])
+      );
+      uniqueTestProcedures = [...uniqueTestProcedures, ...unique]
+        .filter((p, index, self) => 
+          index === self.findIndex(t => t.date.toISOString().split('T')[0] === p.date.toISOString().split('T')[0])
+        );
+      attempts++;
+    }
+    
+    procedures = [...procedures, ...uniqueTestProcedures]
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, neededCount); // Ограничиваем до 18 процедур
+  }
 
   return procedures;
 }
@@ -276,7 +373,9 @@ function AssessmentResultsWidget({
   title: string;
 }) {
   const [currentActiveIndex, setCurrentActiveIndex] = useState(0);
-  const [currentArchivedIndex, setCurrentArchivedIndex] = useState(0);
+  const [currentArchivedPage, setCurrentArchivedPage] = useState(0);
+  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<AssessmentRole | "самооценка" | null>(null);
   const isSelfAssessment = roles === null;
 
   const stats = useMemo(() => {
@@ -311,16 +410,31 @@ function AssessmentResultsWidget({
     return getAssessmentProceduresByRole(userProfile, roles);
   }, [userProfile, roles, isSelfAssessment]);
 
-  // Разделяем на активные (первые 3) и архивные (остальные)
+  // Фильтруем процедуры по выбранным фильтрам
+  const filteredProcedures = useMemo(() => {
+    let filtered = allAssessmentProcedures;
+    
+    if (selectedPeriod) {
+      filtered = filtered.filter(p => p.period === selectedPeriod);
+    }
+    
+    if (selectedRole) {
+      filtered = filtered.filter(p => p.role === selectedRole);
+    }
+    
+    return filtered;
+  }, [allAssessmentProcedures, selectedPeriod, selectedRole]);
+
+  // Разделяем на активные (первые 3) и архивные (следующие 15)
   const activeProcedures = useMemo(() => {
-    const active = allAssessmentProcedures.slice(0, 3);
+    const active = filteredProcedures.slice(0, 3);
     return active;
-  }, [allAssessmentProcedures]);
+  }, [filteredProcedures]);
 
   const archivedProcedures = useMemo(() => {
-    const archived = allAssessmentProcedures.slice(3);
+    const archived = filteredProcedures.slice(3, 18); // С 3 по 18 (15 процедур)
     return archived;
-  }, [allAssessmentProcedures]);
+  }, [filteredProcedures]);
 
   const hasAssessment = stats.assessed > 0 || (isSelfAssessment && allAssessmentProcedures.length > 0);
   
@@ -331,27 +445,21 @@ function AssessmentResultsWidget({
     }
   }, [activeProcedures.length, currentActiveIndex]);
 
-  useEffect(() => {
-    if (archivedProcedures.length > 0 && currentArchivedIndex >= archivedProcedures.length) {
-      setCurrentArchivedIndex(0);
-    }
-  }, [archivedProcedures.length, currentArchivedIndex]);
-
-  // Сбрасываем индексы при изменении данных
+  // Сбрасываем индексы при изменении данных или фильтров
   useEffect(() => {
     setCurrentActiveIndex(0);
-    setCurrentArchivedIndex(0);
-  }, [allAssessmentProcedures.length]);
+    setCurrentArchivedPage(0);
+  }, [allAssessmentProcedures.length, selectedPeriod, selectedRole]);
 
   const validActiveIndex = activeProcedures.length > 0 
     ? Math.min(currentActiveIndex, activeProcedures.length - 1)
     : 0;
   const currentActiveProcedure = activeProcedures[validActiveIndex];
 
-  const validArchivedIndex = archivedProcedures.length > 0 
-    ? Math.min(currentArchivedIndex, archivedProcedures.length - 1)
-    : 0;
-  const currentArchivedProcedure = archivedProcedures[validArchivedIndex];
+  // Подсчитываем процедуры со статусом "не приступил" в активных
+  const notStartedCount = useMemo(() => {
+    return activeProcedures.filter(p => p.progress === 0 || p.progress < 10).length;
+  }, [activeProcedures]);
 
   return (
     <div className="space-y-4 h-full">
@@ -360,20 +468,100 @@ function AssessmentResultsWidget({
           {/* Карусель с оценочными процедурами только для самооценки */}
           {isSelfAssessment && allAssessmentProcedures.length > 0 && (
             <div className="space-y-6 pt-4 border-t">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Оценочные процедуры</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-semibold">Оценочные процедуры</span>
+                  {(selectedPeriod || selectedRole) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => {
+                        setSelectedPeriod(null);
+                        setSelectedRole(null);
+                      }}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Сбросить фильтры
+                    </Button>
+                  )}
+                </div>
                 <div className="flex items-center gap-1">
-                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/50">
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs cursor-pointer transition-all",
+                      selectedRole === "самооценка"
+                        ? "ring-2 ring-primary ring-offset-1"
+                        : "hover:opacity-80",
+                      "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/50"
+                    )}
+                    onClick={() => {
+                      if (selectedRole === "самооценка") {
+                        setSelectedRole(null);
+                      } else {
+                        setSelectedRole("самооценка");
+                      }
+                    }}
+                  >
                     самооценка
                   </Badge>
-                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/50">
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs cursor-pointer transition-all",
+                      selectedRole === "руководитель"
+                        ? "ring-2 ring-primary ring-offset-1"
+                        : "hover:opacity-80",
+                      "bg-green-50 text-green-700 border-green-300 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/50"
+                    )}
+                    onClick={() => {
+                      if (selectedRole === "руководитель") {
+                        setSelectedRole(null);
+                      } else {
+                        setSelectedRole("руководитель");
+                      }
+                    }}
+                  >
                     руководитель
                   </Badge>
-                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/50">
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs cursor-pointer transition-all",
+                      selectedRole === "коллега"
+                        ? "ring-2 ring-primary ring-offset-1"
+                        : "hover:opacity-80",
+                      "bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/50"
+                    )}
+                    onClick={() => {
+                      if (selectedRole === "коллега") {
+                        setSelectedRole(null);
+                      } else {
+                        setSelectedRole("коллега");
+                      }
+                    }}
+                  >
                     коллега
                   </Badge>
-                  <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800/50">
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs cursor-pointer transition-all",
+                      selectedRole === "подчиненный"
+                        ? "ring-2 ring-primary ring-offset-1"
+                        : "hover:opacity-80",
+                      "bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800/50"
+                    )}
+                    onClick={() => {
+                      if (selectedRole === "подчиненный") {
+                        setSelectedRole(null);
+                      } else {
+                        setSelectedRole("подчиненный");
+                      }
+                    }}
+                  >
                     подчиненный
                   </Badge>
                 </div>
@@ -383,7 +571,15 @@ function AssessmentResultsWidget({
               {activeProcedures.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold">Активные ({activeProcedures.length})</span>
+                    <span className="text-sm font-semibold">
+                      Активные ({activeProcedures.length}
+                      {(selectedPeriod || selectedRole) && allAssessmentProcedures.length > 0 && (
+                        <span className="text-muted-foreground font-normal">
+                          {" "}из {allAssessmentProcedures.slice(0, 3).length}
+                        </span>
+                      )}
+                      )
+                    </span>
                     {activeProcedures.length > 1 && (
                       <div className="flex items-center gap-1">
                         <Button
@@ -418,7 +614,23 @@ function AssessmentResultsWidget({
                   </div>
                   
                   {currentActiveProcedure && (
-                    <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className={cn(
+                      "p-4 border rounded-lg bg-muted/30 relative",
+                      (currentActiveProcedure.progress === 0 || currentActiveProcedure.progress < 10) && 
+                      "border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-950/20"
+                    )}>
+                      {/* Выделение для процедур со статусом "не приступил" */}
+                      {(currentActiveProcedure.progress === 0 || currentActiveProcedure.progress < 10) && (
+                        <div className="absolute -top-2 left-4">
+                          <Badge 
+                            variant="default" 
+                            className="bg-blue-500 hover:bg-blue-600 text-white border-0 shadow-md flex items-center gap-1.5 px-2.5 py-0.5"
+                          >
+                            <AlertTriangle className="h-3 w-3" />
+                            <span className="text-xs font-semibold">Ожидает вашего участия</span>
+                          </Badge>
+                        </div>
+                      )}
                       <div className="grid grid-cols-3 gap-6 items-start">
                         {/* Часть 1: Информация о процедуре */}
                         <div className="space-y-2">
@@ -494,18 +706,24 @@ function AssessmentResultsWidget({
                         <div className="flex flex-col items-end gap-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">Моя оценка:</span>
+                            <Badge 
+                              variant="outline" 
+                              className={cn(
+                                "text-xs",
+                                currentActiveProcedure.progress === 100
+                                  ? "bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+                                  : currentActiveProcedure.progress === 0 || currentActiveProcedure.progress < 10
+                                  ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
+                                  : "bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800"
+                              )}
+                            >
+                              {currentActiveProcedure.progress === 100 
+                                ? "завершил" 
+                                : currentActiveProcedure.progress === 0 || currentActiveProcedure.progress < 10
+                                ? "не приступил"
+                                : "в процессе"}
+                            </Badge>
                           </div>
-                          <Badge 
-                            variant="outline" 
-                            className={cn(
-                              "text-xs",
-                              currentActiveProcedure.progress === 100
-                                ? "bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
-                                : "bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800"
-                            )}
-                          >
-                            {currentActiveProcedure.progress === 100 ? "завершил" : "в процессе"}
-                          </Badge>
                           
                           {/* Кнопка действия */}
                           <Button
@@ -517,13 +735,20 @@ function AssessmentResultsWidget({
                               if (currentActiveProcedure.progress === 100) {
                                 // Переход к результатам
                                 console.log("Посмотреть результаты");
+                              } else if (currentActiveProcedure.progress === 0 || currentActiveProcedure.progress < 10) {
+                                // Приступить к оценке
+                                console.log("Приступить к оценке");
                               } else {
                                 // Продолжить оценку
                                 console.log("Продолжить оценку");
                               }
                             }}
                           >
-                            {currentActiveProcedure.progress === 100 ? "Посмотреть результаты" : "Продолжить оценку"}
+                            {currentActiveProcedure.progress === 100 
+                              ? "Посмотреть результаты" 
+                              : currentActiveProcedure.progress === 0 || currentActiveProcedure.progress < 10
+                              ? "Приступить к оценке"
+                              : "Продолжить оценку"}
                           </Button>
                         </div>
                       </div>
@@ -533,34 +758,43 @@ function AssessmentResultsWidget({
               )}
 
               {/* Блок Архивные - находится под блоком Активные */}
-              {archivedProcedures.length > 0 && (
-                <div className="space-y-3 pt-6 border-t">
+              <div className="space-y-3 pt-6 border-t">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold">Архивные ({archivedProcedures.length})</span>
-                    {archivedProcedures.length > 1 && (
-                      <div className="flex items-center gap-1">
+                    <span className="text-sm font-semibold">
+                      Архивные ({archivedProcedures.length}
+                      {(selectedPeriod || selectedRole) && allAssessmentProcedures.length > 3 && (
+                        <span className="text-muted-foreground font-normal">
+                          {" "}из {allAssessmentProcedures.slice(3, 18).length}
+                        </span>
+                      )}
+                      )
+                    </span>
+                    {archivedProcedures.length > 3 && (
+                      <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
                           onClick={() => {
-                            setCurrentArchivedIndex((prev) => 
-                              prev === 0 ? archivedProcedures.length - 1 : prev - 1
+                            const totalPages = Math.ceil(archivedProcedures.length / 3);
+                            setCurrentArchivedPage((prev) => 
+                              prev === 0 ? totalPages - 1 : prev - 1
                             );
                           }}
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <span className="text-xs text-muted-foreground min-w-[60px] text-center">
-                          {validArchivedIndex + 1} / {archivedProcedures.length}
+                          {currentArchivedPage + 1} / {Math.ceil(archivedProcedures.length / 3)}
                         </span>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
                           onClick={() => {
-                            setCurrentArchivedIndex((prev) => 
-                              prev === archivedProcedures.length - 1 ? 0 : prev + 1
+                            const totalPages = Math.ceil(archivedProcedures.length / 3);
+                            setCurrentArchivedPage((prev) => 
+                              prev === totalPages - 1 ? 0 : prev + 1
                             );
                           }}
                         >
@@ -570,120 +804,85 @@ function AssessmentResultsWidget({
                     )}
                   </div>
                   
-                  {currentArchivedProcedure && (
-                    <div className="p-4 border rounded-lg bg-muted/30">
-                      <div className="grid grid-cols-3 gap-6 items-start">
-                        {/* Часть 1: Информация о процедуре */}
-                        <div className="space-y-2">
-                          {/* Первая строка: теги с периодом и ролью */}
-                          <div className="flex items-center gap-2">
+                  {archivedProcedures.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-4">
+                      {archivedProcedures.slice(currentArchivedPage * 3, currentArchivedPage * 3 + 3).map((procedure) => (
+                        <div key={procedure.id} className="p-4 border rounded-lg bg-muted/30 space-y-3 relative">
+                          {/* Моя оценка с тегом статуса и кнопкой - в правом верхнем углу */}
+                          <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Моя оценка:</span>
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "text-xs",
+                                  procedure.progress === 100
+                                    ? "bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+                                    : "bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800"
+                                )}
+                              >
+                                {procedure.progress === 100 ? "завершил" : "в процессе"}
+                              </Badge>
+                            </div>
+                            
+                            {/* Кнопка действия */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => {
+                                // TODO: Добавить логику перехода к результатам или продолжению оценки
+                                if (procedure.progress === 100) {
+                                  console.log("Посмотреть результаты");
+                                } else {
+                                  console.log("Продолжить оценку");
+                                }
+                              }}
+                            >
+                              {procedure.progress === 100 ? "Посмотреть результаты" : "Продолжить оценку"}
+                            </Button>
+                          </div>
+                          
+                          {/* Теги с периодом и ролью */}
+                          <div className="flex items-center gap-2 flex-wrap pr-32">
                             <Badge variant="outline" className="text-xs">
-                              {currentArchivedProcedure.period}
+                              {procedure.period}
                             </Badge>
                             <Badge 
                               variant="outline" 
                               className={cn(
                                 "text-xs",
-                                currentArchivedProcedure.role === "самооценка"
+                                procedure.role === "самооценка"
                                   ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/50"
-                                  : currentArchivedProcedure.role === "руководитель"
+                                  : procedure.role === "руководитель"
                                   ? "bg-green-50 text-green-700 border-green-300 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/50"
-                                  : currentArchivedProcedure.role === "коллега"
+                                  : procedure.role === "коллега"
                                   ? "bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/50"
                                   : "bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800/50"
                               )}
                             >
-                              {currentArchivedProcedure.role}
+                              {procedure.role}
                             </Badge>
                           </div>
                           
-                          {/* Вторая строка: название процедуры */}
-                          <div className="text-sm font-semibold">
-                            {currentArchivedProcedure.procedureName}
+                          {/* Название процедуры */}
+                          <div className="text-sm font-semibold line-clamp-2 pr-32">
+                            {procedure.procedureName}
                           </div>
                           
-                          {/* Третья строка: тип процедуры */}
-                          <div className="text-xs text-muted-foreground">
-                            {currentArchivedProcedure.procedureType}
+                          {/* Тип процедуры */}
+                          <div className="text-xs text-muted-foreground pr-32">
+                            {procedure.procedureType}
                           </div>
                         </div>
-                        
-                        {/* Часть 2: Stepper */}
-                        <div className="flex items-center justify-center">
-                          <div className="flex items-center gap-3">
-                            {/* Шаг 1: Проведение оценки */}
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                                1
-                              </div>
-                              <span className="text-xs text-center whitespace-nowrap">проведение оценки</span>
-                            </div>
-                            
-                            {/* Линия между шагами */}
-                            <div className="w-16 h-0.5 bg-muted"></div>
-                            
-                            {/* Шаг 2: Калибровка */}
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
-                                2
-                              </div>
-                              <span className="text-xs text-center whitespace-nowrap">калибровка</span>
-                            </div>
-                            
-                            {/* Линия между шагами */}
-                            <div className="w-16 h-0.5 bg-muted"></div>
-                            
-                            {/* Шаг 3: Результаты оценки */}
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
-                                3
-                              </div>
-                              <span className="text-xs text-center whitespace-nowrap">результаты оценки</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Часть 3: Моя оценка с тегом статуса и кнопкой */}
-                        <div className="flex flex-col items-end gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">Моя оценка:</span>
-                          </div>
-                          <Badge 
-                            variant="outline" 
-                            className={cn(
-                              "text-xs",
-                              currentArchivedProcedure.progress === 100
-                                ? "bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
-                                : "bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800"
-                            )}
-                          >
-                            {currentArchivedProcedure.progress === 100 ? "завершил" : "в процессе"}
-                          </Badge>
-                          
-                          {/* Кнопка действия */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => {
-                              // TODO: Добавить логику перехода к результатам или продолжению оценки
-                              if (currentArchivedProcedure.progress === 100) {
-                                // Переход к результатам
-                                console.log("Посмотреть результаты");
-                              } else {
-                                // Продолжить оценку
-                                console.log("Продолжить оценку");
-                              }
-                            }}
-                          >
-                            {currentArchivedProcedure.progress === 100 ? "Посмотреть результаты" : "Продолжить оценку"}
-                          </Button>
-                        </div>
-                      </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 border rounded-lg border-dashed text-center">
+                      <p className="text-sm text-muted-foreground">Нет архивных процедур</p>
                     </div>
                   )}
                 </div>
-              )}
             </div>
           )}
         </>

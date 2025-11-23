@@ -12,6 +12,8 @@ import {
 } from "./reference-data";
 import { getFromStorage, saveToStorage, removeFromStorage, STORAGE_KEYS } from "./storage";
 import { userProfileSchema, safeValidate, getFirstError } from "./validation";
+import { getUserCareerTrackProgress } from "./calculations";
+import { DEFAULT_USER_PROFILE } from "./constants";
 
 // Реэкспортируем функции из reference-data
 export {
@@ -97,4 +99,52 @@ export function saveUserProfile(profile: UserProfile): { success: boolean; error
  */
 export function resetUserProfile(): boolean {
   return removeFromStorage(STORAGE_KEYS.USER_PROFILE);
+}
+
+/**
+ * Создать профиль пользователя с дефолтными значениями
+ * @param overrides - Переопределения для дефолтных значений
+ * @returns Профиль пользователя с дефолтными значениями
+ */
+export function createDefaultUserProfile(overrides?: Partial<UserProfile>): UserProfile {
+  return {
+    userId: DEFAULT_USER_PROFILE.userId,
+    lastName: DEFAULT_USER_PROFILE.lastName,
+    firstName: DEFAULT_USER_PROFILE.firstName,
+    middleName: DEFAULT_USER_PROFILE.middleName,
+    grade: DEFAULT_USER_PROFILE.grade,
+    position: DEFAULT_USER_PROFILE.position,
+    linearStructure: DEFAULT_USER_PROFILE.linearStructure,
+    agileRoles: [...DEFAULT_USER_PROFILE.agileRoles],
+    mainProfileId: DEFAULT_USER_PROFILE.mainProfileId,
+    additionalProfileIds: [],
+    skills: [],
+    email: DEFAULT_USER_PROFILE.email,
+    phone: DEFAULT_USER_PROFILE.phone,
+    ...overrides,
+  };
+}
+
+/**
+ * Обновить профиль пользователя данными из оценки (assessment)
+ * Пересчитывает прогресс карьерного трека на основе текущих навыков
+ * @returns Результат обновления с информацией об ошибках
+ */
+export function updateProfileWithAssessmentData(): { success: boolean; error?: string } {
+  const profile = getUserProfile();
+  if (!profile) {
+    return { success: false, error: "Профиль пользователя не найден" };
+  }
+
+  // Вычисляем прогресс карьерного трека на основе текущих навыков
+  const careerTrackProgress = getUserCareerTrackProgress(profile);
+
+  // Обновляем профиль с новым прогрессом
+  const updatedProfile: UserProfile = {
+    ...profile,
+    careerTrackProgress: careerTrackProgress || undefined,
+  };
+
+  // Сохраняем обновленный профиль
+  return saveUserProfile(updatedProfile);
 }

@@ -46,3 +46,18 @@ export const DATA_SCHEMA_VERSION = 1;
 // Лимиты
 export const MAX_LOCALSTORAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
+// Дефолтные значения профиля пользователя
+export const DEFAULT_USER_PROFILE = {
+  userId: "user-1",
+  lastName: "Помыткин",
+  firstName: "Сергей",
+  middleName: "Олегович",
+  grade: 12,
+  position: "Руководитель экспертизы по тестированию",
+  linearStructure: "ГО / Департамент автоматизации внешних сервисов / Управление развития некорпоратинвых систем / Отдел сложных систем",
+  agileRoles: [{ role: "Разработчик" }] as const,
+  mainProfileId: "profile-1",
+  email: "latarho@gmail.com",
+  phone: "8-999-555-5555",
+} as const;
+

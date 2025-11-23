@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProfiles, getUserProfile, saveUserProfile, resetUserProfile, updateProfileWithAssessmentData } from "@/lib/data";
+import { getProfiles, getUserProfile, saveUserProfile, resetUserProfile, updateProfileWithAssessmentData, createDefaultUserProfile } from "@/lib/data";
+import { DEFAULT_USER_PROFILE } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -12,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UserProfile, AgileRole } from "@/types";
-import { CheckCircle2, Trash2, Camera, X, Edit2, Save, Settings, Plus, User, Building, TrendingUp, Mail, Phone, Users, ArrowRight } from "lucide-react";
+import { Trash2, Camera, X, Edit2, Save, Settings, Plus, User, Building, TrendingUp, Mail, Phone, Users, ArrowRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProfileWidgets } from "@/components/profile-widgets";
@@ -37,117 +38,89 @@ export default function ProfilePage() {
   useEffect(() => {
     const profile = getUserProfile();
     if (profile) {
-      setUserProfile(profile);
-      // Если ФИО не указано, устанавливаем дефолтное значение
-      setLastName(profile.lastName || "Помыткин");
-      setFirstName(profile.firstName || "Сергей");
-      setMiddleName(profile.middleName || "Олегович");
-      setGrade(profile.grade || 12);
-      setPosition(profile.position || "Руководитель экспертизы по тестированию");
-      setLinearStructure(profile.linearStructure || "ГО / Департамент автоматизации внешних сервисов / Управление развития некорпоратинвых систем / Отдел сложных систем");
-      setAgileRoles(profile.agileRoles || [{ role: "Разработчик" }]);
-      setMainProfileId(profile.mainProfileId || "profile-1");
-      setTags(profile.tags || []);
+      // Заполняем недостающие поля дефолтными значениями
+      const defaultProfile = createDefaultUserProfile();
+      const updatedProfile: UserProfile = {
+        ...defaultProfile,
+        ...profile,
+        lastName: profile.lastName || defaultProfile.lastName,
+        firstName: profile.firstName || defaultProfile.firstName,
+        middleName: profile.middleName || defaultProfile.middleName,
+        grade: profile.grade ?? defaultProfile.grade,
+        position: profile.position || defaultProfile.position,
+        linearStructure: profile.linearStructure || defaultProfile.linearStructure,
+        agileRoles: profile.agileRoles && profile.agileRoles.length > 0 ? profile.agileRoles : defaultProfile.agileRoles,
+        mainProfileId: profile.mainProfileId || defaultProfile.mainProfileId,
+        email: profile.email || defaultProfile.email,
+        phone: profile.phone || defaultProfile.phone,
+        skills: profile.skills || [],
+        additionalProfileIds: profile.additionalProfileIds || [],
+        tags: profile.tags || [],
+      };
+
+      // Обновляем состояние формы
+      setUserProfile(updatedProfile);
+      setLastName(updatedProfile.lastName || "");
+      setFirstName(updatedProfile.firstName || "");
+      setMiddleName(updatedProfile.middleName || "");
+      setGrade(updatedProfile.grade || 12);
+      setPosition(updatedProfile.position || "");
+      setLinearStructure(updatedProfile.linearStructure || "");
+      setAgileRoles(updatedProfile.agileRoles || [{ role: "Разработчик" }]);
+      setMainProfileId(updatedProfile.mainProfileId || "");
+      setTags(updatedProfile.tags || []);
+
+      // Сохраняем обновленный профиль, если были изменения
+      const hasChanges = 
+        !profile.lastName || !profile.firstName || !profile.middleName || 
+        profile.grade === undefined || !profile.position || !profile.linearStructure || 
+        !profile.agileRoles || profile.agileRoles.length === 0 || !profile.mainProfileId ||
+        !profile.email || !profile.phone;
       
-      // Устанавливаем дефолтные значения для email и phone, если они не указаны
-      if (!profile.email || !profile.phone) {
-        const updatedProfile: UserProfile = {
-          ...profile,
-          email: profile.email || "latarho@gmail.com",
-          phone: profile.phone || "8-999-555-5555",
-        };
-        setUserProfile(updatedProfile);
+      if (hasChanges) {
         saveUserProfile(updatedProfile);
       }
 
       // Автоматически обновляем данные по оценке при загрузке
-      if (profile.mainProfileId) {
+      if (updatedProfile.mainProfileId) {
         const result = updateProfileWithAssessmentData();
         if (result.success) {
-          const updatedProfile = getUserProfile();
-          if (updatedProfile) {
-            setUserProfile(updatedProfile);
+          const refreshedProfile = getUserProfile();
+          if (refreshedProfile) {
+            setUserProfile(refreshedProfile);
           }
         }
       }
-      
-      // Если ФИО, грейд, должность, линейная структура, Agile или профиль не были сохранены, сохраняем дефолтные значения
-      if (!profile.lastName || !profile.firstName || !profile.middleName || !profile.grade || !profile.position || !profile.linearStructure || !profile.agileRoles || profile.agileRoles.length === 0 || !profile.mainProfileId) {
-        const updatedProfile: UserProfile = {
-          ...profile,
-          lastName: profile.lastName || "Помыткин",
-          firstName: profile.firstName || "Сергей",
-          middleName: profile.middleName || "Олегович",
-          grade: profile.grade || 12,
-          position: profile.position || "Руководитель экспертизы по тестированию",
-          linearStructure: profile.linearStructure || "ГО / Департамент автоматизации внешних сервисов / Управление развития некорпоратинвых систем / Отдел сложных систем",
-          agileRoles: profile.agileRoles || [{ role: "Разработчик" }],
-          mainProfileId: profile.mainProfileId || "profile-1",
-          email: profile.email || "latarho@gmail.com",
-          phone: profile.phone || "8-999-555-5555",
-        };
-        setUserProfile(updatedProfile);
-        saveUserProfile(updatedProfile);
-      }
     } else {
-      // Создаем новый профиль с дефолтным ФИО, грейдом, должностью, линейной структурой, Agile и профилем
-      const newProfile: UserProfile = {
-        userId: "user-1",
-        lastName: "Помыткин",
-        firstName: "Сергей",
-        middleName: "Олегович",
-        grade: 12,
-        position: "Руководитель экспертизы по тестированию",
-        linearStructure: "ГО / Департамент автоматизации внешних сервисов / Управление развития некорпоратинвых систем / Отдел сложных систем",
-        agileRoles: [{ role: "Разработчик" }],
-        mainProfileId: "profile-1",
-        additionalProfileIds: [],
-        skills: [],
-        email: "latarho@gmail.com",
-        phone: "8-999-555-5555",
-      };
+      // Создаем новый профиль с дефолтными значениями
+      const newProfile = createDefaultUserProfile();
       setUserProfile(newProfile);
-      setLastName("Помыткин");
-      setFirstName("Сергей");
-      setMiddleName("Олегович");
-      setGrade(12);
-      setPosition("Руководитель экспертизы по тестированию");
-      setLinearStructure("ГО / Департамент автоматизации внешних сервисов / Управление развития некорпоратинвых систем / Отдел сложных систем");
-      setAgileRoles([{ role: "Разработчик" }]);
-      setMainProfileId("profile-1");
-      setTags([]);
+      setLastName(newProfile.lastName || "");
+      setFirstName(newProfile.firstName || "");
+      setMiddleName(newProfile.middleName || "");
+      setGrade(newProfile.grade || 12);
+      setPosition(newProfile.position || "");
+      setLinearStructure(newProfile.linearStructure || "");
+      setAgileRoles(newProfile.agileRoles || [{ role: "Разработчик" }]);
+      setMainProfileId(newProfile.mainProfileId || "");
+      setTags(newProfile.tags || []);
       saveUserProfile(newProfile);
     }
   }, []);
 
   const handleResetProfile = () => {
     resetUserProfile();
-    const newProfile: UserProfile = {
-      userId: "user-1",
-      lastName: "Помыткин",
-      firstName: "Сергей",
-      middleName: "Олегович",
-      grade: 12,
-      position: "Руководитель экспертизы по тестированию",
-      linearStructure: "ГО / Департамент автоматизации внешних сервисов / Управление развития некорпоратинвых систем / Отдел сложных систем",
-      agileRoles: [{ role: "Разработчик" }],
-      mainProfileId: "profile-1",
-      additionalProfileIds: [],
-      skills: [],
-      avatar: undefined,
-      email: "latarho@gmail.com",
-      phone: "8-999-555-5555",
-    };
+    const newProfile = createDefaultUserProfile({ avatar: undefined });
     setUserProfile(newProfile);
-    setLastName("Помыткин");
-    setFirstName("Сергей");
-    setMiddleName("Олегович");
-    setGrade(12);
-    setPosition("Руководитель экспертизы по тестированию");
-      setLinearStructure("ГО / Департамент автоматизации внешних сервисов / Управление развития некорпоратинвых систем / Отдел сложных систем");
-      setAgileRoles([{ role: "Разработчик" }]);
-      setMainProfileId("profile-1");
-      setTags([]);
+    setLastName(newProfile.lastName || "");
+    setFirstName(newProfile.firstName || "");
+    setMiddleName(newProfile.middleName || "");
+    setGrade(newProfile.grade || 12);
+    setPosition(newProfile.position || "");
+    setLinearStructure(newProfile.linearStructure || "");
+    setAgileRoles(newProfile.agileRoles || [{ role: "Разработчик" }]);
+    setMainProfileId(newProfile.mainProfileId || "");
+    setTags(newProfile.tags || []);
     setIsResetDialogOpen(false);
   };
 
@@ -208,14 +181,16 @@ export default function ProfilePage() {
     if (firstName) parts.push(firstName);
     if (middleName) parts.push(middleName);
     // Если ФИО не указано, используем дефолтное значение
-    return parts.length > 0 ? parts.join(" ") : "Помыткин Сергей Олегович";
+    if (parts.length === 0) {
+      return `${DEFAULT_USER_PROFILE.lastName} ${DEFAULT_USER_PROFILE.firstName} ${DEFAULT_USER_PROFILE.middleName}`;
+    }
+    return parts.join(" ");
   };
 
   // Получение инициалов для fallback аватара
   const getInitials = () => {
-    // Используем текущие значения или дефолтные
-    const currentLastName = lastName || "Помыткин";
-    const currentFirstName = firstName || "Сергей";
+    const currentLastName = lastName || DEFAULT_USER_PROFILE.lastName;
+    const currentFirstName = firstName || DEFAULT_USER_PROFILE.firstName;
     if (currentLastName && currentFirstName) {
       return `${currentLastName[0]}${currentFirstName[0]}`.toUpperCase();
     }
@@ -256,12 +231,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleProfileUpdate = () => {
-    const profile = getUserProfile();
-    if (profile) {
-      setUserProfile(profile);
-    }
-  };
 
   const mainProfile = profiles.find((p) => p.id === mainProfileId);
 
@@ -338,7 +307,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3 mb-2 flex-wrap justify-center">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="outline" className="text-sm font-semibold px-3 py-1 cursor-help">
+                <Badge variant="outline" className="text-sm font-semibold px-3 py-1 cursor-help bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
                   {grade}
                 </Badge>
               </TooltipTrigger>
@@ -354,7 +323,7 @@ export default function ProfilePage() {
             {mainProfileId && mainProfile ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge variant="outline" className="text-sm cursor-help">
+                  <Badge variant="outline" className="text-sm cursor-help bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
                     {mainProfile.name}
                   </Badge>
                 </TooltipTrigger>
@@ -419,14 +388,14 @@ export default function ProfilePage() {
                       <div className="flex items-center gap-3">
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-foreground">
-                          {userProfile?.email || "latarho@gmail.com"}
+                          {userProfile?.email || DEFAULT_USER_PROFILE.email}
                         </span>
                       </div>
                       {/* Телефон */}
                       <div className="flex items-center gap-3">
                         <Phone className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-foreground">
-                          {userProfile?.phone || "8-999-555-5555"}
+                          {userProfile?.phone || DEFAULT_USER_PROFILE.phone}
                         </span>
                       </div>
                     </div>
@@ -479,7 +448,7 @@ export default function ProfilePage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <ProfileWidgets userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />
+                    <ProfileWidgets userProfile={userProfile} />
                   </CardContent>
                 </Card>
                 

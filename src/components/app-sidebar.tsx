@@ -32,7 +32,6 @@ import {
   SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -134,9 +133,6 @@ export function AppSidebar() {
               Управление компетенциями
             </span>
           </div>
-          {!isCollapsed && (
-            <SidebarTrigger className="ml-auto" />
-          )}
         </div>
       </SidebarHeader>
 
@@ -334,7 +330,7 @@ export function AppSidebar() {
           </div>
         ) : (
           <div className="flex justify-center items-center w-full">
-            <SidebarTrigger className="size-8" />
+            <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
           </div>
         )}
       </SidebarFooter>

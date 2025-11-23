@@ -173,6 +173,8 @@ export const userProfileSchema = z.object({
     { message: "Аватар должен быть URL или base64 data URL изображения" }
   ),
   tags: z.array(z.string().min(1)).optional(),
+  email: z.string().email("Некорректный email").optional().or(z.literal("")),
+  phone: z.string().optional(),
 });
 
 // Валидация члена команды
