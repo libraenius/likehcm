@@ -205,7 +205,7 @@ export default function CareerTracksPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
       {errorAlert && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
@@ -475,10 +475,10 @@ export default function CareerTracksPage() {
           const profile = getProfileById(track.profileId);
           const isExpanded = expandedTracks.has(track.id);
           return (
-            <Card key={track.id}>
+            <Card key={track.id} className="w-full max-w-full overflow-x-hidden">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
@@ -492,7 +492,7 @@ export default function CareerTracksPage() {
                           <ChevronRight className="h-4 w-4" />
                         )}
                       </Button>
-                      <CardTitle className="cursor-pointer" onClick={() => toggleTrack(track.id)}>
+                      <CardTitle className="cursor-pointer break-words" onClick={() => toggleTrack(track.id)}>
                         {track.name}
                       </CardTitle>
                     </div>
@@ -523,18 +523,13 @@ export default function CareerTracksPage() {
                 </div>
               </CardHeader>
               {isExpanded && (
-                <CardContent className="overflow-visible pb-8">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Дерево развития талантов</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Визуализация карьерного пути в виде дерева талантов. Разблокируйте уровни, развивая необходимые компетенции.
-                    </p>
+                <CardContent className="overflow-x-hidden py-3 w-full max-w-full">
+                  <div className="mb-2">
+                    <h3 className="text-base font-semibold mb-0.5">Дерево развития талантов</h3>
                   </div>
-                  <div className="overflow-visible">
-                    <CareerTalentTree
-                      careerTrack={track}
-                    />
-                  </div>
+                  <CareerTalentTree
+                    careerTrack={track}
+                  />
                 </CardContent>
               )}
             </Card>
