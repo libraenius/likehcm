@@ -519,7 +519,7 @@ export default function ProfilePage() {
           <TabsContent value="team" className="space-y-4">
             <div className="flex flex-col items-center justify-center py-12">
               <p className="text-muted-foreground mb-4">Просмотр информации о команде</p>
-              <Link href="/team">
+              <Link href="/services/career">
                 <Button variant="outline">Перейти к команде</Button>
               </Link>
             </div>

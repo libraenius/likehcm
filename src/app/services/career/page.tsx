@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { getProfiles, getUserProfile, saveUserProfile, getProfileById, createDefaultUserProfile } from "@/lib/data";
-import { getUserCareerTrackProgress } from "@/lib/calculations";
+import { getProfiles, getUserProfile, saveUserProfile, getProfileById, createDefaultUserProfile, resetUserProfile, getCompetenceById, getCareerTrackByProfileId, getCareerTracks, getCompetences } from "@/lib/data";
+import { getUserCareerTrackProgress, calculateProfileMatch, calculateCareerTrackProgress } from "@/lib/calculations";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,16 +10,423 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { UserProfile, SkillLevel } from "@/types";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import type { UserProfile, SkillLevel, TeamMember, ProfileLevel } from "@/types";
 import { SkillAssessment } from "@/components/skill-assessment";
 import { CareerTrackProgress } from "@/components/career-track-progress";
-import { ClipboardCheck, User, Users, TrendingUp, CheckCircle2, Info } from "lucide-react";
+import { ClipboardCheck, User, Users, TrendingUp, CheckCircle2, Info, RotateCcw, Mail, BookOpen, Briefcase, ChevronDown, ChevronRight, Building2, Search, X, Edit, Star, Target, Filter } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/types";
 import { ProfileLevelCard } from "@/components/profile-level-card";
+
+// Структура подразделений
+interface Department {
+  id: string;
+  name: string;
+  parentId?: string;
+}
+
+// Моковые данные подразделений
+const mockDepartments: Department[] = [
+  { id: "dept-1", name: "Департамент автоматизации внутренних сервисов" },
+  { id: "dept-2", name: "Управление развития общекорпоративных систем", parentId: "dept-1" },
+  { id: "dept-3", name: "Управление разработки банковских продуктов", parentId: "dept-1" },
+  { id: "dept-4", name: "Департамент информационной безопасности" },
+  { id: "dept-5", name: "Управление качества и тестирования" },
+];
+
+// Моковые данные команды (в реальном приложении это будет из API)
+const mockTeamMembers: (TeamMember & { departmentId?: string })[] = [
+  {
+    id: "member-1",
+    name: "Петров Иван Сергеевич",
+    lastName: "Петров",
+    firstName: "Иван",
+    middleName: "Сергеевич",
+    position: "Главный инженер",
+    email: "ivan.petrov@example.com",
+    mainProfileId: "profile-1",
+    additionalProfileIds: ["profile-3"],
+    avatar: undefined,
+    departmentId: "dept-2",
+  },
+  {
+    id: "member-2",
+    name: "Сидорова Мария Александровна",
+    lastName: "Сидорова",
+    firstName: "Мария",
+    middleName: "Александровна",
+    position: "Ведущий разработчик",
+    email: "maria.sidorova@example.com",
+    mainProfileId: "profile-2",
+    additionalProfileIds: [],
+    avatar: undefined,
+    departmentId: "dept-2",
+  },
+  {
+    id: "member-3",
+    name: "Иванов Алексей Дмитриевич",
+    lastName: "Иванов",
+    firstName: "Алексей",
+    middleName: "Дмитриевич",
+    position: "Старший разработчик",
+    email: "alexey.ivanov@example.com",
+    mainProfileId: "profile-3",
+    additionalProfileIds: ["profile-1"],
+    avatar: undefined,
+    departmentId: "dept-3",
+  },
+  {
+    id: "member-4",
+    name: "Смирнова Елена Викторовна",
+    lastName: "Смирнова",
+    firstName: "Елена",
+    middleName: "Викторовна",
+    position: "QA инженер",
+    email: "elena.smirnova@example.com",
+    mainProfileId: "profile-4",
+    additionalProfileIds: [],
+    avatar: undefined,
+    departmentId: "dept-4",
+  },
+  {
+    id: "member-5",
+    name: "Помыткин Сергей Олегович",
+    lastName: "Помыткин",
+    firstName: "Сергей",
+    middleName: "Олегович",
+    position: "Руководитель разработки",
+    email: "s.pomytkin@example.com",
+    mainProfileId: "profile-1", // Будет заменено на профиль пользователя динамически
+    additionalProfileIds: [],
+    avatar: undefined,
+    departmentId: "dept-1",
+  },
+];
+
+const levelNames = ["Начальный", "Базовый", "Средний", "Продвинутый", "Экспертный"];
+
+// Константы для уровней профиля
+const profileLevelNames = {
+  trainee: "Стажер",
+  junior: "Младший",
+  middle: "Средний",
+  senior: "Старший",
+  lead: "Ведущий",
+};
+
+const profileLevelColors = {
+  trainee: "bg-gradient-to-r from-slate-100 to-slate-200 text-black border-slate-300 dark:from-slate-700 dark:to-slate-800 dark:text-white",
+  junior: "bg-gradient-to-r from-slate-200 to-slate-300 text-black border-slate-400 dark:from-slate-600 dark:to-slate-700 dark:text-white",
+  middle: "bg-gradient-to-r from-slate-300 to-slate-400 text-black border-slate-500 dark:from-slate-500 dark:to-slate-600 dark:text-white",
+  senior: "bg-gradient-to-r from-slate-400 to-slate-500 text-black border-slate-600 dark:from-slate-400 dark:to-slate-500 dark:text-white",
+  lead: "bg-gradient-to-r from-slate-500 to-slate-600 text-black border-slate-700 dark:from-slate-300 dark:to-slate-400 dark:text-white",
+};
+
+// Компонент для отображения уровня профиля (из team/page.tsx)
+function TeamProfileLevelCard({
+  profileLevel,
+  levelLabel,
+  levelIndex,
+}: {
+  profileLevel: ProfileLevel;
+  levelLabel: string;
+  levelIndex: number;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const levelColor = profileLevelColors[profileLevel.level as keyof typeof profileLevelColors] || "bg-slate-100 text-slate-700 border-slate-300";
+
+  return (
+    <div className="border rounded-md overflow-hidden bg-card">
+      <div
+        className="p-2.5 cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between gap-2"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 flex-shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
+          </Button>
+          <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 ${levelColor}`}>
+            {levelLabel}
+          </Badge>
+          <span className="font-semibold text-xs">{profileLevel.name}</span>
+          {!isExpanded && (
+            <span className="text-xs text-muted-foreground truncate ml-2">
+              {profileLevel.description}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="border-t bg-muted/30 p-2.5 space-y-2.5">
+          {/* Обязанности */}
+          <div className="space-y-1.5">
+            <h4 className="font-semibold text-xs flex items-center gap-1.5">
+              <Briefcase className="h-3 w-3 text-muted-foreground" />
+              Обязанности:
+            </h4>
+            <ul className="space-y-1 ml-4">
+              {profileLevel.responsibilities.map((responsibility: string, idx: number) => (
+                <li key={idx} className="text-xs text-muted-foreground">
+                  <div className="flex items-start gap-1.5">
+                    <span className="text-foreground mt-0.5 flex-shrink-0">•</span>
+                    <div className="flex-1 whitespace-pre-line break-words">{responsibility}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <Separator className="my-2" />
+
+          {/* Требования к образованию и стажу */}
+          <div className="space-y-1.5">
+            <h4 className="font-semibold text-xs flex items-center gap-1.5">
+              <Info className="h-3 w-3 text-muted-foreground" />
+              Требования:
+            </h4>
+            <div className="space-y-2 ml-4">
+              <div className="text-xs">
+                <span className="font-medium text-foreground">Образование: </span>
+                <span className="text-muted-foreground">
+                  {profileLevel.education || "Не указано"}
+                </span>
+              </div>
+              <div className="text-xs">
+                <span className="font-medium text-foreground">Стаж: </span>
+                <span className="text-muted-foreground">
+                  {profileLevel.experience || "Не указано"}
+                </span>
+              </div>
+            </div>
+          </div>
+          <Separator className="my-2" />
+
+          {/* Компетенции */}
+          <div className="space-y-1.5">
+            <h4 className="font-semibold text-xs flex items-center gap-1.5">
+              <Info className="h-3 w-3 text-muted-foreground" />
+              Компетенции:
+            </h4>
+            <div className="space-y-3">
+              {/* Профессиональные компетенции */}
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Профессиональные компетенции:</p>
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(profileLevel.requiredSkills)
+                    .filter(([competenceId]) => {
+                      const comp = getCompetenceById(competenceId);
+                      return comp && comp.type === "профессиональные компетенции";
+                    })
+                    .map(([competenceId, requiredLevel]: [string, SkillLevel]) => {
+                      const comp = getCompetenceById(competenceId);
+                      if (!comp) return null;
+
+                      const professionalColor = "bg-purple-50 text-purple-700 border-purple-300";
+
+                      return (
+                        <Badge
+                          key={competenceId}
+                          variant="outline"
+                          className={`text-xs border ${professionalColor}`}
+                        >
+                          {comp.name} {requiredLevel}
+                        </Badge>
+                      );
+                    })}
+                  {Object.entries(profileLevel.requiredSkills).filter(([competenceId]) => {
+                    const comp = getCompetenceById(competenceId);
+                    return comp && comp.type === "профессиональные компетенции";
+                  }).length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">Нет профессиональных компетенций</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Корпоративные компетенции */}
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Корпоративные компетенции:</p>
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(profileLevel.requiredSkills)
+                    .filter(([competenceId]) => {
+                      const comp = getCompetenceById(competenceId);
+                      return comp && comp.type === "корпоративные компетенции";
+                    })
+                    .map(([competenceId, requiredLevel]: [string, SkillLevel]) => {
+                      const comp = getCompetenceById(competenceId);
+                      if (!comp) return null;
+
+                      const corporateColor = "bg-cyan-50 text-cyan-700 border-cyan-300";
+
+                      return (
+                        <Badge
+                          key={competenceId}
+                          variant="outline"
+                          className={`text-xs border ${corporateColor}`}
+                        >
+                          {comp.name} {requiredLevel}
+                        </Badge>
+                      );
+                    })}
+                  {Object.entries(profileLevel.requiredSkills).filter(([competenceId]) => {
+                    const comp = getCompetenceById(competenceId);
+                    return comp && comp.type === "корпоративные компетенции";
+                  }).length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">Нет корпоративных компетенций</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Компонент для содержимого тултипа профиля (из team/page.tsx)
+function TeamProfileTooltipContent({ profile }: { profile: Profile }) {
+  return (
+    <div className="p-4 space-y-4 max-h-[80vh] overflow-y-auto w-full">
+      {/* Описание профиля */}
+      {profile.description && (
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">Описание профиля</Label>
+          <p className="text-xs text-muted-foreground">{profile.description}</p>
+        </div>
+      )}
+
+      {/* ТФР */}
+      {profile.tfr && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">ТФР (Типовая функциональная роль)</Label>
+            <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800">
+              {profile.tfr}
+            </Badge>
+          </div>
+        </>
+      )}
+
+      {/* Уровни профиля */}
+      {profile.levels && profile.levels.length > 0 && (
+        <>
+          <Separator />
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">Уровни профиля</Label>
+            <div className="space-y-2">
+              {(() => {
+                const levelOrder = ["trainee", "junior", "middle", "senior", "lead"];
+                
+                // Сортируем уровни в правильном порядке
+                const sortedLevels = [...profile.levels].sort((a, b) => {
+                  const indexA = levelOrder.indexOf(a.level);
+                  const indexB = levelOrder.indexOf(b.level);
+                  return indexA - indexB;
+                });
+                
+                return sortedLevels.map((profileLevel, levelIndex) => {
+                  const levelLabel = profileLevelNames[profileLevel.level as keyof typeof profileLevelNames] || profileLevel.level;
+                  
+                  return (
+                    <TeamProfileLevelCard
+                      key={profileLevel.level}
+                      profileLevel={profileLevel}
+                      levelLabel={levelLabel}
+                      levelIndex={levelIndex}
+                    />
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Информация об экспертах */}
+      {profile.experts && profile.experts.length > 0 && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              Эксперты (владельцы профиля):
+            </h3>
+            <div className="space-y-2">
+              {profile.experts.map((expert, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 border rounded-lg bg-muted/20">
+                  <Avatar className="h-12 w-12">
+                    {expert.avatar ? (
+                      <AvatarImage src={expert.avatar} alt={expert.fullName} />
+                    ) : null}
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                      {expert.fullName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm">{expert.fullName}</div>
+                    <div className="text-xs text-muted-foreground">{expert.position}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Цвета для уровней компетенций
+const getLevelColor = (level: number, isCorporate: boolean) => {
+  if (isCorporate) {
+    // Корпоративные компетенции - оттенки голубого/cyan
+    switch (level) {
+      case 1: return "bg-cyan-200 dark:bg-cyan-900";
+      case 2: return "bg-cyan-300 dark:bg-cyan-800";
+      case 3: return "bg-cyan-400 dark:bg-cyan-700";
+      case 4: return "bg-cyan-500 dark:bg-cyan-600";
+      case 5: return "bg-cyan-600 dark:bg-cyan-500";
+      default: return "bg-cyan-300 dark:bg-cyan-800";
+    }
+  } else {
+    // Профессиональные компетенции - оттенки фиолетового/purple
+    switch (level) {
+      case 1: return "bg-purple-200 dark:bg-purple-900";
+      case 2: return "bg-purple-300 dark:bg-purple-800";
+      case 3: return "bg-purple-400 dark:bg-purple-700";
+      case 4: return "bg-purple-500 dark:bg-purple-600";
+      case 5: return "bg-purple-600 dark:bg-purple-500";
+      default: return "bg-purple-300 dark:bg-purple-800";
+    }
+  }
+};
 
 function ProfileTooltipContent({ profile }: { profile: Profile }) {
   return (
@@ -126,6 +533,2356 @@ function ProfileTooltipContent({ profile }: { profile: Profile }) {
   );
 }
 
+// Компонент для контента команды (перенесен из team/page.tsx)
+function TeamCareerContent() {
+  const [teamUserProfile, setTeamUserProfile] = useState<UserProfile | null>(null);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [expandedDepartments, setExpandedDepartments] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [filters, setFilters] = useState<{
+    departmentIds: string[];
+    profileIds: string[];
+    additionalProfileIds: string[];
+    levelNames: string[];
+  }>({
+    departmentIds: [],
+    profileIds: [],
+    additionalProfileIds: [],
+    levelNames: [],
+  });
+  const [competenceFilterDialogOpen, setCompetenceFilterDialogOpen] = useState(false);
+  const [competenceFilters, setCompetenceFilters] = useState<{
+    competenceTypes: string[];
+    competenceIds: string[];
+  }>({
+    competenceTypes: [],
+    competenceIds: [],
+  });
+  const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
+  const [isProfileInfoDialogOpen, setIsProfileInfoDialogOpen] = useState(false);
+  const [selectedProfileForInfo, setSelectedProfileForInfo] = useState<Profile | null>(null);
+  // Оценки менеджера (в реальном приложении это будет из API)
+  const [memberSkills, setMemberSkills] = useState<Record<string, Record<string, number>>>({});
+  // Самооценка сотрудников (в реальном приложении это будет из API)
+  const [memberSelfAssessments, setMemberSelfAssessments] = useState<Record<string, Record<string, number>>>({
+    "member-1": { "comp-1": 2, "comp-2": 3, "comp-3": 1 },
+    "member-2": { "comp-4": 4, "comp-5": 2 },
+    "member-3": { "comp-1": 3, "comp-2": 4, "comp-3": 3 },
+    "member-4": { "comp-6": 1, "comp-7": 2 },
+    "member-5": {}, // Для Помыткина используем userProfile.skills
+  });
+
+  // Загружаем профиль пользователя один раз при монтировании
+  useEffect(() => {
+    const profile = getUserProfile();
+    if (profile) {
+      setTeamUserProfile(profile);
+    }
+  }, []);
+
+  // Обновляем профиль Помыткина на основе профиля пользователя
+  const teamMembers = useMemo(() => {
+    return mockTeamMembers.map((member) => {
+      if (member.id === "member-5") {
+        return {
+          ...member,
+          mainProfileId: teamUserProfile?.mainProfileId || "profile-1",
+          additionalProfileIds: teamUserProfile?.additionalProfileIds || [],
+        };
+      }
+      return member;
+    });
+  }, [teamUserProfile]);
+
+  // Выбираем первого члена команды по умолчанию
+  useEffect(() => {
+    if (teamMembers.length > 0 && !selectedMember) {
+      setSelectedMember(teamMembers[0]);
+    }
+  }, [teamMembers.length, selectedMember]);
+
+  const getInitials = (member: TeamMember) => {
+    return `${member.lastName[0]}${member.firstName[0]}`.toUpperCase();
+  };
+
+  const getFullName = (member: TeamMember) => {
+    return member.middleName 
+      ? `${member.lastName} ${member.firstName} ${member.middleName}`
+      : `${member.lastName} ${member.firstName}`;
+  };
+
+  // Определяет статус оценки сотрудника
+  const getMemberAssessmentStatus = (member: TeamMember): { hasSelfAssessment: boolean; hasManagerAssessment: boolean } => {
+    let hasSelfAssessment = false;
+    if (member.id === "member-5" && teamUserProfile?.skills && teamUserProfile.skills.length > 0) {
+      hasSelfAssessment = teamUserProfile.skills.some(skill => skill.selfAssessment > 0);
+    } else {
+      const selfAssessment = memberSelfAssessments[member.id];
+      hasSelfAssessment = selfAssessment && Object.values(selfAssessment).some(level => level > 0);
+    }
+
+    const managerAssessment = memberSkills[member.id];
+    const hasManagerAssessment = managerAssessment && Object.values(managerAssessment).some(level => level > 0);
+
+    return { hasSelfAssessment, hasManagerAssessment };
+  };
+
+  // Вычисляем соответствие профилей и уровень для каждого члена команды
+  const membersWithMatch = useMemo(() => {
+    if (!teamUserProfile?.mainProfileId) {
+      return teamMembers.map((member) => ({
+        member,
+        mainProfileMatch: 0,
+        isSameProfile: false,
+        levelName: null as string | null,
+      }));
+    }
+
+    const userMainProfile = getProfileById(teamUserProfile.mainProfileId);
+    if (!userMainProfile) {
+      return teamMembers.map((member) => ({
+        member,
+        mainProfileMatch: 0,
+        isSameProfile: false,
+        levelName: null as string | null,
+      }));
+    }
+
+    return teamMembers.map((member) => {
+      const memberMainProfile = getProfileById(member.mainProfileId);
+      const isSameProfile = member.mainProfileId === teamUserProfile.mainProfileId;
+      
+      let mainProfileMatch = 0;
+      const skillsForMatch = member.id === "member-5" && teamUserProfile?.skills && teamUserProfile.skills.length > 0
+        ? teamUserProfile.skills.reduce((acc, skill) => {
+            acc[skill.competenceId] = skill.selfAssessment;
+            return acc;
+          }, {} as Record<string, number>)
+        : memberSkills[member.id];
+      
+      if (memberMainProfile && skillsForMatch) {
+        mainProfileMatch = calculateProfileMatch(
+          skillsForMatch as Record<string, SkillLevel>,
+          memberMainProfile.requiredCompetences
+        );
+      }
+
+      let levelName: string | null = null;
+      const skillsToUse = member.id === "member-5" && teamUserProfile?.skills && teamUserProfile.skills.length > 0
+        ? teamUserProfile.skills.reduce((acc, skill) => {
+            acc[skill.competenceId] = skill.selfAssessment;
+            return acc;
+          }, {} as Record<string, number>)
+        : memberSkills[member.id];
+      
+      if (memberMainProfile && skillsToUse) {
+        const careerTrack = getCareerTrackByProfileId(member.mainProfileId);
+        if (careerTrack) {
+          const tempUserProfile: UserProfile = {
+            userId: member.id,
+            mainProfileId: member.mainProfileId,
+            additionalProfileIds: member.additionalProfileIds,
+            skills: Object.entries(skillsToUse).map(([competenceId, level]) => ({
+              competenceId,
+              selfAssessment: level as SkillLevel,
+              lastUpdated: new Date(),
+            })),
+          };
+          
+          const progress = calculateCareerTrackProgress(tempUserProfile, careerTrack);
+          if (progress.currentLevel > 0) {
+            const level = careerTrack.levels.find(l => l.level === progress.currentLevel);
+            if (level) {
+              levelName = level.name;
+            }
+          }
+        }
+      }
+
+      return {
+        member,
+        mainProfileMatch,
+        isSameProfile,
+        levelName,
+      };
+    });
+  }, [teamMembers, teamUserProfile, memberSkills]);
+
+  // Фильтрация и сортировка членов команды
+  const filteredAndSortedMembers = useMemo(() => {
+    let filtered = membersWithMatch;
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = membersWithMatch.filter(({ member }) => {
+        const fullName = member.middleName 
+          ? `${member.lastName} ${member.firstName} ${member.middleName}`.toLowerCase()
+          : `${member.lastName} ${member.firstName}`.toLowerCase();
+        const email = member.email.toLowerCase();
+        const mainProfile = getProfileById(member.mainProfileId);
+        const profileName = mainProfile?.name.toLowerCase() || "";
+        
+        return (
+          fullName.includes(query) ||
+          email.includes(query) ||
+          profileName.includes(query)
+        );
+      });
+    }
+
+    if (filters.departmentIds.length > 0) {
+      filtered = filtered.filter(({ member }) => {
+        const memberWithDept = member as TeamMember & { departmentId?: string };
+        return memberWithDept.departmentId && filters.departmentIds.includes(memberWithDept.departmentId);
+      });
+    }
+
+    if (filters.profileIds.length > 0) {
+      filtered = filtered.filter(({ member }) => {
+        return filters.profileIds.includes(member.mainProfileId);
+      });
+    }
+
+    if (filters.additionalProfileIds.length > 0) {
+      filtered = filtered.filter(({ member }) => {
+        if (!member.additionalProfileIds || member.additionalProfileIds.length === 0) {
+          return false;
+        }
+        return member.additionalProfileIds.some((profileId) => 
+          filters.additionalProfileIds.includes(profileId)
+        );
+      });
+    }
+
+    if (filters.levelNames.length > 0) {
+      filtered = filtered.filter(({ levelName }) => {
+        return levelName && filters.levelNames.includes(levelName);
+      });
+    }
+
+    return filtered.sort((a, b) => {
+      if (a.isSameProfile && !b.isSameProfile) return -1;
+      if (!a.isSameProfile && b.isSameProfile) return 1;
+      return b.mainProfileMatch - a.mainProfileMatch;
+    });
+  }, [membersWithMatch, searchQuery, filters]);
+
+  const selectedMemberData = selectedMember
+    ? membersWithMatch.find(({ member }) => member.id === selectedMember.id)
+    : null;
+
+  // Построение иерархии подразделений
+  const departmentHierarchy = useMemo(() => {
+    type DeptWithData = Department & { 
+      children: DeptWithData[]; 
+      members: Array<{ member: TeamMember & { departmentId?: string }; isSameProfile: boolean; levelName: string | null }> 
+    };
+    
+    const deptMap = new Map<string, DeptWithData>();
+    
+    mockDepartments.forEach(dept => {
+      deptMap.set(dept.id, { ...dept, children: [], members: [] });
+    });
+
+    const rootDepartments: DeptWithData[] = [];
+    deptMap.forEach((dept) => {
+      if (dept.parentId) {
+        const parent = deptMap.get(dept.parentId);
+        if (parent) {
+          parent.children.push(dept);
+        }
+      } else {
+        rootDepartments.push(dept);
+      }
+    });
+
+    filteredAndSortedMembers.forEach(({ member, isSameProfile, levelName }) => {
+      const memberWithDept = member as TeamMember & { departmentId?: string };
+      if (memberWithDept.departmentId) {
+        const dept = deptMap.get(memberWithDept.departmentId);
+        if (dept) {
+          dept.members.push({ member: memberWithDept, isSameProfile, levelName });
+        }
+      }
+    });
+
+    return rootDepartments;
+  }, [filteredAndSortedMembers]);
+
+  // Функция для подсчета оцененных сотрудников в отделе
+  const countAssessedMembers = useMemo(() => {
+    const countMembers = (dept: typeof departmentHierarchy[0]): { total: number; assessed: number } => {
+      let total = dept.members.length;
+      let assessed = dept.members.filter(({ member }) => {
+        const managerAssessment = memberSkills[member.id];
+        if (!managerAssessment || Object.keys(managerAssessment).length === 0) {
+          return false;
+        }
+        return Object.values(managerAssessment).some(level => level > 0);
+      }).length;
+      
+      dept.children.forEach(child => {
+        const childCounts = countMembers(child);
+        total += childCounts.total;
+        assessed += childCounts.assessed;
+      });
+      return { total, assessed };
+    };
+    
+    const countsMap = new Map<string, { total: number; assessed: number }>();
+    
+    const processDept = (dept: typeof departmentHierarchy[0]) => {
+      const counts = countMembers(dept);
+      countsMap.set(dept.id, counts);
+      dept.children.forEach(child => processDept(child));
+    };
+    
+    departmentHierarchy.forEach(dept => processDept(dept));
+    
+    return countsMap;
+  }, [departmentHierarchy, memberSkills]);
+
+  const toggleDepartment = (deptId: string) => {
+    setExpandedDepartments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(deptId)) {
+        newSet.delete(deptId);
+      } else {
+        newSet.add(deptId);
+      }
+      return newSet;
+    });
+  };
+
+  // Из-за большого размера контента, я создам упрощенную версию, которая будет содержать основные вкладки
+  // Полный контент будет добавлен постепенно
+  return (
+    <div className="space-y-6">
+      <Tabs defaultValue="assessment" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="assessment" className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            <span>Оценка сотрудников</span>
+          </TabsTrigger>
+          <TabsTrigger value="competences-members" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            <span>Компетенции команды (сотрудники)</span>
+          </TabsTrigger>
+          <TabsTrigger value="competences-competences" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            <span>Компетенции команды (компетенции)</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="assessment" className="space-y-4">
+          {/* Поиск */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск по ФИО, email или профилю..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {/* Основной контент - двухколоночный макет */}
+          {filteredAndSortedMembers.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-lg font-semibold mb-2">Члены команды не найдены</p>
+                <p className="text-sm text-muted-foreground text-center">
+                  В команде пока нет участников
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex gap-4 min-h-[calc(100vh-280px)]">
+              {/* Левая колонка - список членов команды (25%) */}
+              <div className="w-[25%] min-w-[250px] flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
+                <div className="p-2 border-b bg-muted/30">
+                  <h3 className="font-semibold text-sm">Состав команды</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <div className="p-2">
+                    {departmentHierarchy.map((dept) => {
+                      const isExpanded = expandedDepartments.has(dept.id);
+                      const hasChildren = dept.children.length > 0;
+                      
+                      const memberCounts = countAssessedMembers.get(dept.id) || { total: 0, assessed: 0 };
+                      const totalMembers = memberCounts.total;
+                      const assessedMembers = memberCounts.assessed;
+
+                      return (
+                        <div key={dept.id} className="space-y-1">
+                          {/* Подразделение */}
+                          <div
+                            onClick={() => hasChildren && toggleDepartment(dept.id)}
+                            className={cn(
+                              "p-1.5 rounded-md transition-colors flex items-center gap-1.5",
+                              hasChildren && "cursor-pointer hover:bg-muted/50"
+                            )}
+                          >
+                            {hasChildren && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 flex-shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleDepartment(dept.id);
+                                }}
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-3 w-3" />
+                                ) : (
+                                  <ChevronRight className="h-3 w-3" />
+                                )}
+                              </Button>
+                            )}
+                            {!hasChildren && <div className="w-4" />}
+                            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <span className="font-medium text-sm flex-1 min-w-0 truncate">
+                              {dept.name}
+                            </span>
+                            {totalMembers > 0 && (
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0.5 shrink-0 bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200">
+                                {assessedMembers}/{totalMembers}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* Дочерние подразделения и члены команды */}
+                          {isExpanded && (
+                            <div className="ml-4 space-y-1 border-l border-muted pl-2">
+                              {/* Дочерние подразделения */}
+                              {dept.children.map((childDept) => {
+                                const childIsExpanded = expandedDepartments.has(childDept.id);
+                                const childMembers = childDept.members;
+                                const childCounts = countAssessedMembers.get(childDept.id) || { total: 0, assessed: 0 };
+                                const childAssessedCount = childCounts.assessed;
+
+                                return (
+                                  <div key={childDept.id} className="space-y-1">
+                                    <div
+                                      onClick={() => toggleDepartment(childDept.id)}
+                                      className="p-1.5 rounded-md cursor-pointer hover:bg-muted/50 transition-colors flex items-center gap-1.5"
+                                    >
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-4 w-4 flex-shrink-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleDepartment(childDept.id);
+                                        }}
+                                      >
+                                        {childIsExpanded ? (
+                                          <ChevronDown className="h-3 w-3" />
+                                        ) : (
+                                          <ChevronRight className="h-3 w-3" />
+                                        )}
+                                      </Button>
+                                      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                                      <span className="font-medium text-sm flex-1 min-w-0 truncate">
+                                        {childDept.name}
+                                      </span>
+                                      {childCounts.total > 0 && (
+                                        <Badge variant="secondary" className="text-xs px-1.5 py-0.5 shrink-0 bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200">
+                                          {childAssessedCount}/{childCounts.total}
+                                        </Badge>
+                                      )}
+                                    </div>
+
+                                    {/* Члены дочернего подразделения */}
+                                    {childIsExpanded && (
+                                      <div className="ml-4 space-y-1 border-l border-muted pl-2">
+                                        {childMembers.map(({ member, isSameProfile, levelName }) => {
+                                          const mainProfile = getProfileById(member.mainProfileId);
+                                          const memberData = filteredAndSortedMembers.find(m => m.member.id === member.id);
+                                          const displayLevelName = memberData?.levelName || levelName;
+                                          const { hasSelfAssessment, hasManagerAssessment } = getMemberAssessmentStatus(member);
+                                          return (
+                                            <div
+                                              key={member.id}
+                                              onClick={() => setSelectedMember(member)}
+                                              className={cn(
+                                                "p-1.5 rounded-md cursor-pointer transition-colors",
+                                                selectedMember?.id === member.id
+                                                  ? "bg-primary text-primary-foreground"
+                                                  : "hover:bg-muted"
+                                              )}
+                                            >
+                                              <div className="flex items-start gap-1.5">
+                                                <div className="flex-1 min-w-0 space-y-0.5">
+                                                  <div
+                                                    className={cn(
+                                                      "font-medium text-sm",
+                                                      selectedMember?.id === member.id &&
+                                                        "text-primary-foreground"
+                                                    )}
+                                                  >
+                                                    {getFullName(member)}
+                                                  </div>
+                                                  <div
+                                                    className={cn(
+                                                      "text-xs",
+                                                      selectedMember?.id === member.id
+                                                        ? "text-accent-foreground/80"
+                                                        : "text-muted-foreground"
+                                                    )}
+                                                  >
+                                                    {member.position}
+                                                  </div>
+                                                  {member.mainProfileId && mainProfile && (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className={cn(
+                                                        "text-[10px] px-1.5 py-0.5 mt-0.5",
+                                                        selectedMember?.id === member.id
+                                                          ? "border-accent-foreground/30 text-accent-foreground/90"
+                                                          : ""
+                                                      )}
+                                                    >
+                                                      {mainProfile.name}
+                                                    </Badge>
+                                                  )}
+                                                  {hasSelfAssessment && !hasManagerAssessment && (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className={cn(
+                                                        "text-[10px] px-1.5 py-0.5 mt-0.5 bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800",
+                                                        selectedMember?.id === member.id
+                                                          ? "border-accent-foreground/30"
+                                                          : ""
+                                                      )}
+                                                    >
+                                                      Есть самооценка, требуется оценка руководителя
+                                                    </Badge>
+                                                  )}
+                                                  {!hasSelfAssessment && !hasManagerAssessment && (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className={cn(
+                                                        "text-[10px] px-1.5 py-0.5 mt-0.5 bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800",
+                                                        selectedMember?.id === member.id
+                                                          ? "border-accent-foreground/30"
+                                                          : ""
+                                                      )}
+                                                    >
+                                                      Нет самооценки, нет оценки руководителя
+                                                    </Badge>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+
+                              {/* Члены текущего подразделения */}
+                              {dept.members.map(({ member, isSameProfile, levelName }) => {
+                                const mainProfile = getProfileById(member.mainProfileId);
+                                const memberData = filteredAndSortedMembers.find(m => m.member.id === member.id);
+                                const displayLevelName = memberData?.levelName || levelName;
+                                const { hasSelfAssessment, hasManagerAssessment } = getMemberAssessmentStatus(member);
+                                return (
+                                  <div
+                                    key={member.id}
+                                    onClick={() => setSelectedMember(member)}
+                                    className={cn(
+                                      "p-1.5 rounded-md cursor-pointer transition-colors",
+                                      selectedMember?.id === member.id
+                                        ? "bg-accent text-accent-foreground"
+                                        : "hover:bg-muted"
+                                    )}
+                                  >
+                                    <div className="flex items-start gap-1.5">
+                                      <div className="flex-1 min-w-0 space-y-0.5">
+                                        <div
+                                          className={cn(
+                                            "font-medium text-sm",
+                                            selectedMember?.id === member.id &&
+                                              "text-primary-foreground"
+                                          )}
+                                        >
+                                          {getFullName(member)}
+                                        </div>
+                                        <div
+                                          className={cn(
+                                            "text-xs",
+                                            selectedMember?.id === member.id
+                                              ? "text-primary-foreground/80"
+                                              : "text-muted-foreground"
+                                          )}
+                                        >
+                                          {member.position}
+                                        </div>
+                                        {member.mainProfileId && mainProfile && (
+                                          <Badge
+                                            variant="outline"
+                                            className={cn(
+                                              "text-[10px] px-1.5 py-0.5 mt-0.5",
+                                              selectedMember?.id === member.id
+                                                ? "border-primary-foreground/30 text-primary-foreground/90"
+                                                : ""
+                                            )}
+                                          >
+                                            {mainProfile.name}
+                                          </Badge>
+                                        )}
+                                        {hasSelfAssessment && !hasManagerAssessment && (
+                                          <Badge
+                                            variant="outline"
+                                            className={cn(
+                                              "text-[10px] px-1.5 py-0.5 mt-0.5 bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800",
+                                              selectedMember?.id === member.id
+                                                ? "border-primary-foreground/30"
+                                                : ""
+                                            )}
+                                          >
+                                            Есть самооценка, требуется оценка руководителя
+                                          </Badge>
+                                        )}
+                                        {!hasSelfAssessment && !hasManagerAssessment && (
+                                          <Badge
+                                            variant="outline"
+                                            className={cn(
+                                              "text-[10px] px-1.5 py-0.5 mt-0.5 bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800",
+                                              selectedMember?.id === member.id
+                                                ? "border-primary-foreground/30"
+                                                : ""
+                                            )}
+                                          >
+                                            Нет самооценки, нет оценки руководителя
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Участники без подразделения */}
+                    {(() => {
+                      const membersWithoutDept = filteredAndSortedMembers.filter(
+                        ({ member }) => !(member as TeamMember & { departmentId?: string }).departmentId
+                      );
+                      
+                      if (membersWithoutDept.length === 0) return null;
+                      
+                      return (
+                        <div className="space-y-1 mt-2 pt-2 border-t">
+                          {membersWithoutDept.map(({ member, isSameProfile, levelName }) => {
+                            const mainProfile = getProfileById(member.mainProfileId);
+                            const memberData = filteredAndSortedMembers.find(m => m.member.id === member.id);
+                            const displayLevelName = memberData?.levelName || levelName;
+                            const { hasSelfAssessment, hasManagerAssessment } = getMemberAssessmentStatus(member);
+                            return (
+                              <div
+                                key={member.id}
+                                onClick={() => setSelectedMember(member)}
+                                className={cn(
+                                  "p-1.5 rounded-md cursor-pointer transition-colors",
+                                  selectedMember?.id === member.id
+                                    ? "bg-accent text-accent-foreground"
+                                    : "hover:bg-muted"
+                                )}
+                              >
+                                <div className="flex items-start gap-1.5">
+                                  <div className="flex-1 min-w-0 space-y-0.5">
+                                    <div
+                                      className={cn(
+                                        "font-medium text-sm",
+                                        selectedMember?.id === member.id &&
+                                          "text-primary-foreground"
+                                      )}
+                                    >
+                                      {getFullName(member)}
+                                    </div>
+                                    <div
+                                      className={cn(
+                                        "text-xs",
+                                        selectedMember?.id === member.id
+                                          ? "text-primary-foreground/80"
+                                          : "text-muted-foreground"
+                                      )}
+                                    >
+                                      {member.position}
+                                    </div>
+                                    {member.mainProfileId && mainProfile && (
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "text-[10px] px-1.5 py-0.5 mt-0.5",
+                                          selectedMember?.id === member.id
+                                            ? "border-primary-foreground/30 text-primary-foreground/90"
+                                            : ""
+                                        )}
+                                      >
+                                        {mainProfile.name}
+                                      </Badge>
+                                    )}
+                                    {hasSelfAssessment && !hasManagerAssessment && (
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "text-[10px] px-1.5 py-0.5 mt-0.5 bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800",
+                                          selectedMember?.id === member.id
+                                            ? "border-primary-foreground/30"
+                                            : ""
+                                        )}
+                                      >
+                                        Есть самооценка, требуется оценка руководителя
+                                      </Badge>
+                                    )}
+                                    {!hasSelfAssessment && !hasManagerAssessment && (
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "text-[10px] px-1.5 py-0.5 mt-0.5 bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800",
+                                          selectedMember?.id === member.id
+                                            ? "border-primary-foreground/30"
+                                            : ""
+                                        )}
+                                      >
+                                        Нет самооценки, нет оценки руководителя
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              {/* Правая колонка - детальная информация (75%) */}
+              <div className="flex-1 overflow-y-auto h-[calc(100vh-280px)]">
+                {selectedMember && selectedMemberData ? (
+                  <Card className="w-full">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start gap-3 mb-2">
+                            <Avatar className="h-20 w-20 shrink-0">
+                              {selectedMember.avatar && (
+                                <AvatarImage src={selectedMember.avatar} alt={getFullName(selectedMember)} />
+                              )}
+                              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                                {getInitials(selectedMember)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <CardTitle className="text-xl break-words">{getFullName(selectedMember)}</CardTitle>
+                              <CardDescription className="text-sm break-words">
+                                {selectedMember.position}
+                              </CardDescription>
+                              <CardDescription className="text-sm flex items-center gap-1 break-words">
+                                <Mail className="h-3 w-3 shrink-0" />
+                                <span className="break-all">{selectedMember.email}</span>
+                              </CardDescription>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-4">
+                        {/* Основной профиль */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              Основной профиль:
+                            </h3>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsAssessmentDialogOpen(true)}
+                              className="gap-2"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Оценить
+                            </Button>
+                          </div>
+                          {(() => {
+                            const mainProfile = getProfileById(selectedMember.mainProfileId);
+                            if (!mainProfile) {
+                              return (
+                                <div className="p-3 border rounded-lg bg-muted/20">
+                                  <p className="text-sm text-muted-foreground">Профиль не выбран</p>
+                                </div>
+                              );
+                            }
+
+                            const managerSkills = memberSkills[selectedMember.id] || {};
+                            const selfSkills = selectedMember.id === "member-5" && teamUserProfile?.skills && teamUserProfile.skills.length > 0
+                              ? teamUserProfile.skills.reduce((acc, skill) => {
+                                  acc[skill.competenceId] = skill.selfAssessment;
+                                  return acc;
+                                }, {} as Record<string, number>)
+                              : memberSelfAssessments[selectedMember.id] || {};
+                            
+                            const careerTrack = getCareerTrackByProfileId(selectedMember.mainProfileId);
+                            
+                            const calculateLevel = (skills: Record<string, number>): number => {
+                              if (!careerTrack) return 0;
+                              
+                              const sortedLevels = [...careerTrack.levels].sort((a, b) => b.level - a.level);
+                              
+                              for (const trackLevel of sortedLevels) {
+                                let levelMatch = 0;
+                                let totalRequired = 0;
+                                
+                                for (const [competenceId, requiredLevel] of Object.entries(trackLevel.requiredSkills)) {
+                                  const userLevel = skills[competenceId] || 0;
+                                  levelMatch += Math.min(userLevel, requiredLevel);
+                                  totalRequired += requiredLevel;
+                                }
+                                
+                                const matchPercentage = totalRequired > 0 ? Math.round((levelMatch / totalRequired) * 100) : 0;
+                                
+                                if (matchPercentage >= trackLevel.minMatchPercentage) {
+                                  return trackLevel.level;
+                                }
+                              }
+                              
+                              return 0;
+                            };
+                            
+                            const selfLevel = calculateLevel(selfSkills);
+                            const managerLevel = calculateLevel(managerSkills);
+                            
+                            return (
+                              <div className="space-y-3">
+                                <div className="p-3 border rounded-lg bg-muted/20">
+                                  <div className="flex items-center justify-between gap-2 mb-2">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      <Badge variant="default" className="text-sm truncate">
+                                        {mainProfile.name}
+                                      </Badge>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="h-6 w-6 shrink-0 p-0"
+                                        onClick={() => {
+                                          setSelectedProfileForInfo(mainProfile);
+                                          setIsProfileInfoDialogOpen(true);
+                                        }}
+                                      >
+                                        <Info className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  {mainProfile.description && (
+                                    <p className="text-xs text-muted-foreground mt-2 break-words">
+                                      {mainProfile.description}
+                                    </p>
+                                  )}
+                                  
+                                  {/* Уровни самооценки и оценки руководителя */}
+                                  <div className="mt-3 space-y-2">
+                                    {selfLevel > 0 && (
+                                      <div className="flex items-center justify-between gap-2 p-2 bg-background rounded-md border">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                          <Star className="h-4 w-4 text-muted-foreground shrink-0" />
+                                          <span className="text-sm font-medium truncate">Самооценка:</span>
+                                        </div>
+                                        <Badge variant="secondary" className="text-sm shrink-0">
+                                          {selfLevel} - {levelNames[selfLevel - 1]}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    
+                                    {managerLevel > 0 && (
+                                      <div className="flex items-center justify-between gap-2 p-2 bg-background rounded-md border">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                          <Edit className="h-4 w-4 text-muted-foreground shrink-0" />
+                                          <span className="text-sm font-medium truncate">Оценка руководителя:</span>
+                                        </div>
+                                        <Badge variant="secondary" className="text-sm shrink-0">
+                                          {managerLevel} - {levelNames[managerLevel - 1]}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    
+                                    {selfLevel === 0 && managerLevel === 0 && (
+                                      <div className="text-xs text-muted-foreground text-center py-2">
+                                        Оценки не проведены
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Оценки компетенций основного профиля */}
+                                {(() => {
+                                  const managerSkills = memberSkills[selectedMember.id] || {};
+                                  const selfSkills = selectedMember.id === "member-5" && teamUserProfile?.skills && teamUserProfile.skills.length > 0
+                                    ? teamUserProfile.skills.reduce((acc, skill) => {
+                                        acc[skill.competenceId] = skill.selfAssessment;
+                                        return acc;
+                                      }, {} as Record<string, number>)
+                                    : memberSelfAssessments[selectedMember.id] || {};
+                                  const mainProfile = getProfileById(selectedMember.mainProfileId);
+                                  if (!mainProfile || mainProfile.requiredCompetences.length === 0) return null;
+
+                                  const assessedCompetences = mainProfile.requiredCompetences.filter(
+                                    (reqComp) => 
+                                      (managerSkills[reqComp.competenceId] && managerSkills[reqComp.competenceId] > 0) ||
+                                      (selfSkills[reqComp.competenceId] && selfSkills[reqComp.competenceId] > 0)
+                                  );
+
+                                  if (assessedCompetences.length === 0) return null;
+
+                                  const professionalCompetences = assessedCompetences.filter((reqComp) => {
+                                    const comp = getCompetenceById(reqComp.competenceId);
+                                    return comp && comp.type !== "корпоративные компетенции";
+                                  });
+
+                                  const corporateCompetences = assessedCompetences.filter((reqComp) => {
+                                    const comp = getCompetenceById(reqComp.competenceId);
+                                    return comp && comp.type === "корпоративные компетенции";
+                                  });
+
+                                  return (
+                                    <div className="space-y-2 mt-3">
+                                      <Label className="text-sm font-medium text-muted-foreground">
+                                        Оценки компетенций:
+                                      </Label>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {/* Первый столбец - Профессиональные компетенции */}
+                                        <div className="space-y-3">
+                                          <Label className="text-sm font-semibold text-muted-foreground">Профессиональные компетенции</Label>
+                                          <div className="space-y-3">
+                                            {professionalCompetences.map((reqComp) => {
+                                              const comp = getCompetenceById(reqComp.competenceId);
+                                              if (!comp) return null;
+                                              const managerLevel = managerSkills[reqComp.competenceId] || 0;
+                                              const selfLevel = selfSkills[reqComp.competenceId] || 0;
+                                              const hasDifference = managerLevel > 0 && selfLevel > 0 && managerLevel !== selfLevel;
+                                              const displayLevel = managerLevel > 0 ? managerLevel : selfLevel;
+                                              const levelName = levelNames[displayLevel - 1];
+                                              const isCorporate = comp.type === "корпоративные компетенции";
+
+                                              const difference = managerLevel - selfLevel;
+                                              
+                                              return (
+                                                <div
+                                                  key={reqComp.competenceId}
+                                                  className="p-2.5 border rounded-md bg-card space-y-2"
+                                                >
+                                                  <div>
+                                                    <div className="font-semibold text-sm mb-0.5 break-words">{comp.name}</div>
+                                                  </div>
+                                                  
+                                                  <div className="space-y-2">
+                                                    {selfLevel > 0 && (
+                                                      <div className="space-y-1">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                          <span className="text-xs font-medium text-muted-foreground truncate">Самооценка</span>
+                                                          <span className="text-xs font-semibold text-muted-foreground shrink-0">{levelNames[selfLevel - 1]}</span>
+                                                        </div>
+                                                        <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                                                          <div
+                                                            className={cn(
+                                                              "h-full rounded-full transition-all",
+                                                              getLevelColor(selfLevel, isCorporate),
+                                                              "opacity-70"
+                                                            )}
+                                                            style={{ width: `${(selfLevel / 5) * 100}%` }}
+                                                          />
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                    
+                                                    {managerLevel > 0 && (
+                                                      <div className="space-y-1">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                          <span className="text-xs font-medium text-muted-foreground truncate">Руководитель</span>
+                                                          <span className="text-xs font-semibold text-muted-foreground shrink-0">{levelName}</span>
+                                                        </div>
+                                                        <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                                                          <div
+                                                            className={cn(
+                                                              "h-full rounded-full transition-all",
+                                                              getLevelColor(managerLevel, isCorporate)
+                                                            )}
+                                                            style={{ width: `${(managerLevel / 5) * 100}%` }}
+                                                          />
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                  </div>
+
+                                                  {hasDifference && (
+                                                    <div className={cn(
+                                                      "p-1.5 rounded border",
+                                                      difference > 0 
+                                                        ? "bg-amber-50 border-amber-300 dark:bg-amber-950 dark:border-amber-800"
+                                                        : "bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-800"
+                                                    )}>
+                                                      <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                          <TrendingUp className={cn(
+                                                            "h-3 w-3",
+                                                            difference > 0 ? "text-amber-700 dark:text-amber-300" : "text-blue-700 dark:text-blue-300 rotate-180"
+                                                          )} />
+                                                          <span className="text-xs font-semibold">
+                                                            {difference > 0 ? "Руководитель выше" : "Самооценка выше"}
+                                                          </span>
+                                                        </div>
+                                                        <Badge 
+                                                          variant="outline" 
+                                                          className={cn(
+                                                            "text-xs font-bold px-1.5 py-0.5",
+                                                            difference > 0
+                                                              ? "bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-900 dark:text-amber-100 dark:border-amber-700"
+                                                              : "bg-blue-100 text-blue-900 border-blue-400 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700"
+                                                          )}
+                                                        >
+                                                          {difference > 0 ? '+' : ''}{difference}
+                                                        </Badge>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                  
+                                                  {!hasDifference && managerLevel > 0 && selfLevel > 0 && (
+                                                    <div className="p-1.5 rounded bg-green-50 border border-green-300 dark:bg-green-950 dark:border-green-800">
+                                                      <div className="flex items-center gap-1.5">
+                                                        <CheckCircle2 className="h-3 w-3 text-green-700 dark:text-green-300" />
+                                                        <span className="text-xs font-semibold text-green-700 dark:text-green-300">
+                                                          Оценки совпадают
+                                                        </span>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+
+                                        {/* Второй столбец - Корпоративные компетенции */}
+                                        <div className="space-y-3">
+                                          <Label className="text-sm font-semibold text-muted-foreground">Корпоративные компетенции</Label>
+                                          <div className="space-y-3">
+                                            {corporateCompetences.map((reqComp) => {
+                                            const comp = getCompetenceById(reqComp.competenceId);
+                                            if (!comp) return null;
+                                            const managerLevel = managerSkills[reqComp.competenceId] || 0;
+                                            const selfLevel = selfSkills[reqComp.competenceId] || 0;
+                                            const hasDifference = managerLevel > 0 && selfLevel > 0 && managerLevel !== selfLevel;
+                                            const displayLevel = managerLevel > 0 ? managerLevel : selfLevel;
+                                            const levelName = levelNames[displayLevel - 1];
+                                            const isCorporate = comp.type === "корпоративные компетенции";
+
+                                            const difference = managerLevel - selfLevel;
+                                            
+                                            return (
+                                              <div
+                                                key={reqComp.competenceId}
+                                                className="p-2.5 border rounded-md bg-card space-y-2"
+                                              >
+                                                <div>
+                                                  <div className="font-semibold text-sm mb-0.5">{comp.name}</div>
+                                                </div>
+                                                
+                                                <div className="space-y-2">
+                                                  {selfLevel > 0 && (
+                                                    <div className="space-y-1">
+                                                      <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-medium text-muted-foreground">Самооценка</span>
+                                                        <span className="text-xs font-semibold text-muted-foreground">{levelNames[selfLevel - 1]}</span>
+                                                      </div>
+                                                      <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                                                        <div
+                                                          className={cn(
+                                                            "h-full rounded-full transition-all",
+                                                            getLevelColor(selfLevel, isCorporate),
+                                                            "opacity-70"
+                                                          )}
+                                                          style={{ width: `${(selfLevel / 5) * 100}%` }}
+                                                        />
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                  
+                                                  {managerLevel > 0 && (
+                                                    <div className="space-y-1">
+                                                      <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-medium text-muted-foreground">Руководитель</span>
+                                                        <span className="text-xs font-semibold text-muted-foreground">{levelName}</span>
+                                                      </div>
+                                                      <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                                                        <div
+                                                          className={cn(
+                                                            "h-full rounded-full transition-all",
+                                                            getLevelColor(managerLevel, isCorporate)
+                                                          )}
+                                                          style={{ width: `${(managerLevel / 5) * 100}%` }}
+                                                        />
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                                
+                                                {hasDifference && (
+                                                  <div className={cn(
+                                                    "p-1.5 rounded border",
+                                                    difference > 0 
+                                                      ? "bg-amber-50 border-amber-300 dark:bg-amber-950 dark:border-amber-800"
+                                                      : "bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-800"
+                                                  )}>
+                                                    <div className="flex items-center justify-between">
+                                                      <div className="flex items-center gap-1.5">
+                                                        <TrendingUp className={cn(
+                                                          "h-3 w-3",
+                                                          difference > 0 ? "text-amber-700 dark:text-amber-300" : "text-blue-700 dark:text-blue-300 rotate-180"
+                                                        )} />
+                                                        <span className="text-xs font-semibold">
+                                                          {difference > 0 ? "Руководитель выше" : "Самооценка выше"}
+                                                        </span>
+                                                      </div>
+                                                      <Badge 
+                                                        variant="outline" 
+                                                        className={cn(
+                                                          "text-xs font-bold px-1.5 py-0.5",
+                                                          difference > 0
+                                                            ? "bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-900 dark:text-amber-100 dark:border-amber-700"
+                                                            : "bg-blue-100 text-blue-900 border-blue-400 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700"
+                                                        )}
+                                                      >
+                                                        {difference > 0 ? '+' : ''}{difference}
+                                                      </Badge>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                                
+                                                {!hasDifference && managerLevel > 0 && selfLevel > 0 && (
+                                                  <div className="p-1.5 rounded bg-green-50 border border-green-300 dark:bg-green-950 dark:border-green-800">
+                                                    <div className="flex items-center gap-1.5">
+                                                      <CheckCircle2 className="h-3 w-3 text-green-700 dark:text-green-300" />
+                                                      <span className="text-xs font-semibold text-green-700 dark:text-green-300">
+                                                        Оценки совпадают
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Дополнительные профили */}
+                        {selectedMember.additionalProfileIds.length > 0 && (
+                          <>
+                            <Separator />
+                            <div className="space-y-3">
+                              <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                Дополнительные профили:
+                              </h3>
+                              <div className="space-y-2">
+                                {selectedMember.additionalProfileIds.map((profileId) => {
+                                  const profile = getProfileById(profileId);
+                                  if (!profile) return null;
+
+                                  const managerSkills = memberSkills[selectedMember.id] || {};
+                                  const selfSkills = selectedMember.id === "member-5" && teamUserProfile?.skills && teamUserProfile.skills.length > 0
+                                    ? teamUserProfile.skills.reduce((acc, skill) => {
+                                        acc[skill.competenceId] = skill.selfAssessment;
+                                        return acc;
+                                      }, {} as Record<string, number>)
+                                    : memberSelfAssessments[selectedMember.id] || {};
+                                  
+                                  const assessedCompetences = profile.requiredCompetences.filter(
+                                    (reqComp) => 
+                                      (managerSkills[reqComp.competenceId] && managerSkills[reqComp.competenceId] > 0) ||
+                                      (selfSkills[reqComp.competenceId] && selfSkills[reqComp.competenceId] > 0)
+                                  );
+
+                                  return (
+                                    <div
+                                      key={profileId}
+                                      className="p-3 border rounded-lg bg-muted/20"
+                                    >
+                                      <Badge variant="secondary" className="text-sm mb-2">
+                                        {profile.name}
+                                      </Badge>
+                                      {profile.description && (
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                          {profile.description}
+                                        </p>
+                                      )}
+                                      {/* Оценки компетенций дополнительного профиля */}
+                                      {assessedCompetences.length > 0 && (() => {
+                                        const professionalCompetences = assessedCompetences.filter((reqComp) => {
+                                          const comp = getCompetenceById(reqComp.competenceId);
+                                          return comp && comp.type !== "корпоративные компетенции";
+                                        });
+
+                                        const corporateCompetences = assessedCompetences.filter((reqComp) => {
+                                          const comp = getCompetenceById(reqComp.competenceId);
+                                          return comp && comp.type === "корпоративные компетенции";
+                                        });
+
+                                        return (
+                                          <div className="space-y-2 mt-3 pt-3 border-t">
+                                            <Label className="text-sm font-medium text-muted-foreground">
+                                              Оценки компетенций:
+                                            </Label>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                              {/* Первый столбец - Профессиональные компетенции */}
+                                              <div className="space-y-3">
+                                                <Label className="text-sm font-semibold text-muted-foreground">Профессиональные компетенции</Label>
+                                                <div className="space-y-3">
+                                                  {professionalCompetences.map((reqComp) => {
+                                                  const comp = getCompetenceById(reqComp.competenceId);
+                                                  if (!comp) return null;
+                                                  const managerLevel = managerSkills[reqComp.competenceId] || 0;
+                                                  const selfLevel = selfSkills[reqComp.competenceId] || 0;
+                                                  const hasDifference = managerLevel > 0 && selfLevel > 0 && managerLevel !== selfLevel;
+                                                  const displayLevel = managerLevel > 0 ? managerLevel : selfLevel;
+                                                  const levelName = levelNames[displayLevel - 1];
+                                                  const isCorporate = comp.type === "корпоративные компетенции";
+
+                                                  const difference = managerLevel - selfLevel;
+                                                  
+                                                  return (
+                                                <div
+                                                  key={reqComp.competenceId}
+                                                  className="p-2.5 border rounded-md bg-card space-y-2"
+                                                >
+                                                  <div>
+                                                    <div className="font-semibold text-sm mb-0.5">{comp.name}</div>
+                                                  </div>
+                                                  
+                                          <div className="space-y-2">
+                                            {selfLevel > 0 && (
+                                              <div className="space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                      <span className="text-xs font-medium text-muted-foreground">Самооценка</span>
+                                                      <span className="text-xs font-semibold text-muted-foreground">{levelNames[selfLevel - 1]}</span>
+                                                </div>
+                                                <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                                                  <div
+                                                    className={cn(
+                                                      "h-full rounded-full transition-all",
+                                                      getLevelColor(selfLevel, isCorporate),
+                                                      "opacity-70"
+                                                    )}
+                                                    style={{ width: `${(selfLevel / 5) * 100}%` }}
+                                                  />
+                                                </div>
+                                              </div>
+                                            )}
+                                            
+                                            {managerLevel > 0 && (
+                                              <div className="space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                      <span className="text-xs font-medium text-muted-foreground">Руководитель</span>
+                                                      <span className="text-xs font-semibold text-muted-foreground">{levelName}</span>
+                                                </div>
+                                                <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                                                  <div
+                                                    className={cn(
+                                                      "h-full rounded-full transition-all",
+                                                      getLevelColor(managerLevel, isCorporate)
+                                                    )}
+                                                    style={{ width: `${(managerLevel / 5) * 100}%` }}
+                                                  />
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                          
+                                              {hasDifference && (
+                                                <div className={cn(
+                                                  "p-1.5 rounded border",
+                                                  difference > 0 
+                                                    ? "bg-amber-50 border-amber-300 dark:bg-amber-950 dark:border-amber-800"
+                                                    : "bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-800"
+                                                )}>
+                                                  <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5">
+                                                      <TrendingUp className={cn(
+                                                        "h-3 w-3",
+                                                        difference > 0 ? "text-amber-700 dark:text-amber-300" : "text-blue-700 dark:text-blue-300 rotate-180"
+                                                      )} />
+                                                      <span className="text-xs font-semibold">
+                                                        {difference > 0 ? "Руководитель выше" : "Самооценка выше"}
+                                                      </span>
+                                                    </div>
+                                                    <Badge 
+                                                      variant="outline" 
+                                                      className={cn(
+                                                        "text-xs font-bold px-1.5 py-0.5",
+                                                        difference > 0
+                                                          ? "bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-900 dark:text-amber-100 dark:border-amber-700"
+                                                          : "bg-blue-100 text-blue-900 border-blue-400 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700"
+                                                      )}
+                                                    >
+                                                      {difference > 0 ? '+' : ''}{difference}
+                                                    </Badge>
+                                                  </div>
+                                                </div>
+                                              )}
+                                              
+                                              {!hasDifference && managerLevel > 0 && selfLevel > 0 && (
+                                                <div className="p-1.5 rounded bg-green-50 border border-green-300 dark:bg-green-950 dark:border-green-800">
+                                                  <div className="flex items-center gap-1.5">
+                                                    <CheckCircle2 className="h-3 w-3 text-green-700 dark:text-green-300" />
+                                                    <span className="text-xs font-semibold text-green-700 dark:text-green-300">
+                                                      Оценки совпадают
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                              })}
+                                            </div>
+                                          </div>
+
+                                          {/* Второй столбец - Корпоративные компетенции */}
+                                          <div className="space-y-3">
+                                            <Label className="text-sm font-semibold text-muted-foreground">Корпоративные компетенции</Label>
+                                            <div className="space-y-3">
+                                              {corporateCompetences.map((reqComp) => {
+                                            const comp = getCompetenceById(reqComp.competenceId);
+                                            if (!comp) return null;
+                                            const managerLevel = managerSkills[reqComp.competenceId] || 0;
+                                            const selfLevel = selfSkills[reqComp.competenceId] || 0;
+                                            const hasDifference = managerLevel > 0 && selfLevel > 0 && managerLevel !== selfLevel;
+                                            const displayLevel = managerLevel > 0 ? managerLevel : selfLevel;
+                                            const levelName = levelNames[displayLevel - 1];
+                                            const isCorporate = comp.type === "корпоративные компетенции";
+
+                                            const difference = managerLevel - selfLevel;
+                                            
+                                            return (
+                                              <div
+                                                key={reqComp.competenceId}
+                                                className="p-2.5 border rounded-md bg-card space-y-2"
+                                              >
+                                                <div>
+                                                  <div className="font-semibold text-sm mb-0.5">{comp.name}</div>
+                                                </div>
+                                                
+                                                <div className="space-y-2">
+                                                  {selfLevel > 0 && (
+                                                    <div className="space-y-1">
+                                                      <div className="flex items-center justify-between">
+                                                      <span className="text-xs font-medium text-muted-foreground">Самооценка</span>
+                                                      <span className="text-xs font-semibold text-muted-foreground">{levelNames[selfLevel - 1]}</span>
+                                                      </div>
+                                                      <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                                                        <div
+                                                          className={cn(
+                                                            "h-full rounded-full transition-all",
+                                                            getLevelColor(selfLevel, isCorporate),
+                                                            "opacity-70"
+                                                          )}
+                                                          style={{ width: `${(selfLevel / 5) * 100}%` }}
+                                                        />
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                  
+                                                  {managerLevel > 0 && (
+                                                    <div className="space-y-1">
+                                                      <div className="flex items-center justify-between">
+                                                      <span className="text-xs font-medium text-muted-foreground">Руководитель</span>
+                                                      <span className="text-xs font-semibold text-muted-foreground">{levelName}</span>
+                                                      </div>
+                                                      <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                                                        <div
+                                                          className={cn(
+                                                            "h-full rounded-full transition-all",
+                                                            getLevelColor(managerLevel, isCorporate)
+                                                          )}
+                                                          style={{ width: `${(managerLevel / 5) * 100}%` }}
+                                                        />
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                                
+                                                {hasDifference && (
+                                                  <div className={cn(
+                                                    "p-1.5 rounded border",
+                                                    difference > 0 
+                                                      ? "bg-amber-50 border-amber-300 dark:bg-amber-950 dark:border-amber-800"
+                                                      : "bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-800"
+                                                  )}>
+                                                    <div className="flex items-center justify-between">
+                                                      <div className="flex items-center gap-1.5">
+                                                        <TrendingUp className={cn(
+                                                          "h-3 w-3",
+                                                          difference > 0 ? "text-amber-700 dark:text-amber-300" : "text-blue-700 dark:text-blue-300 rotate-180"
+                                                        )} />
+                                                        <span className="text-xs font-semibold">
+                                                          {difference > 0 ? "Руководитель выше" : "Самооценка выше"}
+                                                        </span>
+                                                      </div>
+                                                      <Badge 
+                                                        variant="outline" 
+                                                        className={cn(
+                                                          "text-xs font-bold px-1.5 py-0.5",
+                                                          difference > 0
+                                                            ? "bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-900 dark:text-amber-100 dark:border-amber-700"
+                                                            : "bg-blue-100 text-blue-900 border-blue-400 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700"
+                                                        )}
+                                                      >
+                                                        {difference > 0 ? '+' : ''}{difference}
+                                                      </Badge>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                                
+                                                {!hasDifference && managerLevel > 0 && selfLevel > 0 && (
+                                                  <div className="p-1.5 rounded bg-green-50 border border-green-300 dark:bg-green-950 dark:border-green-800">
+                                                    <div className="flex items-center gap-1.5">
+                                                      <CheckCircle2 className="h-3 w-3 text-green-700 dark:text-green-300" />
+                                                      <span className="text-xs font-semibold text-green-700 dark:text-green-300">
+                                                        Оценки совпадают
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                              })}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              );
+                            })}
+                          </div>
+                    </div>
+                      </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-lg font-semibold mb-2">Выберите участника команды</p>
+                      <p className="text-sm text-muted-foreground text-center">
+                        Нажмите на участника в списке слева для просмотра детальной информации
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="competences-members" className="space-y-4">
+          {/* Поиск и фильтрация */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по ФИО, email или профилю..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Фильтры
+                  {(filters.departmentIds.length > 0 || filters.profileIds.length > 0 || filters.additionalProfileIds.length > 0 || filters.levelNames.length > 0) && (
+                    <Badge variant="secondary" className="ml-2">
+                      {filters.departmentIds.length + filters.profileIds.length + filters.additionalProfileIds.length + filters.levelNames.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader className="pb-3">
+                  <DialogTitle className="text-lg">Фильтры</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  {/* Фильтр по подразделениям */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Подразделения</Label>
+                    <MultiSelect
+                      options={mockDepartments.map((department) => ({
+                        value: department.id,
+                        label: department.name,
+                      }))}
+                      selected={filters.departmentIds}
+                      onChange={(selected) => {
+                        setFilters({
+                          ...filters,
+                          departmentIds: selected,
+                        });
+                      }}
+                      placeholder="Выберите подразделения..."
+                    />
+                  </div>
+
+                  {/* Фильтр по профилям */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Основные профили</Label>
+                    <MultiSelect
+                      options={getProfiles().map((profile) => ({
+                        value: profile.id,
+                        label: profile.name,
+                      }))}
+                      selected={filters.profileIds}
+                      onChange={(selected) => {
+                        setFilters({
+                          ...filters,
+                          profileIds: selected,
+                        });
+                      }}
+                      placeholder="Выберите основные профили..."
+                    />
+                  </div>
+
+                  {/* Фильтр по дополнительным профилям */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Дополнительные профили</Label>
+                    <MultiSelect
+                      options={getProfiles().map((profile) => ({
+                        value: profile.id,
+                        label: profile.name,
+                      }))}
+                      selected={filters.additionalProfileIds}
+                      onChange={(selected) => {
+                        setFilters({
+                          ...filters,
+                          additionalProfileIds: selected,
+                        });
+                      }}
+                      placeholder="Выберите дополнительные профили..."
+                    />
+                  </div>
+
+                  {/* Фильтр по уровням */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Уровни карьерного трека</Label>
+                    <MultiSelect
+                      options={(() => {
+                        const allLevels = new Map<string, string>();
+                        getCareerTracks().forEach((track) => {
+                          track.levels.forEach((level) => {
+                            allLevels.set(level.name, level.name);
+                          });
+                        });
+                        return Array.from(allLevels.entries()).map(([value, label]) => ({
+                          value,
+                          label,
+                        }));
+                      })()}
+                      selected={filters.levelNames}
+                      onChange={(selected) => {
+                        setFilters({
+                          ...filters,
+                          levelNames: selected,
+                        });
+                      }}
+                      placeholder="Выберите уровни..."
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFilters({ 
+                        departmentIds: [], 
+                        profileIds: [], 
+                        additionalProfileIds: [],
+                        levelNames: [],
+                      });
+                    }}
+                  >
+                    Сбросить
+                  </Button>
+                  <Button size="sm" onClick={() => setFilterDialogOpen(false)}>
+                    Применить
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Компетенции команды (сотрудники)</CardTitle>
+              <CardDescription>
+                Анализ компетенций всей команды и выявление пробелов
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {filteredAndSortedMembers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-semibold mb-2">Члены команды не найдены</p>
+                  <p className="text-sm text-muted-foreground text-center">
+                    В команде пока нет участников или не найдено совпадений по поисковому запросу
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[1400px]">
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="min-w-[180px] px-4 whitespace-normal">Сотрудник</TableHead>
+                        <TableHead className="min-w-[200px] px-4 whitespace-normal">Должность / Подразделение</TableHead>
+                        <TableHead className="min-w-[150px] px-4 whitespace-normal">Профиль</TableHead>
+                        <TableHead className="min-w-[150px] px-4 whitespace-normal">Уровень профиля</TableHead>
+                        <TableHead className="min-w-[180px] px-4 whitespace-normal">Дополнительные профили</TableHead>
+                        <TableHead className="min-w-[250px] px-4 whitespace-normal">Профессиональные компетенции</TableHead>
+                        <TableHead className="min-w-[250px] px-4 whitespace-normal">Корпоративные компетенции</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {filteredAndSortedMembers.map(({ member, levelName }) => {
+                      const profile = getProfileById(member.mainProfileId);
+                      const memberWithDept = member as TeamMember & { departmentId?: string };
+                      const department = mockDepartments.find((d) => d.id === memberWithDept.departmentId);
+                      
+                      const selfAssessmentToUse = member.id === "member-5" && teamUserProfile?.skills && teamUserProfile.skills.length > 0
+                        ? teamUserProfile.skills.reduce((acc, skill) => {
+                            acc[skill.competenceId] = skill.selfAssessment;
+                            return acc;
+                          }, {} as Record<string, number>)
+                        : memberSelfAssessments[member.id] || {};
+                      
+                      const managerAssessment = memberSkills[member.id] || {};
+                      
+                      const allCompetenceIds = new Set([
+                        ...Object.keys(selfAssessmentToUse),
+                        ...Object.keys(managerAssessment),
+                      ]);
+                      
+                      const professionalCompetences: Array<{ 
+                        competence: ReturnType<typeof getCompetenceById>; 
+                        selfLevel: number | null;
+                        managerLevel: number | null;
+                      }> = [];
+                      const corporateCompetences: Array<{ 
+                        competence: ReturnType<typeof getCompetenceById>; 
+                        selfLevel: number | null;
+                        managerLevel: number | null;
+                      }> = [];
+                      
+                      allCompetenceIds.forEach((competenceId) => {
+                        const competence = getCompetenceById(competenceId);
+                        if (competence) {
+                          const selfLevel = competenceId in selfAssessmentToUse ? selfAssessmentToUse[competenceId] : null;
+                          const managerLevel = competenceId in managerAssessment ? managerAssessment[competenceId] : null;
+                          
+                          const competenceData = {
+                            competence,
+                            selfLevel,
+                            managerLevel,
+                          };
+                          
+                          if (competence.type === "профессиональные компетенции") {
+                            professionalCompetences.push(competenceData);
+                          } else if (competence.type === "корпоративные компетенции") {
+                            corporateCompetences.push(competenceData);
+                          }
+                        }
+                      });
+                      
+                      return (
+                        <TableRow key={member.id}>
+                          <TableCell className="px-4 whitespace-normal">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10 shrink-0">
+                                {member.avatar ? (
+                                  <AvatarImage src={member.avatar} alt={getFullName(member)} />
+                                ) : null}
+                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                  {getInitials(member)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-medium">{getFullName(member)}</span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium">{member.position}</span>
+                              {department && (
+                                <div className="text-sm text-muted-foreground">
+                                  {department.name}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {profile && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="default" className="w-fit">
+                                    {profile.name}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-md">
+                                  <div className="space-y-2">
+                                    <p className="font-semibold">{profile.name}</p>
+                                    {profile.description && (
+                                      <p className="text-sm">{profile.description}</p>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {levelName ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="w-fit">
+                                    {levelName}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-md">
+                                  <div className="space-y-2">
+                                    <p className="font-semibold">{levelName}</p>
+                                    {(() => {
+                                      const careerTrack = getCareerTrackByProfileId(member.mainProfileId);
+                                      if (careerTrack) {
+                                        const level = careerTrack.levels.find(l => l.name === levelName);
+                                        if (level?.description) {
+                                          return <p className="text-sm">{level.description}</p>;
+                                        }
+                                      }
+                                      return null;
+                                    })()}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {member.additionalProfileIds && member.additionalProfileIds.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {member.additionalProfileIds.map((profileId) => {
+                                  const additionalProfile = getProfileById(profileId);
+                                  return additionalProfile ? (
+                                    <Tooltip key={profileId}>
+                                      <TooltipTrigger asChild>
+                                        <Badge variant="secondary" className="w-fit text-xs">
+                                          {additionalProfile.name}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-md">
+                                        <div className="space-y-2">
+                                          <p className="font-semibold">{additionalProfile.name}</p>
+                                          {additionalProfile.description && (
+                                            <p className="text-sm">{additionalProfile.description}</p>
+                                          )}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  ) : null;
+                                })}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {professionalCompetences.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {professionalCompetences.map(({ competence, selfLevel, managerLevel }) => {
+                                  if (!competence) return null;
+                                  const displayText = selfLevel !== null && managerLevel !== null
+                                    ? `${competence.name} ${selfLevel}/${managerLevel}`
+                                    : selfLevel !== null
+                                    ? `${competence.name} ${selfLevel}/—`
+                                    : managerLevel !== null
+                                    ? `${competence.name} —/${managerLevel}`
+                                    : competence.name;
+                                  
+                                  return (
+                                    <Tooltip key={competence.id}>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800"
+                                        >
+                                          {displayText}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-md">
+                                        <div className="space-y-2">
+                                          <p className="font-semibold">{competence.name}</p>
+                                          {competence.description && (
+                                            <p className="text-sm">{competence.description}</p>
+                                          )}
+                                          <div className="space-y-1 text-sm">
+                                            {selfLevel !== null && (
+                                              <p>
+                                                <span className="font-medium">Самооценка:</span> {selfLevel} - {levelNames[selfLevel - 1]}
+                                              </p>
+                                            )}
+                                            {managerLevel !== null && (
+                                              <p>
+                                                <span className="font-medium">Оценка руководителя:</span> {managerLevel} - {levelNames[managerLevel - 1]}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-4 whitespace-normal">
+                            {corporateCompetences.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {corporateCompetences.map(({ competence, selfLevel, managerLevel }) => {
+                                  if (!competence) return null;
+                                  const displayText = selfLevel !== null && managerLevel !== null
+                                    ? `${competence.name} ${selfLevel}/${managerLevel}`
+                                    : selfLevel !== null
+                                    ? `${competence.name} ${selfLevel}/—`
+                                    : managerLevel !== null
+                                    ? `${competence.name} —/${managerLevel}`
+                                    : competence.name;
+                                  
+                                  return (
+                                    <Tooltip key={competence.id}>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs bg-cyan-50 text-cyan-700 border-cyan-300 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800"
+                                        >
+                                          {displayText}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-md">
+                                        <div className="space-y-2">
+                                          <p className="font-semibold">{competence.name}</p>
+                                          {competence.description && (
+                                            <p className="text-sm">{competence.description}</p>
+                                          )}
+                                          <div className="space-y-1 text-sm">
+                                            {selfLevel !== null && (
+                                              <p>
+                                                <span className="font-medium">Самооценка:</span> {selfLevel} - {levelNames[selfLevel - 1]}
+                                              </p>
+                                            )}
+                                            {managerLevel !== null && (
+                                              <p>
+                                                <span className="font-medium">Оценка руководителя:</span> {managerLevel} - {levelNames[managerLevel - 1]}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="competences-competences" className="space-y-4">
+          {/* Поиск и фильтрация */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по компетенциям..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <Dialog open={competenceFilterDialogOpen} onOpenChange={setCompetenceFilterDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Фильтры
+                  {(competenceFilters.competenceTypes.length > 0 || competenceFilters.competenceIds.length > 0) && (
+                    <Badge variant="secondary" className="ml-2">
+                      {competenceFilters.competenceTypes.length + competenceFilters.competenceIds.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader className="pb-3">
+                  <DialogTitle className="text-lg">Фильтры</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  {/* Фильтр по типам компетенций */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Типы компетенций</Label>
+                    <MultiSelect
+                      options={[
+                        { value: "профессиональные компетенции", label: "Профессиональные компетенции" },
+                        { value: "корпоративные компетенции", label: "Корпоративные компетенции" },
+                      ]}
+                      selected={competenceFilters.competenceTypes}
+                      onChange={(selected) => {
+                        setCompetenceFilters({
+                          ...competenceFilters,
+                          competenceTypes: selected,
+                        });
+                      }}
+                      placeholder="Выберите типы компетенций..."
+                    />
+                  </div>
+
+                  {/* Фильтр по компетенциям */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Компетенции</Label>
+                    <MultiSelect
+                      options={getCompetences().map((competence) => ({
+                        value: competence.id,
+                        label: competence.name,
+                      }))}
+                      selected={competenceFilters.competenceIds}
+                      onChange={(selected) => {
+                        setCompetenceFilters({
+                          ...competenceFilters,
+                          competenceIds: selected,
+                        });
+                      }}
+                      placeholder="Выберите компетенции..."
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCompetenceFilters({ 
+                        competenceTypes: [],
+                        competenceIds: [],
+                      });
+                    }}
+                  >
+                    Сбросить
+                  </Button>
+                  <Button size="sm" onClick={() => setCompetenceFilterDialogOpen(false)}>
+                    Применить
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Компетенции команды (компетенции)</CardTitle>
+              <CardDescription>
+                Анализ компетенций, сгруппированных по типам компетенций
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {filteredAndSortedMembers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-semibold mb-2">Члены команды не найдены</p>
+                  <p className="text-sm text-muted-foreground text-center">
+                    В команде пока нет участников или не найдено совпадений по поисковому запросу
+                  </p>
+                </div>
+              ) : (() => {
+                const allCompetenceIds = new Set<string>();
+                
+                filteredAndSortedMembers.forEach(({ member }) => {
+                  const selfAssessmentToUse = member.id === "member-5" && teamUserProfile?.skills && teamUserProfile.skills.length > 0
+                    ? teamUserProfile.skills.reduce((acc, skill) => {
+                        acc[skill.competenceId] = skill.selfAssessment;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    : memberSelfAssessments[member.id] || {};
+                  
+                  const managerAssessment = memberSkills[member.id] || {};
+                  
+                  Object.keys(selfAssessmentToUse).forEach(id => allCompetenceIds.add(id));
+                  Object.keys(managerAssessment).forEach(id => allCompetenceIds.add(id));
+                });
+                
+                const allCompetences = Array.from(allCompetenceIds)
+                  .map((competenceId) => {
+                    const competence = getCompetenceById(competenceId);
+                    if (!competence) return null;
+                    
+                    if (competenceFilters.competenceTypes.length > 0) {
+                      if (!competenceFilters.competenceTypes.includes(competence.type)) {
+                        return null;
+                      }
+                    }
+                    
+                    if (competenceFilters.competenceIds.length > 0) {
+                      if (!competenceFilters.competenceIds.includes(competenceId)) {
+                        return null;
+                      }
+                    }
+                    
+                    if (searchQuery.trim()) {
+                      const query = searchQuery.toLowerCase();
+                      if (!competence.name.toLowerCase().includes(query) && 
+                          !(competence.description?.toLowerCase().includes(query) ?? false)) {
+                        return null;
+                      }
+                    }
+                    
+                    return { competenceId, competence };
+                  })
+                  .filter((item): item is { competenceId: string; competence: NonNullable<ReturnType<typeof getCompetenceById>> } => item !== null)
+                  .sort((a, b) => {
+                    if (a.competence.type !== b.competence.type) {
+                      if (a.competence.type === "профессиональные компетенции") return -1;
+                      return 1;
+                    }
+                    return a.competence.name.localeCompare(b.competence.name);
+                  });
+                
+                if (allCompetences.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <Target className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-lg font-semibold mb-2">Компетенции не найдены</p>
+                      <p className="text-sm text-muted-foreground text-center">
+                        Компетенции команды отсутствуют или не найдено совпадений по поисковому запросу
+                      </p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[800px]">
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="min-w-[250px] px-4 whitespace-normal">Компетенция</TableHead>
+                          <TableHead className="min-w-[120px] px-4 whitespace-normal">Тип</TableHead>
+                          <TableHead className="min-w-[400px] px-4 whitespace-normal">Сотрудники</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allCompetences.map(({ competenceId, competence }) => {
+                          const isCorporate = competence.type === "корпоративные компетенции";
+                          const badgeColor = isCorporate 
+                            ? "bg-cyan-50 text-cyan-700 border-cyan-300 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800"
+                            : "bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800";
+                          
+                          const membersWithAssessments = filteredAndSortedMembers
+                            .map(({ member, levelName }) => {
+                              const selfAssessmentToUse = member.id === "member-5" && teamUserProfile?.skills && teamUserProfile.skills.length > 0
+                                ? teamUserProfile.skills.reduce((acc, skill) => {
+                                    acc[skill.competenceId] = skill.selfAssessment;
+                                    return acc;
+                                  }, {} as Record<string, number>)
+                                : memberSelfAssessments[member.id] || {};
+                              
+                              const managerAssessment = memberSkills[member.id] || {};
+                              
+                              const selfLevel = competenceId in selfAssessmentToUse ? selfAssessmentToUse[competenceId] : null;
+                              const managerLevel = competenceId in managerAssessment ? managerAssessment[competenceId] : null;
+                              
+                              const hasAssessment = selfLevel !== null || managerLevel !== null;
+                              
+                              if (!hasAssessment) return null;
+                              
+                              return {
+                                member,
+                                levelName,
+                                selfLevel,
+                                managerLevel,
+                              };
+                            })
+                            .filter((item): item is { member: TeamMember; levelName: string | null; selfLevel: number | null; managerLevel: number | null } => item !== null);
+                          
+                          return (
+                            <TableRow key={competenceId}>
+                              <TableCell className="px-4 whitespace-normal">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="font-medium">{competence.name}</div>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-md">
+                                    <div className="space-y-2">
+                                      <p className="font-semibold">{competence.name}</p>
+                                      {competence.description && (
+                                        <p className="text-sm">{competence.description}</p>
+                                      )}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TableCell>
+                              <TableCell className="px-4 whitespace-normal">
+                                <Badge variant="outline" className={`text-xs ${badgeColor}`}>
+                                  {competence.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="px-4 whitespace-normal">
+                                {membersWithAssessments.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {membersWithAssessments.map(({ member, levelName, selfLevel, managerLevel }) => {
+                                      const profile = getProfileById(member.mainProfileId);
+                                      return (
+                                        <Tooltip key={member.id}>
+                                          <TooltipTrigger asChild>
+                                            <div className="flex items-center gap-2 p-2 border rounded-md bg-card hover:bg-muted/50 transition-colors">
+                                              <Avatar className="h-6 w-6 shrink-0">
+                                                {member.avatar ? (
+                                                  <AvatarImage src={member.avatar} alt={getFullName(member)} />
+                                                ) : null}
+                                                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                                                  {getInitials(member)}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <div className="flex flex-col gap-1 min-w-0">
+                                                <span className="font-medium text-xs">{getFullName(member)}</span>
+                                                {(selfLevel !== null || managerLevel !== null) && (
+                                                  <Badge variant="secondary" className="text-[10px] px-1 py-0 w-fit">
+                                                    {selfLevel !== null && managerLevel !== null
+                                                      ? `С: ${selfLevel} / Р: ${managerLevel}`
+                                                      : selfLevel !== null
+                                                      ? `С: ${selfLevel}`
+                                                      : `Р: ${managerLevel}`}
+                                                  </Badge>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </TooltipTrigger>
+                                          <TooltipContent className="max-w-md">
+                                            <div className="space-y-2">
+                                              <p className="font-semibold">{competence.name}</p>
+                                              {competence.description && (
+                                                <p className="text-sm">{competence.description}</p>
+                                              )}
+                                              <div className="space-y-2 pt-2 border-t">
+                                                <p className="font-medium text-sm">{getFullName(member)}</p>
+                                                <p className="text-xs text-muted-foreground">{member.position}</p>
+                                                {profile && (
+                                                  <div className="space-y-1">
+                                                    <p className="text-sm">
+                                                      <span className="font-medium">Профиль:</span> {profile.name}
+                                                    </p>
+                                                    {profile.description && (
+                                                      <p className="text-xs text-muted-foreground">{profile.description}</p>
+                                                    )}
+                                                  </div>
+                                                )}
+                                                {levelName && (
+                                                  <p className="text-sm">
+                                                    <span className="font-medium">Уровень профиля:</span> {levelName}
+                                                    {(() => {
+                                                      const careerTrack = getCareerTrackByProfileId(member.mainProfileId);
+                                                      if (careerTrack) {
+                                                        const level = careerTrack.levels.find(l => l.name === levelName);
+                                                        if (level?.description) {
+                                                          return (
+                                                            <span className="block text-xs text-muted-foreground mt-1">
+                                                              {level.description}
+                                                            </span>
+                                                          );
+                                                        }
+                                                      }
+                                                      return null;
+                                                    })()}
+                                                  </p>
+                                                )}
+                                                <div className="space-y-1 text-sm pt-1">
+                                                  {selfLevel !== null && (
+                                                    <p>
+                                                      <span className="font-medium">Самооценка:</span> {selfLevel} - {levelNames[selfLevel - 1]}
+                                                    </p>
+                                                  )}
+                                                  {managerLevel !== null && (
+                                                    <p>
+                                                      <span className="font-medium">Оценка руководителя:</span> {managerLevel} - {levelNames[managerLevel - 1]}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Модальное окно для оценки сотрудника */}
+      <Dialog open={isAssessmentDialogOpen} onOpenChange={setIsAssessmentDialogOpen}>
+        <DialogContent 
+          className="max-h-[90vh] overflow-y-auto overflow-x-hidden max-w-[95vw] sm:max-w-[95vw] md:max-w-[1600px] lg:max-w-[1600px] xl:max-w-[1600px] 2xl:max-w-[1600px] w-[95vw]"
+        >
+          <DialogHeader>
+            <DialogTitle>Оценка компетенций сотрудника</DialogTitle>
+            <DialogDescription>
+              Оцените уровень владения компетенциями сотрудника {selectedMember ? getFullName(selectedMember) : ""} от 1 до 5
+            </DialogDescription>
+          </DialogHeader>
+          {selectedMember ? (
+            <div className="overflow-x-hidden w-full">
+              <SkillAssessment
+                userProfile={{
+                  userId: selectedMember.id,
+                  mainProfileId: selectedMember.mainProfileId,
+                  additionalProfileIds: selectedMember.additionalProfileIds,
+                  skills: Object.entries(memberSkills[selectedMember.id] || {}).map(([competenceId, level]) => ({
+                    competenceId,
+                    selfAssessment: level as SkillLevel,
+                    lastUpdated: new Date(),
+                  })),
+                }}
+                onSkillUpdate={(skills) => {
+                  const updatedSkills: Record<string, number> = {};
+                  skills.forEach((skill) => {
+                    updatedSkills[skill.competenceId] = skill.selfAssessment;
+                  });
+                  setMemberSkills((prev) => ({
+                    ...prev,
+                    [selectedMember.id]: {
+                      ...prev[selectedMember.id],
+                      ...updatedSkills,
+                    },
+                  }));
+                  setIsAssessmentDialogOpen(false);
+                }}
+                onClose={() => setIsAssessmentDialogOpen(false)}
+              />
+            </div>
+          ) : (
+            <div className="py-6">
+              <p className="text-muted-foreground text-center">
+                Выберите сотрудника для оценки
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Модальное окно для информации о профиле */}
+      <Dialog open={isProfileInfoDialogOpen} onOpenChange={setIsProfileInfoDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-7xl">
+          <DialogHeader>
+            <DialogTitle>{selectedProfileForInfo?.name}</DialogTitle>
+            <DialogDescription>
+              Подробная информация о профиле из справочника
+            </DialogDescription>
+          </DialogHeader>
+          {selectedProfileForInfo && (
+            <div className="overflow-x-hidden w-full">
+              <TeamProfileTooltipContent profile={selectedProfileForInfo} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function CareerPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [mainProfileId, setMainProfileId] = useState<string>("");
@@ -134,6 +2891,7 @@ export default function CareerPage() {
   const [isSkillAssessmentOpen, setIsSkillAssessmentOpen] = useState(false);
   const [isProfileInfoDialogOpen, setIsProfileInfoDialogOpen] = useState(false);
   const [selectedProfileForInfo, setSelectedProfileForInfo] = useState<Profile | null>(null);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
   useEffect(() => {
     const profile = getUserProfile();
@@ -181,6 +2939,16 @@ export default function CareerPage() {
     setProfiles(getProfiles());
   };
 
+  const handleResetProfile = () => {
+    resetUserProfile();
+    const newProfile = createDefaultUserProfile({ mainProfileId: "", additionalProfileIds: [] });
+    setUserProfile(newProfile);
+    setMainProfileId("");
+    setAdditionalProfileIds([]);
+    saveUserProfile(newProfile);
+    setIsResetDialogOpen(false);
+  };
+
   // Пересчитываем прогресс при изменении профиля или навыков
   const careerTrackProgress = useMemo(() => {
     if (!userProfile?.mainProfileId || !userProfile.skills || userProfile.skills.length === 0) {
@@ -193,7 +2961,7 @@ export default function CareerPage() {
   const hasCompletedSetup = !!userProfile?.mainProfileId && userProfile.skills && userProfile.skills.length > 0;
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
+    <div className="space-y-6 overflow-x-hidden w-full max-w-full">
       {/* Заголовок */}
       <div>
         <h1 className="text-4xl font-bold text-foreground mb-2">Карьера</h1>
@@ -202,19 +2970,19 @@ export default function CareerPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
+      <Tabs defaultValue="my-career" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="my-career" className="flex items-center gap-2">
             <User className="h-4 w-4" />
-            <span>Выбор профиля</span>
+            <span>Моя карьера</span>
           </TabsTrigger>
-          <TabsTrigger value="progress" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            <span>Карьерный прогресс</span>
+          <TabsTrigger value="team-career" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>Карьера команды</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="space-y-6">
+        <TabsContent value="my-career" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             {/* Основной профиль */}
             <Card className="border-2">
@@ -362,15 +3130,48 @@ export default function CareerPage() {
                 После сохранения вы сможете пройти самооценку компетенций
               </p>
             </div>
-            <Button
-              onClick={handleSaveProfileSelection}
-              disabled={!mainProfileId}
-              size="lg"
-              className="shrink-0"
-            >
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Сохранить профили
-            </Button>
+            <div className="flex items-center gap-3">
+              <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="shrink-0"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Сбросить профиль
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Сбросить профиль?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Это действие удалит все данные вашего профиля, включая выбранные профили и результаты самооценки компетенций. 
+                      Профиль будет сброшен к значениям по умолчанию. Это действие нельзя отменить.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleResetProfile}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Сбросить
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                onClick={handleSaveProfileSelection}
+                disabled={!mainProfileId}
+                size="lg"
+                className="shrink-0"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Сохранить профили
+              </Button>
+            </div>
           </div>
 
           {/* Самооценка компетенций */}
@@ -426,45 +3227,50 @@ export default function CareerPage() {
             </Card>
           )}
 
+          {/* Карьерный прогресс */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold">Карьерный прогресс</h2>
+            {careerTrackProgress ? (
+              <CareerTrackProgress progress={careerTrackProgress} userProfile={userProfile || undefined} />
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12 px-6">
+                  <div className="p-4 rounded-full bg-muted mb-4">
+                    <TrendingUp className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Прогресс пока недоступен</h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-md mb-6">
+                    Для отображения карьерного прогресса необходимо выбрать основной профиль и пройти самооценку компетенций
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    {!userProfile?.mainProfileId && (
+                      <Button
+                        onClick={() => {
+                          // Прокручиваем к началу страницы, где находится выбор профиля
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        variant="outline"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        Выбрать профиль
+                      </Button>
+                    )}
+                    {userProfile?.mainProfileId && (!userProfile.skills || userProfile.skills.length === 0) && (
+                      <Button onClick={() => setIsSkillAssessmentOpen(true)}>
+                        <ClipboardCheck className="mr-2 h-4 w-4" />
+                        Пройти самооценку
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
         </TabsContent>
 
-        <TabsContent value="progress" className="space-y-4">
-          {careerTrackProgress ? (
-            <CareerTrackProgress progress={careerTrackProgress} userProfile={userProfile || undefined} />
-          ) : (
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-12 px-6">
-                <div className="p-4 rounded-full bg-muted mb-4">
-                  <TrendingUp className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Прогресс пока недоступен</h3>
-                <p className="text-sm text-muted-foreground text-center max-w-md mb-6">
-                  Для отображения карьерного прогресса необходимо выбрать основной профиль и пройти самооценку компетенций
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  {!userProfile?.mainProfileId && (
-                    <Button
-                      onClick={() => {
-                        const tabs = document.querySelector('[role="tablist"]') as HTMLElement;
-                        const profileTab = tabs?.querySelector('[value="profile"]') as HTMLElement;
-                        profileTab?.click();
-                      }}
-                      variant="outline"
-                    >
-                      <User className="mr-2 h-4 w-4" />
-                      Выбрать профиль
-                    </Button>
-                  )}
-                  {userProfile?.mainProfileId && (!userProfile.skills || userProfile.skills.length === 0) && (
-                    <Button onClick={() => setIsSkillAssessmentOpen(true)}>
-                      <ClipboardCheck className="mr-2 h-4 w-4" />
-                      Пройти самооценку
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        <TabsContent value="team-career" className="space-y-6">
+          <TeamCareerContent />
         </TabsContent>
       </Tabs>
 

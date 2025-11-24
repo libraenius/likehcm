@@ -143,7 +143,7 @@ function TalentNode({ level, isUnlocked, isCurrent, matchPercentage, position, i
 
 export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: CareerTalentTreeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(1000);
+  const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(400);
 
   useEffect(() => {
@@ -273,13 +273,18 @@ export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: Car
   }, [careerTrack.levels.length]);
   
 
+  // Ограничиваем totalWidth до доступной ширины контейнера
+  // Используем containerWidth, если он доступен и больше 0, иначе используем totalWidth
+  // maxWidth: "100%" в стиле дополнительно ограничит ширину
+  const actualWidth = containerWidth > 0 ? Math.min(totalWidth, containerWidth) : totalWidth;
+
   return (
     <div className="w-full overflow-x-hidden max-w-full">
       <div
         ref={containerRef}
         className="relative mx-auto"
         style={{
-          width: `${totalWidth}px`,
+          width: `${actualWidth}px`,
           maxWidth: "100%",
           minHeight: `${containerHeight}px`,
           padding: "20px 0 40px 0",
@@ -291,7 +296,7 @@ export function CareerTalentTree({ careerTrack, progress, userSkills = {} }: Car
         <svg
           className="absolute pointer-events-none max-w-full"
           style={{ 
-            width: `${totalWidth}px`, 
+            width: `${actualWidth}px`, 
             maxWidth: "100%",
             height: `${containerHeight}px`,
             top: 0,

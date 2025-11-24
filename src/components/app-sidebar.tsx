@@ -3,7 +3,6 @@
 import * as React from "react";
 import {
   BookOpen,
-  Users,
   User,
   TrendingUp,
   FolderOpen,
@@ -40,11 +39,6 @@ const menuItems = [
     title: "Главная",
     icon: User,
     href: "/profile",
-  },
-  {
-    title: "Моя команда",
-    icon: Users,
-    href: "/team",
   },
 ];
 

@@ -161,7 +161,7 @@ export function CareerTrackProgress({ progress, userProfile }: CareerTrackProgre
   })() : 0;
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
+    <div className="space-y-6 overflow-x-hidden w-full max-w-full">
       <Card>
         <CardHeader>
           <CardTitle>Дерево развития талантов</CardTitle>
@@ -169,8 +169,8 @@ export function CareerTrackProgress({ progress, userProfile }: CareerTrackProgre
             Визуализация вашего карьерного пути. Разблокируйте уровни, развивая необходимые компетенции.
           </CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-hidden pb-16">
-          <div className="overflow-x-hidden">
+        <CardContent className="overflow-x-hidden w-full max-w-full">
+          <div className="overflow-x-hidden w-full max-w-full">
             <CareerTalentTree
               careerTrack={track}
               progress={actualProgress}

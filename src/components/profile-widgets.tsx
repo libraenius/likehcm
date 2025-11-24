@@ -905,7 +905,7 @@ function TeamWidget() {
             </div>
             <CardTitle className="text-lg">Моя команда</CardTitle>
           </div>
-          <Link href="/team">
+          <Link href="/services/career">
             <Button variant="ghost" size="sm">
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -921,7 +921,7 @@ function TeamWidget() {
           <p className="text-sm text-muted-foreground mb-2">
             Просмотр информации о команде
           </p>
-          <Link href="/team">
+          <Link href="/services/career">
             <Button variant="outline" size="sm">
               Открыть команду
             </Button>
