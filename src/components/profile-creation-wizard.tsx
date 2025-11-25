@@ -81,7 +81,8 @@ export function ProfileCreationWizard({
       description: string;
       responsibilities: string[];
       education?: string;
-      experience?: string;
+      bankExperience?: string;
+      externalExperience?: string;
       requiredSkills: Record<string, SkillLevel>;
     }>,
   });
@@ -336,36 +337,61 @@ export function ProfileCreationWizard({
       ],
       additionalInfo: "Требования к образованию помогают HR правильно фильтровать кандидатов, но не должны быть единственным критерием. Опыт работы, портфолио и технические навыки часто важнее формального образования."
     },
-    experience: {
-      title: "Требования к стажу",
-      description: "Требования к опыту работы для данного уровня. Указывается минимальный стаж или диапазон опыта. Это опциональное поле, но его заполнение помогает правильно оценивать кандидатов и планировать карьерное развитие сотрудников. Стаж обычно увеличивается с ростом уровня.",
+    bankExperience: {
+      title: "Стаж работы в банке",
+      description: "Требования к стажу работы в банке для данного уровня. Указывается минимальный стаж или диапазон опыта работы именно в банковской сфере. Это опциональное поле, но его заполнение помогает правильно оценивать внутренних кандидатов и планировать карьерное развитие сотрудников.",
       examples: [
-        "Стаж работы не требуется",
-        "Опыт работы от 6 месяцев",
-        "Опыт работы от 1 года",
-        "Опыт работы от 1 до 2 лет",
-        "Опыт работы от 2 до 4 лет",
-        "Опыт работы от 3 до 5 лет",
-        "Опыт работы от 5 лет",
-        "Опыт работы от 5 до 8 лет",
-        "Опыт работы от 7 лет"
+        "Стаж работы в банке не требуется",
+        "Опыт работы в банке от 6 месяцев",
+        "Опыт работы в банке от 1 года",
+        "Опыт работы в банке от 1 до 2 лет",
+        "Опыт работы в банке от 2 до 4 лет",
+        "Опыт работы в банке от 3 до 5 лет",
+        "Опыт работы в банке от 5 лет"
       ],
       tips: [
-        "Для Trainee обычно указывается 'Стаж работы не требуется'",
+        "Для Trainee обычно указывается 'Стаж работы в банке не требуется'",
         "Для Junior - обычно от 6 месяцев до 1 года",
         "Для Middle - обычно от 2 до 4 лет",
         "Для Senior - обычно от 4 до 7 лет",
         "Для Lead - обычно от 5-7 лет и более",
         "Можно указать диапазон (например, 'от 2 до 4 лет')",
-        "Учитывайте специфику вашей отрасли и компании"
+        "Учитывайте специфику банковской отрасли"
       ],
       commonMistakes: [
         "Слишком высокие требования для младших уровней",
         "Игнорирование диапазонов (только минимальный стаж)",
-        "Несоответствие требований реальной практике в компании",
-        "Слишком жесткие рамки без учета индивидуальных случаев"
+        "Несоответствие требований реальной практике в компании"
       ],
-      additionalInfo: "Требования к стажу - это ориентир, а не жесткое правило. Талантливый специалист может достичь высокого уровня быстрее, а опытный специалист может не соответствовать уровню, если не развивался профессионально. Стаж должен сочетаться с оценкой реальных навыков и компетенций."
+      additionalInfo: "Стаж работы в банке важен для понимания специфики банковской деятельности. Внутренние кандидаты обычно имеют преимущество, так как уже знакомы с процессами и требованиями банка."
+    },
+    externalExperience: {
+      title: "Стаж работы на внешнем рынке",
+      description: "Требования к стажу работы на внешнем рынке (вне банка) для данного уровня. Указывается минимальный стаж или диапазон опыта работы в других организациях. Это опциональное поле, но его заполнение помогает правильно оценивать внешних кандидатов.",
+      examples: [
+        "Стаж работы на внешнем рынке не требуется",
+        "Опыт работы на внешнем рынке от 6 месяцев",
+        "Опыт работы на внешнем рынке от 1 года",
+        "Опыт работы на внешнем рынке от 1 до 2 лет",
+        "Опыт работы на внешнем рынке от 2 до 4 лет",
+        "Опыт работы на внешнем рынке от 3 до 5 лет",
+        "Опыт работы на внешнем рынке от 5 лет"
+      ],
+      tips: [
+        "Для Trainee обычно указывается 'Стаж работы на внешнем рынке не требуется'",
+        "Для Junior - обычно от 6 месяцев до 1 года",
+        "Для Middle - обычно от 2 до 4 лет",
+        "Для Senior - обычно от 4 до 7 лет",
+        "Для Lead - обычно от 5-7 лет и более",
+        "Можно указать диапазон (например, 'от 2 до 4 лет')",
+        "Учитывайте, что внешние кандидаты могут иметь опыт в других отраслях"
+      ],
+      commonMistakes: [
+        "Слишком высокие требования для младших уровней",
+        "Игнорирование диапазонов (только минимальный стаж)",
+        "Несоответствие требований реальной практике в компании"
+      ],
+      additionalInfo: "Стаж работы на внешнем рынке важен для оценки внешних кандидатов. Они могут иметь опыт в других отраслях, который может быть полезен, но им потребуется время на адаптацию к банковской специфике."
     },
     expertFullName: {
       title: "ФИО эксперта",
@@ -478,7 +504,8 @@ export function ProfileCreationWizard({
                 description: level.description,
                 responsibilities: [...level.responsibilities],
                 education: level.education || "",
-                experience: level.experience || "",
+                bankExperience: level.bankExperience || "",
+                externalExperience: level.externalExperience || "",
                 requiredSkills: { ...level.requiredSkills },
               }))
             : [],
@@ -555,7 +582,8 @@ export function ProfileCreationWizard({
               description: level.description,
               responsibilities: [...level.responsibilities],
               education: level.education || "",
-              experience: level.experience || "",
+              bankExperience: level.bankExperience || "",
+              externalExperience: level.externalExperience || "",
               requiredSkills: { ...level.requiredSkills },
             }))
           : [],
@@ -601,7 +629,8 @@ export function ProfileCreationWizard({
             description: level.description.trim(),
             responsibilities: level.responsibilities.filter((r) => r.trim()),
             education: level.education?.trim() || undefined,
-            experience: level.experience?.trim() || undefined,
+            bankExperience: level.bankExperience?.trim() || undefined,
+            externalExperience: level.externalExperience?.trim() || undefined,
             requiredSkills: level.requiredSkills,
           })),
       };
@@ -1016,7 +1045,8 @@ export function ProfileCreationWizard({
                           description: "",
                           responsibilities: [],
                           education: "",
-                          experience: "",
+                          bankExperience: "",
+                          externalExperience: "",
                           requiredSkills: {},
                         },
                       ],
@@ -1255,25 +1285,50 @@ export function ProfileCreationWizard({
 
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <Label>Стаж</Label>
+                              <Label>Стаж работы в банке</Label>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
                                 className="h-4 w-4 text-muted-foreground hover:text-foreground"
-                                onClick={() => openHelp("experience")}
+                                onClick={() => openHelp("bankExperience")}
                               >
                                 <Info className="h-4 w-4" />
                               </Button>
                             </div>
                             <Input
-                              value={level.experience || ""}
+                              value={level.bankExperience || ""}
                               onChange={(e) => {
                                 const updated = [...formData.levels];
-                                updated[levelIndex] = { ...updated[levelIndex], experience: e.target.value };
+                                updated[levelIndex] = { ...updated[levelIndex], bankExperience: e.target.value };
                                 setFormData({ ...formData, levels: updated });
                               }}
-                              placeholder="Например, Стаж работы не требуется"
+                              placeholder="Например, Стаж работы в банке не требуется"
+                              maxLength={200}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label>Стаж работы на внешнем рынке</Label>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 text-muted-foreground hover:text-foreground"
+                                onClick={() => openHelp("externalExperience")}
+                              >
+                                <Info className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <Input
+                              value={level.externalExperience || ""}
+                              onChange={(e) => {
+                                const updated = [...formData.levels];
+                                updated[levelIndex] = { ...updated[levelIndex], externalExperience: e.target.value };
+                                setFormData({ ...formData, levels: updated });
+                              }}
+                              placeholder="Например, Стаж работы на внешнем рынке не требуется"
                               maxLength={200}
                             />
                           </div>

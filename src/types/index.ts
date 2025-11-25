@@ -45,7 +45,8 @@ export interface ProfileLevel {
   description: string;
   responsibilities: string[]; // Типовые должностные обязанности
   education?: string; // Требования к образованию
-  experience?: string; // Требования к стажу
+  bankExperience?: string; // Требования к стажу работы в банке
+  externalExperience?: string; // Требования к стажу работы на внешнем рынке
   requiredSkills: Record<string, SkillLevel>; // competenceId -> requiredLevel
   taskExamples?: string[]; // Примеры задач уровня сложности (3 задачи)
 }

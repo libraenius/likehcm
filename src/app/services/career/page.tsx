@@ -213,9 +213,15 @@ function TeamProfileLevelCard({
                 </span>
               </div>
               <div className="text-xs">
-                <span className="font-medium text-foreground">Стаж: </span>
+                <span className="font-medium text-foreground">Стаж работы в банке: </span>
                 <span className="text-muted-foreground">
-                  {profileLevel.experience || "Не указано"}
+                  {profileLevel.bankExperience || "Не указано"}
+                </span>
+              </div>
+              <div className="text-xs">
+                <span className="font-medium text-foreground">Стаж работы на внешнем рынке: </span>
+                <span className="text-muted-foreground">
+                  {profileLevel.externalExperience || "Не указано"}
                 </span>
               </div>
             </div>

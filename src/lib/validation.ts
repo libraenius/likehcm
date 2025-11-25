@@ -80,7 +80,8 @@ export const profileLevelSchema = z.object({
   description: z.string().min(1, "Описание обязательно"),
   responsibilities: z.array(z.string().min(1)).min(1, "Добавьте хотя бы одну обязанность"),
   education: z.string().optional(),
-  experience: z.string().optional(),
+  bankExperience: z.string().optional(),
+  externalExperience: z.string().optional(),
   requiredSkills: z.record(z.string(), skillLevelSchema),
   taskExamples: z.array(z.string().min(1)).optional(),
 });

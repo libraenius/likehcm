@@ -135,9 +135,15 @@ function ProfileLevelCard({
                 </span>
               </div>
               <div className="text-sm">
-                <span className="font-medium text-foreground">Стаж: </span>
+                <span className="font-medium text-foreground">Стаж работы в банке: </span>
                 <span className="text-muted-foreground break-words">
-                  {profileLevel.experience || "Не указано"}
+                  {profileLevel.bankExperience || "Не указано"}
+                </span>
+              </div>
+              <div className="text-sm">
+                <span className="font-medium text-foreground">Стаж работы на внешнем рынке: </span>
+                <span className="text-muted-foreground break-words">
+                  {profileLevel.externalExperience || "Не указано"}
                 </span>
               </div>
             </div>
@@ -274,7 +280,8 @@ export default function ProfilesPage() {
       description: string;
       responsibilities: string[];
       education?: string;
-      experience?: string;
+      bankExperience?: string;
+      externalExperience?: string;
       requiredSkills: Record<string, SkillLevel>;
     }>,
   });
@@ -361,7 +368,8 @@ export default function ProfilesPage() {
             description: level.description,
             responsibilities: [...level.responsibilities],
             education: level.education || "",
-            experience: level.experience || "",
+            bankExperience: level.bankExperience || "",
+            externalExperience: level.externalExperience || "",
             requiredSkills: { ...level.requiredSkills },
           }))
         : [],
@@ -456,7 +464,8 @@ export default function ProfilesPage() {
         description: level.description.trim(),
         responsibilities: level.responsibilities.filter((r) => r.trim()),
         education: level.education?.trim() || undefined,
-        experience: level.experience?.trim() || undefined,
+        bankExperience: level.bankExperience?.trim() || undefined,
+        externalExperience: level.externalExperience?.trim() || undefined,
         requiredSkills: level.requiredSkills,
       }));
 
@@ -536,7 +545,8 @@ export default function ProfilesPage() {
             description: "",
             responsibilities: [],
             education: "",
-            experience: "",
+            bankExperience: "",
+            externalExperience: "",
             requiredSkills: {},
           },
         ],
@@ -1040,7 +1050,7 @@ export default function ProfilesPage() {
           {selectedProfile && selectedProfile.levels && selectedProfile.levels.length > 0 && (
             <Tabs defaultValue="responsibilities" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="responsibilities">Обязанности и требования к образованию и стажу</TabsTrigger>
+                <TabsTrigger value="responsibilities">Обязанности и требования к образованию и стажу работы</TabsTrigger>
                 <TabsTrigger value="competences">Компетенции</TabsTrigger>
                 <TabsTrigger value="tasks">Уровень сложности решаемых задач</TabsTrigger>
               </TabsList>
@@ -1126,14 +1136,26 @@ export default function ProfilesPage() {
                                 ))}
                               </tr>
                               
-                              {/* Стаж */}
+                              {/* Стаж работы в банке */}
                               <tr className="hover:bg-muted/30 transition-colors">
                                 <td className="border p-2 text-sm font-medium sticky left-0 bg-background z-10">
-                                  Стаж
+                                  Стаж работы в банке
                                 </td>
                                 {sortedLevels.map((level) => (
                                   <td key={level.level} className="border p-2 text-sm text-left">
-                                    {level.experience || <span className="text-muted-foreground">Не указано</span>}
+                                    {level.bankExperience || <span className="text-muted-foreground">Не указано</span>}
+                                  </td>
+                                ))}
+                              </tr>
+                              
+                              {/* Стаж работы на внешнем рынке */}
+                              <tr className="hover:bg-muted/30 transition-colors">
+                                <td className="border p-2 text-sm font-medium sticky left-0 bg-background z-10">
+                                  Стаж работы на внешнем рынке
+                                </td>
+                                {sortedLevels.map((level) => (
+                                  <td key={level.level} className="border p-2 text-sm text-left">
+                                    {level.externalExperience || <span className="text-muted-foreground">Не указано</span>}
                                   </td>
                                 ))}
                               </tr>
