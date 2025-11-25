@@ -12,6 +12,8 @@ import {
   FileText,
   Target,
   Briefcase,
+  Building2,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -84,6 +86,16 @@ const serviceItems: Array<{
     title: "Карьера",
     href: "/services/career",
     icon: Briefcase,
+  },
+  {
+    title: "Целеполагание КОЛД",
+    href: "/services/goals-kold",
+    icon: Target,
+  },
+  {
+    title: "Оценка внешние провайдеры",
+    href: "/services/external-providers",
+    icon: Building2,
   },
 ];
 
