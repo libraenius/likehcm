@@ -4,7 +4,7 @@
 
 export const config = {
   app: {
-    name: "SkillMap",
+    name: "РИТМ",
     version: "0.1.0",
     description: "Система управления компетенциями и карьерными треками",
   },

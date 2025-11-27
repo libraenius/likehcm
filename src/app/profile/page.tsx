@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProfileWidgets } from "@/components/profile-widgets";
 import { AssessmentWidget } from "@/components/assessment-widget";
+import { CareerWidget } from "@/components/career-widget";
 import Link from "next/link";
 
 export default function ProfilePage() {
@@ -437,6 +438,22 @@ export default function ProfilePage() {
               
               {/* Правая колонка: Оценка и три контейнера */}
               <div className="w-3/4 flex flex-col gap-4">
+                {/* Карьера */}
+                <Card>
+                  <CardHeader className="border-b">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg font-bold">Карьера</CardTitle>
+                      <Link href="/services/career" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        <span>Перейти в сервис "Карьера"</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CareerWidget userProfile={userProfile} />
+                  </CardContent>
+                </Card>
+                
                 {/* Оценка */}
                 <Card>
                   <CardHeader className="border-b">
@@ -482,22 +499,6 @@ export default function ProfilePage() {
                   </CardHeader>
                   <CardContent>
                     {/* Контент целеполагания */}
-                  </CardContent>
-                </Card>
-                
-                {/* Карьера */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg font-bold">Карьера</CardTitle>
-                      <Link href="/services/career" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        <span>Перейти в сервис "Карьера"</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Контент карьеры */}
                   </CardContent>
                 </Card>
               </div>

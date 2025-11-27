@@ -14,7 +14,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "SkillMap - Система управления компетенциями",
+  title: "РИТМ",
   description: "Система управления компетенциями и карьерными треками",
 };
 

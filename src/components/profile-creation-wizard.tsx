@@ -232,16 +232,16 @@ export function ProfileCreationWizard({
     },
     levelName: {
       title: "Название уровня",
-      description: "Уникальное название для данного уровня профиля. Обычно включает тип уровня и специализацию. Название должно быть понятным и отражать как уровень (Trainee, Junior и т.д.), так и специализацию профиля. Это обязательное поле.",
+      description: "Уникальное название для данного уровня профиля. Обычно включает тип уровня и специализацию. Название должно быть понятным и отражать как уровень (Стажер, Младший и т.д.), так и специализацию профиля. Это обязательное поле.",
       examples: [
-        "Trainee Perl Developer",
-        "Junior Frontend Developer",
-        "Middle Backend Developer",
-        "Senior Full Stack Developer",
-        "Lead DevOps Engineer",
-        "Junior QA Automation Engineer",
-        "Middle Data Engineer",
-        "Senior Mobile iOS Developer"
+        "Стажер-разработчик Perl",
+        "Младший разработчик Frontend",
+        "Разработчик Backend",
+        "Старший разработчик Full Stack",
+        "Ведущий инженер DevOps",
+        "Младший инженер по автотестированию",
+        "Инженер по данным",
+        "Старший разработчик Mobile iOS"
       ],
       tips: [
         "Используйте формат: [Уровень] + [Специализация] + [Роль]",
@@ -1155,7 +1155,7 @@ export function ProfileCreationWizard({
                               updated[levelIndex] = { ...updated[levelIndex], name: e.target.value };
                               setFormData({ ...formData, levels: updated });
                             }}
-                            placeholder="Например, Trainee Perl Developer"
+                            placeholder="Например, Стажер-разработчик Perl"
                             maxLength={100}
                           />
                         </div>

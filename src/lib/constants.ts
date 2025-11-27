@@ -56,7 +56,7 @@ export const DEFAULT_USER_PROFILE = {
   position: "Руководитель экспертизы по тестированию",
   linearStructure: "ГО / Департамент автоматизации внешних сервисов / Управление развития некорпоратинвых систем / Отдел сложных систем",
   agileRoles: [{ role: "Разработчик" }] as const,
-  mainProfileId: "profile-1",
+  mainProfileId: "profile-2",
   email: "latarho@gmail.com",
   phone: "8-999-555-5555",
 } as const;

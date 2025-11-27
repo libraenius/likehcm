@@ -122,8 +122,8 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:h-full w-full">
           <div className="flex aspect-square h-10 w-10 group-data-[collapsible=icon]:size-9 items-center justify-center rounded-lg border-2 border-sidebar-border bg-sidebar-accent/50 overflow-hidden shrink-0">
             <img
-              src="/cheburashka.png"
-              alt="Cheburashka Logo"
+              src="/Снимок экрана 2025-11-27 125418.png"
+              alt="РИТМ Logo"
               className="w-full h-full object-cover"
               onError={(e) => {
                 // Fallback если изображение не найдено
@@ -133,10 +133,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden flex-1 min-w-0">
             <span className="text-base font-bold text-sidebar-foreground">
-              SkillMap
-            </span>
-            <span className="text-xs text-sidebar-foreground/70">
-              Управление компетенциями
+              РИТМ
             </span>
           </div>
         </div>

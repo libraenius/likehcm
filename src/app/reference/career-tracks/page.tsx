@@ -325,7 +325,7 @@ export default function CareerTracksPage() {
                                   onChange={(e) =>
                                     updateLevel(actualIndex, "name", e.target.value)
                                   }
-                                  placeholder="Например, Junior Developer"
+                                  placeholder="Например, Младший разработчик"
                                 />
                               </div>
                               <div className="space-y-1 col-span-2">
