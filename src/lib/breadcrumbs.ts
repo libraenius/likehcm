@@ -16,6 +16,9 @@ const pathLabels: Record<string, string> = {
   "/services/assessment": "Оценка",
   "/services/assessment-center": "Ассессмент",
   "/services/goals": "Целеполагание",
+  "/services/goals-kold": "Целеполагание КОЛД",
+  "/services/external-providers": "Внешние поставщики",
+  "/team": "Команда",
 };
 
 // Маппинг английских названий сегментов к русским (для случаев, когда путь не найден в pathLabels)
@@ -30,6 +33,9 @@ const segmentLabels: Record<string, string> = {
   "assessment": "Оценка",
   "assessment-center": "Ассессмент",
   "goals": "Целеполагание",
+  "goals-kold": "Целеполагание КОЛД",
+  "external-providers": "Внешние поставщики",
+  "team": "Команда",
 };
 
 /**
@@ -41,15 +47,15 @@ function translateSegment(segment: string): string {
     return segmentLabels[segment];
   }
   
-  // Если не найдено, пытаемся преобразовать через дефисы и заглавные буквы
-  const normalized = segment.toLowerCase().replace(/-/g, " ");
-  const words = normalized.split(" ");
-  const capitalized = words.map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1)
-  ).join(" ");
+  // Если не найдено, пытаемся найти через дефисы
+  const normalized = segment.toLowerCase();
+  if (segmentLabels[normalized]) {
+    return segmentLabels[normalized];
+  }
   
-  // Если это не помогло, возвращаем исходное значение с первой заглавной буквой
-  return segment.charAt(0).toUpperCase() + segment.slice(1);
+  // Если все еще не найдено, возвращаем общее название на русском
+  // чтобы избежать отображения английских текстов
+  return "Страница";
 }
 
 /**

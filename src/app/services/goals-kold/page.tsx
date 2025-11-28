@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Тип для стрима
@@ -942,6 +943,10 @@ export default function GoalsKoldPage() {
   const [annualKPIs, setAnnualKPIs] = useState<Record<string, KPI[]>>(mockStreamKPIs);
   const [quarterlyKPIs, setQuarterlyKPIs] = useState<Record<string, Record<string, KPI[]>>>(mockQuarterlyKPIsData);
   
+  // Состояние для режима редактирования
+  const [isEditModeAnnual, setIsEditModeAnnual] = useState(false);
+  const [isEditModeQuarterly, setIsEditModeQuarterly] = useState<Record<string, boolean>>({});
+  
   // Состояние для диалогов редактирования КПЭ
   const [isKPIDialogOpen, setIsKPIDialogOpen] = useState(false);
   const [editingKPI, setEditingKPI] = useState<KPI | null>(null);
@@ -1108,6 +1113,53 @@ export default function GoalsKoldPage() {
     }
   };
 
+  // Обновление КПЭ прямо в таблице
+  const handleUpdateKPIInTable = (
+    kpiId: string,
+    field: keyof KPI,
+    value: string | number,
+    type: "annual" | "quarterly",
+    quarter?: string
+  ) => {
+    if (!selectedStream) return;
+
+    const updateKPI = (kpi: KPI): KPI => {
+      if (kpi.id !== kpiId) return kpi;
+
+      const updatedKPI = { ...kpi, [field]: value };
+
+      // Пересчитываем метрики, если изменились план или факт
+      if (field === "plan" || field === "fact") {
+        const { completionPercent, evaluationPercent } = calculateKPIMetrics(
+          field === "plan" ? (value as number) : updatedKPI.plan,
+          field === "fact" ? (value as number) : updatedKPI.fact,
+          updatedKPI.weight
+        );
+        updatedKPI.completionPercent = completionPercent;
+        updatedKPI.evaluationPercent = evaluationPercent;
+      }
+
+      return updatedKPI;
+    };
+
+    if (type === "annual") {
+      setAnnualKPIs({
+        ...annualKPIs,
+        [selectedStream.id]: annualKPIs[selectedStream.id].map(updateKPI),
+      });
+    } else {
+      if (quarter) {
+        setQuarterlyKPIs({
+          ...quarterlyKPIs,
+          [selectedStream.id]: {
+            ...quarterlyKPIs[selectedStream.id],
+            [quarter]: quarterlyKPIs[selectedStream.id][quarter].map(updateKPI),
+          },
+        });
+      }
+    }
+  };
+
   // Фильтрация стримов и команд
   const filteredStreams = streams.filter(stream => {
     if (!searchQuery.trim()) return true;
@@ -1170,7 +1222,7 @@ export default function GoalsKoldPage() {
             <span>Реестр КПЭ</span>
           </TabsTrigger>
           <TabsTrigger value="pfk-table" className="flex items-center gap-2">
-            <Table className="h-4 w-4" />
+            <BarChart3 className="h-4 w-4" />
             <span>Таблица ПФК</span>
           </TabsTrigger>
         </TabsList>
@@ -1477,14 +1529,27 @@ export default function GoalsKoldPage() {
                               <Target className="h-4 w-4" />
                               Годовые цели стрима
                             </Label>
-                            <Button
-                              size="sm"
-                              onClick={() => handleAddKPI("annual")}
-                              className="flex items-center gap-2"
-                            >
-                              <Plus className="h-4 w-4" />
-                              Добавить КПЭ
-                            </Button>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id="edit-mode-annual"
+                                  checked={isEditModeAnnual}
+                                  onCheckedChange={(checked) => setIsEditModeAnnual(checked as boolean)}
+                                />
+                                <Label htmlFor="edit-mode-annual" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                                  <Edit className="h-4 w-4" />
+                                  Режим редактирования
+                                </Label>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => handleAddKPI("annual")}
+                                className="flex items-center gap-2"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Добавить КПЭ
+                              </Button>
+                            </div>
                           </div>
                           <div className="border rounded-lg overflow-hidden">
                             <Table>
@@ -1499,7 +1564,7 @@ export default function GoalsKoldPage() {
                                   <TableHead className="w-[80px]">Факт</TableHead>
                                   <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
                                   <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                  <TableHead className="w-[100px]">Действия</TableHead>
+                                  {isEditModeAnnual && <TableHead className="w-[100px]">Действия</TableHead>}
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -1507,24 +1572,69 @@ export default function GoalsKoldPage() {
                                   annualKPIs[selectedStream.id].map((kpi: KPI) => (
                                     <TableRow key={kpi.id}>
                                       <TableCell className="text-center">{kpi.number}</TableCell>
-                                      <TableCell>{kpi.name}</TableCell>
-                                      <TableCell className="text-center">{kpi.weight}</TableCell>
+                                      <TableCell>
+                                        {isEditModeAnnual ? (
+                                          <Input
+                                            value={kpi.name}
+                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "annual")}
+                                            className="h-8"
+                                          />
+                                        ) : (
+                                          kpi.name
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {isEditModeAnnual ? (
+                                          <Input
+                                            type="number"
+                                            value={kpi.weight}
+                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "annual")}
+                                            className="h-8 w-16 text-center"
+                                          />
+                                        ) : (
+                                          kpi.weight
+                                        )}
+                                      </TableCell>
                                       <TableCell>{kpi.type}</TableCell>
-                                      <TableCell>{kpi.unit}</TableCell>
-                                      <TableCell className="text-center">{kpi.plan}</TableCell>
-                                      <TableCell className="text-center">{kpi.fact}</TableCell>
+                                      <TableCell>
+                                        {isEditModeAnnual ? (
+                                          <Input
+                                            value={kpi.unit}
+                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "annual")}
+                                            className="h-8"
+                                          />
+                                        ) : (
+                                          kpi.unit
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {isEditModeAnnual ? (
+                                          <Input
+                                            type="number"
+                                            value={kpi.plan}
+                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "annual")}
+                                            className="h-8 w-16 text-center"
+                                          />
+                                        ) : (
+                                          kpi.plan
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {isEditModeAnnual ? (
+                                          <Input
+                                            type="number"
+                                            value={kpi.fact}
+                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "annual")}
+                                            className="h-8 w-16 text-center"
+                                          />
+                                        ) : (
+                                          kpi.fact
+                                        )}
+                                      </TableCell>
                                       <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
                                       <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-1">
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8"
-                                            onClick={() => handleEditKPI(kpi, "annual")}
-                                          >
-                                            <Pencil className="h-4 w-4" />
-                                          </Button>
+                                      {isEditModeAnnual && (
+                                        <TableCell>
                                           <Button
                                             variant="ghost"
                                             size="icon"
@@ -1533,13 +1643,13 @@ export default function GoalsKoldPage() {
                                           >
                                             <Trash2 className="h-4 w-4" />
                                           </Button>
-                                        </div>
-                                      </TableCell>
+                                        </TableCell>
+                                      )}
                                     </TableRow>
                                   ))
                                 ) : (
                                   <TableRow>
-                                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                                    <TableCell colSpan={isEditModeAnnual ? 10 : 9} className="text-center text-muted-foreground py-8">
                                       Нет данных о годовых целях
                                     </TableCell>
                                   </TableRow>
@@ -1577,7 +1687,18 @@ export default function GoalsKoldPage() {
                               <TabsTrigger value="q4-2025">4 квартал 2025</TabsTrigger>
                             </TabsList>
                             <TabsContent value="q1-2025" className="mt-4">
-                              <div className="flex justify-end mb-3">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id="edit-mode-q1"
+                                    checked={isEditModeQuarterly["q1-2025"] || false}
+                                    onCheckedChange={(checked) => setIsEditModeQuarterly({ ...isEditModeQuarterly, "q1-2025": checked as boolean })}
+                                  />
+                                  <Label htmlFor="edit-mode-q1" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                                    <Edit className="h-4 w-4" />
+                                    Режим редактирования
+                                  </Label>
+                                </div>
                                 <Button
                                   size="sm"
                                   onClick={() => handleAddKPI("quarterly", "q1-2025")}
@@ -1600,7 +1721,7 @@ export default function GoalsKoldPage() {
                                       <TableHead className="w-[80px]">Факт</TableHead>
                                       <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
                                       <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                      <TableHead className="w-[100px]">Действия</TableHead>
+                                      {isEditModeQuarterly["q1-2025"] && <TableHead className="w-[100px]">Действия</TableHead>}
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -1608,24 +1729,69 @@ export default function GoalsKoldPage() {
                                       quarterlyKPIs[selectedStream.id]["q1-2025"].map((kpi: KPI) => (
                                         <TableRow key={kpi.id}>
                                           <TableCell className="text-center">{kpi.number}</TableCell>
-                                          <TableCell>{kpi.name}</TableCell>
-                                          <TableCell className="text-center">{kpi.weight}</TableCell>
+                                          <TableCell>
+                                            {isEditModeQuarterly["q1-2025"] ? (
+                                              <Input
+                                                value={kpi.name}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "quarterly", "q1-2025")}
+                                                className="h-8"
+                                              />
+                                            ) : (
+                                              kpi.name
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q1-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.weight}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "quarterly", "q1-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.weight
+                                            )}
+                                          </TableCell>
                                           <TableCell>{kpi.type}</TableCell>
-                                          <TableCell>{kpi.unit}</TableCell>
-                                          <TableCell className="text-center">{kpi.plan}</TableCell>
-                                          <TableCell className="text-center">{kpi.fact}</TableCell>
+                                          <TableCell>
+                                            {isEditModeQuarterly["q1-2025"] ? (
+                                              <Input
+                                                value={kpi.unit}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "quarterly", "q1-2025")}
+                                                className="h-8"
+                                              />
+                                            ) : (
+                                              kpi.unit
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q1-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.plan}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "quarterly", "q1-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.plan
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q1-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.fact}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "quarterly", "q1-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.fact
+                                            )}
+                                          </TableCell>
                                           <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
                                           <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                          <TableCell>
-                                            <div className="flex items-center gap-1">
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => handleEditKPI(kpi, "quarterly", "q1-2025")}
-                                              >
-                                                <Pencil className="h-4 w-4" />
-                                              </Button>
+                                          {isEditModeQuarterly["q1-2025"] && (
+                                            <TableCell>
                                               <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -1634,13 +1800,13 @@ export default function GoalsKoldPage() {
                                               >
                                                 <Trash2 className="h-4 w-4" />
                                               </Button>
-                                            </div>
-                                          </TableCell>
+                                            </TableCell>
+                                          )}
                                         </TableRow>
                                       ))
                                     ) : (
                                       <TableRow>
-                                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={isEditModeQuarterly["q1-2025"] ? 10 : 9} className="text-center text-muted-foreground py-8">
                                           Нет данных за 1 квартал 2025
                                         </TableCell>
                                       </TableRow>
@@ -1662,7 +1828,18 @@ export default function GoalsKoldPage() {
                               )}
                             </TabsContent>
                             <TabsContent value="q2-2025" className="mt-4">
-                              <div className="flex justify-end mb-3">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id="edit-mode-q2"
+                                    checked={isEditModeQuarterly["q2-2025"] || false}
+                                    onCheckedChange={(checked) => setIsEditModeQuarterly({ ...isEditModeQuarterly, "q2-2025": checked as boolean })}
+                                  />
+                                  <Label htmlFor="edit-mode-q2" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                                    <Edit className="h-4 w-4" />
+                                    Режим редактирования
+                                  </Label>
+                                </div>
                                 <Button
                                   size="sm"
                                   onClick={() => handleAddKPI("quarterly", "q2-2025")}
@@ -1685,7 +1862,7 @@ export default function GoalsKoldPage() {
                                       <TableHead className="w-[80px]">Факт</TableHead>
                                       <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
                                       <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                      <TableHead className="w-[100px]">Действия</TableHead>
+                                      {isEditModeQuarterly["q2-2025"] && <TableHead className="w-[100px]">Действия</TableHead>}
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -1693,24 +1870,69 @@ export default function GoalsKoldPage() {
                                       quarterlyKPIs[selectedStream.id]["q2-2025"].map((kpi: KPI) => (
                                         <TableRow key={kpi.id}>
                                           <TableCell className="text-center">{kpi.number}</TableCell>
-                                          <TableCell>{kpi.name}</TableCell>
-                                          <TableCell className="text-center">{kpi.weight}</TableCell>
+                                          <TableCell>
+                                            {isEditModeQuarterly["q2-2025"] ? (
+                                              <Input
+                                                value={kpi.name}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "quarterly", "q2-2025")}
+                                                className="h-8"
+                                              />
+                                            ) : (
+                                              kpi.name
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q2-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.weight}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "quarterly", "q2-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.weight
+                                            )}
+                                          </TableCell>
                                           <TableCell>{kpi.type}</TableCell>
-                                          <TableCell>{kpi.unit}</TableCell>
-                                          <TableCell className="text-center">{kpi.plan}</TableCell>
-                                          <TableCell className="text-center">{kpi.fact}</TableCell>
+                                          <TableCell>
+                                            {isEditModeQuarterly["q2-2025"] ? (
+                                              <Input
+                                                value={kpi.unit}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "quarterly", "q2-2025")}
+                                                className="h-8"
+                                              />
+                                            ) : (
+                                              kpi.unit
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q2-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.plan}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "quarterly", "q2-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.plan
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q2-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.fact}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "quarterly", "q2-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.fact
+                                            )}
+                                          </TableCell>
                                           <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
                                           <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                          <TableCell>
-                                            <div className="flex items-center gap-1">
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => handleEditKPI(kpi, "quarterly", "q2-2025")}
-                                              >
-                                                <Pencil className="h-4 w-4" />
-                                              </Button>
+                                          {isEditModeQuarterly["q2-2025"] && (
+                                            <TableCell>
                                               <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -1719,13 +1941,13 @@ export default function GoalsKoldPage() {
                                               >
                                                 <Trash2 className="h-4 w-4" />
                                               </Button>
-                                            </div>
-                                          </TableCell>
+                                            </TableCell>
+                                          )}
                                         </TableRow>
                                       ))
                                     ) : (
                                       <TableRow>
-                                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={isEditModeQuarterly["q2-2025"] ? 10 : 9} className="text-center text-muted-foreground py-8">
                                           Нет данных за 2 квартал 2025
                                         </TableCell>
                                       </TableRow>
@@ -1747,7 +1969,18 @@ export default function GoalsKoldPage() {
                               )}
                             </TabsContent>
                             <TabsContent value="q3-2025" className="mt-4">
-                              <div className="flex justify-end mb-3">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id="edit-mode-q3"
+                                    checked={isEditModeQuarterly["q3-2025"] || false}
+                                    onCheckedChange={(checked) => setIsEditModeQuarterly({ ...isEditModeQuarterly, "q3-2025": checked as boolean })}
+                                  />
+                                  <Label htmlFor="edit-mode-q3" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                                    <Edit className="h-4 w-4" />
+                                    Режим редактирования
+                                  </Label>
+                                </div>
                                 <Button
                                   size="sm"
                                   onClick={() => handleAddKPI("quarterly", "q3-2025")}
@@ -1770,7 +2003,7 @@ export default function GoalsKoldPage() {
                                       <TableHead className="w-[80px]">Факт</TableHead>
                                       <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
                                       <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                      <TableHead className="w-[100px]">Действия</TableHead>
+                                      {isEditModeQuarterly["q3-2025"] && <TableHead className="w-[100px]">Действия</TableHead>}
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -1778,24 +2011,69 @@ export default function GoalsKoldPage() {
                                       quarterlyKPIs[selectedStream.id]["q3-2025"].map((kpi: KPI) => (
                                         <TableRow key={kpi.id}>
                                           <TableCell className="text-center">{kpi.number}</TableCell>
-                                          <TableCell>{kpi.name}</TableCell>
-                                          <TableCell className="text-center">{kpi.weight}</TableCell>
+                                          <TableCell>
+                                            {isEditModeQuarterly["q3-2025"] ? (
+                                              <Input
+                                                value={kpi.name}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "quarterly", "q3-2025")}
+                                                className="h-8"
+                                              />
+                                            ) : (
+                                              kpi.name
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q3-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.weight}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "quarterly", "q3-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.weight
+                                            )}
+                                          </TableCell>
                                           <TableCell>{kpi.type}</TableCell>
-                                          <TableCell>{kpi.unit}</TableCell>
-                                          <TableCell className="text-center">{kpi.plan}</TableCell>
-                                          <TableCell className="text-center">{kpi.fact}</TableCell>
+                                          <TableCell>
+                                            {isEditModeQuarterly["q3-2025"] ? (
+                                              <Input
+                                                value={kpi.unit}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "quarterly", "q3-2025")}
+                                                className="h-8"
+                                              />
+                                            ) : (
+                                              kpi.unit
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q3-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.plan}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "quarterly", "q3-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.plan
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q3-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.fact}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "quarterly", "q3-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.fact
+                                            )}
+                                          </TableCell>
                                           <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
                                           <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                          <TableCell>
-                                            <div className="flex items-center gap-1">
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => handleEditKPI(kpi, "quarterly", "q3-2025")}
-                                              >
-                                                <Pencil className="h-4 w-4" />
-                                              </Button>
+                                          {isEditModeQuarterly["q3-2025"] && (
+                                            <TableCell>
                                               <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -1804,13 +2082,13 @@ export default function GoalsKoldPage() {
                                               >
                                                 <Trash2 className="h-4 w-4" />
                                               </Button>
-                                            </div>
-                                          </TableCell>
+                                            </TableCell>
+                                          )}
                                         </TableRow>
                                       ))
                                     ) : (
                                       <TableRow>
-                                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={isEditModeQuarterly["q3-2025"] ? 10 : 9} className="text-center text-muted-foreground py-8">
                                           Нет данных за 3 квартал 2025
                                         </TableCell>
                                       </TableRow>
@@ -1832,7 +2110,18 @@ export default function GoalsKoldPage() {
                               )}
                             </TabsContent>
                             <TabsContent value="q4-2025" className="mt-4">
-                              <div className="flex justify-end mb-3">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id="edit-mode-q4"
+                                    checked={isEditModeQuarterly["q4-2025"] || false}
+                                    onCheckedChange={(checked) => setIsEditModeQuarterly({ ...isEditModeQuarterly, "q4-2025": checked as boolean })}
+                                  />
+                                  <Label htmlFor="edit-mode-q4" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                                    <Edit className="h-4 w-4" />
+                                    Режим редактирования
+                                  </Label>
+                                </div>
                                 <Button
                                   size="sm"
                                   onClick={() => handleAddKPI("quarterly", "q4-2025")}
@@ -1855,7 +2144,7 @@ export default function GoalsKoldPage() {
                                       <TableHead className="w-[80px]">Факт</TableHead>
                                       <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
                                       <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                      <TableHead className="w-[100px]">Действия</TableHead>
+                                      {isEditModeQuarterly["q4-2025"] && <TableHead className="w-[100px]">Действия</TableHead>}
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -1863,24 +2152,69 @@ export default function GoalsKoldPage() {
                                       quarterlyKPIs[selectedStream.id]["q4-2025"].map((kpi: KPI) => (
                                         <TableRow key={kpi.id}>
                                           <TableCell className="text-center">{kpi.number}</TableCell>
-                                          <TableCell>{kpi.name}</TableCell>
-                                          <TableCell className="text-center">{kpi.weight}</TableCell>
+                                          <TableCell>
+                                            {isEditModeQuarterly["q4-2025"] ? (
+                                              <Input
+                                                value={kpi.name}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "quarterly", "q4-2025")}
+                                                className="h-8"
+                                              />
+                                            ) : (
+                                              kpi.name
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q4-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.weight}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "quarterly", "q4-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.weight
+                                            )}
+                                          </TableCell>
                                           <TableCell>{kpi.type}</TableCell>
-                                          <TableCell>{kpi.unit}</TableCell>
-                                          <TableCell className="text-center">{kpi.plan}</TableCell>
-                                          <TableCell className="text-center">{kpi.fact}</TableCell>
+                                          <TableCell>
+                                            {isEditModeQuarterly["q4-2025"] ? (
+                                              <Input
+                                                value={kpi.unit}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "quarterly", "q4-2025")}
+                                                className="h-8"
+                                              />
+                                            ) : (
+                                              kpi.unit
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q4-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.plan}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "quarterly", "q4-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.plan
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {isEditModeQuarterly["q4-2025"] ? (
+                                              <Input
+                                                type="number"
+                                                value={kpi.fact}
+                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "quarterly", "q4-2025")}
+                                                className="h-8 w-16 text-center"
+                                              />
+                                            ) : (
+                                              kpi.fact
+                                            )}
+                                          </TableCell>
                                           <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
                                           <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                          <TableCell>
-                                            <div className="flex items-center gap-1">
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8"
-                                                onClick={() => handleEditKPI(kpi, "quarterly", "q4-2025")}
-                                              >
-                                                <Pencil className="h-4 w-4" />
-                                              </Button>
+                                          {isEditModeQuarterly["q4-2025"] && (
+                                            <TableCell>
                                               <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -1889,13 +2223,13 @@ export default function GoalsKoldPage() {
                                               >
                                                 <Trash2 className="h-4 w-4" />
                                               </Button>
-                                            </div>
-                                          </TableCell>
+                                            </TableCell>
+                                          )}
                                         </TableRow>
                                       ))
                                     ) : (
                                       <TableRow>
-                                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={isEditModeQuarterly["q4-2025"] ? 10 : 9} className="text-center text-muted-foreground py-8">
                                           Нет данных за 4 квартал 2025
                                         </TableCell>
                                       </TableRow>
@@ -1960,16 +2294,16 @@ export default function GoalsKoldPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Table className="h-5 w-5" />
+                <BarChart3 className="h-5 w-5" />
                 Таблица ПФК
               </CardTitle>
               <CardDescription>
-                Таблица показателей функциональных компетенций
+                Таблица плановых фактических критических значений
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Раздел находится в разработке. Здесь будет отображаться таблица показателей функциональных компетенций.
+                Раздел находится в разработке. Здесь будет отображаться реестр ключевых показателей эффективности.
               </p>
             </CardContent>
           </Card>
