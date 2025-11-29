@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -74,6 +74,12 @@ export function ITLeaderKPICards({
   const [selectedKPI, setSelectedKPI] = useState<KPI | null>(null);
   const [isKPIDialogOpen, setIsKPIDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [selectedQuarter, setSelectedQuarter] = useState<string>(`q1-${selectedITLeaderYear}`);
+
+  // Обновляем выбранный квартал при изменении года
+  useEffect(() => {
+    setSelectedQuarter(`q1-${selectedITLeaderYear}`);
+  }, [selectedITLeaderYear]);
 
   const handleKPIClick = (kpi: KPI, quarter: string) => {
     const isEditMode = isEditModeITLeader[quarter] || false;
@@ -330,7 +336,7 @@ export function ITLeaderKPICards({
           </Label>
         </div>
         {isITLeaderExpanded && (
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center mb-3">
             <div className="w-[100px] flex-shrink-0">
               <Select value={selectedITLeaderYear} onValueChange={onSelectedITLeaderYearChange}>
                 <SelectTrigger className="w-[100px] h-8">
@@ -348,7 +354,22 @@ export function ITLeaderKPICards({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2">
+          </div>
+        )}
+        {isITLeaderExpanded && (
+          <Tabs 
+            defaultValue={`q1-${selectedITLeaderYear}`} 
+            className="w-full" 
+            key={selectedITLeaderYear}
+            onValueChange={(value) => setSelectedQuarter(value)}
+          >
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value={`q1-${selectedITLeaderYear}`}>1 квартал {selectedITLeaderYear}</TabsTrigger>
+              <TabsTrigger value={`q2-${selectedITLeaderYear}`}>2 квартал {selectedITLeaderYear}</TabsTrigger>
+              <TabsTrigger value={`q3-${selectedITLeaderYear}`}>3 квартал {selectedITLeaderYear}</TabsTrigger>
+              <TabsTrigger value={`q4-${selectedITLeaderYear}`}>4 квартал {selectedITLeaderYear}</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center justify-end gap-2 mt-3 mb-3">
               <Button
                 variant="outline"
                 size="sm"
@@ -375,16 +396,6 @@ export function ITLeaderKPICards({
                 Режим редактирования
               </Button>
             </div>
-          </div>
-        )}
-        {isITLeaderExpanded && (
-          <Tabs defaultValue={`q1-${selectedITLeaderYear}`} className="w-full" key={selectedITLeaderYear}>
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value={`q1-${selectedITLeaderYear}`}>1 квартал {selectedITLeaderYear}</TabsTrigger>
-              <TabsTrigger value={`q2-${selectedITLeaderYear}`}>2 квартал {selectedITLeaderYear}</TabsTrigger>
-              <TabsTrigger value={`q3-${selectedITLeaderYear}`}>3 квартал {selectedITLeaderYear}</TabsTrigger>
-              <TabsTrigger value={`q4-${selectedITLeaderYear}`}>4 квартал {selectedITLeaderYear}</TabsTrigger>
-            </TabsList>
             <TabsContent value={`q1-${selectedITLeaderYear}`} className="mt-4">
               {renderQuarterTab(1)}
             </TabsContent>

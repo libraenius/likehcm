@@ -485,7 +485,7 @@ export default function GoalsKoldPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Целеполагание КОЛД</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Целеполагание Стримы</h1>
           <p className="text-muted-foreground">
             Управление целеполаганием стримовой деятельности
           </p>

@@ -14,6 +14,7 @@ import {
   Briefcase,
   Building2,
   Users,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -88,7 +89,7 @@ const serviceItems: Array<{
     icon: Briefcase,
   },
   {
-    title: "Целеполагание КОЛД",
+    title: "Целеполагание Стримы",
     href: "/services/goals-kold",
     icon: Target,
   },
@@ -96,6 +97,18 @@ const serviceItems: Array<{
     title: "Оценка внешние провайдеры",
     href: "/services/external-providers",
     icon: Building2,
+  },
+];
+
+const adminItems: Array<{
+  title: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  {
+    title: "Целеполагание Стримы",
+    href: "/administration/goals-kold",
+    icon: Target,
   },
 ];
 
@@ -108,10 +121,14 @@ export function AppSidebar() {
   const [isServicesOpen, setIsServicesOpen] = React.useState(
     pathname.startsWith("/services")
   );
+  const [isAdminOpen, setIsAdminOpen] = React.useState(
+    pathname.startsWith("/administration")
+  );
 
   React.useEffect(() => {
     setIsReferenceOpen(pathname.startsWith("/reference"));
     setIsServicesOpen(pathname.startsWith("/services"));
+    setIsAdminOpen(pathname.startsWith("/administration"));
   }, [pathname]);
 
   const isCollapsed = state === "collapsed";
@@ -248,6 +265,74 @@ export function AppSidebar() {
                       </div>
                     </SidebarMenuSubItem>
                   )}
+                </SidebarMenuSub>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Администрирование */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider px-2">
+            Администрирование
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setIsAdminOpen(!isAdminOpen)}
+                  isActive={pathname.startsWith("/administration")}
+                  className={cn(
+                    "group relative h-10 rounded-lg transition-all duration-200",
+                    pathname.startsWith("/administration")
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                      : "hover:bg-sidebar-accent/50"
+                  )}
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <Shield
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        pathname.startsWith("/administration") && "scale-110"
+                      )}
+                    />
+                    <span className="font-medium">Администрирование</span>
+                  </div>
+                  <ChevronRight
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200 ml-auto",
+                      isAdminOpen && "rotate-90"
+                    )}
+                  />
+                </SidebarMenuButton>
+                <SidebarMenuSub
+                  className={cn(
+                    "overflow-hidden transition-all duration-300",
+                    isAdminOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                  )}
+                >
+                  {adminItems.map((child) => {
+                    const isActive = pathname === child.href;
+                    return (
+                      <SidebarMenuSubItem key={child.href}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={isActive}
+                          className={cn(
+                            "ml-4 h-9 rounded-md transition-all duration-200",
+                            isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm font-medium"
+                              : "hover:bg-sidebar-accent/50"
+                          )}
+                        >
+                          <Link href={child.href} className="flex items-center gap-3">
+                            <child.icon className="h-3.5 w-3.5" />
+                            <span>{child.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    );
+                  })}
                 </SidebarMenuSub>
               </SidebarMenuItem>
             </SidebarMenu>

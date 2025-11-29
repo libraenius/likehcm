@@ -16,8 +16,10 @@ const pathLabels: Record<string, string> = {
   "/services/assessment": "Оценка",
   "/services/assessment-center": "Ассессмент",
   "/services/goals": "Целеполагание",
-  "/services/goals-kold": "Целеполагание КОЛД",
+  "/services/goals-kold": "Целеполагание Стримы",
   "/services/external-providers": "Внешние поставщики",
+  "/administration": "Администрирование",
+  "/administration/goals-kold": "Целеполагание Стримы",
   "/team": "Команда",
 };
 
@@ -33,8 +35,9 @@ const segmentLabels: Record<string, string> = {
   "assessment": "Оценка",
   "assessment-center": "Ассессмент",
   "goals": "Целеполагание",
-  "goals-kold": "Целеполагание КОЛД",
+  "goals-kold": "Целеполагание Стримы",
   "external-providers": "Внешние поставщики",
+  "administration": "Администрирование",
   "team": "Команда",
 };
 

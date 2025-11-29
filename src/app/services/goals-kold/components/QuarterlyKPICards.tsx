@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -74,6 +74,12 @@ export function QuarterlyKPICards({
   const [selectedKPI, setSelectedKPI] = useState<KPI | null>(null);
   const [isKPIDialogOpen, setIsKPIDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [selectedQuarter, setSelectedQuarter] = useState<string>(`q1-${selectedQuarterlyYear}`);
+
+  // Обновляем выбранный квартал при изменении года
+  useEffect(() => {
+    setSelectedQuarter(`q1-${selectedQuarterlyYear}`);
+  }, [selectedQuarterlyYear]);
 
   const handleKPIClick = (kpi: KPI, quarter: string) => {
     const isEditMode = isEditModeQuarterly[quarter] || false;
@@ -330,7 +336,7 @@ export function QuarterlyKPICards({
           </Label>
         </div>
         {isQuarterlyExpanded && (
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center mb-3">
             <div className="w-[100px] flex-shrink-0">
               <Select value={selectedQuarterlyYear} onValueChange={onSelectedQuarterlyYearChange}>
                 <SelectTrigger className="w-[100px] h-8">
@@ -348,7 +354,22 @@ export function QuarterlyKPICards({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2">
+          </div>
+        )}
+        {isQuarterlyExpanded && (
+          <Tabs 
+            defaultValue={`q1-${selectedQuarterlyYear}`} 
+            className="w-full" 
+            key={selectedQuarterlyYear}
+            onValueChange={(value) => setSelectedQuarter(value)}
+          >
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value={`q1-${selectedQuarterlyYear}`}>1 квартал {selectedQuarterlyYear}</TabsTrigger>
+              <TabsTrigger value={`q2-${selectedQuarterlyYear}`}>2 квартал {selectedQuarterlyYear}</TabsTrigger>
+              <TabsTrigger value={`q3-${selectedQuarterlyYear}`}>3 квартал {selectedQuarterlyYear}</TabsTrigger>
+              <TabsTrigger value={`q4-${selectedQuarterlyYear}`}>4 квартал {selectedQuarterlyYear}</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center justify-end gap-2 mt-3 mb-3">
               <Button
                 variant="outline"
                 size="sm"
@@ -375,16 +396,6 @@ export function QuarterlyKPICards({
                 Режим редактирования
               </Button>
             </div>
-          </div>
-        )}
-        {isQuarterlyExpanded && (
-          <Tabs defaultValue={`q1-${selectedQuarterlyYear}`} className="w-full" key={selectedQuarterlyYear}>
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value={`q1-${selectedQuarterlyYear}`}>1 квартал {selectedQuarterlyYear}</TabsTrigger>
-              <TabsTrigger value={`q2-${selectedQuarterlyYear}`}>2 квартал {selectedQuarterlyYear}</TabsTrigger>
-              <TabsTrigger value={`q3-${selectedQuarterlyYear}`}>3 квартал {selectedQuarterlyYear}</TabsTrigger>
-              <TabsTrigger value={`q4-${selectedQuarterlyYear}`}>4 квартал {selectedQuarterlyYear}</TabsTrigger>
-            </TabsList>
             <TabsContent value={`q1-${selectedQuarterlyYear}`} className="mt-4">
               {renderQuarterTab(1)}
             </TabsContent>
