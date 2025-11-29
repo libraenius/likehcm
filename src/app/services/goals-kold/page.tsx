@@ -10,20 +10,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit } from "lucide-react";
+import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Тип для лидера
+interface Leader {
+  name: string;
+  position: string;
+}
 
 // Тип для стрима
 interface Stream {
   id: string;
   name: string;
   description?: string;
-  leader?: string;
-  itLeader?: string;
+  type?: "продуктовый" | "канальный" | "сегментный" | "платформенный" | "сервисный";
+  startDate?: string; // Дата в формате YYYY-MM-DD
+  endDate?: string; // Дата в формате YYYY-MM-DD
+  leader?: Leader;
+  itLeader?: Leader;
   teams: Team[];
 }
 
@@ -808,120 +817,160 @@ const mockQuarterlyKPIsData: Record<string, Record<string, KPI[]>> = {
   },
 };
 
-// Моковые данные стримов и команд
-const mockStreams: Stream[] = [
-  {
-    id: "stream-1",
-    name: "Стрим разработки",
-    description: "Разработка и поддержка продуктов",
-    leader: "Орлов Максим Сергеевич",
-    itLeader: "Романова Юлия Дмитриевна",
-    teams: [
-      {
-        id: "team-1",
-        name: "Команда Frontend",
-        description: "Разработка пользовательских интерфейсов",
-        streamId: "stream-1",
-        streamName: "Стрим разработки",
-        leader: "Иванов Иван Иванович",
-        membersCount: 8,
-      },
-      {
-        id: "team-2",
-        name: "Команда Backend",
-        description: "Разработка серверной части",
-        streamId: "stream-1",
-        streamName: "Стрим разработки",
-        leader: "Петров Петр Петрович",
-        membersCount: 10,
-      },
-    ],
-  },
-  {
-    id: "stream-2",
-    name: "Стрим качества",
-    description: "Обеспечение качества продуктов",
-    leader: "Зайцева Оксана Дмитриевна",
-    itLeader: "Комаров Станислав Викторович",
-    teams: [
-      {
-        id: "team-3",
-        name: "Команда QA",
-        description: "Тестирование и контроль качества",
-        streamId: "stream-2",
-        streamName: "Стрим качества",
-        leader: "Сидорова Сидора Сидоровна",
-        membersCount: 6,
-      },
-    ],
-  },
-  {
-    id: "stream-3",
-    name: "Стрим инфраструктуры",
-    description: "Поддержка инфраструктуры и DevOps",
-    leader: "Григорьев Андрей Валерьевич",
-    itLeader: "Ларина Марина Игоревна",
-    teams: [
-      {
-        id: "team-4",
-        name: "Команда DevOps",
-        description: "Развертывание и поддержка инфраструктуры",
-        streamId: "stream-3",
-        streamName: "Стрим инфраструктуры",
-        leader: "Козлов Козел Козлович",
-        membersCount: 5,
-      },
-    ],
-  },
-  {
-    id: "stream-4",
-    name: "Неплатежи и непереводы",
-    description: "Обработка неплатежей и непереводов",
-    leader: "Помыткин Сергей Олегович",
-    itLeader: "Козлова Анна Петровна",
-    teams: [
-      {
-        id: "team-5",
-        name: "Команда обработки неплатежей",
-        description: "Обработка и контроль неплатежей",
-        streamId: "stream-4",
-        streamName: "Неплатежи и непереводы",
-        leader: "Смирнов Сергей Сергеевич",
-        membersCount: 12,
-      },
-      {
-        id: "team-6",
-        name: "Команда обработки непереводов",
-        description: "Обработка и контроль непереводов",
-        streamId: "stream-4",
-        streamName: "Неплатежи и непереводы",
-        leader: "Волкова Мария Александровна",
-        membersCount: 10,
-      },
-      {
-        id: "team-7",
-        name: "Команда аналитики",
-        description: "Аналитика и отчетность по неплатежам и непереводам",
-        streamId: "stream-4",
-        streamName: "Неплатежи и непереводы",
-        leader: "Новиков Дмитрий Игоревич",
-        membersCount: 8,
-      },
-      {
-        id: "team-8",
-        name: "Команда поддержки клиентов",
-        description: "Поддержка клиентов по вопросам неплатежей и непереводов",
-        streamId: "stream-4",
-        streamName: "Неплатежи и непереводы",
-        leader: "Петрова Анна Викторовна",
-        membersCount: 15,
-      },
-    ],
-  },
-];
+// Функция для генерации моковых данных стримов и команд (20 стримов, 60 команд)
+const generateMockStreams = (): Stream[] => {
+  const streamNames = [
+    "Стрим разработки",
+    "Стрим качества",
+    "Стрим инфраструктуры",
+    "Неплатежи и непереводы",
+    "Стрим аналитики",
+    "Стрим безопасности",
+    "Стрим интеграций",
+    "Стрим мобильных решений",
+    "Стрим обработки данных",
+    "Стрим клиентского опыта",
+    "Стрим платежных решений",
+    "Стрим корпоративных решений",
+    "Стрим API и микросервисов",
+    "Стрим автоматизации",
+    "Стрим мониторинга",
+    "Стрим тестирования",
+    "Стрим документации",
+    "Стрим обучения",
+    "Стрим поддержки",
+    "Стрим консалтинга",
+  ];
 
-// Функция для получения инициалов из ФИО
-const getInitials = (fullName: string) => {
+  const streamTypes: Array<"продуктовый" | "канальный" | "сегментный" | "платформенный" | "сервисный"> = [
+    "продуктовый", "сервисный", "платформенный", "канальный", "продуктовый",
+    "сервисный", "платформенный", "продуктовый", "сегментный", "канальный",
+    "продуктовый", "сегментный", "платформенный", "сервисный", "платформенный",
+    "сервисный", "сервисный", "сервисный", "сервисный", "сервисный",
+  ];
+
+  const leaders = [
+    "Орлов Максим Сергеевич", "Зайцева Оксана Дмитриевна", "Григорьев Андрей Валерьевич",
+    "Помыткин Сергей Олегович", "Волков Дмитрий Александрович", "Новикова Елена Сергеевна",
+    "Кузнецов Игорь Викторович", "Морозова Анна Дмитриевна", "Соколов Павел Олегович",
+    "Лебедева Мария Игоревна", "Козлов Владимир Петрович", "Смирнова Ольга Николаевна",
+    "Петров Алексей Владимирович", "Иванова Татьяна Сергеевна", "Медведев Юрий Александрович",
+    "Федорова Наталья Викторовна", "Павлов Станислав Олегович", "Романова Юлия Дмитриевна",
+    "Семенов Артем Игоревич", "Ткачева Екатерина Дмитриевна",
+  ];
+
+  const itLeaders = [
+    "Романова Юлия Дмитриевна", "Комаров Станислав Викторович", "Ларина Марина Игоревна",
+    "Козлова Анна Петровна", "Иванов Сергей Викторович", "Петрова Елена Александровна",
+    "Сидоров Андрей Николаевич", "Ковалева Ирина Олеговна", "Михайлов Денис Сергеевич",
+    "Фомина Людмила Игоревна", "Борисов Максим Дмитриевич", "Зайцева Ольга Петровна",
+    "Волков Алексей Владимирович", "Морозова Светлана Николаевна", "Соколов Игорь Александрович",
+    "Новикова Татьяна Викторовна", "Кузнецова Мария Олеговна", "Лебедев Павел Сергеевич",
+    "Смирнов Юрий Игоревич", "Павлова Анна Дмитриевна",
+  ];
+
+  const teamLeaders = [
+    "Иванов Иван Иванович", "Петров Петр Петрович", "Сидорова Сидора Сидоровна",
+    "Козлов Козел Козлович", "Смирнов Сергей Сергеевич", "Волкова Мария Александровна",
+    "Новиков Дмитрий Игоревич", "Петрова Анна Викторовна", "Морозов Алексей Владимирович",
+    "Кузнецова Елена Сергеевна", "Лебедев Игорь Николаевич", "Соколова Ольга Олеговна",
+    "Павлов Станислав Викторович", "Федорова Наталья Александровна", "Медведев Юрий Сергеевич",
+    "Иванова Татьяна Игоревна", "Романова Юлия Дмитриевна", "Семенов Артем Дмитриевич",
+    "Ткачева Екатерина Петровна", "Борисов Максим Владимирович", "Зайцева Ольга Николаевна",
+    "Волков Алексей Олегович", "Морозова Светлана Викторовна", "Соколов Игорь Александрович",
+    "Новикова Татьяна Сергеевна", "Кузнецова Мария Игоревна", "Лебедев Павел Дмитриевич",
+    "Смирнов Юрий Петрович", "Павлова Анна Владимировна", "Фомина Людмила Николаевна",
+    "Михайлов Денис Олегович", "Ковалева Ирина Викторовна", "Борисова Елена Александровна",
+    "Зайцев Сергей Сергеевич", "Волкова Ирина Игоревна", "Морозов Денис Дмитриевич",
+    "Соколова Ольга Петровна", "Павлов Станислав Владимирович", "Федорова Наталья Николаевна",
+    "Медведева Елена Олегович", "Иванов Игорь Викторович", "Романова Татьяна Александровна",
+    "Семенов Артем Сергеевич", "Ткачева Мария Игоревна", "Борисов Максим Дмитриевич",
+    "Зайцева Ольга Петровна", "Волков Алексей Владимирович", "Морозова Светлана Николаевна",
+    "Соколов Игорь Олегович", "Новикова Татьяна Викторовна", "Кузнецова Елена Александровна",
+    "Лебедев Павел Сергеевич", "Смирнов Юрий Игоревич", "Павлова Анна Дмитриевна",
+    "Фомина Людмила Петровна", "Михайлов Денис Владимирович", "Ковалева Ирина Николаевна",
+    "Борисова Елена Олегович", "Зайцев Сергей Викторович", "Волкова Ирина Александровна",
+    "Морозов Денис Сергеевич", "Соколова Ольга Игоревна",
+  ];
+
+  const teamNames = [
+    "Команда Frontend", "Команда Backend", "Команда QA", "Команда DevOps",
+    "Команда обработки неплатежей", "Команда обработки непереводов", "Команда аналитики",
+    "Команда поддержки клиентов", "Команда разработки API", "Команда мобильной разработки",
+    "Команда тестирования", "Команда автоматизации", "Команда безопасности", "Команда мониторинга",
+    "Команда документации", "Команда интеграций", "Команда обработки данных", "Команда клиентского опыта",
+    "Команда платежных решений", "Команда корпоративных решений", "Команда микросервисов", "Команда обучения",
+    "Команда поддержки", "Команда консалтинга", "Команда UX/UI", "Команда архитектуры",
+    "Команда производительности", "Команда миграций", "Команда резервного копирования", "Команда развертывания",
+    "Команда управления конфигурацией", "Команда управления рисками", "Команда комплаенса", "Команда аудита",
+    "Команда отчетности", "Команда визуализации", "Команда машинного обучения", "Команда больших данных",
+    "Команда облачных решений", "Команда контейнеризации", "Команда оркестрации", "Команда сервис-меша",
+    "Команда событийной архитектуры", "Команда базы данных", "Команда кэширования", "Команда поиска",
+    "Команда очередей", "Команда стриминга", "Команда репликации", "Команда балансировки",
+    "Команда масштабирования", "Команда оптимизации", "Команда настройки", "Команда тюнинга",
+    "Команда профилирования", "Команда отладки", "Команда логирования", "Команда трейсинга",
+    "Команда метрик", "Команда алертинга", "Команда оповещений",
+  ];
+
+  // Распределение команд: 5 стримов по 4, 10 стримов по 3, 5 стримов по 2 = 60 команд
+  const teamsPerStream = [4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2];
+  const startDates = [
+    "2024-01-15", "2024-02-01", "2024-03-10", "2024-01-20", "2024-04-05",
+    "2024-02-15", "2024-03-25", "2024-04-10", "2024-05-01", "2024-01-10",
+    "2024-02-20", "2024-03-05", "2024-04-15", "2024-05-10", "2024-01-25",
+    "2024-02-10", "2024-03-20", "2024-04-01", "2024-05-15", "2024-01-30",
+  ];
+
+  const streams: Stream[] = [];
+  let teamCounter = 1;
+
+  for (let i = 0; i < 20; i++) {
+    const streamId = `stream-${i + 1}`;
+    const streamName = streamNames[i];
+    const numTeams = teamsPerStream[i];
+    const teams = [];
+
+    for (let j = 0; j < numTeams; j++) {
+      teams.push({
+        id: `team-${teamCounter}`,
+        name: teamNames[teamCounter - 1] || `Команда ${teamCounter}`,
+        description: `Описание команды ${teamCounter}`,
+        streamId,
+        streamName,
+        leader: teamLeaders[(teamCounter - 1) % teamLeaders.length],
+        membersCount: ((teamCounter - 1) % 10) + 5,
+      });
+      teamCounter++;
+    }
+
+    streams.push({
+      id: streamId,
+      name: streamName,
+      description: `Описание стрима ${i + 1}`,
+      type: streamTypes[i],
+      startDate: startDates[i],
+      endDate: "2025-12-31",
+      leader: {
+        name: leaders[i],
+        position: i % 2 === 0 ? "Исполнительный директор" : "Управляющий директор",
+      },
+      itLeader: {
+        name: itLeaders[i],
+        position: i % 2 === 0 ? "Управляющий директор" : "Исполнительный директор",
+      },
+      teams,
+    });
+  }
+
+  return streams;
+};
+
+// Моковые данные стримов и команд (20 стримов, 60 команд)
+const mockStreams: Stream[] = generateMockStreams();
+
+// Функция для получения инициалов из ФИО или объекта Leader
+const getInitials = (fullNameOrLeader: string | Leader) => {
+  const fullName = typeof fullNameOrLeader === "string" ? fullNameOrLeader : fullNameOrLeader.name;
   const parts = fullName.trim().split(" ");
   if (parts.length >= 2) {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
@@ -931,6 +980,16 @@ const getInitials = (fullName: string) => {
   return "??";
 };
 
+// Функция для форматирования даты в формат дд.мм.гггг
+const formatDate = (dateString: string | undefined): string => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+};
+
 export default function GoalsKoldPage() {
   // Состояние для управления стримами и командами
   const [streams, setStreams] = useState<Stream[]>(mockStreams);
@@ -938,6 +997,12 @@ export default function GoalsKoldPage() {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [expandedStreams, setExpandedStreams] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [filters, setFilters] = useState<{
+    types: string[];
+  }>({
+    types: [],
+  });
 
   // Состояние для управления КПЭ
   const [annualKPIs, setAnnualKPIs] = useState<Record<string, KPI[]>>(mockStreamKPIs);
@@ -1162,12 +1227,21 @@ export default function GoalsKoldPage() {
 
   // Фильтрация стримов и команд
   const filteredStreams = streams.filter(stream => {
+    // Фильтр по типам стримов
+    if (filters.types.length > 0 && stream.type && !filters.types.includes(stream.type)) {
+      return false;
+    }
+    
     if (!searchQuery.trim()) return true;
     
     const query = searchQuery.toLowerCase();
     const streamMatches = 
       stream.name.toLowerCase().includes(query) ||
-      stream.description?.toLowerCase().includes(query);
+      stream.description?.toLowerCase().includes(query) ||
+      stream.leader?.name.toLowerCase().includes(query) ||
+      stream.leader?.position.toLowerCase().includes(query) ||
+      stream.itLeader?.name.toLowerCase().includes(query) ||
+      stream.itLeader?.position.toLowerCase().includes(query);
     
     const filteredTeams = stream.teams.filter(team =>
       team.name.toLowerCase().includes(query) ||
@@ -1182,7 +1256,11 @@ export default function GoalsKoldPage() {
     const query = searchQuery.toLowerCase();
     const streamMatches = 
       stream.name.toLowerCase().includes(query) ||
-      stream.description?.toLowerCase().includes(query);
+      stream.description?.toLowerCase().includes(query) ||
+      stream.leader?.name.toLowerCase().includes(query) ||
+      stream.leader?.position.toLowerCase().includes(query) ||
+      stream.itLeader?.name.toLowerCase().includes(query) ||
+      stream.itLeader?.position.toLowerCase().includes(query);
     
     const filteredTeams = stream.teams.filter(team =>
       team.name.toLowerCase().includes(query) ||
@@ -1237,8 +1315,9 @@ export default function GoalsKoldPage() {
             </div>
           </div>
 
-          {/* Поиск */}
-          <div className="relative">
+          {/* Поиск и фильтры */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Поиск по стримам и командам..."
@@ -1256,6 +1335,73 @@ export default function GoalsKoldPage() {
                 <X className="h-4 w-4" />
               </Button>
             )}
+            </div>
+            <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Фильтры
+                  {filters.types.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {filters.types.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader className="pb-3">
+                  <DialogTitle className="text-lg">Фильтры</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 py-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Тип стрима</Label>
+                    <div className="space-y-1.5">
+                      {(["продуктовый", "канальный", "сегментный", "платформенный", "сервисный"] as const).map((type) => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`filter-type-${type}`}
+                            checked={filters.types.includes(type)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setFilters({
+                                  ...filters,
+                                  types: [...filters.types, type],
+                                });
+                              } else {
+                                setFilters({
+                                  ...filters,
+                                  types: filters.types.filter((t) => t !== type),
+                                });
+                              }
+                            }}
+                          />
+                          <Label
+                            htmlFor={`filter-type-${type}`}
+                            className="text-sm font-normal cursor-pointer"
+                          >
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter className="pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFilters({ types: [] });
+                    }}
+                  >
+                    Сбросить
+                  </Button>
+                  <Button size="sm" onClick={() => setFilterDialogOpen(false)}>
+                    Применить
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Двухколоночная структура */}
@@ -1276,13 +1422,13 @@ export default function GoalsKoldPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
+            <div className="flex gap-4 w-full overflow-x-hidden">
               {/* Левая колонка - иерархия стримов и команд */}
-              <div className="w-[400px] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
-                <div className="p-2 border-b bg-muted/30">
+              <div className="w-[320px] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-360px)]">
+                <div className="p-2 border-b bg-muted/30 flex-shrink-0">
                   <h3 className="font-semibold text-sm">Стримы и команды</h3>
                 </div>
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto min-h-0">
                   <div className="space-y-1 p-2">
                     {filteredStreams.map((stream) => (
                       <div key={stream.id} className="space-y-1">
@@ -1315,15 +1461,8 @@ export default function GoalsKoldPage() {
                             <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm break-words">{stream.name}</div>
-                              {stream.description && (
-                                <div className="text-xs text-muted-foreground break-words mt-0.5">
-                                  {stream.description.length > 40
-                                    ? stream.description.substring(0, 40) + "..."
-                                    : stream.description}
                                 </div>
-                              )}
-                            </div>
-                            <Badge variant="outline" className="text-xs flex-shrink-0">
+                            <Badge variant="outline" className="text-sm flex-shrink-0">
                               {stream.teams.length}
                             </Badge>
                           </div>
@@ -1350,13 +1489,6 @@ export default function GoalsKoldPage() {
                                   <UserCircle className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
                                     <div className="font-medium break-words">{team.name}</div>
-                                    {team.description && (
-                                      <div className="text-xs text-muted-foreground break-words mt-0.5">
-                                        {team.description.length > 35
-                                          ? team.description.substring(0, 35) + "..."
-                                          : team.description}
-                                      </div>
-                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1370,16 +1502,13 @@ export default function GoalsKoldPage() {
               </div>
 
               {/* Правая колонка - детальная информация о стриме или команде */}
-              <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-280px)]">
+              <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-360px)]">
                 {selectedTeam ? (
                   <Card className="w-full max-w-full overflow-hidden">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <CardTitle className="text-xl mb-1 break-words">{selectedTeam.name}</CardTitle>
-                          <CardDescription className="text-base break-words">
-                            {selectedTeam.description || "Описание отсутствует"}
-                          </CardDescription>
                         </div>
                       </div>
                     </CardHeader>
@@ -1440,9 +1569,6 @@ export default function GoalsKoldPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <CardTitle className="text-xl mb-1 break-words">{selectedStream.name}</CardTitle>
-                          <CardDescription className="text-base break-words">
-                            {selectedStream.description || "Описание отсутствует"}
-                          </CardDescription>
                         </div>
                       </div>
                     </CardHeader>
@@ -1454,46 +1580,69 @@ export default function GoalsKoldPage() {
                             <Building2 className="h-4 w-4" />
                             Информация о стриме
                           </Label>
-                          <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+                          <div className="p-4 border rounded-lg bg-muted/30">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Левая колонка */}
+                              <div className="space-y-3">
+                                {selectedStream.type && (
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Название</Label>
-                              <p className="text-sm font-medium">{selectedStream.name}</p>
+                                    <Label className="text-xs text-muted-foreground">Тип стрима</Label>
+                                    <div>
+                                      <Badge variant="default" className="text-sm">
+                                        {selectedStream.type}
+                                      </Badge>
                             </div>
-                            {selectedStream.description && (
+                                  </div>
+                                )}
+                                {selectedStream.startDate && (
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Описание</Label>
-                                <p className="text-sm">{selectedStream.description}</p>
+                                    <Label className="text-xs text-muted-foreground">Дата открытия</Label>
+                                    <p className="text-sm">{formatDate(selectedStream.startDate)}</p>
                               </div>
                             )}
+                                {selectedStream.endDate && (
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">Дата закрытия</Label>
+                                    <p className="text-sm">{formatDate(selectedStream.endDate)}</p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Правая колонка */}
+                              <div className="space-y-3">
                             {selectedStream.leader && (
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">Лидер стрима</Label>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                                    <div className="flex items-start gap-2">
+                                      <Avatar className="h-10 w-10 flex-shrink-0">
+                                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
                                       {getInitials(selectedStream.leader)}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <p className="text-sm">{selectedStream.leader}</p>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium">{selectedStream.leader.name}</p>
+                                        <p className="text-xs text-muted-foreground">{selectedStream.leader.position}</p>
+                                      </div>
                                 </div>
                               </div>
                             )}
                             {selectedStream.itLeader && (
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">ИТ лидер стрима</Label>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                                    <div className="flex items-start gap-2">
+                                      <Avatar className="h-10 w-10 flex-shrink-0">
+                                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
                                       {getInitials(selectedStream.itLeader)}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <p className="text-sm">{selectedStream.itLeader}</p>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium">{selectedStream.itLeader.name}</p>
+                                        <p className="text-xs text-muted-foreground">{selectedStream.itLeader.position}</p>
+                                      </div>
                                 </div>
                               </div>
                             )}
-                            <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Количество команд</Label>
-                              <p className="text-sm">{selectedStream.teams.length} {selectedStream.teams.length === 1 ? 'команда' : selectedStream.teams.length < 5 ? 'команды' : 'команд'}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1511,7 +1660,7 @@ export default function GoalsKoldPage() {
                               <Badge
                                 key={team.id}
                                 variant="outline"
-                                className="cursor-pointer hover:bg-accent transition-colors px-3 py-1.5"
+                                className="text-sm cursor-pointer border-orange-500/50 bg-orange-500/10 text-orange-600 dark:text-orange-400 dark:bg-orange-500/20 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-500 dark:hover:text-white transition-colors px-3 py-1.5"
                                 onClick={() => handleSelectTeam(team)}
                               >
                                 {team.name}
