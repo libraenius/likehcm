@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import type { MouseEvent } from "react";
@@ -14,981 +14,19 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter } from "lucide-react";
+import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Leader, Stream, Team, KPI } from "./types";
+import { getInitials, formatDate, calculateKPIMetrics } from "./utils";
+import { mockStreamKPIs, mockQuarterlyKPIsData, mockITLeaderKPIsData, generateMockStreams, mockStreams } from "./mock-data";
+import { StreamsList } from "./components/StreamsList";
+import { TeamDetails } from "./components/TeamDetails";
+import { FilterDialog } from "./components/FilterDialog";
+import { KPIDialog } from "./components/KPIDialog";
+import { AnnualKPICards } from "./components/AnnualKPICards";
+import { QuarterlyKPICards } from "./components/QuarterlyKPICards";
+import { ITLeaderKPICards } from "./components/ITLeaderKPICards";
 
-// Тип для лидера
-interface Leader {
-  name: string;
-  position: string;
-}
-
-// Тип для стрима
-interface Stream {
-  id: string;
-  name: string;
-  description?: string;
-  type?: "продуктовый" | "канальный" | "сегментный" | "платформенный" | "сервисный";
-  startDate?: string; // Дата в формате YYYY-MM-DD
-  endDate?: string; // Дата в формате YYYY-MM-DD
-  leader?: Leader;
-  itLeader?: Leader;
-  teams: Team[];
-}
-
-// Тип для команды
-interface Team {
-  id: string;
-  name: string;
-  description?: string;
-  streamId: string;
-  streamName: string;
-  leader?: string;
-  membersCount?: number;
-}
-
-// Тип для КПЭ (ключевого показателя эффективности)
-interface KPI {
-  id: string;
-  number: number;
-  name: string;
-  weight: number;
-  type: string;
-  unit: string;
-  plan: number;
-  fact: number;
-  completionPercent: number;
-  evaluationPercent: number;
-}
-
-// Моковые данные для годовых целей стрима
-const mockStreamKPIs: Record<string, KPI[]> = {
-  "stream-1": [
-    {
-      id: "kpi-1-1",
-      number: 1,
-      name: "Количество выпущенных релизов",
-      weight: 25,
-      type: "Количественный",
-      unit: "шт.",
-      plan: 12,
-      fact: 10,
-      completionPercent: 83.3,
-      evaluationPercent: 20.8,
-    },
-    {
-      id: "kpi-1-2",
-      number: 2,
-      name: "Время разработки фичи",
-      weight: 20,
-      type: "Количественный",
-      unit: "дн.",
-      plan: 5,
-      fact: 4.5,
-      completionPercent: 111.1,
-      evaluationPercent: 22.2,
-    },
-    {
-      id: "kpi-1-3",
-      number: 3,
-      name: "Качество кода",
-      weight: 20,
-      type: "Качественный",
-      unit: "%",
-      plan: 85,
-      fact: 88,
-      completionPercent: 103.5,
-      evaluationPercent: 20.7,
-    },
-    {
-      id: "kpi-1-4",
-      number: 4,
-      name: "Количество закрытых задач",
-      weight: 20,
-      type: "Количественный",
-      unit: "шт.",
-      plan: 500,
-      fact: 480,
-      completionPercent: 96,
-      evaluationPercent: 19.2,
-    },
-    {
-      id: "kpi-1-5",
-      number: 5,
-      name: "Удовлетворенность команды",
-      weight: 15,
-      type: "Качественный",
-      unit: "%",
-      plan: 80,
-      fact: 82,
-      completionPercent: 102.5,
-      evaluationPercent: 15.4,
-    },
-  ],
-  "stream-2": [
-    {
-      id: "kpi-2-1",
-      number: 1,
-      name: "Покрытие тестами",
-      weight: 30,
-      type: "Количественный",
-      unit: "%",
-      plan: 80,
-      fact: 85,
-      completionPercent: 106.3,
-      evaluationPercent: 31.9,
-    },
-    {
-      id: "kpi-2-2",
-      number: 2,
-      name: "Количество найденных багов",
-      weight: 25,
-      type: "Количественный",
-      unit: "шт.",
-      plan: 50,
-      fact: 45,
-      completionPercent: 111.1,
-      evaluationPercent: 27.8,
-    },
-    {
-      id: "kpi-2-3",
-      number: 3,
-      name: "Время исправления критических багов",
-      weight: 20,
-      type: "Количественный",
-      unit: "час.",
-      plan: 4,
-      fact: 3.5,
-      completionPercent: 114.3,
-      evaluationPercent: 22.9,
-    },
-    {
-      id: "kpi-2-4",
-      number: 4,
-      name: "Процент успешных тестов",
-      weight: 15,
-      type: "Количественный",
-      unit: "%",
-      plan: 95,
-      fact: 97,
-      completionPercent: 102.1,
-      evaluationPercent: 15.3,
-    },
-    {
-      id: "kpi-2-5",
-      number: 5,
-      name: "Качество документации",
-      weight: 10,
-      type: "Качественный",
-      unit: "%",
-      plan: 75,
-      fact: 78,
-      completionPercent: 104,
-      evaluationPercent: 10.4,
-    },
-  ],
-  "stream-3": [
-    {
-      id: "kpi-3-1",
-      number: 1,
-      name: "Время развертывания",
-      weight: 30,
-      type: "Количественный",
-      unit: "мин.",
-      plan: 10,
-      fact: 8,
-      completionPercent: 125,
-      evaluationPercent: 37.5,
-    },
-    {
-      id: "kpi-3-2",
-      number: 2,
-      name: "Доступность сервисов",
-      weight: 25,
-      type: "Количественный",
-      unit: "%",
-      plan: 99.9,
-      fact: 99.95,
-      completionPercent: 100.1,
-      evaluationPercent: 25,
-    },
-    {
-      id: "kpi-3-3",
-      number: 3,
-      name: "Количество инцидентов",
-      weight: 20,
-      type: "Количественный",
-      unit: "шт.",
-      plan: 5,
-      fact: 4,
-      completionPercent: 125,
-      evaluationPercent: 25,
-    },
-    {
-      id: "kpi-3-4",
-      number: 4,
-      name: "Время восстановления сервиса",
-      weight: 15,
-      type: "Количественный",
-      unit: "мин.",
-      plan: 30,
-      fact: 25,
-      completionPercent: 120,
-      evaluationPercent: 18,
-    },
-    {
-      id: "kpi-3-5",
-      number: 5,
-      name: "Эффективность использования ресурсов",
-      weight: 10,
-      type: "Количественный",
-      unit: "%",
-      plan: 85,
-      fact: 88,
-      completionPercent: 103.5,
-      evaluationPercent: 10.4,
-    },
-  ],
-  "stream-4": [
-    {
-      id: "kpi-4-1",
-      number: 1,
-      name: "Количество обработанных неплатежей",
-      weight: 30,
-      type: "Количественный",
-      unit: "шт.",
-      plan: 1000,
-      fact: 950,
-      completionPercent: 95,
-      evaluationPercent: 28.5,
-    },
-    {
-      id: "kpi-4-2",
-      number: 2,
-      name: "Время обработки неплатежа",
-      weight: 25,
-      type: "Количественный",
-      unit: "час.",
-      plan: 2,
-      fact: 1.8,
-      completionPercent: 111.1,
-      evaluationPercent: 27.8,
-    },
-    {
-      id: "kpi-4-3",
-      number: 3,
-      name: "Удовлетворенность клиентов",
-      weight: 20,
-      type: "Качественный",
-      unit: "%",
-      plan: 90,
-      fact: 92,
-      completionPercent: 102.2,
-      evaluationPercent: 20.4,
-    },
-    {
-      id: "kpi-4-4",
-      number: 4,
-      name: "Количество обработанных непереводов",
-      weight: 15,
-      type: "Количественный",
-      unit: "шт.",
-      plan: 800,
-      fact: 780,
-      completionPercent: 97.5,
-      evaluationPercent: 14.6,
-    },
-    {
-      id: "kpi-4-5",
-      number: 5,
-      name: "Точность обработки",
-      weight: 10,
-      type: "Качественный",
-      unit: "%",
-      plan: 98,
-      fact: 98.5,
-      completionPercent: 100.5,
-      evaluationPercent: 10.1,
-    },
-  ],
-};
-
-// Моковые данные для квартальных КПЭ
-const mockQuarterlyKPIsData: Record<string, Record<string, KPI[]>> = {
-  "stream-1": {
-    "q1-2025": [
-      {
-        id: "q1-kpi-1-1",
-        number: 1,
-        name: "Количество выпущенных релизов",
-        weight: 25,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 3,
-        fact: 2,
-        completionPercent: 66.7,
-        evaluationPercent: 16.7,
-      },
-      {
-        id: "q1-kpi-1-2",
-        number: 2,
-        name: "Время разработки фичи",
-        weight: 20,
-        type: "Количественный",
-        unit: "дн.",
-        plan: 5,
-        fact: 4.8,
-        completionPercent: 104.2,
-        evaluationPercent: 20.8,
-      },
-      {
-        id: "q1-kpi-1-3",
-        number: 3,
-        name: "Качество кода",
-        weight: 20,
-        type: "Качественный",
-        unit: "%",
-        plan: 85,
-        fact: 87,
-        completionPercent: 102.4,
-        evaluationPercent: 20.5,
-      },
-      {
-        id: "q1-kpi-1-4",
-        number: 4,
-        name: "Количество закрытых задач",
-        weight: 20,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 125,
-        fact: 120,
-        completionPercent: 96,
-        evaluationPercent: 19.2,
-      },
-      {
-        id: "q1-kpi-1-5",
-        number: 5,
-        name: "Удовлетворенность команды",
-        weight: 15,
-        type: "Качественный",
-        unit: "%",
-        plan: 80,
-        fact: 81,
-        completionPercent: 101.3,
-        evaluationPercent: 15.2,
-      },
-    ],
-    "q2-2025": [
-      {
-        id: "q2-kpi-1-1",
-        number: 1,
-        name: "Количество выпущенных релизов",
-        weight: 25,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 3,
-        fact: 3,
-        completionPercent: 100,
-        evaluationPercent: 25,
-      },
-      {
-        id: "q2-kpi-1-2",
-        number: 2,
-        name: "Время разработки фичи",
-        weight: 20,
-        type: "Количественный",
-        unit: "дн.",
-        plan: 5,
-        fact: 4.5,
-        completionPercent: 111.1,
-        evaluationPercent: 22.2,
-      },
-      {
-        id: "q2-kpi-1-3",
-        number: 3,
-        name: "Качество кода",
-        weight: 20,
-        type: "Качественный",
-        unit: "%",
-        plan: 85,
-        fact: 88,
-        completionPercent: 103.5,
-        evaluationPercent: 20.7,
-      },
-      {
-        id: "q2-kpi-1-4",
-        number: 4,
-        name: "Количество закрытых задач",
-        weight: 20,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 125,
-        fact: 130,
-        completionPercent: 104,
-        evaluationPercent: 20.8,
-      },
-      {
-        id: "q2-kpi-1-5",
-        number: 5,
-        name: "Удовлетворенность команды",
-        weight: 15,
-        type: "Качественный",
-        unit: "%",
-        plan: 80,
-        fact: 82,
-        completionPercent: 102.5,
-        evaluationPercent: 15.4,
-      },
-    ],
-    "q3-2025": [
-      {
-        id: "q3-kpi-1-1",
-        number: 1,
-        name: "Количество выпущенных релизов",
-        weight: 25,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 3,
-        fact: 3,
-        completionPercent: 100,
-        evaluationPercent: 25,
-      },
-      {
-        id: "q3-kpi-1-2",
-        number: 2,
-        name: "Время разработки фичи",
-        weight: 20,
-        type: "Количественный",
-        unit: "дн.",
-        plan: 5,
-        fact: 4.2,
-        completionPercent: 119,
-        evaluationPercent: 23.8,
-      },
-      {
-        id: "q3-kpi-1-3",
-        number: 3,
-        name: "Качество кода",
-        weight: 20,
-        type: "Качественный",
-        unit: "%",
-        plan: 85,
-        fact: 89,
-        completionPercent: 104.7,
-        evaluationPercent: 20.9,
-      },
-      {
-        id: "q3-kpi-1-4",
-        number: 4,
-        name: "Количество закрытых задач",
-        weight: 20,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 125,
-        fact: 125,
-        completionPercent: 100,
-        evaluationPercent: 20,
-      },
-      {
-        id: "q3-kpi-1-5",
-        number: 5,
-        name: "Удовлетворенность команды",
-        weight: 15,
-        type: "Качественный",
-        unit: "%",
-        plan: 80,
-        fact: 83,
-        completionPercent: 103.8,
-        evaluationPercent: 15.6,
-      },
-    ],
-    "q4-2025": [
-      {
-        id: "q4-kpi-1-1",
-        number: 1,
-        name: "Количество выпущенных релизов",
-        weight: 25,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 3,
-        fact: 2,
-        completionPercent: 66.7,
-        evaluationPercent: 16.7,
-      },
-      {
-        id: "q4-kpi-1-2",
-        number: 2,
-        name: "Время разработки фичи",
-        weight: 20,
-        type: "Количественный",
-        unit: "дн.",
-        plan: 5,
-        fact: 4.5,
-        completionPercent: 111.1,
-        evaluationPercent: 22.2,
-      },
-      {
-        id: "q4-kpi-1-3",
-        number: 3,
-        name: "Качество кода",
-        weight: 20,
-        type: "Качественный",
-        unit: "%",
-        plan: 85,
-        fact: 88,
-        completionPercent: 103.5,
-        evaluationPercent: 20.7,
-      },
-      {
-        id: "q4-kpi-1-4",
-        number: 4,
-        name: "Количество закрытых задач",
-        weight: 20,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 125,
-        fact: 115,
-        completionPercent: 92,
-        evaluationPercent: 18.4,
-      },
-      {
-        id: "q4-kpi-1-5",
-        number: 5,
-        name: "Удовлетворенность команды",
-        weight: 15,
-        type: "Качественный",
-        unit: "%",
-        plan: 80,
-        fact: 82,
-        completionPercent: 102.5,
-        evaluationPercent: 15.4,
-      },
-    ],
-  },
-  "stream-4": {
-    "q1-2025": [
-      {
-        id: "q1-kpi-4-1",
-        number: 1,
-        name: "Количество обработанных неплатежей",
-        weight: 30,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 250,
-        fact: 240,
-        completionPercent: 96,
-        evaluationPercent: 28.8,
-      },
-      {
-        id: "q1-kpi-4-2",
-        number: 2,
-        name: "Время обработки неплатежа",
-        weight: 25,
-        type: "Количественный",
-        unit: "час.",
-        plan: 2,
-        fact: 1.9,
-        completionPercent: 105.3,
-        evaluationPercent: 26.3,
-      },
-      {
-        id: "q1-kpi-4-3",
-        number: 3,
-        name: "Удовлетворенность клиентов",
-        weight: 20,
-        type: "Качественный",
-        unit: "%",
-        plan: 90,
-        fact: 91,
-        completionPercent: 101.1,
-        evaluationPercent: 20.2,
-      },
-      {
-        id: "q1-kpi-4-4",
-        number: 4,
-        name: "Количество обработанных непереводов",
-        weight: 15,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 200,
-        fact: 195,
-        completionPercent: 97.5,
-        evaluationPercent: 14.6,
-      },
-      {
-        id: "q1-kpi-4-5",
-        number: 5,
-        name: "Точность обработки",
-        weight: 10,
-        type: "Качественный",
-        unit: "%",
-        plan: 98,
-        fact: 98.2,
-        completionPercent: 100.2,
-        evaluationPercent: 10,
-      },
-    ],
-    "q2-2025": [
-      {
-        id: "q2-kpi-4-1",
-        number: 1,
-        name: "Количество обработанных неплатежей",
-        weight: 30,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 250,
-        fact: 250,
-        completionPercent: 100,
-        evaluationPercent: 30,
-      },
-      {
-        id: "q2-kpi-4-2",
-        number: 2,
-        name: "Время обработки неплатежа",
-        weight: 25,
-        type: "Количественный",
-        unit: "час.",
-        plan: 2,
-        fact: 1.8,
-        completionPercent: 111.1,
-        evaluationPercent: 27.8,
-      },
-      {
-        id: "q2-kpi-4-3",
-        number: 3,
-        name: "Удовлетворенность клиентов",
-        weight: 20,
-        type: "Качественный",
-        unit: "%",
-        plan: 90,
-        fact: 92,
-        completionPercent: 102.2,
-        evaluationPercent: 20.4,
-      },
-      {
-        id: "q2-kpi-4-4",
-        number: 4,
-        name: "Количество обработанных непереводов",
-        weight: 15,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 200,
-        fact: 200,
-        completionPercent: 100,
-        evaluationPercent: 15,
-      },
-      {
-        id: "q2-kpi-4-5",
-        number: 5,
-        name: "Точность обработки",
-        weight: 10,
-        type: "Качественный",
-        unit: "%",
-        plan: 98,
-        fact: 98.5,
-        completionPercent: 100.5,
-        evaluationPercent: 10.1,
-      },
-    ],
-    "q3-2025": [
-      {
-        id: "q3-kpi-4-1",
-        number: 1,
-        name: "Количество обработанных неплатежей",
-        weight: 30,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 250,
-        fact: 230,
-        completionPercent: 92,
-        evaluationPercent: 27.6,
-      },
-      {
-        id: "q3-kpi-4-2",
-        number: 2,
-        name: "Время обработки неплатежа",
-        weight: 25,
-        type: "Количественный",
-        unit: "час.",
-        plan: 2,
-        fact: 1.7,
-        completionPercent: 117.6,
-        evaluationPercent: 29.4,
-      },
-      {
-        id: "q3-kpi-4-3",
-        number: 3,
-        name: "Удовлетворенность клиентов",
-        weight: 20,
-        type: "Качественный",
-        unit: "%",
-        plan: 90,
-        fact: 93,
-        completionPercent: 103.3,
-        evaluationPercent: 20.7,
-      },
-      {
-        id: "q3-kpi-4-4",
-        number: 4,
-        name: "Количество обработанных непереводов",
-        weight: 15,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 200,
-        fact: 195,
-        completionPercent: 97.5,
-        evaluationPercent: 14.6,
-      },
-      {
-        id: "q3-kpi-4-5",
-        number: 5,
-        name: "Точность обработки",
-        weight: 10,
-        type: "Качественный",
-        unit: "%",
-        plan: 98,
-        fact: 98.8,
-        completionPercent: 100.8,
-        evaluationPercent: 10.1,
-      },
-    ],
-    "q4-2025": [
-      {
-        id: "q4-kpi-4-1",
-        number: 1,
-        name: "Количество обработанных неплатежей",
-        weight: 30,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 250,
-        fact: 230,
-        completionPercent: 92,
-        evaluationPercent: 27.6,
-      },
-      {
-        id: "q4-kpi-4-2",
-        number: 2,
-        name: "Время обработки неплатежа",
-        weight: 25,
-        type: "Количественный",
-        unit: "час.",
-        plan: 2,
-        fact: 1.8,
-        completionPercent: 111.1,
-        evaluationPercent: 27.8,
-      },
-      {
-        id: "q4-kpi-4-3",
-        number: 3,
-        name: "Удовлетворенность клиентов",
-        weight: 20,
-        type: "Качественный",
-        unit: "%",
-        plan: 90,
-        fact: 92,
-        completionPercent: 102.2,
-        evaluationPercent: 20.4,
-      },
-      {
-        id: "q4-kpi-4-4",
-        number: 4,
-        name: "Количество обработанных непереводов",
-        weight: 15,
-        type: "Количественный",
-        unit: "шт.",
-        plan: 200,
-        fact: 190,
-        completionPercent: 95,
-        evaluationPercent: 14.3,
-      },
-      {
-        id: "q4-kpi-4-5",
-        number: 5,
-        name: "Точность обработки",
-        weight: 10,
-        type: "Качественный",
-        unit: "%",
-        plan: 98,
-        fact: 98.5,
-        completionPercent: 100.5,
-        evaluationPercent: 10.1,
-      },
-    ],
-  },
-};
-
-// Функция для генерации моковых данных стримов и команд (20 стримов, 60 команд)
-const generateMockStreams = (): Stream[] => {
-  const streamNames = [
-    "Стрим разработки",
-    "Стрим качества",
-    "Стрим инфраструктуры",
-    "Неплатежи и непереводы",
-    "Стрим аналитики",
-    "Стрим безопасности",
-    "Стрим интеграций",
-    "Стрим мобильных решений",
-    "Стрим обработки данных",
-    "Стрим клиентского опыта",
-    "Стрим платежных решений",
-    "Стрим корпоративных решений",
-    "Стрим API и микросервисов",
-    "Стрим автоматизации",
-    "Стрим мониторинга",
-    "Стрим тестирования",
-    "Стрим документации",
-    "Стрим обучения",
-    "Стрим поддержки",
-    "Стрим консалтинга",
-  ];
-
-  const streamTypes: Array<"продуктовый" | "канальный" | "сегментный" | "платформенный" | "сервисный"> = [
-    "продуктовый", "сервисный", "платформенный", "канальный", "продуктовый",
-    "сервисный", "платформенный", "продуктовый", "сегментный", "канальный",
-    "продуктовый", "сегментный", "платформенный", "сервисный", "платформенный",
-    "сервисный", "сервисный", "сервисный", "сервисный", "сервисный",
-  ];
-
-  const leaders = [
-    "Орлов Максим Сергеевич", "Зайцева Оксана Дмитриевна", "Григорьев Андрей Валерьевич",
-    "Помыткин Сергей Олегович", "Волков Дмитрий Александрович", "Новикова Елена Сергеевна",
-    "Кузнецов Игорь Викторович", "Морозова Анна Дмитриевна", "Соколов Павел Олегович",
-    "Лебедева Мария Игоревна", "Козлов Владимир Петрович", "Смирнова Ольга Николаевна",
-    "Петров Алексей Владимирович", "Иванова Татьяна Сергеевна", "Медведев Юрий Александрович",
-    "Федорова Наталья Викторовна", "Павлов Станислав Олегович", "Романова Юлия Дмитриевна",
-    "Семенов Артем Игоревич", "Ткачева Екатерина Дмитриевна",
-  ];
-
-  const itLeaders = [
-    "Романова Юлия Дмитриевна", "Комаров Станислав Викторович", "Ларина Марина Игоревна",
-    "Козлова Анна Петровна", "Иванов Сергей Викторович", "Петрова Елена Александровна",
-    "Сидоров Андрей Николаевич", "Ковалева Ирина Олеговна", "Михайлов Денис Сергеевич",
-    "Фомина Людмила Игоревна", "Борисов Максим Дмитриевич", "Зайцева Ольга Петровна",
-    "Волков Алексей Владимирович", "Морозова Светлана Николаевна", "Соколов Игорь Александрович",
-    "Новикова Татьяна Викторовна", "Кузнецова Мария Олеговна", "Лебедев Павел Сергеевич",
-    "Смирнов Юрий Игоревич", "Павлова Анна Дмитриевна",
-  ];
-
-  const teamLeaders = [
-    "Иванов Иван Иванович", "Петров Петр Петрович", "Сидорова Сидора Сидоровна",
-    "Козлов Козел Козлович", "Смирнов Сергей Сергеевич", "Волкова Мария Александровна",
-    "Новиков Дмитрий Игоревич", "Петрова Анна Викторовна", "Морозов Алексей Владимирович",
-    "Кузнецова Елена Сергеевна", "Лебедев Игорь Николаевич", "Соколова Ольга Олеговна",
-    "Павлов Станислав Викторович", "Федорова Наталья Александровна", "Медведев Юрий Сергеевич",
-    "Иванова Татьяна Игоревна", "Романова Юлия Дмитриевна", "Семенов Артем Дмитриевич",
-    "Ткачева Екатерина Петровна", "Борисов Максим Владимирович", "Зайцева Ольга Николаевна",
-    "Волков Алексей Олегович", "Морозова Светлана Викторовна", "Соколов Игорь Александрович",
-    "Новикова Татьяна Сергеевна", "Кузнецова Мария Игоревна", "Лебедев Павел Дмитриевич",
-    "Смирнов Юрий Петрович", "Павлова Анна Владимировна", "Фомина Людмила Николаевна",
-    "Михайлов Денис Олегович", "Ковалева Ирина Викторовна", "Борисова Елена Александровна",
-    "Зайцев Сергей Сергеевич", "Волкова Ирина Игоревна", "Морозов Денис Дмитриевич",
-    "Соколова Ольга Петровна", "Павлов Станислав Владимирович", "Федорова Наталья Николаевна",
-    "Медведева Елена Олегович", "Иванов Игорь Викторович", "Романова Татьяна Александровна",
-    "Семенов Артем Сергеевич", "Ткачева Мария Игоревна", "Борисов Максим Дмитриевич",
-    "Зайцева Ольга Петровна", "Волков Алексей Владимирович", "Морозова Светлана Николаевна",
-    "Соколов Игорь Олегович", "Новикова Татьяна Викторовна", "Кузнецова Елена Александровна",
-    "Лебедев Павел Сергеевич", "Смирнов Юрий Игоревич", "Павлова Анна Дмитриевна",
-    "Фомина Людмила Петровна", "Михайлов Денис Владимирович", "Ковалева Ирина Николаевна",
-    "Борисова Елена Олегович", "Зайцев Сергей Викторович", "Волкова Ирина Александровна",
-    "Морозов Денис Сергеевич", "Соколова Ольга Игоревна",
-  ];
-
-  const teamNames = [
-    "Команда Frontend", "Команда Backend", "Команда QA", "Команда DevOps",
-    "Команда обработки неплатежей", "Команда обработки непереводов", "Команда аналитики",
-    "Команда поддержки клиентов", "Команда разработки API", "Команда мобильной разработки",
-    "Команда тестирования", "Команда автоматизации", "Команда безопасности", "Команда мониторинга",
-    "Команда документации", "Команда интеграций", "Команда обработки данных", "Команда клиентского опыта",
-    "Команда платежных решений", "Команда корпоративных решений", "Команда микросервисов", "Команда обучения",
-    "Команда поддержки", "Команда консалтинга", "Команда UX/UI", "Команда архитектуры",
-    "Команда производительности", "Команда миграций", "Команда резервного копирования", "Команда развертывания",
-    "Команда управления конфигурацией", "Команда управления рисками", "Команда комплаенса", "Команда аудита",
-    "Команда отчетности", "Команда визуализации", "Команда машинного обучения", "Команда больших данных",
-    "Команда облачных решений", "Команда контейнеризации", "Команда оркестрации", "Команда сервис-меша",
-    "Команда событийной архитектуры", "Команда базы данных", "Команда кэширования", "Команда поиска",
-    "Команда очередей", "Команда стриминга", "Команда репликации", "Команда балансировки",
-    "Команда масштабирования", "Команда оптимизации", "Команда настройки", "Команда тюнинга",
-    "Команда профилирования", "Команда отладки", "Команда логирования", "Команда трейсинга",
-    "Команда метрик", "Команда алертинга", "Команда оповещений",
-  ];
-
-  // Распределение команд: 5 стримов по 4, 10 стримов по 3, 5 стримов по 2 = 60 команд
-  const teamsPerStream = [4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2];
-  const startDates = [
-    "2024-01-15", "2024-02-01", "2024-03-10", "2024-01-20", "2024-04-05",
-    "2024-02-15", "2024-03-25", "2024-04-10", "2024-05-01", "2024-01-10",
-    "2024-02-20", "2024-03-05", "2024-04-15", "2024-05-10", "2024-01-25",
-    "2024-02-10", "2024-03-20", "2024-04-01", "2024-05-15", "2024-01-30",
-  ];
-
-  const streams: Stream[] = [];
-  let teamCounter = 1;
-
-  for (let i = 0; i < 20; i++) {
-    const streamId = `stream-${i + 1}`;
-    const streamName = streamNames[i];
-    const numTeams = teamsPerStream[i];
-    const teams = [];
-
-    for (let j = 0; j < numTeams; j++) {
-      teams.push({
-        id: `team-${teamCounter}`,
-        name: teamNames[teamCounter - 1] || `Команда ${teamCounter}`,
-        description: `Описание команды ${teamCounter}`,
-        streamId,
-        streamName,
-        leader: teamLeaders[(teamCounter - 1) % teamLeaders.length],
-        membersCount: ((teamCounter - 1) % 10) + 5,
-      });
-      teamCounter++;
-    }
-
-    streams.push({
-      id: streamId,
-      name: streamName,
-      description: `Описание стрима ${i + 1}`,
-      type: streamTypes[i],
-      startDate: startDates[i],
-      endDate: "2025-12-31",
-      leader: {
-        name: leaders[i],
-        position: i % 2 === 0 ? "Исполнительный директор" : "Управляющий директор",
-      },
-      itLeader: {
-        name: itLeaders[i],
-        position: i % 2 === 0 ? "Управляющий директор" : "Исполнительный директор",
-      },
-      teams,
-    });
-  }
-
-  return streams;
-};
-
-// Моковые данные стримов и команд (20 стримов, 60 команд)
-const mockStreams: Stream[] = generateMockStreams();
-
-// Функция для получения инициалов из ФИО или объекта Leader
-const getInitials = (fullNameOrLeader: string | Leader) => {
-  const fullName = typeof fullNameOrLeader === "string" ? fullNameOrLeader : fullNameOrLeader.name;
-  const parts = fullName.trim().split(" ");
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  } else if (parts.length === 1) {
-    return parts[0][0].toUpperCase();
-  }
-  return "??";
-};
-
-// Функция для форматирования даты в формат дд.мм.гггг
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}.${month}.${year}`;
-};
 
 export default function GoalsKoldPage() {
   // Состояние для управления стримами и командами
@@ -999,18 +37,44 @@ export default function GoalsKoldPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [filters, setFilters] = useState<{
-    types: string[];
+    types: Array<"продуктовый" | "канальный" | "сегментный" | "платформенный" | "сервисный">;
   }>({
     types: [],
   });
 
   // Состояние для управления КПЭ
-  const [annualKPIs, setAnnualKPIs] = useState<Record<string, KPI[]>>(mockStreamKPIs);
+  const [annualKPIs, setAnnualKPIs] = useState<Record<string, Record<string, KPI[]>>>(mockStreamKPIs);
   const [quarterlyKPIs, setQuarterlyKPIs] = useState<Record<string, Record<string, KPI[]>>>(mockQuarterlyKPIsData);
   
   // Состояние для режима редактирования
   const [isEditModeAnnual, setIsEditModeAnnual] = useState(false);
   const [isEditModeQuarterly, setIsEditModeQuarterly] = useState<Record<string, boolean>>({});
+  
+  // Состояние для drag-and-drop
+  const [draggedKPIId, setDraggedKPIId] = useState<string | null>(null);
+  const [draggedKPIQuarter, setDraggedKPIQuarter] = useState<string | null>(null);
+  
+  // Состояние для сворачивания блоков
+  const [isAnnualExpanded, setIsAnnualExpanded] = useState(true);
+  const [isQuarterlyExpanded, setIsQuarterlyExpanded] = useState(true);
+  
+  // Состояние для выбранного года годовых карт
+  const [selectedAnnualYear, setSelectedAnnualYear] = useState<string>("2025");
+  
+  // Состояние для выбранного года квартальных карт
+  const [selectedQuarterlyYear, setSelectedQuarterlyYear] = useState<string>("2025");
+  
+  // Состояние для сворачивания блока карт ИТ лидера
+  const [isITLeaderExpanded, setIsITLeaderExpanded] = useState(true);
+  
+  // Состояние для выбранного года карт ИТ лидера
+  const [selectedITLeaderYear, setSelectedITLeaderYear] = useState<string>("2025");
+  
+  // Состояние для управления КПЭ ИТ лидера (квартальные)
+  const [itLeaderKPIs, setItLeaderKPIs] = useState<Record<string, Record<string, KPI[]>>>(mockITLeaderKPIsData);
+  
+  // Состояние для режима редактирования карт ИТ лидера
+  const [isEditModeITLeader, setIsEditModeITLeader] = useState<Record<string, boolean>>({});
   
   // Состояние для диалогов редактирования КПЭ
   const [isKPIDialogOpen, setIsKPIDialogOpen] = useState(false);
@@ -1060,7 +124,7 @@ export default function GoalsKoldPage() {
   };
 
   // Открытие диалога добавления КПЭ
-  const handleAddKPI = (type: "annual" | "quarterly", quarter?: string) => {
+  const handleAddKPI = (type: "annual" | "quarterly", quarter?: string, source?: "stream" | "itLeader") => {
     setEditingKPI(null);
     setKpiDialogType(type);
     if (quarter) setKpiQuarter(quarter);
@@ -1072,6 +136,31 @@ export default function GoalsKoldPage() {
       plan: 0,
       fact: 0,
     });
+    // Если это ИТ лидер, добавляем КПЭ напрямую без диалога
+    if (source === "itLeader" && quarter && selectedStream) {
+      const { completionPercent, evaluationPercent } = calculateKPIMetrics(0, 0, 0);
+      const newKPI: KPI = {
+        id: `it-kpi-${Date.now()}`,
+        number: (itLeaderKPIs[selectedStream.id]?.[quarter]?.length || 0) + 1,
+        name: "",
+        weight: 0,
+        type: "Количественный",
+        unit: "",
+        plan: 0,
+        fact: 0,
+        completionPercent,
+        evaluationPercent,
+      };
+      setItLeaderKPIs({
+        ...itLeaderKPIs,
+        [selectedStream.id]: {
+          ...(itLeaderKPIs[selectedStream.id] || {}),
+          [quarter]: [...(itLeaderKPIs[selectedStream.id]?.[quarter] || []), newKPI],
+        },
+      });
+      return;
+    }
+    
     setIsKPIDialogOpen(true);
   };
 
@@ -1104,7 +193,7 @@ export default function GoalsKoldPage() {
     const newKPI: KPI = {
       id: editingKPI?.id || `kpi-${Date.now()}`,
       number: editingKPI?.number || (kpiDialogType === "annual" 
-        ? (annualKPIs[selectedStream.id]?.length || 0) + 1
+        ? (annualKPIs[selectedStream.id]?.[selectedAnnualYear]?.length || 0) + 1
         : (quarterlyKPIs[selectedStream.id]?.[kpiQuarter]?.length || 0) + 1),
       name: kpiFormData.name.trim(),
       weight: kpiFormData.weight,
@@ -1120,14 +209,20 @@ export default function GoalsKoldPage() {
       if (editingKPI) {
         setAnnualKPIs({
           ...annualKPIs,
-          [selectedStream.id]: annualKPIs[selectedStream.id].map(kpi => 
+          [selectedStream.id]: {
+            ...annualKPIs[selectedStream.id],
+            [selectedAnnualYear]: annualKPIs[selectedStream.id]?.[selectedAnnualYear]?.map(kpi => 
             kpi.id === editingKPI.id ? newKPI : kpi
-          ),
+            ) || [],
+          },
         });
       } else {
         setAnnualKPIs({
           ...annualKPIs,
-          [selectedStream.id]: [...(annualKPIs[selectedStream.id] || []), newKPI],
+          [selectedStream.id]: {
+            ...(annualKPIs[selectedStream.id] || {}),
+            [selectedAnnualYear]: [...(annualKPIs[selectedStream.id]?.[selectedAnnualYear] || []), newKPI],
+          },
         });
       }
     } else {
@@ -1157,13 +252,32 @@ export default function GoalsKoldPage() {
   };
 
   // Удаление КПЭ
-  const handleDeleteKPI = (kpiId: string, type: "annual" | "quarterly", quarter?: string) => {
+  const handleDeleteKPI = (kpiId: string, type: "annual" | "quarterly", quarter?: string, source?: "stream" | "itLeader") => {
     if (!selectedStream) return;
+
+    if (source === "itLeader" && quarter) {
+      const remainingKPIs = itLeaderKPIs[selectedStream.id]?.[quarter]?.filter(kpi => kpi.id !== kpiId) || [];
+      const updatedKPIs = remainingKPIs.map((kpi, index) => ({
+        ...kpi,
+        number: index + 1,
+      }));
+      setItLeaderKPIs({
+        ...itLeaderKPIs,
+        [selectedStream.id]: {
+          ...itLeaderKPIs[selectedStream.id],
+          [quarter]: updatedKPIs,
+        },
+      });
+      return;
+    }
 
     if (type === "annual") {
       setAnnualKPIs({
         ...annualKPIs,
-        [selectedStream.id]: annualKPIs[selectedStream.id].filter(kpi => kpi.id !== kpiId),
+        [selectedStream.id]: {
+          ...annualKPIs[selectedStream.id],
+          [selectedAnnualYear]: annualKPIs[selectedStream.id]?.[selectedAnnualYear]?.filter(kpi => kpi.id !== kpiId) || [],
+        },
       });
     } else {
       if (quarter) {
@@ -1181,10 +295,11 @@ export default function GoalsKoldPage() {
   // Обновление КПЭ прямо в таблице
   const handleUpdateKPIInTable = (
     kpiId: string,
-    field: keyof KPI,
+    field: keyof KPI | string,
     value: string | number,
     type: "annual" | "quarterly",
-    quarter?: string
+    quarter?: string,
+    source?: "stream" | "itLeader"
   ) => {
     if (!selectedStream) return;
 
@@ -1193,11 +308,11 @@ export default function GoalsKoldPage() {
 
       const updatedKPI = { ...kpi, [field]: value };
 
-      // Пересчитываем метрики, если изменились план или факт
-      if (field === "plan" || field === "fact") {
+      // Пересчитываем метрики, если изменились план, факт или вес
+      if (field === "plan" || field === "fact" || field === "weight") {
         const { completionPercent, evaluationPercent } = calculateKPIMetrics(
-          field === "plan" ? (value as number) : updatedKPI.plan,
-          field === "fact" ? (value as number) : updatedKPI.fact,
+          updatedKPI.plan,
+          updatedKPI.fact,
           updatedKPI.weight
         );
         updatedKPI.completionPercent = completionPercent;
@@ -1207,10 +322,24 @@ export default function GoalsKoldPage() {
       return updatedKPI;
     };
 
+    if (source === "itLeader" && quarter) {
+      setItLeaderKPIs({
+        ...itLeaderKPIs,
+        [selectedStream.id]: {
+          ...itLeaderKPIs[selectedStream.id],
+          [quarter]: itLeaderKPIs[selectedStream.id]?.[quarter]?.map(updateKPI) || [],
+        },
+      });
+      return;
+    }
+
     if (type === "annual") {
       setAnnualKPIs({
         ...annualKPIs,
-        [selectedStream.id]: annualKPIs[selectedStream.id].map(updateKPI),
+        [selectedStream.id]: {
+          ...annualKPIs[selectedStream.id],
+          [selectedAnnualYear]: annualKPIs[selectedStream.id]?.[selectedAnnualYear]?.map(updateKPI) || [],
+        },
       });
     } else {
       if (quarter) {
@@ -1222,6 +351,80 @@ export default function GoalsKoldPage() {
           },
         });
       }
+    }
+  };
+
+  // Функция для перемещения КПЭ
+  const handleMoveKPI = (dragIndex: number, hoverIndex: number, type: "annual" | "quarterly", quarter?: string, source?: "stream" | "itLeader") => {
+    if (!selectedStream) return;
+    
+    if (source === "itLeader" && quarter) {
+      const kpis = itLeaderKPIs[selectedStream.id]?.[quarter] || [];
+      if (dragIndex === hoverIndex || dragIndex < 0 || hoverIndex < 0 || dragIndex >= kpis.length || hoverIndex >= kpis.length) return;
+      
+      const newKPIs = [...kpis];
+      const [movedKPI] = newKPIs.splice(dragIndex, 1);
+      newKPIs.splice(hoverIndex, 0, movedKPI);
+      
+      // Обновляем номера
+      const updatedKPIs = newKPIs.map((kpi, index) => ({
+        ...kpi,
+        number: index + 1,
+      }));
+      
+      setItLeaderKPIs({
+        ...itLeaderKPIs,
+        [selectedStream.id]: {
+          ...itLeaderKPIs[selectedStream.id],
+          [quarter]: updatedKPIs,
+        },
+      });
+      return;
+    }
+    
+    if (type === "annual") {
+      const kpis = annualKPIs[selectedStream.id]?.[selectedAnnualYear] || [];
+      if (dragIndex === hoverIndex || dragIndex < 0 || hoverIndex < 0 || dragIndex >= kpis.length || hoverIndex >= kpis.length) return;
+      
+      const newKPIs = [...kpis];
+      const [movedKPI] = newKPIs.splice(dragIndex, 1);
+      newKPIs.splice(hoverIndex, 0, movedKPI);
+      
+      // Обновляем номера
+      const updatedKPIs = newKPIs.map((kpi, index) => ({
+        ...kpi,
+        number: index + 1,
+      }));
+      
+      setAnnualKPIs({
+        ...annualKPIs,
+        [selectedStream.id]: {
+          ...annualKPIs[selectedStream.id],
+          [selectedAnnualYear]: updatedKPIs,
+        },
+      });
+    } else {
+      if (!quarter) return;
+      const kpis = quarterlyKPIs[selectedStream.id]?.[quarter] || [];
+      if (dragIndex === hoverIndex || dragIndex < 0 || hoverIndex < 0 || dragIndex >= kpis.length || hoverIndex >= kpis.length) return;
+      
+      const newKPIs = [...kpis];
+      const [movedKPI] = newKPIs.splice(dragIndex, 1);
+      newKPIs.splice(hoverIndex, 0, movedKPI);
+      
+      // Обновляем номера
+      const updatedKPIs = newKPIs.map((kpi, index) => ({
+        ...kpi,
+        number: index + 1,
+      }));
+      
+      setQuarterlyKPIs({
+        ...quarterlyKPIs,
+        [selectedStream.id]: {
+          ...quarterlyKPIs[selectedStream.id],
+          [quarter]: updatedKPIs,
+        },
+      });
     }
   };
 
@@ -1336,72 +539,12 @@ export default function GoalsKoldPage() {
               </Button>
             )}
             </div>
-            <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Фильтры
-                  {filters.types.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {filters.types.length}
-                    </Badge>
-                  )}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader className="pb-3">
-                  <DialogTitle className="text-lg">Фильтры</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-3 py-2">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Тип стрима</Label>
-                    <div className="space-y-1.5">
-                      {(["продуктовый", "канальный", "сегментный", "платформенный", "сервисный"] as const).map((type) => (
-                        <div key={type} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`filter-type-${type}`}
-                            checked={filters.types.includes(type)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setFilters({
-                                  ...filters,
-                                  types: [...filters.types, type],
-                                });
-                              } else {
-                                setFilters({
-                                  ...filters,
-                                  types: filters.types.filter((t) => t !== type),
-                                });
-                              }
-                            }}
-                          />
-                          <Label
-                            htmlFor={`filter-type-${type}`}
-                            className="text-sm font-normal cursor-pointer"
-                          >
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter className="pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFilters({ types: [] });
-                    }}
-                  >
-                    Сбросить
-                  </Button>
-                  <Button size="sm" onClick={() => setFilterDialogOpen(false)}>
-                    Применить
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <FilterDialog
+              open={filterDialogOpen}
+              onOpenChange={setFilterDialogOpen}
+              filters={filters}
+              onFiltersChange={setFilters}
+            />
           </div>
 
           {/* Двухколоночная структура */}
@@ -1424,145 +567,20 @@ export default function GoalsKoldPage() {
           ) : (
             <div className="flex gap-4 w-full overflow-x-hidden">
               {/* Левая колонка - иерархия стримов и команд */}
-              <div className="w-[320px] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-360px)]">
-                <div className="p-2 border-b bg-muted/30 flex-shrink-0">
-                  <h3 className="font-semibold text-sm">Стримы и команды</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto min-h-0">
-                  <div className="space-y-1 p-2">
-                    {filteredStreams.map((stream) => (
-                      <div key={stream.id} className="space-y-1">
-                        {/* Стрим */}
-                        <div
-                          className={cn(
-                            "p-2 rounded-md cursor-pointer transition-colors",
-                            selectedStream?.id === stream.id
-                              ? "bg-accent text-accent-foreground"
-                              : "hover:bg-muted"
-                          )}
-                          onClick={() => handleSelectStream(stream)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 flex-shrink-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleStream(stream.id, e);
-                              }}
-                            >
-                              {expandedStreams.has(stream.id) ? (
-                                <ChevronDown className="h-3.5 w-3.5" />
-                              ) : (
-                                <ChevronRight className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
-                            <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm break-words">{stream.name}</div>
-                                </div>
-                            <Badge variant="outline" className="text-sm flex-shrink-0">
-                              {stream.teams.length}
-                            </Badge>
-                          </div>
-                        </div>
-                        
-                        {/* Команды стрима */}
-                        {expandedStreams.has(stream.id) && (
-                          <div className="ml-6 space-y-1">
-                            {stream.teams.map((team) => (
-                              <div
-                                key={team.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectTeam(team);
-                                }}
-                                className={cn(
-                                  "p-2 rounded-md cursor-pointer transition-colors text-sm",
-                                  selectedTeam?.id === team.id
-                                    ? "bg-accent text-accent-foreground"
-                                    : "hover:bg-muted/50"
-                                )}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <UserCircle className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium break-words">{team.name}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <StreamsList
+                streams={filteredStreams}
+                selectedStream={selectedStream}
+                selectedTeam={selectedTeam}
+                expandedStreams={expandedStreams}
+                onSelectStream={handleSelectStream}
+                onSelectTeam={handleSelectTeam}
+                onToggleStream={toggleStream}
+              />
 
               {/* Правая колонка - детальная информация о стриме или команде */}
               <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-360px)]">
                 {selectedTeam ? (
-                  <Card className="w-full max-w-full overflow-hidden">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-xl mb-1 break-words">{selectedTeam.name}</CardTitle>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0 overflow-x-hidden">
-                      <div className="space-y-4 max-w-full">
-                        {/* Стрим */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-semibold">Стрим</Label>
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{selectedTeam.streamName}</span>
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Руководитель */}
-                        {selectedTeam.leader && (
-                          <>
-                            <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Руководитель команды</Label>
-                              <div className="flex items-center gap-2">
-                                <UserCircle className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">{selectedTeam.leader}</span>
-                              </div>
-                            </div>
-                            <Separator />
-                          </>
-                        )}
-
-                        {/* Количество участников */}
-                        {selectedTeam.membersCount !== undefined && (
-                          <>
-                            <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Количество участников</Label>
-                              <div className="flex items-center gap-2">
-                                <Users className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">{selectedTeam.membersCount} человек</span>
-                              </div>
-                            </div>
-                            <Separator />
-                          </>
-                        )}
-
-                        {/* Дополнительная информация */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-semibold">Дополнительная информация</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Здесь будет отображаться информация о ключевых результатах команды.
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <TeamDetails team={selectedTeam} />
                 ) : selectedStream ? (
                   <Card className="w-full max-w-full overflow-hidden">
                     <CardHeader className="pb-3">
@@ -1584,26 +602,24 @@ export default function GoalsKoldPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {/* Левая колонка */}
                               <div className="space-y-3">
+                                {selectedStream.businessType && (
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">Вид бизнеса</Label>
+                                    <div>
+                                      <Badge variant="default" className="text-sm">
+                                        {selectedStream.businessType}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                )}
                                 {selectedStream.type && (
-                            <div className="space-y-1">
+                                  <div className="space-y-1">
                                     <Label className="text-xs text-muted-foreground">Тип стрима</Label>
                                     <div>
                                       <Badge variant="default" className="text-sm">
                                         {selectedStream.type}
                                       </Badge>
-                            </div>
-                                  </div>
-                                )}
-                                {selectedStream.startDate && (
-                              <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Дата открытия</Label>
-                                    <p className="text-sm">{formatDate(selectedStream.startDate)}</p>
-                              </div>
-                            )}
-                                {selectedStream.endDate && (
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Дата закрытия</Label>
-                                    <p className="text-sm">{formatDate(selectedStream.endDate)}</p>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -1669,738 +685,64 @@ export default function GoalsKoldPage() {
                           </div>
                         </div>
 
-                        <Separator />
+                        <AnnualKPICards
+                          stream={selectedStream}
+                          annualKPIs={annualKPIs}
+                          isAnnualExpanded={isAnnualExpanded}
+                          isEditModeAnnual={isEditModeAnnual}
+                          selectedAnnualYear={selectedAnnualYear}
+                          draggedKPIId={draggedKPIId}
+                          onAnnualExpandedChange={setIsAnnualExpanded}
+                          onEditModeAnnualChange={setIsEditModeAnnual}
+                          onSelectedAnnualYearChange={setSelectedAnnualYear}
+                          onDraggedKPIIdChange={setDraggedKPIId}
+                          onDraggedKPIQuarterChange={setDraggedKPIQuarter}
+                          onAddKPI={handleAddKPI}
+                          onDeleteKPI={handleDeleteKPI}
+                          onMoveKPI={handleMoveKPI}
+                          onUpdateKPIInTable={handleUpdateKPIInTable}
+                          onAnnualKPIsChange={setAnnualKPIs}
+                        />
 
-                        {/* Годовые цели стрима */}
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-sm font-semibold flex items-center gap-2">
-                              <Target className="h-4 w-4" />
-                              Годовые цели стрима
-                            </Label>
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2">
-                                <Checkbox
-                                  id="edit-mode-annual"
-                                  checked={isEditModeAnnual}
-                                  onCheckedChange={(checked) => setIsEditModeAnnual(checked as boolean)}
-                                />
-                                <Label htmlFor="edit-mode-annual" className="text-sm font-normal cursor-pointer flex items-center gap-2">
-                                  <Edit className="h-4 w-4" />
-                                  Режим редактирования
-                                </Label>
-                              </div>
-                              <Button
-                                size="sm"
-                                onClick={() => handleAddKPI("annual")}
-                                className="flex items-center gap-2"
-                              >
-                                <Plus className="h-4 w-4" />
-                                Добавить КПЭ
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="border rounded-lg overflow-hidden">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-[50px]">№</TableHead>
-                                  <TableHead>Наименование КПЭ</TableHead>
-                                  <TableHead className="w-[80px]">Вес</TableHead>
-                                  <TableHead className="w-[120px]">Вид</TableHead>
-                                  <TableHead className="w-[120px]">Единица измерения</TableHead>
-                                  <TableHead className="w-[80px]">План</TableHead>
-                                  <TableHead className="w-[80px]">Факт</TableHead>
-                                  <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
-                                  <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                  {isEditModeAnnual && <TableHead className="w-[100px]">Действия</TableHead>}
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {annualKPIs[selectedStream.id] && annualKPIs[selectedStream.id].length > 0 ? (
-                                  annualKPIs[selectedStream.id].map((kpi: KPI) => (
-                                    <TableRow key={kpi.id}>
-                                      <TableCell className="text-center">{kpi.number}</TableCell>
-                                      <TableCell>
-                                        {isEditModeAnnual ? (
-                                          <Input
-                                            value={kpi.name}
-                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "annual")}
-                                            className="h-8"
-                                          />
-                                        ) : (
-                                          kpi.name
-                                        )}
-                                      </TableCell>
-                                      <TableCell className="text-center">
-                                        {isEditModeAnnual ? (
-                                          <Input
-                                            type="number"
-                                            value={kpi.weight}
-                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "annual")}
-                                            className="h-8 w-16 text-center"
-                                          />
-                                        ) : (
-                                          kpi.weight
-                                        )}
-                                      </TableCell>
-                                      <TableCell>{kpi.type}</TableCell>
-                                      <TableCell>
-                                        {isEditModeAnnual ? (
-                                          <Input
-                                            value={kpi.unit}
-                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "annual")}
-                                            className="h-8"
-                                          />
-                                        ) : (
-                                          kpi.unit
-                                        )}
-                                      </TableCell>
-                                      <TableCell className="text-center">
-                                        {isEditModeAnnual ? (
-                                          <Input
-                                            type="number"
-                                            value={kpi.plan}
-                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "annual")}
-                                            className="h-8 w-16 text-center"
-                                          />
-                                        ) : (
-                                          kpi.plan
-                                        )}
-                                      </TableCell>
-                                      <TableCell className="text-center">
-                                        {isEditModeAnnual ? (
-                                          <Input
-                                            type="number"
-                                            value={kpi.fact}
-                                            onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "annual")}
-                                            className="h-8 w-16 text-center"
-                                          />
-                                        ) : (
-                                          kpi.fact
-                                        )}
-                                      </TableCell>
-                                      <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
-                                      <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                      {isEditModeAnnual && (
-                                        <TableCell>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-destructive hover:text-destructive"
-                                            onClick={() => handleDeleteKPI(kpi.id, "annual")}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </TableCell>
-                                      )}
-                                    </TableRow>
-                                  ))
-                                ) : (
-                                  <TableRow>
-                                    <TableCell colSpan={isEditModeAnnual ? 10 : 9} className="text-center text-muted-foreground py-8">
-                                      Нет данных о годовых целях
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </TableBody>
-                            </Table>
-                          </div>
-                          {annualKPIs[selectedStream.id] && annualKPIs[selectedStream.id].length > 0 && (
-                            <div className="flex justify-end pt-3">
-                              <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg">
-                                <Label className="text-sm font-semibold">Интегральный показатель выполнения КПЭ:</Label>
-                                <span className="text-lg font-bold text-primary">
-                                  {annualKPIs[selectedStream.id]
-                                    .reduce((sum: number, kpi: KPI) => sum + kpi.evaluationPercent, 0)
-                                    .toFixed(1)}%
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <QuarterlyKPICards
+                          stream={selectedStream}
+                          quarterlyKPIs={quarterlyKPIs}
+                          isQuarterlyExpanded={isQuarterlyExpanded}
+                          isEditModeQuarterly={isEditModeQuarterly}
+                          selectedQuarterlyYear={selectedQuarterlyYear}
+                          draggedKPIId={draggedKPIId}
+                          draggedKPIQuarter={draggedKPIQuarter}
+                          onQuarterlyExpandedChange={setIsQuarterlyExpanded}
+                          onEditModeQuarterlyChange={setIsEditModeQuarterly}
+                          onSelectedQuarterlyYearChange={setSelectedQuarterlyYear}
+                          onDraggedKPIIdChange={setDraggedKPIId}
+                          onDraggedKPIQuarterChange={setDraggedKPIQuarter}
+                          onAddKPI={handleAddKPI}
+                          onDeleteKPI={handleDeleteKPI}
+                          onMoveKPI={handleMoveKPI}
+                          onUpdateKPIInTable={handleUpdateKPIInTable}
+                          onQuarterlyKPIsChange={setQuarterlyKPIs}
+                        />
 
-                        <Separator />
-
-                        {/* Квартальные цели стрима */}
-                        <div className="space-y-3">
-                          <Label className="text-sm font-semibold flex items-center gap-2">
-                            <Target className="h-4 w-4" />
-                            Квартальные цели стрима
-                          </Label>
-                          <Tabs defaultValue="q1-2025" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4">
-                              <TabsTrigger value="q1-2025">1 квартал 2025</TabsTrigger>
-                              <TabsTrigger value="q2-2025">2 квартал 2025</TabsTrigger>
-                              <TabsTrigger value="q3-2025">3 квартал 2025</TabsTrigger>
-                              <TabsTrigger value="q4-2025">4 квартал 2025</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="q1-2025" className="mt-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id="edit-mode-q1"
-                                    checked={isEditModeQuarterly["q1-2025"] || false}
-                                    onCheckedChange={(checked) => setIsEditModeQuarterly({ ...isEditModeQuarterly, "q1-2025": checked as boolean })}
-                                  />
-                                  <Label htmlFor="edit-mode-q1" className="text-sm font-normal cursor-pointer flex items-center gap-2">
-                                    <Edit className="h-4 w-4" />
-                                    Режим редактирования
-                                  </Label>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleAddKPI("quarterly", "q1-2025")}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  Добавить КПЭ
-                                </Button>
-                              </div>
-                              <div className="border rounded-lg overflow-hidden">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead className="w-[50px]">№</TableHead>
-                                      <TableHead>Наименование КПЭ</TableHead>
-                                      <TableHead className="w-[80px]">Вес</TableHead>
-                                      <TableHead className="w-[120px]">Вид</TableHead>
-                                      <TableHead className="w-[120px]">Единица измерения</TableHead>
-                                      <TableHead className="w-[80px]">План</TableHead>
-                                      <TableHead className="w-[80px]">Факт</TableHead>
-                                      <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
-                                      <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                      {isEditModeQuarterly["q1-2025"] && <TableHead className="w-[100px]">Действия</TableHead>}
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {quarterlyKPIs[selectedStream.id]?.["q1-2025"] && quarterlyKPIs[selectedStream.id]["q1-2025"].length > 0 ? (
-                                      quarterlyKPIs[selectedStream.id]["q1-2025"].map((kpi: KPI) => (
-                                        <TableRow key={kpi.id}>
-                                          <TableCell className="text-center">{kpi.number}</TableCell>
-                                          <TableCell>
-                                            {isEditModeQuarterly["q1-2025"] ? (
-                                              <Input
-                                                value={kpi.name}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "quarterly", "q1-2025")}
-                                                className="h-8"
-                                              />
-                                            ) : (
-                                              kpi.name
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q1-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.weight}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "quarterly", "q1-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.weight
-                                            )}
-                                          </TableCell>
-                                          <TableCell>{kpi.type}</TableCell>
-                                          <TableCell>
-                                            {isEditModeQuarterly["q1-2025"] ? (
-                                              <Input
-                                                value={kpi.unit}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "quarterly", "q1-2025")}
-                                                className="h-8"
-                                              />
-                                            ) : (
-                                              kpi.unit
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q1-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.plan}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "quarterly", "q1-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.plan
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q1-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.fact}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "quarterly", "q1-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.fact
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
-                                          <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                          {isEditModeQuarterly["q1-2025"] && (
-                                            <TableCell>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                                onClick={() => handleDeleteKPI(kpi.id, "quarterly", "q1-2025")}
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                            </TableCell>
-                                          )}
-                                        </TableRow>
-                                      ))
-                                    ) : (
-                                      <TableRow>
-                                        <TableCell colSpan={isEditModeQuarterly["q1-2025"] ? 10 : 9} className="text-center text-muted-foreground py-8">
-                                          Нет данных за 1 квартал 2025
-                                        </TableCell>
-                                      </TableRow>
-                                    )}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                              {quarterlyKPIs[selectedStream.id]?.["q1-2025"] && quarterlyKPIs[selectedStream.id]["q1-2025"].length > 0 && (
-                                <div className="flex justify-end pt-3">
-                                  <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg">
-                                    <Label className="text-sm font-semibold">Интегральный показатель выполнения КПЭ:</Label>
-                                    <span className="text-lg font-bold text-primary">
-                                      {quarterlyKPIs[selectedStream.id]["q1-2025"]
-                                        .reduce((sum: number, kpi: KPI) => sum + kpi.evaluationPercent, 0)
-                                        .toFixed(1)}%
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </TabsContent>
-                            <TabsContent value="q2-2025" className="mt-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id="edit-mode-q2"
-                                    checked={isEditModeQuarterly["q2-2025"] || false}
-                                    onCheckedChange={(checked) => setIsEditModeQuarterly({ ...isEditModeQuarterly, "q2-2025": checked as boolean })}
-                                  />
-                                  <Label htmlFor="edit-mode-q2" className="text-sm font-normal cursor-pointer flex items-center gap-2">
-                                    <Edit className="h-4 w-4" />
-                                    Режим редактирования
-                                  </Label>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleAddKPI("quarterly", "q2-2025")}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  Добавить КПЭ
-                                </Button>
-                              </div>
-                              <div className="border rounded-lg overflow-hidden">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead className="w-[50px]">№</TableHead>
-                                      <TableHead>Наименование КПЭ</TableHead>
-                                      <TableHead className="w-[80px]">Вес</TableHead>
-                                      <TableHead className="w-[120px]">Вид</TableHead>
-                                      <TableHead className="w-[120px]">Единица измерения</TableHead>
-                                      <TableHead className="w-[80px]">План</TableHead>
-                                      <TableHead className="w-[80px]">Факт</TableHead>
-                                      <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
-                                      <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                      {isEditModeQuarterly["q2-2025"] && <TableHead className="w-[100px]">Действия</TableHead>}
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {quarterlyKPIs[selectedStream.id]?.["q2-2025"] && quarterlyKPIs[selectedStream.id]["q2-2025"].length > 0 ? (
-                                      quarterlyKPIs[selectedStream.id]["q2-2025"].map((kpi: KPI) => (
-                                        <TableRow key={kpi.id}>
-                                          <TableCell className="text-center">{kpi.number}</TableCell>
-                                          <TableCell>
-                                            {isEditModeQuarterly["q2-2025"] ? (
-                                              <Input
-                                                value={kpi.name}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "quarterly", "q2-2025")}
-                                                className="h-8"
-                                              />
-                                            ) : (
-                                              kpi.name
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q2-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.weight}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "quarterly", "q2-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.weight
-                                            )}
-                                          </TableCell>
-                                          <TableCell>{kpi.type}</TableCell>
-                                          <TableCell>
-                                            {isEditModeQuarterly["q2-2025"] ? (
-                                              <Input
-                                                value={kpi.unit}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "quarterly", "q2-2025")}
-                                                className="h-8"
-                                              />
-                                            ) : (
-                                              kpi.unit
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q2-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.plan}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "quarterly", "q2-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.plan
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q2-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.fact}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "quarterly", "q2-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.fact
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
-                                          <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                          {isEditModeQuarterly["q2-2025"] && (
-                                            <TableCell>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                                onClick={() => handleDeleteKPI(kpi.id, "quarterly", "q2-2025")}
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                            </TableCell>
-                                          )}
-                                        </TableRow>
-                                      ))
-                                    ) : (
-                                      <TableRow>
-                                        <TableCell colSpan={isEditModeQuarterly["q2-2025"] ? 10 : 9} className="text-center text-muted-foreground py-8">
-                                          Нет данных за 2 квартал 2025
-                                        </TableCell>
-                                      </TableRow>
-                                    )}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                              {quarterlyKPIs[selectedStream.id]?.["q2-2025"] && quarterlyKPIs[selectedStream.id]["q2-2025"].length > 0 && (
-                                <div className="flex justify-end pt-3">
-                                  <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg">
-                                    <Label className="text-sm font-semibold">Интегральный показатель выполнения КПЭ:</Label>
-                                    <span className="text-lg font-bold text-primary">
-                                      {quarterlyKPIs[selectedStream.id]["q2-2025"]
-                                        .reduce((sum: number, kpi: KPI) => sum + kpi.evaluationPercent, 0)
-                                        .toFixed(1)}%
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </TabsContent>
-                            <TabsContent value="q3-2025" className="mt-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id="edit-mode-q3"
-                                    checked={isEditModeQuarterly["q3-2025"] || false}
-                                    onCheckedChange={(checked) => setIsEditModeQuarterly({ ...isEditModeQuarterly, "q3-2025": checked as boolean })}
-                                  />
-                                  <Label htmlFor="edit-mode-q3" className="text-sm font-normal cursor-pointer flex items-center gap-2">
-                                    <Edit className="h-4 w-4" />
-                                    Режим редактирования
-                                  </Label>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleAddKPI("quarterly", "q3-2025")}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  Добавить КПЭ
-                                </Button>
-                              </div>
-                              <div className="border rounded-lg overflow-hidden">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead className="w-[50px]">№</TableHead>
-                                      <TableHead>Наименование КПЭ</TableHead>
-                                      <TableHead className="w-[80px]">Вес</TableHead>
-                                      <TableHead className="w-[120px]">Вид</TableHead>
-                                      <TableHead className="w-[120px]">Единица измерения</TableHead>
-                                      <TableHead className="w-[80px]">План</TableHead>
-                                      <TableHead className="w-[80px]">Факт</TableHead>
-                                      <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
-                                      <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                      {isEditModeQuarterly["q3-2025"] && <TableHead className="w-[100px]">Действия</TableHead>}
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {quarterlyKPIs[selectedStream.id]?.["q3-2025"] && quarterlyKPIs[selectedStream.id]["q3-2025"].length > 0 ? (
-                                      quarterlyKPIs[selectedStream.id]["q3-2025"].map((kpi: KPI) => (
-                                        <TableRow key={kpi.id}>
-                                          <TableCell className="text-center">{kpi.number}</TableCell>
-                                          <TableCell>
-                                            {isEditModeQuarterly["q3-2025"] ? (
-                                              <Input
-                                                value={kpi.name}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "quarterly", "q3-2025")}
-                                                className="h-8"
-                                              />
-                                            ) : (
-                                              kpi.name
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q3-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.weight}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "quarterly", "q3-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.weight
-                                            )}
-                                          </TableCell>
-                                          <TableCell>{kpi.type}</TableCell>
-                                          <TableCell>
-                                            {isEditModeQuarterly["q3-2025"] ? (
-                                              <Input
-                                                value={kpi.unit}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "quarterly", "q3-2025")}
-                                                className="h-8"
-                                              />
-                                            ) : (
-                                              kpi.unit
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q3-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.plan}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "quarterly", "q3-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.plan
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q3-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.fact}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "quarterly", "q3-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.fact
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
-                                          <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                          {isEditModeQuarterly["q3-2025"] && (
-                                            <TableCell>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                                onClick={() => handleDeleteKPI(kpi.id, "quarterly", "q3-2025")}
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                            </TableCell>
-                                          )}
-                                        </TableRow>
-                                      ))
-                                    ) : (
-                                      <TableRow>
-                                        <TableCell colSpan={isEditModeQuarterly["q3-2025"] ? 10 : 9} className="text-center text-muted-foreground py-8">
-                                          Нет данных за 3 квартал 2025
-                                        </TableCell>
-                                      </TableRow>
-                                    )}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                              {quarterlyKPIs[selectedStream.id]?.["q3-2025"] && quarterlyKPIs[selectedStream.id]["q3-2025"].length > 0 && (
-                                <div className="flex justify-end pt-3">
-                                  <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg">
-                                    <Label className="text-sm font-semibold">Интегральный показатель выполнения КПЭ:</Label>
-                                    <span className="text-lg font-bold text-primary">
-                                      {quarterlyKPIs[selectedStream.id]["q3-2025"]
-                                        .reduce((sum: number, kpi: KPI) => sum + kpi.evaluationPercent, 0)
-                                        .toFixed(1)}%
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </TabsContent>
-                            <TabsContent value="q4-2025" className="mt-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id="edit-mode-q4"
-                                    checked={isEditModeQuarterly["q4-2025"] || false}
-                                    onCheckedChange={(checked) => setIsEditModeQuarterly({ ...isEditModeQuarterly, "q4-2025": checked as boolean })}
-                                  />
-                                  <Label htmlFor="edit-mode-q4" className="text-sm font-normal cursor-pointer flex items-center gap-2">
-                                    <Edit className="h-4 w-4" />
-                                    Режим редактирования
-                                  </Label>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleAddKPI("quarterly", "q4-2025")}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  Добавить КПЭ
-                                </Button>
-                              </div>
-                              <div className="border rounded-lg overflow-hidden">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead className="w-[50px]">№</TableHead>
-                                      <TableHead>Наименование КПЭ</TableHead>
-                                      <TableHead className="w-[80px]">Вес</TableHead>
-                                      <TableHead className="w-[120px]">Вид</TableHead>
-                                      <TableHead className="w-[120px]">Единица измерения</TableHead>
-                                      <TableHead className="w-[80px]">План</TableHead>
-                                      <TableHead className="w-[80px]">Факт</TableHead>
-                                      <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
-                                      <TableHead className="w-[100px]">Оценка, %</TableHead>
-                                      {isEditModeQuarterly["q4-2025"] && <TableHead className="w-[100px]">Действия</TableHead>}
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {quarterlyKPIs[selectedStream.id]?.["q4-2025"] && quarterlyKPIs[selectedStream.id]["q4-2025"].length > 0 ? (
-                                      quarterlyKPIs[selectedStream.id]["q4-2025"].map((kpi: KPI) => (
-                                        <TableRow key={kpi.id}>
-                                          <TableCell className="text-center">{kpi.number}</TableCell>
-                                          <TableCell>
-                                            {isEditModeQuarterly["q4-2025"] ? (
-                                              <Input
-                                                value={kpi.name}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "name", e.target.value, "quarterly", "q4-2025")}
-                                                className="h-8"
-                                              />
-                                            ) : (
-                                              kpi.name
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q4-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.weight}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "weight", Number(e.target.value), "quarterly", "q4-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.weight
-                                            )}
-                                          </TableCell>
-                                          <TableCell>{kpi.type}</TableCell>
-                                          <TableCell>
-                                            {isEditModeQuarterly["q4-2025"] ? (
-                                              <Input
-                                                value={kpi.unit}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "unit", e.target.value, "quarterly", "q4-2025")}
-                                                className="h-8"
-                                              />
-                                            ) : (
-                                              kpi.unit
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q4-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.plan}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "plan", Number(e.target.value), "quarterly", "q4-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.plan
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">
-                                            {isEditModeQuarterly["q4-2025"] ? (
-                                              <Input
-                                                type="number"
-                                                value={kpi.fact}
-                                                onChange={(e) => handleUpdateKPIInTable(kpi.id, "fact", Number(e.target.value), "quarterly", "q4-2025")}
-                                                className="h-8 w-16 text-center"
-                                              />
-                                            ) : (
-                                              kpi.fact
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-center">{kpi.completionPercent.toFixed(1)}</TableCell>
-                                          <TableCell className="text-center">{kpi.evaluationPercent.toFixed(1)}</TableCell>
-                                          {isEditModeQuarterly["q4-2025"] && (
-                                            <TableCell>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                                onClick={() => handleDeleteKPI(kpi.id, "quarterly", "q4-2025")}
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                            </TableCell>
-                                          )}
-                                        </TableRow>
-                                      ))
-                                    ) : (
-                                      <TableRow>
-                                        <TableCell colSpan={isEditModeQuarterly["q4-2025"] ? 10 : 9} className="text-center text-muted-foreground py-8">
-                                          Нет данных за 4 квартал 2025
-                                        </TableCell>
-                                      </TableRow>
-                                    )}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                              {quarterlyKPIs[selectedStream.id]?.["q4-2025"] && quarterlyKPIs[selectedStream.id]["q4-2025"].length > 0 && (
-                                <div className="flex justify-end pt-3">
-                                  <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg">
-                                    <Label className="text-sm font-semibold">Интегральный показатель выполнения КПЭ:</Label>
-                                    <span className="text-lg font-bold text-primary">
-                                      {quarterlyKPIs[selectedStream.id]["q4-2025"]
-                                        .reduce((sum: number, kpi: KPI) => sum + kpi.evaluationPercent, 0)
-                                        .toFixed(1)}%
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </TabsContent>
-                          </Tabs>
-                        </div>
+                        <ITLeaderKPICards
+                          stream={selectedStream}
+                          itLeaderKPIs={itLeaderKPIs}
+                          isITLeaderExpanded={isITLeaderExpanded}
+                          isEditModeITLeader={isEditModeITLeader}
+                          selectedITLeaderYear={selectedITLeaderYear}
+                          draggedKPIId={draggedKPIId}
+                          draggedKPIQuarter={draggedKPIQuarter}
+                          onITLeaderExpandedChange={setIsITLeaderExpanded}
+                          onEditModeITLeaderChange={setIsEditModeITLeader}
+                          onSelectedITLeaderYearChange={setSelectedITLeaderYear}
+                          onDraggedKPIIdChange={setDraggedKPIId}
+                          onDraggedKPIQuarterChange={setDraggedKPIQuarter}
+                          onAddKPI={handleAddKPI}
+                          onDeleteKPI={handleDeleteKPI}
+                          onMoveKPI={handleMoveKPI}
+                          onUpdateKPIInTable={handleUpdateKPIInTable}
+                          onITLeaderKPIsChange={setItLeaderKPIs}
+                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -2460,116 +802,16 @@ export default function GoalsKoldPage() {
       </Tabs>
 
       {/* Диалог редактирования/добавления КПЭ */}
-      <Dialog open={isKPIDialogOpen} onOpenChange={setIsKPIDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingKPI ? "Редактировать КПЭ" : "Добавить КПЭ"}
-            </DialogTitle>
-            <DialogDescription>
-              {kpiDialogType === "annual" 
-                ? "Заполните информацию о годовом КПЭ"
-                : `Заполните информацию о КПЭ за ${kpiQuarter === "q1-2025" ? "1" : kpiQuarter === "q2-2025" ? "2" : kpiQuarter === "q3-2025" ? "3" : "4"} квартал 2025`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="kpi-name">
-                Наименование КПЭ <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="kpi-name"
-                value={kpiFormData.name}
-                onChange={(e) => setKpiFormData({ ...kpiFormData, name: e.target.value })}
-                placeholder="Введите наименование КПЭ"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="kpi-weight">
-                  Вес <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="kpi-weight"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={kpiFormData.weight}
-                  onChange={(e) => setKpiFormData({ ...kpiFormData, weight: Number(e.target.value) })}
-                  placeholder="0-100"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="kpi-type">
-                  Вид <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={kpiFormData.type}
-                  onValueChange={(value) => setKpiFormData({ ...kpiFormData, type: value })}
-                >
-                  <SelectTrigger id="kpi-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Количественный">Количественный</SelectItem>
-                    <SelectItem value="Качественный">Качественный</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="kpi-unit">
-                Единица измерения <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="kpi-unit"
-                value={kpiFormData.unit}
-                onChange={(e) => setKpiFormData({ ...kpiFormData, unit: e.target.value })}
-                placeholder="шт., %, дн., час. и т.д."
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="kpi-plan">
-                  План <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="kpi-plan"
-                  type="number"
-                  min="0"
-                  value={kpiFormData.plan}
-                  onChange={(e) => setKpiFormData({ ...kpiFormData, plan: Number(e.target.value) })}
-                  placeholder="Плановое значение"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="kpi-fact">
-                  Факт <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="kpi-fact"
-                  type="number"
-                  min="0"
-                  value={kpiFormData.fact}
-                  onChange={(e) => setKpiFormData({ ...kpiFormData, fact: Number(e.target.value) })}
-                  placeholder="Фактическое значение"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsKPIDialogOpen(false)}>
-              Отмена
-            </Button>
-            <Button
-              onClick={handleSaveKPI}
-              disabled={!kpiFormData.name.trim() || kpiFormData.weight <= 0 || !kpiFormData.unit.trim()}
-            >
-              {editingKPI ? "Сохранить" : "Добавить"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <KPIDialog
+        open={isKPIDialogOpen}
+        onOpenChange={setIsKPIDialogOpen}
+        editingKPI={editingKPI}
+        kpiDialogType={kpiDialogType}
+        kpiQuarter={kpiQuarter}
+        kpiFormData={kpiFormData}
+        onKpiFormDataChange={setKpiFormData}
+        onSave={handleSaveKPI}
+      />
     </div>
   );
 }

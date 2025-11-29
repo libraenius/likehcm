@@ -118,11 +118,21 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+  }
+  
   html,
   body {
     @apply bg-background text-foreground;
     overflow-x: hidden;
-    max-width: 100vw;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  body {
+    scrollbar-gutter: stable;
   }
 }
 
