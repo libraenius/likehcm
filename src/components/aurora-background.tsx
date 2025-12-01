@@ -3,12 +3,28 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Свойства компонента AuroraBackground
+ */
 interface AuroraBackgroundProps {
+  /** Дополнительные CSS классы */
   className?: string;
+  /** Дочерние компоненты */
   children?: React.ReactNode;
+  /** Показывать ли радиальный градиент поверх canvas анимации */
   showRadialGradient?: boolean;
 }
 
+/**
+ * Компонент фоновой анимации "Северное сияние"
+ * 
+ * Создаёт анимированный фон с эффектом северного сияния используя Canvas API.
+ * Анимация автоматически адаптируется к теме (светлая/тёмная) и оптимизирована
+ * для производительности (пауза при скрытии вкладки, использование ResizeObserver).
+ * 
+ * @param {AuroraBackgroundProps} props - Свойства компонента
+ * @returns {JSX.Element} Компонент с анимированным фоном
+ */
 export function AuroraBackground({
   className,
   children,

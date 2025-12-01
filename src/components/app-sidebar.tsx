@@ -1,137 +1,87 @@
 "use client";
 
 import * as React from "react";
-import {
-  BookOpen,
-  User,
-  TrendingUp,
-  FolderOpen,
-  ChevronRight,
-  Settings,
-  ClipboardCheck,
-  FileText,
-  Target,
-  Briefcase,
-  Building2,
-  Users,
-  Shield,
-} from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-
+import { useSidebar } from "@/components/ui/sidebar";
+import { menuSections } from "@/lib/sidebar-config";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
-  useSidebar,
+  SidebarMenu,
 } from "@/components/ui/sidebar";
+import {
+  CollapsibleMenuSection,
+} from "@/components/sidebar-menu-components";
 
-const menuItems = [
-  {
-    title: "Главная",
-    icon: User,
-    href: "/profile",
-  },
-];
+/**
+ * Хук для управления состоянием раскрытия разделов меню
+ */
+function useMenuSectionsState(pathname: string) {
+  // Инициализируем состояние на основе текущего пути
+  const initialState = React.useMemo(
+    () => {
+      if (!menuSections || menuSections.length === 0) {
+        return {} as Record<string, boolean>;
+      }
+      return menuSections.reduce(
+        (acc, section) => ({
+          ...acc,
+          [section.id]: pathname.startsWith(section.basePath),
+        }),
+        {} as Record<string, boolean>
+      );
+    },
+    [pathname]
+  );
 
-const referenceItems = [
-  {
-    title: "Компетенции",
-    href: "/reference/competences",
-    icon: BookOpen,
-  },
-  {
-    title: "Профили",
-    href: "/reference/profiles",
-    icon: User,
-  },
-  {
-    title: "Карьерные треки",
-    href: "/reference/career-tracks",
-    icon: TrendingUp,
-  },
-];
+  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>(
+    initialState
+  );
 
-const serviceItems: Array<{
-  title: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-}> = [
-  {
-    title: "Оценка",
-    href: "/services/assessment",
-    icon: ClipboardCheck,
-  },
-  {
-    title: "Ассессмент",
-    href: "/services/assessment-center",
-    icon: FileText,
-  },
-  {
-    title: "Целеполагание",
-    href: "/services/goals",
-    icon: Target,
-  },
-  {
-    title: "Карьера",
-    href: "/services/career",
-    icon: Briefcase,
-  },
-  {
-    title: "Целеполагание Стримы",
-    href: "/services/goals-kold",
-    icon: Target,
-  },
-  {
-    title: "Оценка внешние провайдеры",
-    href: "/services/external-providers",
-    icon: Building2,
-  },
-];
+  // Обновляем состояние при изменении pathname
+  // Автоматически открываем раздел, если текущий путь начинается с basePath
+  React.useEffect(() => {
+    if (!menuSections || menuSections.length === 0) {
+      return;
+    }
+    setOpenSections((prev) => {
+      const newState = { ...prev };
+      menuSections.forEach((section) => {
+        const shouldBeOpen = pathname.startsWith(section.basePath);
+        // Открываем раздел, если путь соответствует, но сохраняем состояние, если пользователь вручную закрыл
+        if (shouldBeOpen && !prev[section.id]) {
+          newState[section.id] = true;
+        }
+      });
+      return newState;
+    });
+  }, [pathname]);
 
-const adminItems: Array<{
-  title: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-}> = [
-  {
-    title: "Целеполагание Стримы",
-    href: "/administration/goals-kold",
-    icon: Target,
-  },
-];
+  const toggleSection = React.useCallback((sectionId: string) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [sectionId]: !(prev[sectionId] ?? false),
+    }));
+  }, []);
 
+  return { openSections, toggleSection };
+}
+
+/**
+ * Компонент боковой панели навигации приложения
+ * 
+ * @returns {JSX.Element} Боковая панель с навигационным меню
+ */
 export function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
-  const [isReferenceOpen, setIsReferenceOpen] = React.useState(
-    pathname.startsWith("/reference")
-  );
-  const [isServicesOpen, setIsServicesOpen] = React.useState(
-    pathname.startsWith("/services")
-  );
-  const [isAdminOpen, setIsAdminOpen] = React.useState(
-    pathname.startsWith("/administration")
-  );
-
-  React.useEffect(() => {
-    setIsReferenceOpen(pathname.startsWith("/reference"));
-    setIsServicesOpen(pathname.startsWith("/services"));
-    setIsAdminOpen(pathname.startsWith("/administration"));
-  }, [pathname]);
-
-  const isCollapsed = state === "collapsed";
+  const { openSections, toggleSection } = useMenuSectionsState(pathname);
+  
+  const isCollapsed = React.useMemo(() => state === "collapsed", [state]);
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -142,9 +92,12 @@ export function AppSidebar() {
               src="/Снимок экрана 2025-11-27 125418.png"
               alt="РИТМ Logo"
               className="w-full h-full object-cover"
+              loading="lazy"
               onError={(e) => {
                 // Fallback если изображение не найдено
-                console.error('Logo image not found');
+                const target = e.currentTarget;
+                target.style.display = "none";
+                console.error("Logo image not found");
               }}
             />
           </div>
@@ -157,255 +110,24 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Основные разделы */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider px-2">
-            Основное
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      className={cn(
-                        "group relative h-10 rounded-lg transition-all duration-200",
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                          : "hover:bg-sidebar-accent/50"
-                      )}
-                    >
-                      <Link href={item.href} className="flex items-center gap-3">
-                        <item.icon
-                          className={cn(
-                            "h-4 w-4 transition-transform duration-200",
-                            isActive && "scale-110"
-                          )}
-                        />
-                        <span className="font-medium">{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Сервисы */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider px-2">
-            Сервисы
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => setIsServicesOpen(!isServicesOpen)}
-                  isActive={pathname.startsWith("/services")}
-                  className={cn(
-                    "group relative h-10 rounded-lg transition-all duration-200",
-                    pathname.startsWith("/services")
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                      : "hover:bg-sidebar-accent/50"
-                  )}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <Settings
-                      className={cn(
-                        "h-4 w-4 transition-transform duration-200",
-                        pathname.startsWith("/services") && "scale-110"
-                      )}
-                    />
-                    <span className="font-medium">Сервисы</span>
-                  </div>
-                  <ChevronRight
-                    className={cn(
-                      "h-4 w-4 transition-transform duration-200 ml-auto",
-                      isServicesOpen && "rotate-90"
-                    )}
-                  />
-                </SidebarMenuButton>
-                <SidebarMenuSub
-                  className={cn(
-                    "overflow-hidden transition-all duration-300",
-                    isServicesOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                  )}
-                >
-                  {serviceItems.length > 0 ? (
-                    serviceItems.map((child) => {
-                      const isActive = pathname === child.href;
-                      return (
-                        <SidebarMenuSubItem key={child.href}>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={isActive}
-                            className={cn(
-                              "ml-4 h-9 rounded-md transition-all duration-200",
-                              isActive
-                                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm font-medium"
-                                : "hover:bg-sidebar-accent/50"
-                            )}
-                          >
-                            <Link href={child.href} className="flex items-center gap-3">
-                              <child.icon className="h-3.5 w-3.5" />
-                              <span>{child.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      );
-                    })
-                  ) : (
-                    <SidebarMenuSubItem>
-                      <div className="ml-4 h-9 flex items-center text-xs text-sidebar-foreground/50 px-3">
-                        Пункты меню будут добавлены позже
-                      </div>
-                    </SidebarMenuSubItem>
-                  )}
-                </SidebarMenuSub>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Администрирование */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider px-2">
-            Администрирование
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => setIsAdminOpen(!isAdminOpen)}
-                  isActive={pathname.startsWith("/administration")}
-                  className={cn(
-                    "group relative h-10 rounded-lg transition-all duration-200",
-                    pathname.startsWith("/administration")
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                      : "hover:bg-sidebar-accent/50"
-                  )}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <Shield
-                      className={cn(
-                        "h-4 w-4 transition-transform duration-200",
-                        pathname.startsWith("/administration") && "scale-110"
-                      )}
-                    />
-                    <span className="font-medium">Администрирование</span>
-                  </div>
-                  <ChevronRight
-                    className={cn(
-                      "h-4 w-4 transition-transform duration-200 ml-auto",
-                      isAdminOpen && "rotate-90"
-                    )}
-                  />
-                </SidebarMenuButton>
-                <SidebarMenuSub
-                  className={cn(
-                    "overflow-hidden transition-all duration-300",
-                    isAdminOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                  )}
-                >
-                  {adminItems.map((child) => {
-                    const isActive = pathname === child.href;
-                    return (
-                      <SidebarMenuSubItem key={child.href}>
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={isActive}
-                          className={cn(
-                            "ml-4 h-9 rounded-md transition-all duration-200",
-                            isActive
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm font-medium"
-                              : "hover:bg-sidebar-accent/50"
-                          )}
-                        >
-                          <Link href={child.href} className="flex items-center gap-3">
-                            <child.icon className="h-3.5 w-3.5" />
-                            <span>{child.title}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    );
-                  })}
-                </SidebarMenuSub>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Справочники */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider px-2">
-            Справочники
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => setIsReferenceOpen(!isReferenceOpen)}
-                  isActive={pathname.startsWith("/reference")}
-                  className={cn(
-                    "group relative h-10 rounded-lg transition-all duration-200",
-                    pathname.startsWith("/reference")
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                      : "hover:bg-sidebar-accent/50"
-                  )}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <FolderOpen
-                      className={cn(
-                        "h-4 w-4 transition-transform duration-200",
-                        pathname.startsWith("/reference") && "scale-110"
-                      )}
-                    />
-                    <span className="font-medium">Справочники</span>
-                  </div>
-                  <ChevronRight
-                    className={cn(
-                      "h-4 w-4 transition-transform duration-200 ml-auto",
-                      isReferenceOpen && "rotate-90"
-                    )}
-                  />
-                </SidebarMenuButton>
-                <SidebarMenuSub
-                  className={cn(
-                    "overflow-hidden transition-all duration-300",
-                    isReferenceOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                  )}
-                >
-                  {referenceItems.map((child) => {
-                    const isActive = pathname === child.href;
-                    return (
-                      <SidebarMenuSubItem key={child.href}>
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={isActive}
-                          className={cn(
-                            "ml-4 h-9 rounded-md transition-all duration-200",
-                            isActive
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm font-medium"
-                              : "hover:bg-sidebar-accent/50"
-                          )}
-                        >
-                          <Link href={child.href} className="flex items-center gap-3">
-                            <child.icon className="h-3.5 w-3.5" />
-                            <span>{child.title}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    );
-                  })}
-                </SidebarMenuSub>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Разделы с подменю */}
+        {menuSections && menuSections.length > 0 && menuSections.map((section) => (
+          <SidebarGroup key={section.id}>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <CollapsibleMenuSection
+                  title={section.title}
+                  icon={section.icon}
+                  items={section.items}
+                  basePath={section.basePath}
+                  pathname={pathname}
+                  isOpen={openSections[section.id] ?? false}
+                  onToggle={() => toggleSection(section.id)}
+                />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-2">

@@ -14,6 +14,14 @@ import {
 import { generateBreadcrumbs } from "@/lib/breadcrumbs";
 import { Home } from "lucide-react";
 
+/**
+ * Компонент навигационных хлебных крошек
+ * 
+ * Отображает путь навигации на основе текущего URL.
+ * Автоматически скрывается, если пользователь находится на главной странице.
+ * 
+ * @returns {JSX.Element | null} Компонент хлебных крошек или null, если на главной странице
+ */
 export function AppBreadcrumb() {
   const pathname = usePathname();
   const breadcrumbs = generateBreadcrumbs(pathname);

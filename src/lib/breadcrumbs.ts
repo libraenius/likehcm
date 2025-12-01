@@ -1,9 +1,16 @@
+/**
+ * Элемент навигационной цепочки (хлебные крошки)
+ */
 export interface BreadcrumbItem {
+  /** Отображаемое название элемента */
   label: string;
+  /** URL-адрес для навигации */
   href: string;
 }
 
-// Маппинг путей к названиям для breadcrumbs
+/**
+ * Маппинг путей к названиям для breadcrumbs
+ */
 const pathLabels: Record<string, string> = {
   "/": "Главная",
   "/profile": "Главная",
@@ -16,14 +23,15 @@ const pathLabels: Record<string, string> = {
   "/services/assessment": "Оценка",
   "/services/assessment-center": "Ассессмент",
   "/services/goals": "Целеполагание",
-  "/services/goals-kold": "Целеполагание Стримы",
+  "/services/goals-kold": "Целеполагание КОЛД",
   "/services/external-providers": "Внешние поставщики",
-  "/administration": "Администрирование",
-  "/administration/goals-kold": "Целеполагание Стримы",
   "/team": "Команда",
 };
 
-// Маппинг английских названий сегментов к русским (для случаев, когда путь не найден в pathLabels)
+/**
+ * Маппинг английских названий сегментов к русским
+ * Используется для случаев, когда путь не найден в pathLabels
+ */
 const segmentLabels: Record<string, string> = {
   "profile": "Главная",
   "reference": "Справочники",
@@ -35,14 +43,16 @@ const segmentLabels: Record<string, string> = {
   "assessment": "Оценка",
   "assessment-center": "Ассессмент",
   "goals": "Целеполагание",
-  "goals-kold": "Целеполагание Стримы",
+  "goals-kold": "Целеполагание КОЛД",
   "external-providers": "Внешние поставщики",
-  "administration": "Администрирование",
   "team": "Команда",
 };
 
 /**
  * Преобразует английское название сегмента пути в русское
+ * 
+ * @param {string} segment - Сегмент пути (например, "profile", "career-tracks")
+ * @returns {string} Русское название сегмента
  */
 function translateSegment(segment: string): string {
   // Сначала проверяем точное совпадение
@@ -63,6 +73,22 @@ function translateSegment(segment: string): string {
 
 /**
  * Генерирует breadcrumbs на основе текущего пути
+ * 
+ * Создаёт массив элементов навигационной цепочки на основе URL.
+ * Всегда включает главную страницу в начало цепочки.
+ * 
+ * @param {string} pathname - Текущий путь URL (например, "/reference/profiles")
+ * @returns {BreadcrumbItem[]} Массив элементов навигационной цепочки
+ * 
+ * @example
+ * ```ts
+ * generateBreadcrumbs("/reference/profiles")
+ * // [
+ * //   { label: "Главная", href: "/" },
+ * //   { label: "Справочники", href: "/reference" },
+ * //   { label: "Профили", href: "/reference/profiles" }
+ * // ]
+ * ```
  */
 export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
   const breadcrumbs: BreadcrumbItem[] = [];
