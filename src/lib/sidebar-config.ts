@@ -74,7 +74,7 @@ export const menuSections: MenuSection[] = [
         icon: Briefcase,
       },
       {
-        title: "Целеполагание КОЛД",
+        title: "Целеполагание Стримы",
         href: "/services/goals-kold",
         icon: Crosshair,
       },
@@ -115,7 +115,7 @@ export const menuSections: MenuSection[] = [
     basePath: "/administration",
     items: [
       {
-        title: "Целеполагание КОЛД",
+        title: "Целеполагание Стримы",
         href: "/administration/goals-kold",
         icon: Crosshair,
       },
