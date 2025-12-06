@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Target, ChevronDown, ChevronRight, Plus, Edit, Trash2, GripVertical, History } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { calculateKPIMetrics } from "../utils";
-import type { KPI, Stream } from "../types";
+import { calculateKPIMetrics } from "@/lib/goals-kold/utils";
+import type { KPI, Stream } from "@/types/goals-kold";
 
 // Функция для определения цвета статуса
 const getStatusBadgeVariant = (status: string | undefined) => {

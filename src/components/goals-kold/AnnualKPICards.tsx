@@ -16,7 +16,6 @@ import type { KPI, Stream } from "@/types/goals-kold";
 
 // Функция для определения цвета статуса
 const getStatusBadgeVariant = (status: string | undefined) => {
-  // Всегда используем outline, чтобы не было автоматической заливки
   return "outline";
 };
 
@@ -86,7 +85,6 @@ export function AnnualKPICards({
   const handleUpdateKPI = (kpiId: string, field: string, value: string | number) => {
     onUpdateKPIInTable(kpiId, field, value, "annual");
     
-    // Обновляем метрики после изменения плана/факта
     if (field === "plan" || field === "fact") {
       const kpis = annualKPIs[stream.id]?.[selectedAnnualYear] || [];
       const kpi = kpis.find(k => k.id === kpiId);
@@ -451,7 +449,6 @@ export function AnnualKPICards({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Моковые данные истории изменений */}
             {[
               {
                 date: new Date(2025, 0, 15, 14, 30),
@@ -516,3 +513,4 @@ export function AnnualKPICards({
     </>
   );
 }
+

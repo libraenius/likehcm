@@ -15,9 +15,7 @@ import { cn } from "@/lib/utils";
 import { calculateKPIMetrics } from "@/lib/goals-kold/utils";
 import type { KPI, Stream } from "@/types/goals-kold";
 
-// Функция для определения цвета статуса
 const getStatusBadgeVariant = (status: string | undefined) => {
-  // Всегда используем outline, чтобы не было автоматической заливки
   return "outline";
 };
 
@@ -76,7 +74,6 @@ export function ITLeaderKPICards({
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [selectedQuarter, setSelectedQuarter] = useState<string>(`q1-${selectedITLeaderYear}`);
 
-  // Обновляем выбранный квартал при изменении года
   useEffect(() => {
     setSelectedQuarter(`q1-${selectedITLeaderYear}`);
   }, [selectedITLeaderYear]);
@@ -98,7 +95,6 @@ export function ITLeaderKPICards({
     const handleUpdateKPI = (kpiId: string, field: string, value: string | number) => {
       onUpdateKPIInTable(kpiId, field, value, "quarterly", quarter);
       
-      // Обновляем метрики после изменения плана/факта
       if (field === "plan" || field === "fact") {
         const kpi = currentKPIs.find(k => k.id === kpiId);
         if (kpi) {
@@ -562,3 +558,4 @@ export function ITLeaderKPICards({
     </>
   );
 }
+

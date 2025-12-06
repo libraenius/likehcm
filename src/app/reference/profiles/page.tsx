@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import { TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { Plus, Pencil, Trash2, X, AlertCircle, Search, Info, Users, ChevronDown, ChevronRight, Briefcase, Link2, GitCompare, ClipboardList } from "lucide-react";
+import { Plus, Pencil, Trash2, X, AlertCircle, Search, Filter, Info, Users, ChevronDown, ChevronRight, Briefcase, Link2, GitCompare, ClipboardList } from "lucide-react";
 import type { SkillLevel, ProfileLevel } from "@/types";
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select";
 import { ProfileCreationWizard } from "@/components/profile-creation-wizard";
@@ -264,6 +264,7 @@ export default function ProfilesPage() {
   const [profileToDelete, setProfileToDelete] = useState<string | null>(null);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [addingSkillToLevel, setAddingSkillToLevel] = useState<number | null>(null);
   const [selectedCompetenceForSkill, setSelectedCompetenceForSkill] = useState<string>("");
@@ -644,25 +645,50 @@ export default function ProfilesPage() {
         </Button>
       </div>
 
-      {/* Поиск */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Поиск по названию, описанию или компетенциям..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
-            onClick={() => setSearchQuery("")}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
+      {/* Поиск и фильтрация */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Поиск по названию, описанию или компетенциям..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+              onClick={() => setSearchQuery("")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <Filter className="mr-2 h-4 w-4" />
+              Фильтры
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader className="pb-3">
+              <DialogTitle className="text-lg">Фильтры</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <p className="text-sm text-muted-foreground">
+                Фильтры будут добавлены в будущих обновлениях
+              </p>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button size="sm" onClick={() => setFilterDialogOpen(false)}>
+                Закрыть
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Двухколоночная структура */}
@@ -881,19 +907,20 @@ export default function ProfilesPage() {
                                 lead: "Ведущий",
                               };
                               
-                              // Сортируем уровни в правильном порядке
-                              const sortedLevels = [...selectedProfile.levels].sort((a, b) => {
-                                const indexA = levelOrder.indexOf(a.level);
-                                const indexB = levelOrder.indexOf(b.level);
+                              // Сортируем уровни в правильном порядке, сохраняя исходные индексы
+                              const levelsWithIndex = selectedProfile.levels.map((level, index) => ({ level, originalIndex: index }));
+                              const sortedLevels = levelsWithIndex.sort((a, b) => {
+                                const indexA = levelOrder.indexOf(a.level.level);
+                                const indexB = levelOrder.indexOf(b.level.level);
                                 return indexA - indexB;
                               });
                               
-                              return sortedLevels.map((profileLevel, levelIndex) => {
+                              return sortedLevels.map(({ level: profileLevel, originalIndex }, levelIndex) => {
                                 const levelLabel = levelLabels[profileLevel.level] || profileLevel.level;
                                 
                                 return (
                                   <ProfileLevelCard
-                                    key={profileLevel.level}
+                                    key={`${profileLevel.level}-${originalIndex}`}
                                     profileLevel={profileLevel}
                                     levelLabel={levelLabel}
                                     levelIndex={levelIndex}

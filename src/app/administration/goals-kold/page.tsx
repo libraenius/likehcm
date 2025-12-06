@@ -20,16 +20,16 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Leader, Stream, Team, KPI } from "./types";
-import { getInitials, formatDate, calculateKPIMetrics } from "./utils";
-import { mockStreamKPIs, mockQuarterlyKPIsData, mockITLeaderKPIsData, generateMockStreams, mockStreams } from "./mock-data";
-import { StreamsList } from "./components/StreamsList";
-import { TeamDetails } from "./components/TeamDetails";
-import { FilterDialog } from "./components/FilterDialog";
-import { KPIDialog } from "./components/KPIDialog";
-import { AnnualKPICards } from "./components/AnnualKPICards";
-import { QuarterlyKPICards } from "./components/QuarterlyKPICards";
-import { ITLeaderKPICards } from "./components/ITLeaderKPICards";
+import type { Leader, Stream, Team, KPI } from "@/types/goals-kold";
+import { getInitials, formatDate, calculateKPIMetrics } from "@/lib/goals-kold/utils";
+import { mockStreamKPIs, mockQuarterlyKPIsData, mockITLeaderKPIsData, generateMockStreams, mockStreams } from "@/lib/goals-kold/mock-data";
+import { StreamsList } from "@/components/goals-kold/StreamsList";
+import { TeamDetails } from "@/components/goals-kold/TeamDetails";
+import { FilterDialog } from "@/components/goals-kold/FilterDialog";
+import { KPIDialog } from "@/components/goals-kold/KPIDialog";
+import { AnnualKPICards } from "@/components/goals-kold/AnnualKPICards";
+import { QuarterlyKPICards } from "@/components/goals-kold/QuarterlyKPICards";
+import { ITLeaderKPICards } from "@/components/goals-kold/ITLeaderKPICards";
 
 // Компонент строки таблицы стримов с коллапсом
 function StreamTableRow({
@@ -84,7 +84,7 @@ function StreamTableRow({
         <TableCell className="w-[150px]">
           <Badge variant="outline">{stream.type}</Badge>
         </TableCell>
-        <TableCell className="w-[200px]">
+        <TableCell className="w-[300px]">
           {stream.datEmployeeIds && stream.datEmployeeIds.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2">
               {stream.datEmployeeIds.map((employeeId) => {
@@ -305,19 +305,35 @@ export default function GoalsKoldPage() {
 
   // Инициализация справочника стримов на основе стримов со страницы
   const [referenceStreams, setReferenceStreams] = useState<Array<{ id: string; name: string; type: string; businessType: string; datEmployeeIds?: string[]; description: string }>>(() => {
-    return mockStreams.map((stream, index) => ({
-      id: stream.id,
-      name: stream.name,
-      type: stream.type || "продуктовый",
-      businessType: stream.businessType || "РБ",
-      // Назначаем сотрудников ДАТ по порядку из списка (по 1-3 сотрудника на стрим)
-      datEmployeeIds: [
-        mockDATEmployees[index % mockDATEmployees.length]?.id,
-        mockDATEmployees[(index + 1) % mockDATEmployees.length]?.id,
-        mockDATEmployees[(index + 2) % mockDATEmployees.length]?.id,
-      ].filter(Boolean) as string[],
-      description: stream.description || "",
-    }));
+    return mockStreams.map((stream, index) => {
+      // Случайное количество сотрудников от 1 до 3
+      const numEmployees = Math.floor(Math.random() * 3) + 1;
+      const selectedEmployees: string[] = [];
+      const usedIndices = new Set<number>();
+      
+      // Выбираем случайных сотрудников без повторений
+      while (selectedEmployees.length < numEmployees) {
+        const randomIndex = Math.floor(Math.random() * mockDATEmployees.length);
+        if (!usedIndices.has(randomIndex)) {
+          usedIndices.add(randomIndex);
+          const employee = mockDATEmployees[randomIndex];
+          if (employee) {
+            selectedEmployees.push(employee.id);
+          }
+        }
+        // Защита от бесконечного цикла
+        if (usedIndices.size >= mockDATEmployees.length) break;
+      }
+      
+      return {
+        id: stream.id,
+        name: stream.name,
+        type: stream.type || "продуктовый",
+        businessType: stream.businessType || "РБ",
+        datEmployeeIds: selectedEmployees,
+        description: stream.description || "",
+      };
+    });
   });
   
   // Состояние для диалогов справочников
@@ -338,6 +354,11 @@ export default function GoalsKoldPage() {
   const [formulaSearchQuery, setFormulaSearchQuery] = useState("");
   const [streamSearchQuery, setStreamSearchQuery] = useState("");
   
+  // Состояние для диалогов фильтров справочников
+  const [unitFilterDialogOpen, setUnitFilterDialogOpen] = useState(false);
+  const [formulaFilterDialogOpen, setFormulaFilterDialogOpen] = useState(false);
+  const [streamFilterDialogOpen, setStreamFilterDialogOpen] = useState(false);
+  
   // Состояние для пагинации справочников
   const [unitCurrentPage, setUnitCurrentPage] = useState(1);
   const [formulaCurrentPage, setFormulaCurrentPage] = useState(1);
@@ -348,6 +369,9 @@ export default function GoalsKoldPage() {
   const [unitSortOrder, setUnitSortOrder] = useState<"asc" | "desc">("asc");
   const [formulaSortOrder, setFormulaSortOrder] = useState<"asc" | "desc">("asc");
   const [streamSortOrder, setStreamSortOrder] = useState<"asc" | "desc">("asc");
+
+  // Состояние для выбранного типа справочника
+  const [selectedReferenceType, setSelectedReferenceType] = useState<"units" | "formulas" | "streams">("units");
 
   // Сброс страницы при изменении поиска или количества элементов
   useEffect(() => {
@@ -1072,25 +1096,25 @@ export default function GoalsKoldPage() {
         </TabsContent>
 
         <TabsContent value="reference" className="space-y-6">
-          <div className="space-y-4">
-            <Tabs defaultValue="units" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="units" className="flex items-center gap-2">
-                  <Ruler className="h-4 w-4" />
-                  <span>Единицы измерения</span>
-                </TabsTrigger>
-                <TabsTrigger value="formulas" className="flex items-center gap-2">
-                  <Calculator className="h-4 w-4" />
-                  <span>Формулы</span>
-                </TabsTrigger>
-                <TabsTrigger value="streams" className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  <span>Стримы</span>
-                </TabsTrigger>
-              </TabsList>
+          {/* Выпадающий список для выбора типа справочника */}
+          <div className="flex items-center gap-4">
+            <Label className="text-sm font-medium whitespace-nowrap">Тип справочника:</Label>
+            <Select value={selectedReferenceType} onValueChange={(value) => setSelectedReferenceType(value as "units" | "formulas" | "streams")}>
+              <SelectTrigger className="w-[280px] h-11 border-2 border-border bg-background shadow-sm hover:border-primary/50 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20">
+                <SelectValue placeholder="Выберите тип справочника" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="units">Единицы измерения</SelectItem>
+                <SelectItem value="formulas">Формулы</SelectItem>
+                <SelectItem value="streams">Стримы</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
+          {/* Контент в зависимости от выбранного типа */}
+          {selectedReferenceType === "units" && (
+            <div className="space-y-4">
               {/* Единицы измерения */}
-              <TabsContent value="units" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-semibold mb-1">Единицы измерения</h3>
@@ -1199,14 +1223,49 @@ export default function GoalsKoldPage() {
                   </Dialog>
                 </div>
 
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Поиск по названию или сокращению..."
-                    value={unitSearchQuery}
-                    onChange={(e) => setUnitSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Поиск по названию или сокращению..."
+                      value={unitSearchQuery}
+                      onChange={(e) => setUnitSearchQuery(e.target.value)}
+                      className="pl-10 pr-10"
+                    />
+                    {unitSearchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                        onClick={() => setUnitSearchQuery("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <Dialog open={unitFilterDialogOpen} onOpenChange={setUnitFilterDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Фильтры
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader className="pb-3">
+                        <DialogTitle className="text-lg">Фильтры</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-3 py-2">
+                        <p className="text-sm text-muted-foreground">
+                          Фильтры будут добавлены в будущих обновлениях
+                        </p>
+                      </div>
+                      <DialogFooter className="pt-2">
+                        <Button size="sm" onClick={() => setUnitFilterDialogOpen(false)}>
+                          Закрыть
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <div className="rounded-md border bg-card">
@@ -1381,10 +1440,12 @@ export default function GoalsKoldPage() {
                     </div>
                   );
                 })()}
-              </TabsContent>
+            </div>
+          )}
 
+          {selectedReferenceType === "formulas" && (
+            <div className="space-y-4">
               {/* Формулы */}
-              <TabsContent value="formulas" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-semibold mb-1">Формулы</h3>
@@ -1493,14 +1554,49 @@ export default function GoalsKoldPage() {
                   </Dialog>
                 </div>
 
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Поиск по названию или формуле..."
-                    value={formulaSearchQuery}
-                    onChange={(e) => setFormulaSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Поиск по названию или формуле..."
+                      value={formulaSearchQuery}
+                      onChange={(e) => setFormulaSearchQuery(e.target.value)}
+                      className="pl-10 pr-10"
+                    />
+                    {formulaSearchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                        onClick={() => setFormulaSearchQuery("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <Dialog open={formulaFilterDialogOpen} onOpenChange={setFormulaFilterDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Фильтры
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader className="pb-3">
+                        <DialogTitle className="text-lg">Фильтры</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-3 py-2">
+                        <p className="text-sm text-muted-foreground">
+                          Фильтры будут добавлены в будущих обновлениях
+                        </p>
+                      </div>
+                      <DialogFooter className="pt-2">
+                        <Button size="sm" onClick={() => setFormulaFilterDialogOpen(false)}>
+                          Закрыть
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <div className="rounded-md border bg-card">
@@ -1675,10 +1771,12 @@ export default function GoalsKoldPage() {
                     </div>
                   );
                 })()}
-              </TabsContent>
+            </div>
+          )}
 
+          {selectedReferenceType === "streams" && (
+            <div className="space-y-4">
               {/* Стримы */}
-              <TabsContent value="streams" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-semibold mb-1">Стримы</h3>
@@ -1833,14 +1931,49 @@ export default function GoalsKoldPage() {
                   </Dialog>
                 </div>
 
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Поиск по названию или типу..."
-                    value={streamSearchQuery}
-                    onChange={(e) => setStreamSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Поиск по названию или типу..."
+                      value={streamSearchQuery}
+                      onChange={(e) => setStreamSearchQuery(e.target.value)}
+                      className="pl-10 pr-10"
+                    />
+                    {streamSearchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                        onClick={() => setStreamSearchQuery("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <Dialog open={streamFilterDialogOpen} onOpenChange={setStreamFilterDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Фильтры
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader className="pb-3">
+                        <DialogTitle className="text-lg">Фильтры</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-3 py-2">
+                        <p className="text-sm text-muted-foreground">
+                          Фильтры будут добавлены в будущих обновлениях
+                        </p>
+                      </div>
+                      <DialogFooter className="pt-2">
+                        <Button size="sm" onClick={() => setStreamFilterDialogOpen(false)}>
+                          Закрыть
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <div className="rounded-md border bg-card">
@@ -1865,7 +1998,7 @@ export default function GoalsKoldPage() {
                         </TableHead>
                         <TableHead className="w-[150px] font-bold text-base text-foreground">Тип бизнеса</TableHead>
                         <TableHead className="w-[150px] font-bold text-base text-foreground">Вид</TableHead>
-                        <TableHead className="w-[200px] font-bold text-base text-foreground">Сотрудник ДАТ</TableHead>
+                        <TableHead className="w-[300px] font-bold text-base text-foreground">Сотрудник ДАТ</TableHead>
                         <TableHead className="w-[150px] text-right font-bold text-base text-foreground">Действия</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -2005,9 +2138,8 @@ export default function GoalsKoldPage() {
                     </div>
                   );
                 })()}
-              </TabsContent>
-            </Tabs>
-          </div>
+            </div>
+          )}
 
           {/* Диалог подтверждения удаления */}
           <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

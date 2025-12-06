@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Building2, Users, UserCircle } from "lucide-react";
-import type { Team } from "../types";
+import type { Team } from "@/types/goals-kold";
 
 interface TeamDetailsProps {
   team: Team;

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Building2, ChevronDown, ChevronRight, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Stream, Team } from "../types";
+import type { Stream, Team } from "@/types/goals-kold";
 
 interface StreamsListProps {
   streams: Stream[];

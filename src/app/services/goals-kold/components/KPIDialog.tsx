@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { KPI } from "../types";
+import type { KPI } from "@/types/goals-kold";
 
 interface KPIDialogProps {
   open: boolean;

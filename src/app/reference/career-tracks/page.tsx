@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, X, AlertCircle, Search, User, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, X, AlertCircle, Search, Filter, User, ChevronDown, ChevronRight } from "lucide-react";
 import type { SkillLevel } from "@/types";
 import { CareerTalentTree } from "@/components/career-talent-tree";
 
@@ -45,6 +45,7 @@ export default function CareerTracksPage() {
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTracks, setExpandedTracks] = useState<Set<string>>(new Set());
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -427,25 +428,50 @@ export default function CareerTracksPage() {
         </Dialog>
       </div>
 
-      {/* Поиск */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Поиск по названию, описанию или профилю..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-        {searchQuery && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
-            onClick={() => setSearchQuery("")}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
+      {/* Поиск и фильтрация */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Поиск по названию, описанию или профилю..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+              onClick={() => setSearchQuery("")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <Filter className="mr-2 h-4 w-4" />
+              Фильтры
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader className="pb-3">
+              <DialogTitle className="text-lg">Фильтры</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <p className="text-sm text-muted-foreground">
+                Фильтры будут добавлены в будущих обновлениях
+              </p>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button size="sm" onClick={() => setFilterDialogOpen(false)}>
+                Закрыть
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="space-y-6">

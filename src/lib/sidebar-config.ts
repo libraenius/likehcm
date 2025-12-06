@@ -106,6 +106,11 @@ export const menuSections: MenuSection[] = [
         href: "/reference/career-tracks",
         icon: TrendingUp,
       },
+      {
+        title: "Целеполагание",
+        href: "/reference/goals-kold",
+        icon: Crosshair,
+      },
     ],
   },
   {

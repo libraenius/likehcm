@@ -73,3 +73,4 @@ export function TeamDetails({ team }: TeamDetailsProps) {
     </Card>
   );
 }
+

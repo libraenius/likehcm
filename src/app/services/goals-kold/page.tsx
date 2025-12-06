@@ -20,16 +20,16 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Leader, Stream, Team, KPI } from "./types";
-import { getInitials, formatDate, calculateKPIMetrics } from "./utils";
-import { mockStreamKPIs, mockQuarterlyKPIsData, mockITLeaderKPIsData, generateMockStreams, mockStreams } from "./mock-data";
-import { StreamsList } from "./components/StreamsList";
-import { TeamDetails } from "./components/TeamDetails";
-import { FilterDialog } from "./components/FilterDialog";
-import { KPIDialog } from "./components/KPIDialog";
-import { AnnualKPICards } from "./components/AnnualKPICards";
-import { QuarterlyKPICards } from "./components/QuarterlyKPICards";
-import { ITLeaderKPICards } from "./components/ITLeaderKPICards";
+import type { Leader, Stream, Team, KPI } from "@/types/goals-kold";
+import { getInitials, formatDate, calculateKPIMetrics } from "@/lib/goals-kold/utils";
+import { mockStreamKPIs, mockQuarterlyKPIsData, mockITLeaderKPIsData, generateMockStreams, mockStreams } from "@/lib/goals-kold/mock-data";
+import { StreamsList } from "@/components/goals-kold/StreamsList";
+import { TeamDetails } from "@/components/goals-kold/TeamDetails";
+import { FilterDialog } from "@/components/goals-kold/FilterDialog";
+import { KPIDialog } from "@/components/goals-kold/KPIDialog";
+import { AnnualKPICards } from "@/components/goals-kold/AnnualKPICards";
+import { QuarterlyKPICards } from "@/components/goals-kold/QuarterlyKPICards";
+import { ITLeaderKPICards } from "@/components/goals-kold/ITLeaderKPICards";
 
 // Компонент строки таблицы стримов с коллапсом
 function StreamTableRow({
