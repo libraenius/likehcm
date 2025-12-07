@@ -20,7 +20,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Leader, Stream, Team, KPI } from "@/types/goals-kold";
+import type { Leader, Stream, Team, KPI, AttachedFile } from "@/types/goals-kold";
 import { getInitials, formatDate, calculateKPIMetrics } from "@/lib/goals-kold/utils";
 import { mockStreamKPIs, mockQuarterlyKPIsData, mockITLeaderKPIsData, generateMockStreams, mockStreams } from "@/lib/goals-kold/mock-data";
 import { StreamsList } from "@/components/goals-kold/StreamsList";
@@ -30,20 +30,19 @@ import { KPIDialog } from "@/components/goals-kold/KPIDialog";
 import { AnnualKPICards } from "@/components/goals-kold/AnnualKPICards";
 import { QuarterlyKPICards } from "@/components/goals-kold/QuarterlyKPICards";
 import { ITLeaderKPICards } from "@/components/goals-kold/ITLeaderKPICards";
+import { DashboardTab } from "@/components/goals-kold/DashboardTab";
 
 // Компонент строки таблицы стримов с коллапсом
 function StreamTableRow({
   stream,
   fullStream,
   onEdit,
-  onDelete,
   datEmployees,
   getInitialsFromName,
 }: {
   stream: { id: string; name: string; type: string; businessType: string; datEmployeeIds?: string[]; description: string };
   fullStream?: Stream | null;
   onEdit: () => void;
-  onDelete: () => void;
   datEmployees: Array<{ id: string; fullName: string; position: string; avatar?: string }>;
   getInitialsFromName: (name: string) => string;
 }) {
@@ -117,14 +116,6 @@ function StreamTableRow({
               title="Редактировать"
             >
               <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onDelete}
-              title="Удалить"
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
         </TableCell>
@@ -254,6 +245,7 @@ export default function GoalsKoldPage() {
   const [editingKPI, setEditingKPI] = useState<KPI | null>(null);
   const [kpiDialogType, setKpiDialogType] = useState<"annual" | "quarterly">("annual");
   const [kpiQuarter, setKpiQuarter] = useState<string>("q1-2025");
+  const [kpiSource, setKpiSource] = useState<"stream" | "itLeader">("stream");
   const [kpiFormData, setKpiFormData] = useState({
     name: "",
     weight: 0,
@@ -262,6 +254,8 @@ export default function GoalsKoldPage() {
     plan: 0,
     fact: 0,
   });
+  const [planFile, setPlanFile] = useState<AttachedFile | null>(null);
+  const [factFile, setFactFile] = useState<AttachedFile | null>(null);
 
   // Состояние для справочников
   const [units, setUnits] = useState<Array<{ id: string; name: string; abbreviation: string; description: string }>>([
@@ -359,6 +353,25 @@ export default function GoalsKoldPage() {
   const [formulaFilterDialogOpen, setFormulaFilterDialogOpen] = useState(false);
   const [streamFilterDialogOpen, setStreamFilterDialogOpen] = useState(false);
   
+  // Состояние для фильтров справочников
+  const [unitFilters, setUnitFilters] = useState<{
+    abbreviations: string[];
+  }>({
+    abbreviations: [],
+  });
+  const [formulaFilters, setFormulaFilters] = useState<{
+    categories: string[];
+  }>({
+    categories: [],
+  });
+  const [streamFilters, setStreamFilters] = useState<{
+    types: Array<"продуктовый" | "канальный" | "сегментный" | "платформенный" | "сервисный">;
+    businessTypes: string[];
+  }>({
+    types: [],
+    businessTypes: [],
+  });
+  
   // Состояние для пагинации справочников
   const [unitCurrentPage, setUnitCurrentPage] = useState(1);
   const [formulaCurrentPage, setFormulaCurrentPage] = useState(1);
@@ -376,15 +389,15 @@ export default function GoalsKoldPage() {
   // Сброс страницы при изменении поиска или количества элементов
   useEffect(() => {
     setUnitCurrentPage(1);
-  }, [unitSearchQuery, unitItemsPerPage, unitSortOrder]);
+  }, [unitSearchQuery, unitItemsPerPage, unitSortOrder, unitFilters]);
 
   useEffect(() => {
     setFormulaCurrentPage(1);
-  }, [formulaSearchQuery, formulaItemsPerPage, formulaSortOrder]);
+  }, [formulaSearchQuery, formulaItemsPerPage, formulaSortOrder, formulaFilters]);
 
   useEffect(() => {
     setStreamCurrentPage(1);
-  }, [streamSearchQuery, streamItemsPerPage, streamSortOrder]);
+  }, [streamSearchQuery, streamItemsPerPage, streamSortOrder, streamFilters]);
 
   // Переключение раскрытия стрима
   const toggleStream = (streamId: string, e?: MouseEvent) => {
@@ -424,6 +437,7 @@ export default function GoalsKoldPage() {
     setEditingKPI(null);
     setKpiDialogType(type);
     if (quarter) setKpiQuarter(quarter);
+    setKpiSource(source || "stream");
     setKpiFormData({
       name: "",
       weight: 0,
@@ -432,6 +446,8 @@ export default function GoalsKoldPage() {
       plan: 0,
       fact: 0,
     });
+    setPlanFile(null);
+    setFactFile(null);
     // Если это ИТ лидер, добавляем КПЭ напрямую без диалога
     if (source === "itLeader" && quarter && selectedStream) {
       const { completionPercent, evaluationPercent } = calculateKPIMetrics(0, 0, 0);
@@ -461,10 +477,11 @@ export default function GoalsKoldPage() {
   };
 
   // Открытие диалога редактирования КПЭ
-  const handleEditKPI = (kpi: KPI, type: "annual" | "quarterly", quarter?: string) => {
+  const handleEditKPI = (kpi: KPI, type: "annual" | "quarterly", quarter?: string, source?: "stream" | "itLeader") => {
     setEditingKPI(kpi);
     setKpiDialogType(type);
     if (quarter) setKpiQuarter(quarter);
+    setKpiSource(source || "stream");
     setKpiFormData({
       name: kpi.name,
       weight: kpi.weight,
@@ -473,6 +490,8 @@ export default function GoalsKoldPage() {
       plan: kpi.plan,
       fact: kpi.fact,
     });
+    setPlanFile(kpi.planFile || null);
+    setFactFile(kpi.factFile || null);
     setIsKPIDialogOpen(true);
   };
 
@@ -490,6 +509,8 @@ export default function GoalsKoldPage() {
       id: editingKPI?.id || `kpi-${Date.now()}`,
       number: editingKPI?.number || (kpiDialogType === "annual" 
         ? (annualKPIs[selectedStream.id]?.[selectedAnnualYear]?.length || 0) + 1
+        : kpiSource === "itLeader"
+        ? (itLeaderKPIs[selectedStream.id]?.[kpiQuarter]?.length || 0) + 1
         : (quarterlyKPIs[selectedStream.id]?.[kpiQuarter]?.length || 0) + 1),
       name: kpiFormData.name.trim(),
       weight: kpiFormData.weight,
@@ -499,6 +520,8 @@ export default function GoalsKoldPage() {
       fact: kpiFormData.fact,
       completionPercent,
       evaluationPercent,
+      planFile: planFile || undefined,
+      factFile: factFile || undefined,
     };
 
     if (kpiDialogType === "annual") {
@@ -522,29 +545,55 @@ export default function GoalsKoldPage() {
         });
       }
     } else {
-      if (editingKPI) {
-        setQuarterlyKPIs({
-          ...quarterlyKPIs,
-          [selectedStream.id]: {
-            ...quarterlyKPIs[selectedStream.id],
-            [kpiQuarter]: quarterlyKPIs[selectedStream.id][kpiQuarter].map(kpi =>
-              kpi.id === editingKPI.id ? newKPI : kpi
-            ),
-          },
-        });
+      if (kpiSource === "itLeader") {
+        if (editingKPI) {
+          setItLeaderKPIs({
+            ...itLeaderKPIs,
+            [selectedStream.id]: {
+              ...itLeaderKPIs[selectedStream.id],
+              [kpiQuarter]: (itLeaderKPIs[selectedStream.id]?.[kpiQuarter] || []).map(kpi =>
+                kpi.id === editingKPI.id ? newKPI : kpi
+              ),
+            },
+          });
+        } else {
+          setItLeaderKPIs({
+            ...itLeaderKPIs,
+            [selectedStream.id]: {
+              ...(itLeaderKPIs[selectedStream.id] || {}),
+              [kpiQuarter]: [...(itLeaderKPIs[selectedStream.id]?.[kpiQuarter] || []), newKPI],
+            },
+          });
+        }
       } else {
-        setQuarterlyKPIs({
-          ...quarterlyKPIs,
-          [selectedStream.id]: {
-            ...(quarterlyKPIs[selectedStream.id] || {}),
-            [kpiQuarter]: [...(quarterlyKPIs[selectedStream.id]?.[kpiQuarter] || []), newKPI],
-          },
-        });
+        if (editingKPI) {
+          const currentQuarterlyKPIs = quarterlyKPIs[selectedStream.id]?.[kpiQuarter] || [];
+          setQuarterlyKPIs({
+            ...quarterlyKPIs,
+            [selectedStream.id]: {
+              ...(quarterlyKPIs[selectedStream.id] || {}),
+              [kpiQuarter]: currentQuarterlyKPIs.map(kpi =>
+                kpi.id === editingKPI.id ? newKPI : kpi
+              ),
+            },
+          });
+        } else {
+          setQuarterlyKPIs({
+            ...quarterlyKPIs,
+            [selectedStream.id]: {
+              ...(quarterlyKPIs[selectedStream.id] || {}),
+              [kpiQuarter]: [...(quarterlyKPIs[selectedStream.id]?.[kpiQuarter] || []), newKPI],
+            },
+          });
+        }
       }
     }
 
     setIsKPIDialogOpen(false);
     setEditingKPI(null);
+    setPlanFile(null);
+    setFactFile(null);
+    setKpiSource("stream");
   };
 
   // Удаление КПЭ
@@ -1088,9 +1137,235 @@ export default function GoalsKoldPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Раздел находится в разработке. Здесь будет отображаться реестр ключевых показателей эффективности.
-              </p>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[80px]">ID КПЭ</TableHead>
+                      <TableHead className="min-w-[200px]">Наименование КПЭ</TableHead>
+                      <TableHead className="w-[120px]">Ед. измерения</TableHead>
+                      <TableHead className="w-[150px]">Период оценки</TableHead>
+                      <TableHead className="min-w-[150px]">Стрим</TableHead>
+                      <TableHead className="min-w-[150px]">Команда/IT лидер</TableHead>
+                      <TableHead className="w-[100px]">План</TableHead>
+                      <TableHead className="w-[130px]">Статус план</TableHead>
+                      <TableHead className="w-[100px]">Факт</TableHead>
+                      <TableHead className="w-[130px]">Статус факт</TableHead>
+                      <TableHead className="w-[180px]">Значение выполнения КПЭ</TableHead>
+                      <TableHead className="w-[120px]">Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(() => {
+                      // Собираем все KPI из разных источников
+                      const allKPIs: Array<{
+                        kpi: KPI;
+                        streamId: string;
+                        streamName: string;
+                        period: string;
+                        teamOrLeader: string;
+                        source: "annual" | "quarterly" | "itLeader";
+                      }> = [];
+
+                      // Годовые KPI стримов
+                      Object.entries(annualKPIs).forEach(([streamId, years]) => {
+                        const stream = streams.find(s => s.id === streamId);
+                        const streamName = stream?.name || streamId;
+                        Object.entries(years).forEach(([year, kpis]) => {
+                          kpis.forEach(kpi => {
+                            allKPIs.push({
+                              kpi,
+                              streamId,
+                              streamName,
+                              period: year,
+                              teamOrLeader: stream?.teams?.[0]?.name || "—",
+                              source: "annual",
+                            });
+                          });
+                        });
+                      });
+
+                      // Квартальные KPI стримов
+                      Object.entries(quarterlyKPIs).forEach(([streamId, quarters]) => {
+                        const stream = streams.find(s => s.id === streamId);
+                        const streamName = stream?.name || streamId;
+                        Object.entries(quarters).forEach(([quarter, kpis]) => {
+                          // Преобразуем формат q1-2025 в 1Q2025
+                          const quarterMatch = quarter.match(/q(\d)-(\d{4})/);
+                          const quarterLabel = quarterMatch 
+                            ? `${quarterMatch[1]}Q${quarterMatch[2]}`
+                            : quarter.replace("q", "").replace("-", "Q");
+                          kpis.forEach(kpi => {
+                            allKPIs.push({
+                              kpi,
+                              streamId,
+                              streamName,
+                              period: quarterLabel,
+                              teamOrLeader: stream?.teams?.[0]?.name || "—",
+                              source: "quarterly",
+                            });
+                          });
+                        });
+                      });
+
+                      // Квартальные KPI IT лидеров
+                      Object.entries(itLeaderKPIs).forEach(([streamId, quarters]) => {
+                        const stream = streams.find(s => s.id === streamId);
+                        const streamName = stream?.name || streamId;
+                        Object.entries(quarters).forEach(([quarter, kpis]) => {
+                          // Преобразуем формат q1-2025 в 1Q2025
+                          const quarterMatch = quarter.match(/q(\d)-(\d{4})/);
+                          const quarterLabel = quarterMatch 
+                            ? `${quarterMatch[1]}Q${quarterMatch[2]}`
+                            : quarter.replace("q", "").replace("-", "Q");
+                          kpis.forEach(kpi => {
+                            allKPIs.push({
+                              kpi,
+                              streamId,
+                              streamName,
+                              period: quarterLabel,
+                              teamOrLeader: stream?.itLeader ? `${stream.itLeader.name} (IT лидер)` : "IT лидер",
+                              source: "itLeader",
+                            });
+                          });
+                        });
+                      });
+
+                      if (allKPIs.length === 0) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                              Нет данных для отображения
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+
+                      return allKPIs.map((item) => {
+                        const { kpi, streamName, period, teamOrLeader } = item;
+                        return (
+                          <TableRow key={kpi.id}>
+                            <TableCell className="font-medium">{kpi.id}</TableCell>
+                            <TableCell>{kpi.name}</TableCell>
+                            <TableCell>{kpi.unit}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {period}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{streamName}</TableCell>
+                            <TableCell>{teamOrLeader}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span>{kpi.plan}</span>
+                                {kpi.planFile && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => {
+                                      if (kpi.planFile?.url) {
+                                        window.open(kpi.planFile.url, '_blank');
+                                      }
+                                    }}
+                                    title={`Файл: ${kpi.planFile.name}`}
+                                  >
+                                    <FileText className="h-4 w-4 text-primary" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={kpi.planStatus === "План согласован" ? "default" : "secondary"}
+                                className="text-xs"
+                              >
+                                {kpi.planStatus || "—"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span>{kpi.fact}</span>
+                                {kpi.factFile && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => {
+                                      if (kpi.factFile?.url) {
+                                        window.open(kpi.factFile.url, '_blank');
+                                      }
+                                    }}
+                                    title={`Файл: ${kpi.factFile.name}`}
+                                  >
+                                    <FileText className="h-4 w-4 text-primary" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={kpi.factStatus === "Факт согласован" ? "default" : "secondary"}
+                                className="text-xs"
+                              >
+                                {kpi.factStatus || "—"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium">{kpi.completionPercent.toFixed(1)}%</span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    setEditingKPI(kpi);
+                                    setKpiDialogType(item.source === "annual" ? "annual" : "quarterly");
+                                    setKpiSource(item.source === "itLeader" ? "itLeader" : "stream");
+                                    if (item.source !== "annual") {
+                                      const quarterMatch = period.match(/(\d)Q(\d{4})/);
+                                      if (quarterMatch) {
+                                        setKpiQuarter(`q${quarterMatch[1]}-${quarterMatch[2]}`);
+                                      }
+                                    }
+                                    setPlanFile(kpi.planFile || null);
+                                    setFactFile(kpi.factFile || null);
+                                    setKpiFormData({
+                                      name: kpi.name,
+                                      weight: kpi.weight,
+                                      type: kpi.type,
+                                      unit: kpi.unit,
+                                      plan: kpi.plan,
+                                      fact: kpi.fact,
+                                    });
+                                    setIsKPIDialogOpen(true);
+                                  }}
+                                  title="Редактировать"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => {
+                                    // TODO: Реализовать удаление
+                                  }}
+                                  title="Удалить"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      });
+                    })()}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1115,13 +1390,7 @@ export default function GoalsKoldPage() {
           {selectedReferenceType === "units" && (
             <div className="space-y-4">
               {/* Единицы измерения */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold mb-1">Единицы измерения</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Управление единицами измерения для КПЭ
-                    </p>
-                  </div>
+                <div className="flex items-center justify-end -mt-2">
                   <Dialog open={unitDialogOpen} onOpenChange={(open) => {
                     setUnitDialogOpen(open);
                     if (!open) {
@@ -1248,6 +1517,11 @@ export default function GoalsKoldPage() {
                       <Button variant="outline">
                         <Filter className="mr-2 h-4 w-4" />
                         Фильтры
+                        {unitFilters.abbreviations.length > 0 && (
+                          <Badge variant="secondary" className="ml-2">
+                            {unitFilters.abbreviations.length}
+                          </Badge>
+                        )}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
@@ -1255,13 +1529,51 @@ export default function GoalsKoldPage() {
                         <DialogTitle className="text-lg">Фильтры</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-3 py-2">
-                        <p className="text-sm text-muted-foreground">
-                          Фильтры будут добавлены в будущих обновлениях
-                        </p>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Сокращение</Label>
+                          <div className="space-y-1.5">
+                            {Array.from(new Set(units.map(u => u.abbreviation))).sort().map((abbr) => (
+                              <div key={abbr} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`unit-filter-abbr-${abbr}`}
+                                  checked={unitFilters.abbreviations.includes(abbr)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setUnitFilters({
+                                        ...unitFilters,
+                                        abbreviations: [...unitFilters.abbreviations, abbr],
+                                      });
+                                    } else {
+                                      setUnitFilters({
+                                        ...unitFilters,
+                                        abbreviations: unitFilters.abbreviations.filter((a) => a !== abbr),
+                                      });
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`unit-filter-abbr-${abbr}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {abbr}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                       <DialogFooter className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setUnitFilters({ abbreviations: [] });
+                          }}
+                        >
+                          Сбросить
+                        </Button>
                         <Button size="sm" onClick={() => setUnitFilterDialogOpen(false)}>
-                          Закрыть
+                          Применить
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -1295,11 +1607,18 @@ export default function GoalsKoldPage() {
                     </TableHeader>
                     <TableBody>
                       {(() => {
-                        const filtered = units.filter(u => 
-                          !unitSearchQuery || 
-                          u.name.toLowerCase().includes(unitSearchQuery.toLowerCase()) ||
-                          u.abbreviation.toLowerCase().includes(unitSearchQuery.toLowerCase())
-                        );
+                        const filtered = units.filter(u => {
+                          // Поиск
+                          const matchesSearch = !unitSearchQuery || 
+                            u.name.toLowerCase().includes(unitSearchQuery.toLowerCase()) ||
+                            u.abbreviation.toLowerCase().includes(unitSearchQuery.toLowerCase());
+                          
+                          // Фильтры
+                          const matchesFilters = unitFilters.abbreviations.length === 0 ||
+                            unitFilters.abbreviations.includes(u.abbreviation);
+                          
+                          return matchesSearch && matchesFilters;
+                        });
                         const sorted = [...filtered].sort((a, b) => {
                           const comparison = a.name.localeCompare(b.name, "ru", { sensitivity: "base", caseFirst: "upper" });
                           return unitSortOrder === "asc" ? comparison : -comparison;
@@ -1446,114 +1765,6 @@ export default function GoalsKoldPage() {
           {selectedReferenceType === "formulas" && (
             <div className="space-y-4">
               {/* Формулы */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold mb-1">Формулы</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Управление формулами для расчета КПЭ
-                    </p>
-                  </div>
-                  <Dialog open={formulaDialogOpen} onOpenChange={(open) => {
-                    setFormulaDialogOpen(open);
-                    if (!open) {
-                      setEditingFormula(null);
-                      setFormulaFormData({ name: "", formula: "", description: "" });
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button onClick={() => {
-                        setEditingFormula(null);
-                        setFormulaFormData({ name: "", formula: "", description: "" });
-                        setFormulaDialogOpen(true);
-                      }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Добавить формулу
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle className="text-xl">
-                          {editingFormula ? "Редактировать формулу" : "Создать формулу"}
-                        </DialogTitle>
-                        <DialogDescription>
-                          {editingFormula
-                            ? "Внесите изменения в формулу расчета"
-                            : "Заполните информацию о формуле расчета"}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-6 py-4">
-                        <div className="space-y-4">
-                          <div className="space-y-1.5">
-                            <Label htmlFor="formula-name" className="text-sm font-semibold">
-                              Название <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                              id="formula-name"
-                              value={formulaFormData.name}
-                              onChange={(e) => setFormulaFormData({ ...formulaFormData, name: e.target.value })}
-                              placeholder="Например: Процент выполнения"
-                              className="text-base"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Краткое название формулы, которое будет отображаться в справочнике
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="formula-formula" className="text-sm font-semibold">
-                              Формула <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                              id="formula-formula"
-                              value={formulaFormData.formula}
-                              onChange={(e) => setFormulaFormData({ ...formulaFormData, formula: e.target.value })}
-                              placeholder="Например: (факт / план) * 100"
-                              className="text-base font-mono"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Математическое выражение для расчета показателя
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="formula-desc" className="text-sm font-semibold">
-                              Описание
-                            </Label>
-                            <Textarea
-                              id="formula-desc"
-                              value={formulaFormData.description}
-                              onChange={(e) => setFormulaFormData({ ...formulaFormData, description: e.target.value })}
-                              placeholder="Описание формулы, её назначение и область применения"
-                              rows={3}
-                              className="text-base"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Подробное описание формулы, которое поможет понять её суть
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setFormulaDialogOpen(false)}>
-                          Отмена
-                        </Button>
-                        <Button onClick={() => {
-                          if (formulaFormData.name && formulaFormData.formula) {
-                            if (editingFormula) {
-                              setFormulas(formulas.map(f => f.id === editingFormula.id ? { ...editingFormula, ...formulaFormData } : f));
-                            } else {
-                              setFormulas([...formulas, { ...formulaFormData, id: Date.now().toString() }]);
-                            }
-                            setFormulaDialogOpen(false);
-                            setEditingFormula(null);
-                            setFormulaFormData({ name: "", formula: "", description: "" });
-                          }
-                        }}>
-                          {editingFormula ? "Сохранить" : "Создать"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-
                 <div className="flex items-center gap-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1579,6 +1790,11 @@ export default function GoalsKoldPage() {
                       <Button variant="outline">
                         <Filter className="mr-2 h-4 w-4" />
                         Фильтры
+                        {formulaFilters.categories.length > 0 && (
+                          <Badge variant="secondary" className="ml-2">
+                            {formulaFilters.categories.length}
+                          </Badge>
+                        )}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
@@ -1586,13 +1802,51 @@ export default function GoalsKoldPage() {
                         <DialogTitle className="text-lg">Фильтры</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-3 py-2">
-                        <p className="text-sm text-muted-foreground">
-                          Фильтры будут добавлены в будущих обновлениях
-                        </p>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Категория формулы</Label>
+                          <div className="space-y-1.5">
+                            {["Процент", "Оценка", "Расчет"].map((category) => (
+                              <div key={category} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`formula-filter-category-${category}`}
+                                  checked={formulaFilters.categories.includes(category)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setFormulaFilters({
+                                        ...formulaFilters,
+                                        categories: [...formulaFilters.categories, category],
+                                      });
+                                    } else {
+                                      setFormulaFilters({
+                                        ...formulaFilters,
+                                        categories: formulaFilters.categories.filter((c) => c !== category),
+                                      });
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`formula-filter-category-${category}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {category}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                       <DialogFooter className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setFormulaFilters({ categories: [] });
+                          }}
+                        >
+                          Сбросить
+                        </Button>
                         <Button size="sm" onClick={() => setFormulaFilterDialogOpen(false)}>
-                          Закрыть
+                          Применить
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -1626,11 +1880,18 @@ export default function GoalsKoldPage() {
                     </TableHeader>
                     <TableBody>
                       {(() => {
-                        const filtered = formulas.filter(f => 
-                          !formulaSearchQuery || 
-                          f.name.toLowerCase().includes(formulaSearchQuery.toLowerCase()) ||
-                          f.formula.toLowerCase().includes(formulaSearchQuery.toLowerCase())
-                        );
+                        const filtered = formulas.filter(f => {
+                          // Поиск
+                          const matchesSearch = !formulaSearchQuery || 
+                            f.name.toLowerCase().includes(formulaSearchQuery.toLowerCase()) ||
+                            f.formula.toLowerCase().includes(formulaSearchQuery.toLowerCase());
+                          
+                          // Фильтры
+                          const matchesFilters = formulaFilters.categories.length === 0 ||
+                            formulaFilters.categories.some(category => f.name.toLowerCase().includes(category.toLowerCase()));
+                          
+                          return matchesSearch && matchesFilters;
+                        });
                         const sorted = [...filtered].sort((a, b) => {
                           const comparison = a.name.localeCompare(b.name, "ru", { sensitivity: "base", caseFirst: "upper" });
                           return formulaSortOrder === "asc" ? comparison : -comparison;
@@ -1777,160 +2038,6 @@ export default function GoalsKoldPage() {
           {selectedReferenceType === "streams" && (
             <div className="space-y-4">
               {/* Стримы */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold mb-1">Стримы</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Управление справочником стримов
-                    </p>
-                  </div>
-                  <Dialog open={streamDialogOpen} onOpenChange={(open) => {
-                    setStreamDialogOpen(open);
-                    if (!open) {
-                      setEditingStream(null);
-                      setStreamFormData({ name: "", type: "продуктовый", businessType: "РБ", datEmployeeIds: [], description: "" });
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button onClick={() => {
-                        setEditingStream(null);
-                        setStreamFormData({ name: "", type: "продуктовый", businessType: "РБ", datEmployeeIds: [], description: "" });
-                        setStreamDialogOpen(true);
-                      }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Добавить стрим
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle className="text-xl">
-                          {editingStream ? "Редактировать стрим" : "Создать стрим"}
-                        </DialogTitle>
-                        <DialogDescription>
-                          {editingStream
-                            ? "Внесите изменения в стрим"
-                            : "Заполните информацию о стриме"}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-6 py-4">
-                        <div className="space-y-4">
-                          <div className="space-y-1.5">
-                            <Label htmlFor="stream-name" className="text-sm font-semibold">
-                              Название <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                              id="stream-name"
-                              value={streamFormData.name}
-                              onChange={(e) => setStreamFormData({ ...streamFormData, name: e.target.value })}
-                              placeholder="Например: Стрим разработки"
-                              className="text-base"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Краткое название стрима, которое будет отображаться в справочнике
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="stream-business-type" className="text-sm font-semibold">
-                              Тип бизнеса <span className="text-destructive">*</span>
-                            </Label>
-                            <Select
-                              value={streamFormData.businessType}
-                              onValueChange={(value) => setStreamFormData({ ...streamFormData, businessType: value })}
-                            >
-                              <SelectTrigger id="stream-business-type" className="text-base">
-                                <SelectValue placeholder="Выберите тип бизнеса" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="РБ">РБ</SelectItem>
-                                <SelectItem value="МСБ">МСБ</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">
-                              Тип бизнеса стрима (РБ - розничный бизнес, МСБ - малый и средний бизнес)
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="stream-type" className="text-sm font-semibold">
-                              Вид <span className="text-destructive">*</span>
-                            </Label>
-                            <Select
-                              value={streamFormData.type}
-                              onValueChange={(value) => setStreamFormData({ ...streamFormData, type: value })}
-                            >
-                              <SelectTrigger id="stream-type" className="text-base">
-                                <SelectValue placeholder="Выберите вид" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="продуктовый">Продуктовый</SelectItem>
-                                <SelectItem value="канальный">Канальный</SelectItem>
-                                <SelectItem value="сегментный">Сегментный</SelectItem>
-                                <SelectItem value="платформенный">Платформенный</SelectItem>
-                                <SelectItem value="сервисный">Сервисный</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">
-                              Вид стрима определяет его организационную структуру и направление деятельности
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="stream-dat-employees" className="text-sm font-semibold">
-                              Сотрудники ДАТ
-                            </Label>
-                            <MultiSelect
-                              options={mockDATEmployees.map((employee) => ({
-                                value: employee.id,
-                                label: employee.fullName,
-                              }))}
-                              selected={streamFormData.datEmployeeIds}
-                              onChange={(selected) => setStreamFormData({ ...streamFormData, datEmployeeIds: selected })}
-                              placeholder="Выберите сотрудников ДАТ..."
-                              className="w-full"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Выберите сотрудников ДАТ, ответственных за стрим (можно выбрать несколько)
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="stream-desc" className="text-sm font-semibold">
-                              Описание
-                            </Label>
-                            <Textarea
-                              id="stream-desc"
-                              value={streamFormData.description}
-                              onChange={(e) => setStreamFormData({ ...streamFormData, description: e.target.value })}
-                              placeholder="Описание стрима, его назначение и область деятельности"
-                              rows={3}
-                              className="text-base"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Подробное описание стрима, которое поможет понять его суть
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setStreamDialogOpen(false)}>
-                          Отмена
-                        </Button>
-                        <Button onClick={() => {
-                          if (streamFormData.name && streamFormData.type && streamFormData.businessType) {
-                            if (editingStream) {
-                              setReferenceStreams(referenceStreams.map(s => s.id === editingStream.id ? { ...editingStream, ...streamFormData } : s));
-                            } else {
-                              setReferenceStreams([...referenceStreams, { ...streamFormData, id: Date.now().toString() }]);
-                            }
-                            setStreamDialogOpen(false);
-                            setEditingStream(null);
-                            setStreamFormData({ name: "", type: "продуктовый", businessType: "РБ", datEmployeeIds: [], description: "" });
-                          }
-                        }}>
-                          {editingStream ? "Сохранить" : "Создать"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-
                 <div className="flex items-center gap-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1956,6 +2063,11 @@ export default function GoalsKoldPage() {
                       <Button variant="outline">
                         <Filter className="mr-2 h-4 w-4" />
                         Фильтры
+                        {(streamFilters.types.length > 0 || streamFilters.businessTypes.length > 0) && (
+                          <Badge variant="secondary" className="ml-2">
+                            {streamFilters.types.length + streamFilters.businessTypes.length}
+                          </Badge>
+                        )}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
@@ -1963,13 +2075,83 @@ export default function GoalsKoldPage() {
                         <DialogTitle className="text-lg">Фильтры</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-3 py-2">
-                        <p className="text-sm text-muted-foreground">
-                          Фильтры будут добавлены в будущих обновлениях
-                        </p>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Тип стрима</Label>
+                          <div className="space-y-1.5">
+                            {(["продуктовый", "канальный", "сегментный", "платформенный", "сервисный"] as const).map((type) => (
+                              <div key={type} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`stream-filter-type-${type}`}
+                                  checked={streamFilters.types.includes(type)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setStreamFilters({
+                                        ...streamFilters,
+                                        types: [...streamFilters.types, type],
+                                      });
+                                    } else {
+                                      setStreamFilters({
+                                        ...streamFilters,
+                                        types: streamFilters.types.filter((t) => t !== type),
+                                      });
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`stream-filter-type-${type}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Тип бизнеса</Label>
+                          <div className="space-y-1.5">
+                            {["РБ", "МСБ"].map((businessType) => (
+                              <div key={businessType} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`stream-filter-business-${businessType}`}
+                                  checked={streamFilters.businessTypes.includes(businessType)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setStreamFilters({
+                                        ...streamFilters,
+                                        businessTypes: [...streamFilters.businessTypes, businessType],
+                                      });
+                                    } else {
+                                      setStreamFilters({
+                                        ...streamFilters,
+                                        businessTypes: streamFilters.businessTypes.filter((bt) => bt !== businessType),
+                                      });
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`stream-filter-business-${businessType}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {businessType}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                       <DialogFooter className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setStreamFilters({ types: [], businessTypes: [] });
+                          }}
+                        >
+                          Сбросить
+                        </Button>
                         <Button size="sm" onClick={() => setStreamFilterDialogOpen(false)}>
-                          Закрыть
+                          Применить
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -2004,11 +2186,20 @@ export default function GoalsKoldPage() {
                     </TableHeader>
                     <TableBody>
                       {(() => {
-                        const filtered = referenceStreams.filter(s => 
-                          !streamSearchQuery || 
-                          s.name.toLowerCase().includes(streamSearchQuery.toLowerCase()) ||
-                          s.type.toLowerCase().includes(streamSearchQuery.toLowerCase())
-                        );
+                        const filtered = referenceStreams.filter(s => {
+                          // Поиск
+                          const matchesSearch = !streamSearchQuery || 
+                            s.name.toLowerCase().includes(streamSearchQuery.toLowerCase()) ||
+                            s.type.toLowerCase().includes(streamSearchQuery.toLowerCase());
+                          
+                          // Фильтры
+                          const matchesTypeFilter = streamFilters.types.length === 0 ||
+                            (s.type && streamFilters.types.includes(s.type));
+                          const matchesBusinessFilter = streamFilters.businessTypes.length === 0 ||
+                            (s.businessType && streamFilters.businessTypes.includes(s.businessType));
+                          
+                          return matchesSearch && matchesTypeFilter && matchesBusinessFilter;
+                        });
                         const sorted = [...filtered].sort((a, b) => {
                           const comparison = a.name.localeCompare(b.name, "ru", { sensitivity: "base", caseFirst: "upper" });
                           return streamSortOrder === "asc" ? comparison : -comparison;
@@ -2038,10 +2229,6 @@ export default function GoalsKoldPage() {
                                   setEditingStream(stream);
                                   setStreamFormData({ name: stream.name, type: stream.type, businessType: stream.businessType || "РБ", datEmployeeIds: stream.datEmployeeIds || [], description: stream.description });
                                   setStreamDialogOpen(true);
-                                }}
-                                onDelete={() => {
-                                  setItemToDelete({ type: "stream", id: stream.id });
-                                  setDeleteDialogOpen(true);
                                 }}
                               />
                             );
@@ -2176,34 +2363,171 @@ export default function GoalsKoldPage() {
         </TabsContent>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LayoutDashboard className="h-5 w-5" />
-                Дэшборд
-              </CardTitle>
-              <CardDescription>
-                Аналитический дэшборд для мониторинга целеполагания стримов
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Раздел находится в разработке. Здесь будет отображаться аналитический дэшборд.
-              </p>
-            </CardContent>
-          </Card>
+          <DashboardTab
+            streams={filteredStreams}
+            annualKPIs={annualKPIs}
+            quarterlyKPIs={quarterlyKPIs}
+            itLeaderKPIs={itLeaderKPIs}
+          />
         </TabsContent>
       </Tabs>
+
+      {/* Диалог редактирования стрима */}
+      <Dialog open={streamDialogOpen} onOpenChange={(open) => {
+        setStreamDialogOpen(open);
+        if (!open) {
+          setEditingStream(null);
+          setStreamFormData({ name: "", type: "продуктовый", businessType: "РБ", datEmployeeIds: [], description: "" });
+        }
+      }}>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              {editingStream ? "Редактировать стрим" : "Создать стрим"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingStream
+                ? "Внесите изменения в стрим"
+                : "Заполните информацию о стриме"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="stream-name" className="text-sm font-semibold">
+                  Название
+                </Label>
+                <Input
+                  id="stream-name"
+                  value={streamFormData.name}
+                  disabled={true}
+                  className="text-base bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Краткое название стрима, которое будет отображаться в справочнике
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="stream-business-type" className="text-sm font-semibold">
+                  Тип бизнеса
+                </Label>
+                <Select
+                  value={streamFormData.businessType}
+                  disabled={true}
+                >
+                  <SelectTrigger id="stream-business-type" className="text-base bg-muted">
+                    <SelectValue placeholder="Выберите тип бизнеса" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="РБ">РБ</SelectItem>
+                    <SelectItem value="МСБ">МСБ</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Тип бизнеса стрима (РБ - розничный бизнес, МСБ - малый и средний бизнес)
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="stream-type" className="text-sm font-semibold">
+                  Вид
+                </Label>
+                <Select
+                  value={streamFormData.type}
+                  disabled={true}
+                >
+                  <SelectTrigger id="stream-type" className="text-base bg-muted">
+                    <SelectValue placeholder="Выберите вид" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="продуктовый">Продуктовый</SelectItem>
+                    <SelectItem value="канальный">Канальный</SelectItem>
+                    <SelectItem value="сегментный">Сегментный</SelectItem>
+                    <SelectItem value="платформенный">Платформенный</SelectItem>
+                    <SelectItem value="сервисный">Сервисный</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Вид стрима определяет его организационную структуру и направление деятельности
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="stream-dat-employees" className="text-sm font-semibold">
+                  Сотрудники ДАТ
+                </Label>
+                <MultiSelect
+                  options={mockDATEmployees.map((employee) => ({
+                    value: employee.id,
+                    label: employee.fullName,
+                  }))}
+                  selected={streamFormData.datEmployeeIds}
+                  onChange={(selected) => setStreamFormData({ ...streamFormData, datEmployeeIds: selected })}
+                  placeholder="Выберите сотрудников ДАТ..."
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Выберите сотрудников ДАТ, ответственных за стрим (можно выбрать несколько)
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="stream-desc" className="text-sm font-semibold">
+                  Описание
+                </Label>
+                <Textarea
+                  id="stream-desc"
+                  value={streamFormData.description}
+                  disabled={true}
+                  rows={3}
+                  className="text-base bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Подробное описание стрима, которое поможет понять его суть
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStreamDialogOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={() => {
+              if (editingStream) {
+                setReferenceStreams(referenceStreams.map(s => 
+                  s.id === editingStream.id 
+                    ? { ...editingStream, datEmployeeIds: streamFormData.datEmployeeIds } 
+                    : s
+                ));
+                setStreamDialogOpen(false);
+                setEditingStream(null);
+                setStreamFormData({ name: "", type: "продуктовый", businessType: "РБ", datEmployeeIds: [], description: "" });
+              }
+            }} disabled={!editingStream}>
+              Сохранить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Диалог редактирования/добавления КПЭ */}
       <KPIDialog
         open={isKPIDialogOpen}
-        onOpenChange={setIsKPIDialogOpen}
+        onOpenChange={(open) => {
+          setIsKPIDialogOpen(open);
+          if (!open) {
+            setEditingKPI(null);
+            setPlanFile(null);
+            setFactFile(null);
+            setKpiSource("stream");
+          }
+        }}
         editingKPI={editingKPI}
         kpiDialogType={kpiDialogType}
         kpiQuarter={kpiQuarter}
         kpiFormData={kpiFormData}
         onKpiFormDataChange={setKpiFormData}
+        planFile={planFile}
+        factFile={factFile}
+        onPlanFileChange={setPlanFile}
+        onFactFileChange={setFactFile}
         onSave={handleSaveKPI}
       />
     </div>

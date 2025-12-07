@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { KPI } from "@/types/goals-kold";
+import { FileText, X, Upload, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { KPI, AttachedFile } from "@/types/goals-kold";
 
 interface KPIDialogProps {
   open: boolean;
@@ -42,6 +45,10 @@ interface KPIDialogProps {
     plan: number;
     fact: number;
   }) => void;
+  planFile?: AttachedFile | null;
+  factFile?: AttachedFile | null;
+  onPlanFileChange?: (file: AttachedFile | null) => void;
+  onFactFileChange?: (file: AttachedFile | null) => void;
   onSave: () => void;
 }
 
@@ -53,8 +60,121 @@ export function KPIDialog({
   kpiQuarter,
   kpiFormData,
   onKpiFormDataChange,
+  planFile,
+  factFile,
+  onPlanFileChange,
+  onFactFileChange,
   onSave,
 }: KPIDialogProps) {
+  const planFileInputRef = useRef<HTMLInputElement>(null);
+  const factFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePlanFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const file = event.target.files?.[0];
+    if (!file || !onPlanFileChange) {
+      if (planFileInputRef.current) {
+        planFileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Проверяем, что файл Excel
+    const validExtensions = ['.xlsx', '.xls', '.xlsm'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!validExtensions.includes(fileExtension)) {
+      if (planFileInputRef.current) {
+        planFileInputRef.current.value = '';
+      }
+      // Используем более мягкое уведомление вместо alert
+      console.warn('Пожалуйста, загрузите файл Excel (.xlsx, .xls, .xlsm)');
+      return;
+    }
+
+    // Создаем объект файла
+    const fileUrl = URL.createObjectURL(file);
+    const attachedFile: AttachedFile = {
+      id: `file-${Date.now()}`,
+      name: file.name,
+      url: fileUrl,
+      uploadedAt: new Date().toISOString(),
+      size: file.size,
+    };
+
+    onPlanFileChange(attachedFile);
+  };
+
+  const handleFactFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const file = event.target.files?.[0];
+    if (!file || !onFactFileChange) {
+      if (factFileInputRef.current) {
+        factFileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Проверяем, что файл Excel
+    const validExtensions = ['.xlsx', '.xls', '.xlsm'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!validExtensions.includes(fileExtension)) {
+      if (factFileInputRef.current) {
+        factFileInputRef.current.value = '';
+      }
+      // Используем более мягкое уведомление вместо alert
+      console.warn('Пожалуйста, загрузите файл Excel (.xlsx, .xls, .xlsm)');
+      return;
+    }
+
+    // Создаем объект файла
+    const fileUrl = URL.createObjectURL(file);
+    const attachedFile: AttachedFile = {
+      id: `file-${Date.now()}`,
+      name: file.name,
+      url: fileUrl,
+      uploadedAt: new Date().toISOString(),
+      size: file.size,
+    };
+
+    onFactFileChange(attachedFile);
+  };
+
+  const handleRemovePlanFile = () => {
+    if (onPlanFileChange) {
+      if (planFile?.url) {
+        URL.revokeObjectURL(planFile.url);
+      }
+      onPlanFileChange(null);
+    }
+    if (planFileInputRef.current) {
+      planFileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFactFile = () => {
+    if (onFactFileChange) {
+      if (factFile?.url) {
+        URL.revokeObjectURL(factFile.url);
+      }
+      onFactFileChange(null);
+    }
+    if (factFileInputRef.current) {
+      factFileInputRef.current.value = '';
+    }
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} Б`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+  };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -137,6 +257,75 @@ export function KPIDialog({
                 onChange={(e) => onKpiFormDataChange({ ...kpiFormData, plan: Number(e.target.value) })}
                 placeholder="Плановое значение"
               />
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">
+                  Подтверждающий Excel файл
+                </Label>
+                {planFile ? (
+                  <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{planFile.name}</p>
+                      {planFile.size && (
+                        <p className="text-xs text-muted-foreground">{formatFileSize(planFile.size)}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          if (planFile.url) {
+                            window.open(planFile.url, '_blank');
+                          }
+                        }}
+                        title="Скачать файл"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={handleRemovePlanFile}
+                        title="Удалить файл"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      ref={planFileInputRef}
+                      type="file"
+                      accept=".xlsx,.xls,.xlsm"
+                      onChange={handlePlanFileUpload}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hidden"
+                      id="plan-file-upload"
+                    />
+                    <label htmlFor="plan-file-upload" className="cursor-pointer">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          planFileInputRef.current?.click();
+                        }}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Загрузить Excel файл
+                      </Button>
+                    </label>
+                  </>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="kpi-fact">
@@ -150,6 +339,75 @@ export function KPIDialog({
                 onChange={(e) => onKpiFormDataChange({ ...kpiFormData, fact: Number(e.target.value) })}
                 placeholder="Фактическое значение"
               />
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">
+                  Подтверждающий Excel файл
+                </Label>
+                {factFile ? (
+                  <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{factFile.name}</p>
+                      {factFile.size && (
+                        <p className="text-xs text-muted-foreground">{formatFileSize(factFile.size)}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          if (factFile.url) {
+                            window.open(factFile.url, '_blank');
+                          }
+                        }}
+                        title="Скачать файл"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={handleRemoveFactFile}
+                        title="Удалить файл"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      ref={factFileInputRef}
+                      type="file"
+                      accept=".xlsx,.xls,.xlsm"
+                      onChange={handleFactFileUpload}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hidden"
+                      id="fact-file-upload"
+                    />
+                    <label htmlFor="fact-file-upload" className="cursor-pointer">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          factFileInputRef.current?.click();
+                        }}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Загрузить Excel файл
+                      </Button>
+                    </label>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

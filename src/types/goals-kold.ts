@@ -33,6 +33,15 @@ export interface Team {
   membersCount?: number;
 }
 
+// Тип для прикрепленного файла
+export interface AttachedFile {
+  id: string;
+  name: string;
+  url: string;
+  uploadedAt: string;
+  size?: number;
+}
+
 // Тип для КПЭ (ключевого показателя эффективности)
 export interface KPI {
   id: string;
@@ -47,6 +56,8 @@ export interface KPI {
   factStatus?: string;
   completionPercent: number;
   evaluationPercent: number;
+  planFile?: AttachedFile;
+  factFile?: AttachedFile;
 }
 
 // Тип для единицы измерения
