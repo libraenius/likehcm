@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar, CheckCircle2, XCircle, Eye, History } from "lucide-react";
+import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar, CheckCircle2, XCircle, Eye, History, Columns, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Leader, Stream, Team, KPI, AttachedFile } from "@/types/goals-kold";
 import { getInitials, formatDate, calculateKPIMetrics } from "@/lib/goals-kold/utils";
@@ -426,6 +426,9 @@ export default function GoalsKoldPage() {
   // Состояние для режима редактирования таблицы ПФК
   const [isPfkTableEditMode, setIsPfkTableEditMode] = useState(false);
   
+  // Состояние для вида таблицы ПФК (полный/краткий)
+  const [pfkTableViewMode, setPfkTableViewMode] = useState<"full" | "compact">("full");
+  
   // Состояние для диалога отклонения с комментарием
   const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
   const [rejectionComment, setRejectionComment] = useState("");
@@ -452,6 +455,10 @@ export default function GoalsKoldPage() {
     period: string;
     source: "annual" | "quarterly" | "itLeader";
   } | null>(null);
+  
+  // Состояние для модального окна КПЭ в таблице ПФК
+  const [pfkTableKPIDialogOpen, setPfkTableKPIDialogOpen] = useState(false);
+  const [selectedPfkTableKPI, setSelectedPfkTableKPI] = useState<KPI | null>(null);
   
   const [unitSortOrder, setUnitSortOrder] = useState<"asc" | "desc">("asc");
   const [formulaSortOrder, setFormulaSortOrder] = useState<"asc" | "desc">("asc");
@@ -1400,7 +1407,7 @@ export default function GoalsKoldPage() {
                 Таблица плановых фактических критических значений
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="w-full max-w-full overflow-x-hidden">
               {/* Поиск и фильтры */}
               <div className="flex gap-2 mb-4">
                 <div className="relative flex-1">
@@ -1699,6 +1706,20 @@ export default function GoalsKoldPage() {
                   </DialogContent>
                 </Dialog>
                 <Button
+                  variant={pfkTableViewMode === "full" ? "default" : "outline"}
+                  size="default"
+                  onClick={() => setPfkTableViewMode(pfkTableViewMode === "full" ? "compact" : "full")}
+                  className="flex items-center gap-2"
+                  title={pfkTableViewMode === "full" ? "Переключить на краткий вид" : "Переключить на полный вид"}
+                >
+                  {pfkTableViewMode === "full" ? (
+                    <List className="h-4 w-4" />
+                  ) : (
+                    <Columns className="h-4 w-4" />
+                  )}
+                  {pfkTableViewMode === "full" ? "Полный вид" : "Краткий вид"}
+                </Button>
+                <Button
                   variant={isPfkTableEditMode ? "default" : "outline"}
                   size="default"
                   onClick={() => setIsPfkTableEditMode(!isPfkTableEditMode)}
@@ -1709,19 +1730,28 @@ export default function GoalsKoldPage() {
                 </Button>
               </div>
 
-              <div className="rounded-md border bg-card">
-                <div className="overflow-x-auto">
-                  <Table className="table-fixed">
+              <div className="rounded-md border bg-card overflow-hidden w-full max-w-full">
+                <div className="w-full">
+                  <Table className="table-fixed w-full">
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className="min-w-[300px] font-bold text-base text-foreground">Наименование КПЭ</TableHead>
                         <TableHead className="w-[100px] text-center font-bold text-base text-foreground">Период</TableHead>
                         <TableHead className="min-w-[150px] font-bold text-base text-foreground">Стрим</TableHead>
                         <TableHead className="min-w-[150px] font-bold text-base text-foreground">Команда/IT лидер</TableHead>
+                        {pfkTableViewMode === "full" && (
+                          <TableHead className="min-w-[150px] font-bold text-base text-foreground">Сотрудник ДАТ</TableHead>
+                        )}
                         <TableHead className="w-[180px] text-center font-bold text-base text-foreground">План</TableHead>
                         <TableHead className="w-[130px] font-bold text-base text-foreground">Статус план</TableHead>
+                        {pfkTableViewMode === "full" && (
+                          <TableHead className="min-w-[150px] font-bold text-base text-foreground">Ответственный ПЛАН</TableHead>
+                        )}
                         <TableHead className="w-[180px] text-center font-bold text-base text-foreground">Факт</TableHead>
                         <TableHead className="w-[130px] font-bold text-base text-foreground">Статус факт</TableHead>
+                        {pfkTableViewMode === "full" && (
+                          <TableHead className="min-w-[150px] font-bold text-base text-foreground">Ответственный ФАКТ</TableHead>
+                        )}
                         <TableHead className="w-[180px] text-center font-bold text-base text-foreground">Значение выполнения</TableHead>
                         <TableHead className="w-[120px] text-center font-bold text-base text-foreground">Действия</TableHead>
                       </TableRow>
@@ -1736,12 +1766,22 @@ export default function GoalsKoldPage() {
                         period: string;
                         teamOrLeader: string;
                         source: "annual" | "quarterly" | "itLeader";
+                        datEmployee?: string;
+                        planResponsible?: string;
+                        factResponsible?: string;
                       }> = [];
 
                       // Годовые KPI стримов
                       Object.entries(annualKPIs).forEach(([streamId, years]) => {
                         const stream = streams.find(s => s.id === streamId);
                         const streamName = stream?.name || streamId;
+                        const referenceStream = referenceStreams.find(s => s.id === streamId);
+                        const datEmployee = referenceStream?.datEmployeeIds && referenceStream.datEmployeeIds.length > 0
+                          ? mockDATEmployees.find(emp => emp.id === referenceStream.datEmployeeIds![0])?.fullName || "—"
+                          : "—";
+                        // Моковые данные для ответственных (можно заменить на реальные данные из KPI)
+                        const planResponsible = datEmployee !== "—" ? datEmployee : "—";
+                        const factResponsible = datEmployee !== "—" ? datEmployee : "—";
                         Object.entries(years).forEach(([year, kpis]) => {
                           kpis.forEach(kpi => {
                             allKPIs.push({
@@ -1751,6 +1791,9 @@ export default function GoalsKoldPage() {
                               period: year,
                               teamOrLeader: stream?.teams?.[0]?.name || "—",
                               source: "annual",
+                              datEmployee,
+                              planResponsible,
+                              factResponsible,
                             });
                           });
                         });
@@ -1760,6 +1803,12 @@ export default function GoalsKoldPage() {
                       Object.entries(quarterlyKPIs).forEach(([streamId, quarters]) => {
                         const stream = streams.find(s => s.id === streamId);
                         const streamName = stream?.name || streamId;
+                        const referenceStream = referenceStreams.find(s => s.id === streamId);
+                        const datEmployee = referenceStream?.datEmployeeIds && referenceStream.datEmployeeIds.length > 0
+                          ? mockDATEmployees.find(emp => emp.id === referenceStream.datEmployeeIds![0])?.fullName || "—"
+                          : "—";
+                        const planResponsible = datEmployee !== "—" ? datEmployee : "—";
+                        const factResponsible = datEmployee !== "—" ? datEmployee : "—";
                         Object.entries(quarters).forEach(([quarter, kpis]) => {
                           // Преобразуем формат q1-2025 в 1Q2025
                           const quarterMatch = quarter.match(/q(\d)-(\d{4})/);
@@ -1774,6 +1823,9 @@ export default function GoalsKoldPage() {
                               period: quarterLabel,
                               teamOrLeader: stream?.teams?.[0]?.name || "—",
                               source: "quarterly",
+                              datEmployee,
+                              planResponsible,
+                              factResponsible,
                             });
                           });
                         });
@@ -1783,6 +1835,12 @@ export default function GoalsKoldPage() {
                       Object.entries(itLeaderKPIs).forEach(([streamId, quarters]) => {
                         const stream = streams.find(s => s.id === streamId);
                         const streamName = stream?.name || streamId;
+                        const referenceStream = referenceStreams.find(s => s.id === streamId);
+                        const datEmployee = referenceStream?.datEmployeeIds && referenceStream.datEmployeeIds.length > 0
+                          ? mockDATEmployees.find(emp => emp.id === referenceStream.datEmployeeIds![0])?.fullName || "—"
+                          : "—";
+                        const planResponsible = datEmployee !== "—" ? datEmployee : "—";
+                        const factResponsible = datEmployee !== "—" ? datEmployee : "—";
                         Object.entries(quarters).forEach(([quarter, kpis]) => {
                           // Преобразуем формат q1-2025 в 1Q2025
                           const quarterMatch = quarter.match(/q(\d)-(\d{4})/);
@@ -1797,6 +1855,9 @@ export default function GoalsKoldPage() {
                               period: quarterLabel,
                               teamOrLeader: stream?.itLeader ? `${stream.itLeader.name} (IT лидер)` : "IT лидер",
                               source: "itLeader",
+                              datEmployee,
+                              planResponsible,
+                              factResponsible,
                             });
                           });
                         });
@@ -1860,9 +1921,10 @@ export default function GoalsKoldPage() {
                       }
 
                       if (filteredKPIs.length === 0) {
+                        const colSpan = pfkTableViewMode === "full" ? 13 : 10;
                         return (
                           <TableRow>
-                            <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                            <TableCell colSpan={colSpan} className="text-center text-muted-foreground py-8">
                               {pfkTableSearchQuery || Object.values(pfkTableFilters).some(f => Array.isArray(f) && f.length > 0)
                                 ? "Нет данных, соответствующих фильтрам"
                                 : "Нет данных для отображения"}
@@ -1881,7 +1943,17 @@ export default function GoalsKoldPage() {
                         const { kpi, streamName, period, teamOrLeader } = item;
                         return (
                           <TableRow key={kpi.id}>
-                            <TableCell className="break-words whitespace-normal">{kpi.name}</TableCell>
+                            <TableCell className="break-words whitespace-normal">
+                              <span 
+                                className="cursor-pointer hover:text-primary hover:underline"
+                                onClick={() => {
+                                  setSelectedPfkTableKPI(kpi);
+                                  setPfkTableKPIDialogOpen(true);
+                                }}
+                              >
+                                {kpi.name}
+                              </span>
+                            </TableCell>
                             <TableCell className="text-center">
                               <Badge variant="outline" className="text-xs">
                                 {period}
@@ -1889,6 +1961,9 @@ export default function GoalsKoldPage() {
                             </TableCell>
                             <TableCell>{streamName}</TableCell>
                             <TableCell>{teamOrLeader}</TableCell>
+                            {pfkTableViewMode === "full" && (
+                              <TableCell>{item.datEmployee || "—"}</TableCell>
+                            )}
                             <TableCell>
                               <div className="flex items-center justify-center gap-2">
                                 {isPfkTableEditMode && !(kpi.planStatus && kpi.planStatus.includes("выставление")) ? (
@@ -1974,6 +2049,9 @@ export default function GoalsKoldPage() {
                                 )}
                               </div>
                             </TableCell>
+                            {pfkTableViewMode === "full" && (
+                              <TableCell>{item.planResponsible || "—"}</TableCell>
+                            )}
                             <TableCell>
                               <div className="flex items-center justify-center gap-2">
                                 {isPfkTableEditMode && !(kpi.factStatus && kpi.factStatus.includes("выставление")) ? (
@@ -2059,6 +2137,9 @@ export default function GoalsKoldPage() {
                                 )}
                               </div>
                             </TableCell>
+                            {pfkTableViewMode === "full" && (
+                              <TableCell>{item.factResponsible || "—"}</TableCell>
+                            )}
                             <TableCell className="text-center">
                               <span className="font-medium">{kpi.completionPercent.toFixed(1)}%</span>
                             </TableCell>
@@ -3639,6 +3720,83 @@ export default function GoalsKoldPage() {
               </div>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Модальное окно с подробной информацией о КПЭ из таблицы ПФК */}
+      <Dialog open={pfkTableKPIDialogOpen} onOpenChange={setPfkTableKPIDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Подробная информация о КПЭ</DialogTitle>
+            <DialogDescription>
+              {selectedPfkTableKPI?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedPfkTableKPI && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Номер</Label>
+                  <p className="text-sm font-medium">{selectedPfkTableKPI.number}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Вес, %</Label>
+                  <p className="text-sm font-medium">{selectedPfkTableKPI.weight}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Тип КПЭ</Label>
+                  <p className="text-sm font-medium">{selectedPfkTableKPI.type}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Единица измерения</Label>
+                  <p className="text-sm font-medium">{selectedPfkTableKPI.unit || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">План</Label>
+                  <p className="text-sm font-medium">{selectedPfkTableKPI.plan}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Факт</Label>
+                  <p className="text-sm font-medium">{selectedPfkTableKPI.fact}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Значение выполнения, %</Label>
+                  <p className="text-sm font-medium">{selectedPfkTableKPI.completionPercent.toFixed(1)}%</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Оценка, %</Label>
+                  <p className="text-sm font-medium">{selectedPfkTableKPI.evaluationPercent.toFixed(1)}%</p>
+                </div>
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Статус ПЛАН</Label>
+                {selectedPfkTableKPI.planStatus ? (
+                  <Badge 
+                    variant={getStatusBadgeVariant(selectedPfkTableKPI.planStatus) as any} 
+                    className={cn("text-xs", getStatusBadgeClassName(selectedPfkTableKPI.planStatus))}
+                  >
+                    {selectedPfkTableKPI.planStatus}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground text-sm">—</span>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Статус ФАКТ</Label>
+                {selectedPfkTableKPI.factStatus ? (
+                  <Badge 
+                    variant={getStatusBadgeVariant(selectedPfkTableKPI.factStatus) as any} 
+                    className={cn("text-xs", getStatusBadgeClassName(selectedPfkTableKPI.factStatus))}
+                  >
+                    {selectedPfkTableKPI.factStatus}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground text-sm">—</span>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
