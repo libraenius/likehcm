@@ -140,11 +140,11 @@ export function ITLeaderKPICards({
                 <TableHead>Наименование КПЭ</TableHead>
                 <TableHead className="w-[80px]">Вес</TableHead>
                 <TableHead className="w-[120px]">Тип КПЭ</TableHead>
-                <TableHead className="w-[80px]">План</TableHead>
+                <TableHead className="w-[80px] text-center">План</TableHead>
                 <TableHead className="w-[100px]">Статус ПЛАН</TableHead>
-                <TableHead className="w-[80px]">Факт</TableHead>
+                <TableHead className="w-[80px] text-center">Факт</TableHead>
                 <TableHead className="w-[100px]">Статус ФАКТ</TableHead>
-                <TableHead className="w-[140px]">Значение выполнения, %</TableHead>
+                <TableHead className="w-[140px] text-center">Значение выполнения, %</TableHead>
                 <TableHead className="w-[100px]">Оценка, %</TableHead>
                 {isEditMode && <TableHead className="w-[100px]">Действия</TableHead>}
               </TableRow>

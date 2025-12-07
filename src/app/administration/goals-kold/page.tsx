@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { MouseEvent } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar } from "lucide-react";
+import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar, CheckCircle2, XCircle, Eye, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Leader, Stream, Team, KPI, AttachedFile } from "@/types/goals-kold";
 import { getInitials, formatDate, calculateKPIMetrics } from "@/lib/goals-kold/utils";
@@ -31,6 +31,25 @@ import { AnnualKPICards } from "@/components/goals-kold/AnnualKPICards";
 import { QuarterlyKPICards } from "@/components/goals-kold/QuarterlyKPICards";
 import { ITLeaderKPICards } from "@/components/goals-kold/ITLeaderKPICards";
 import { DashboardTab } from "@/components/goals-kold/DashboardTab";
+
+// Функции для стилизации статусов
+const getStatusBadgeVariant = (status: string | undefined) => {
+  return "outline";
+};
+
+const getStatusBadgeClassName = (status: string | undefined) => {
+  if (!status) return "";
+  if (status.includes("согласован")) {
+    return "bg-green-50 text-green-700 border-green-300 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800";
+  }
+  if (status.includes("отклонен")) {
+    return "bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800";
+  }
+  if (status.includes("выставление")) {
+    return "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400";
+  }
+  return "";
+};
 
 // Компонент строки таблицы стримов с коллапсом
 function StreamTableRow({
@@ -379,6 +398,61 @@ export default function GoalsKoldPage() {
   const [unitItemsPerPage, setUnitItemsPerPage] = useState(10);
   const [formulaItemsPerPage, setFormulaItemsPerPage] = useState(10);
   const [streamItemsPerPage, setStreamItemsPerPage] = useState(10);
+  
+  // Состояние для пагинации таблицы ПФК
+  const [pfkTableCurrentPage, setPfkTableCurrentPage] = useState(1);
+  const [pfkTableItemsPerPage, setPfkTableItemsPerPage] = useState(10);
+  
+  // Состояние для поиска и фильтров таблицы ПФК
+  const [pfkTableSearchQuery, setPfkTableSearchQuery] = useState("");
+  const [pfkTableFilterDialogOpen, setPfkTableFilterDialogOpen] = useState(false);
+  const [pfkTableFilters, setPfkTableFilters] = useState<{
+    streams: string[];
+    periods: Array<"annual" | "quarterly">;
+    planStatuses: string[];
+    factStatuses: string[];
+    sources: Array<"annual" | "quarterly" | "itLeader">;
+  }>({
+    streams: [],
+    periods: [],
+    planStatuses: [],
+    factStatuses: [],
+    sources: [],
+  });
+  
+  // Состояние для сортировки таблицы ПФК
+  const [pfkTableSortOrder, setPfkTableSortOrder] = useState<"asc" | "desc">("asc");
+  
+  // Состояние для режима редактирования таблицы ПФК
+  const [isPfkTableEditMode, setIsPfkTableEditMode] = useState(false);
+  
+  // Состояние для диалога отклонения с комментарием
+  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
+  const [rejectionComment, setRejectionComment] = useState("");
+  const [pendingRejection, setPendingRejection] = useState<{
+    kpiId: string;
+    statusType: "plan" | "fact";
+    streamId: string;
+    source: "annual" | "quarterly" | "itLeader";
+    period: string;
+  } | null>(null);
+  
+  // Состояние для диалога просмотра комментария отклонения
+  const [viewCommentDialogOpen, setViewCommentDialogOpen] = useState(false);
+  const [viewingComment, setViewingComment] = useState<{
+    comment: string;
+    statusType: "plan" | "fact";
+  } | null>(null);
+  
+  // Состояние для диалога истории операций с КПЭ
+  const [kpiHistoryDialogOpen, setKpiHistoryDialogOpen] = useState(false);
+  const [selectedKpiForHistory, setSelectedKpiForHistory] = useState<{
+    kpi: KPI;
+    streamName: string;
+    period: string;
+    source: "annual" | "quarterly" | "itLeader";
+  } | null>(null);
+  
   const [unitSortOrder, setUnitSortOrder] = useState<"asc" | "desc">("asc");
   const [formulaSortOrder, setFormulaSortOrder] = useState<"asc" | "desc">("asc");
   const [streamSortOrder, setStreamSortOrder] = useState<"asc" | "desc">("asc");
@@ -398,6 +472,11 @@ export default function GoalsKoldPage() {
   useEffect(() => {
     setStreamCurrentPage(1);
   }, [streamSearchQuery, streamItemsPerPage, streamSortOrder, streamFilters]);
+
+  // Сброс страницы при изменении поиска или фильтров таблицы ПФК
+  useEffect(() => {
+    setPfkTableCurrentPage(1);
+  }, [pfkTableSearchQuery, pfkTableItemsPerPage, pfkTableFilters, pfkTableSortOrder]);
 
   // Переключение раскрытия стрима
   const toggleStream = (streamId: string, e?: MouseEvent) => {
@@ -697,6 +776,191 @@ export default function GoalsKoldPage() {
         });
       }
     }
+  };
+
+  // Обновление KPI в таблице ПФК
+  const handleUpdateKPIPFKTable = (
+    kpiId: string,
+    field: "plan" | "fact",
+    value: number,
+    streamId: string,
+    source: "annual" | "quarterly" | "itLeader",
+    period: string
+  ) => {
+    const updateKPI = (kpi: KPI): KPI => {
+      if (kpi.id !== kpiId) return kpi;
+
+      const updatedKPI = { ...kpi, [field]: value };
+
+      // Пересчитываем метрики, если изменились план или факт
+      if (field === "plan" || field === "fact") {
+        const { completionPercent, evaluationPercent } = calculateKPIMetrics(
+          updatedKPI.plan,
+          updatedKPI.fact,
+          updatedKPI.weight
+        );
+        updatedKPI.completionPercent = completionPercent;
+        updatedKPI.evaluationPercent = evaluationPercent;
+      }
+
+      return updatedKPI;
+    };
+
+    if (source === "annual") {
+      // Для годовых KPI period - это год
+      const year = period;
+      setAnnualKPIs({
+        ...annualKPIs,
+        [streamId]: {
+          ...(annualKPIs[streamId] || {}),
+          [year]: (annualKPIs[streamId]?.[year] || []).map(updateKPI),
+        },
+      });
+    } else if (source === "itLeader") {
+      // Для IT лидеров нужно преобразовать period обратно в формат q1-2025
+      const quarterMatch = period.match(/(\d)Q(\d{4})/);
+      const quarter = quarterMatch ? `q${quarterMatch[1]}-${quarterMatch[2]}` : period;
+      setItLeaderKPIs({
+        ...itLeaderKPIs,
+        [streamId]: {
+          ...(itLeaderKPIs[streamId] || {}),
+          [quarter]: (itLeaderKPIs[streamId]?.[quarter] || []).map(updateKPI),
+        },
+      });
+    } else {
+      // Для квартальных KPI стримов
+      const quarterMatch = period.match(/(\d)Q(\d{4})/);
+      const quarter = quarterMatch ? `q${quarterMatch[1]}-${quarterMatch[2]}` : period;
+      setQuarterlyKPIs({
+        ...quarterlyKPIs,
+        [streamId]: {
+          ...(quarterlyKPIs[streamId] || {}),
+          [quarter]: (quarterlyKPIs[streamId]?.[quarter] || []).map(updateKPI),
+        },
+      });
+    }
+  };
+
+  // Обновление статуса плана или факта в таблице ПФК
+  const handleApproveStatusPFKTable = (
+    kpiId: string,
+    statusType: "plan" | "fact",
+    streamId: string,
+    source: "annual" | "quarterly" | "itLeader",
+    period: string
+  ) => {
+    const updateKPI = (kpi: KPI): KPI => {
+      if (kpi.id !== kpiId) return kpi;
+
+      const newStatus = statusType === "plan" ? "План согласован" : "Факт согласован";
+      const updatedKPI = { 
+        ...kpi, 
+        [statusType === "plan" ? "planStatus" : "factStatus"]: newStatus 
+      };
+
+      return updatedKPI;
+    };
+
+    if (source === "annual") {
+      const year = period;
+      setAnnualKPIs({
+        ...annualKPIs,
+        [streamId]: {
+          ...(annualKPIs[streamId] || {}),
+          [year]: (annualKPIs[streamId]?.[year] || []).map(updateKPI),
+        },
+      });
+    } else if (source === "itLeader") {
+      const quarterMatch = period.match(/(\d)Q(\d{4})/);
+      const quarter = quarterMatch ? `q${quarterMatch[1]}-${quarterMatch[2]}` : period;
+      setItLeaderKPIs({
+        ...itLeaderKPIs,
+        [streamId]: {
+          ...(itLeaderKPIs[streamId] || {}),
+          [quarter]: (itLeaderKPIs[streamId]?.[quarter] || []).map(updateKPI),
+        },
+      });
+    } else {
+      const quarterMatch = period.match(/(\d)Q(\d{4})/);
+      const quarter = quarterMatch ? `q${quarterMatch[1]}-${quarterMatch[2]}` : period;
+      setQuarterlyKPIs({
+        ...quarterlyKPIs,
+        [streamId]: {
+          ...(quarterlyKPIs[streamId] || {}),
+          [quarter]: (quarterlyKPIs[streamId]?.[quarter] || []).map(updateKPI),
+        },
+      });
+    }
+  };
+
+  // Открытие диалога отклонения
+  const handleOpenRejectionDialog = (
+    kpiId: string,
+    statusType: "plan" | "fact",
+    streamId: string,
+    source: "annual" | "quarterly" | "itLeader",
+    period: string
+  ) => {
+    setPendingRejection({ kpiId, statusType, streamId, source, period });
+    setRejectionComment("");
+    setRejectionDialogOpen(true);
+  };
+
+  // Отклонение статуса плана или факта в таблице ПФК
+  const handleRejectStatusPFKTable = (comment: string) => {
+    if (!pendingRejection || !comment.trim()) {
+      return;
+    }
+
+    const { kpiId, statusType, streamId, source, period } = pendingRejection;
+
+    const updateKPI = (kpi: KPI): KPI => {
+      if (kpi.id !== kpiId) return kpi;
+
+      const newStatus = statusType === "plan" ? "План отклонен" : "Факт отклонен";
+      const updatedKPI = { 
+        ...kpi, 
+        [statusType === "plan" ? "planStatus" : "factStatus"]: newStatus,
+        [statusType === "plan" ? "planRejectionComment" : "factRejectionComment"]: comment.trim()
+      };
+
+      return updatedKPI;
+    };
+
+    if (source === "annual") {
+      const year = period;
+      setAnnualKPIs({
+        ...annualKPIs,
+        [streamId]: {
+          ...(annualKPIs[streamId] || {}),
+          [year]: (annualKPIs[streamId]?.[year] || []).map(updateKPI),
+        },
+      });
+    } else if (source === "itLeader") {
+      const quarterMatch = period.match(/(\d)Q(\d{4})/);
+      const quarter = quarterMatch ? `q${quarterMatch[1]}-${quarterMatch[2]}` : period;
+      setItLeaderKPIs({
+        ...itLeaderKPIs,
+        [streamId]: {
+          ...(itLeaderKPIs[streamId] || {}),
+          [quarter]: (itLeaderKPIs[streamId]?.[quarter] || []).map(updateKPI),
+        },
+      });
+    } else {
+      const quarterMatch = period.match(/(\d)Q(\d{4})/);
+      const quarter = quarterMatch ? `q${quarterMatch[1]}-${quarterMatch[2]}` : period;
+      setQuarterlyKPIs({
+        ...quarterlyKPIs,
+        [streamId]: {
+          ...(quarterlyKPIs[streamId] || {}),
+          [quarter]: (quarterlyKPIs[streamId]?.[quarter] || []).map(updateKPI),
+        },
+      });
+    }
+
+    setRejectionDialogOpen(false);
+    setPendingRejection(null);
+    setRejectionComment("");
   };
 
   // Функция для перемещения КПЭ
@@ -1137,24 +1401,331 @@ export default function GoalsKoldPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[80px]">ID КПЭ</TableHead>
-                      <TableHead className="min-w-[200px]">Наименование КПЭ</TableHead>
-                      <TableHead className="w-[120px]">Ед. измерения</TableHead>
-                      <TableHead className="w-[150px]">Период оценки</TableHead>
-                      <TableHead className="min-w-[150px]">Стрим</TableHead>
-                      <TableHead className="min-w-[150px]">Команда/IT лидер</TableHead>
-                      <TableHead className="w-[100px]">План</TableHead>
-                      <TableHead className="w-[130px]">Статус план</TableHead>
-                      <TableHead className="w-[100px]">Факт</TableHead>
-                      <TableHead className="w-[130px]">Статус факт</TableHead>
-                      <TableHead className="w-[180px]">Значение выполнения КПЭ</TableHead>
-                      <TableHead className="w-[120px]">Действия</TableHead>
-                    </TableRow>
-                  </TableHeader>
+              {/* Поиск и фильтры */}
+              <div className="flex gap-2 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Поиск по наименованию КПЭ, стриму, команде..."
+                    value={pfkTableSearchQuery}
+                    onChange={(e) => setPfkTableSearchQuery(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {pfkTableSearchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                      onClick={() => setPfkTableSearchQuery("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <Dialog open={pfkTableFilterDialogOpen} onOpenChange={setPfkTableFilterDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Filter className="mr-2 h-4 w-4" />
+                      Фильтры
+                      {(pfkTableFilters.streams.length > 0 ||
+                        pfkTableFilters.periods.length > 0 ||
+                        pfkTableFilters.planStatuses.length > 0 ||
+                        pfkTableFilters.factStatuses.length > 0 ||
+                        pfkTableFilters.sources.length > 0) && (
+                        <Badge variant="secondary" className="ml-2">
+                          {pfkTableFilters.streams.length +
+                            pfkTableFilters.periods.length +
+                            pfkTableFilters.planStatuses.length +
+                            pfkTableFilters.factStatuses.length +
+                            pfkTableFilters.sources.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className="pb-3">
+                      <DialogTitle className="text-lg">Фильтры таблицы ПФК</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid grid-cols-2 gap-6 py-2">
+                      {/* Левый столбец */}
+                      <div className="space-y-6">
+                        {/* Фильтр по стримам */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Стримы</Label>
+                          <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                            {streams.map((stream) => (
+                              <div key={stream.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`stream-${stream.id}`}
+                                  checked={pfkTableFilters.streams.includes(stream.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setPfkTableFilters({
+                                        ...pfkTableFilters,
+                                        streams: [...pfkTableFilters.streams, stream.id],
+                                      });
+                                    } else {
+                                      setPfkTableFilters({
+                                        ...pfkTableFilters,
+                                        streams: pfkTableFilters.streams.filter((id) => id !== stream.id),
+                                      });
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`stream-${stream.id}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {stream.name}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Фильтр по статусам плана */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Статус плана</Label>
+                          <div className="space-y-1.5">
+                            {["План согласован", "План выставление"].map((status) => (
+                              <div key={status} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`plan-status-${status}`}
+                                  checked={pfkTableFilters.planStatuses.includes(status)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setPfkTableFilters({
+                                        ...pfkTableFilters,
+                                        planStatuses: [...pfkTableFilters.planStatuses, status],
+                                      });
+                                    } else {
+                                      setPfkTableFilters({
+                                        ...pfkTableFilters,
+                                        planStatuses: pfkTableFilters.planStatuses.filter((s) => s !== status),
+                                      });
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`plan-status-${status}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {status}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Правый столбец */}
+                      <div className="space-y-6">
+                        {/* Фильтр по периодам */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Периоды</Label>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="period-annual"
+                                checked={pfkTableFilters.periods.includes("annual")}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      periods: [...pfkTableFilters.periods, "annual"],
+                                    });
+                                  } else {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      periods: pfkTableFilters.periods.filter((p) => p !== "annual"),
+                                    });
+                                  }
+                                }}
+                              />
+                              <Label htmlFor="period-annual" className="text-sm font-normal cursor-pointer">
+                                Годовые
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="period-quarterly"
+                                checked={pfkTableFilters.periods.includes("quarterly")}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      periods: [...pfkTableFilters.periods, "quarterly"],
+                                    });
+                                  } else {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      periods: pfkTableFilters.periods.filter((p) => p !== "quarterly"),
+                                    });
+                                  }
+                                }}
+                              />
+                              <Label htmlFor="period-quarterly" className="text-sm font-normal cursor-pointer">
+                                Квартальные
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Фильтр по статусам факта */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Статус факта</Label>
+                          <div className="space-y-1.5">
+                            {["Факт согласован", "Факт выставление"].map((status) => (
+                              <div key={status} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`fact-status-${status}`}
+                                  checked={pfkTableFilters.factStatuses.includes(status)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setPfkTableFilters({
+                                        ...pfkTableFilters,
+                                        factStatuses: [...pfkTableFilters.factStatuses, status],
+                                      });
+                                    } else {
+                                      setPfkTableFilters({
+                                        ...pfkTableFilters,
+                                        factStatuses: pfkTableFilters.factStatuses.filter((s) => s !== status),
+                                      });
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`fact-status-${status}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {status}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Фильтр по источникам */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Источник</Label>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="source-annual"
+                                checked={pfkTableFilters.sources.includes("annual")}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      sources: [...pfkTableFilters.sources, "annual"],
+                                    });
+                                  } else {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      sources: pfkTableFilters.sources.filter((s) => s !== "annual"),
+                                    });
+                                  }
+                                }}
+                              />
+                              <Label htmlFor="source-annual" className="text-sm font-normal cursor-pointer">
+                                Годовые КПЭ стримов
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="source-quarterly"
+                                checked={pfkTableFilters.sources.includes("quarterly")}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      sources: [...pfkTableFilters.sources, "quarterly"],
+                                    });
+                                  } else {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      sources: pfkTableFilters.sources.filter((s) => s !== "quarterly"),
+                                    });
+                                  }
+                                }}
+                              />
+                              <Label htmlFor="source-quarterly" className="text-sm font-normal cursor-pointer">
+                                Квартальные КПЭ стримов
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="source-itLeader"
+                                checked={pfkTableFilters.sources.includes("itLeader")}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      sources: [...pfkTableFilters.sources, "itLeader"],
+                                    });
+                                  } else {
+                                    setPfkTableFilters({
+                                      ...pfkTableFilters,
+                                      sources: pfkTableFilters.sources.filter((s) => s !== "itLeader"),
+                                    });
+                                  }
+                                }}
+                              />
+                              <Label htmlFor="source-itLeader" className="text-sm font-normal cursor-pointer">
+                                КПЭ IT лидеров
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setPfkTableFilters({
+                            streams: [],
+                            periods: [],
+                            planStatuses: [],
+                            factStatuses: [],
+                            sources: [],
+                          });
+                        }}
+                      >
+                        Сбросить фильтры
+                      </Button>
+                      <Button onClick={() => setPfkTableFilterDialogOpen(false)}>Применить</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                <Button
+                  variant={isPfkTableEditMode ? "default" : "outline"}
+                  size="default"
+                  onClick={() => setIsPfkTableEditMode(!isPfkTableEditMode)}
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Режим редактирования
+                </Button>
+              </div>
+
+              <div className="rounded-md border bg-card">
+                <div className="overflow-x-auto">
+                  <Table className="table-fixed">
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="min-w-[300px] font-bold text-base text-foreground">Наименование КПЭ</TableHead>
+                        <TableHead className="w-[100px] text-center font-bold text-base text-foreground">Период</TableHead>
+                        <TableHead className="min-w-[150px] font-bold text-base text-foreground">Стрим</TableHead>
+                        <TableHead className="min-w-[150px] font-bold text-base text-foreground">Команда/IT лидер</TableHead>
+                        <TableHead className="w-[180px] text-center font-bold text-base text-foreground">План</TableHead>
+                        <TableHead className="w-[130px] font-bold text-base text-foreground">Статус план</TableHead>
+                        <TableHead className="w-[180px] text-center font-bold text-base text-foreground">Факт</TableHead>
+                        <TableHead className="w-[130px] font-bold text-base text-foreground">Статус факт</TableHead>
+                        <TableHead className="w-[180px] text-center font-bold text-base text-foreground">Значение выполнения</TableHead>
+                        <TableHead className="w-[120px] text-center font-bold text-base text-foreground">Действия</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {(() => {
                       // Собираем все KPI из разных источников
@@ -1231,24 +1802,87 @@ export default function GoalsKoldPage() {
                         });
                       });
 
-                      if (allKPIs.length === 0) {
+                      // Фильтрация данных
+                      let filteredKPIs = allKPIs;
+
+                      // Фильтр по поисковому запросу
+                      if (pfkTableSearchQuery.trim()) {
+                        const query = pfkTableSearchQuery.toLowerCase();
+                        filteredKPIs = filteredKPIs.filter((item) => {
+                          return (
+                            item.kpi.name.toLowerCase().includes(query) ||
+                            item.streamName.toLowerCase().includes(query) ||
+                            item.teamOrLeader.toLowerCase().includes(query) ||
+                            item.period.toLowerCase().includes(query)
+                          );
+                        });
+                      }
+
+                      // Фильтр по стримам
+                      if (pfkTableFilters.streams.length > 0) {
+                        filteredKPIs = filteredKPIs.filter((item) =>
+                          pfkTableFilters.streams.includes(item.streamId)
+                        );
+                      }
+
+                      // Фильтр по периодам
+                      if (pfkTableFilters.periods.length > 0) {
+                        filteredKPIs = filteredKPIs.filter((item) => {
+                          if (pfkTableFilters.periods.includes("annual") && item.source === "annual") {
+                            return true;
+                          }
+                          if (pfkTableFilters.periods.includes("quarterly") && item.source === "quarterly") {
+                            return true;
+                          }
+                          return false;
+                        });
+                      }
+
+                      // Фильтр по статусам плана
+                      if (pfkTableFilters.planStatuses.length > 0) {
+                        filteredKPIs = filteredKPIs.filter((item) =>
+                          item.kpi.planStatus && pfkTableFilters.planStatuses.includes(item.kpi.planStatus)
+                        );
+                      }
+
+                      // Фильтр по статусам факта
+                      if (pfkTableFilters.factStatuses.length > 0) {
+                        filteredKPIs = filteredKPIs.filter((item) =>
+                          item.kpi.factStatus && pfkTableFilters.factStatuses.includes(item.kpi.factStatus)
+                        );
+                      }
+
+                      // Фильтр по источникам
+                      if (pfkTableFilters.sources.length > 0) {
+                        filteredKPIs = filteredKPIs.filter((item) =>
+                          pfkTableFilters.sources.includes(item.source)
+                        );
+                      }
+
+                      if (filteredKPIs.length === 0) {
                         return (
                           <TableRow>
-                            <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
-                              Нет данных для отображения
+                            <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                              {pfkTableSearchQuery || Object.values(pfkTableFilters).some(f => Array.isArray(f) && f.length > 0)
+                                ? "Нет данных, соответствующих фильтрам"
+                                : "Нет данных для отображения"}
                             </TableCell>
                           </TableRow>
                         );
                       }
 
-                      return allKPIs.map((item) => {
+                      // Пагинация
+                      const totalPages = Math.ceil(filteredKPIs.length / pfkTableItemsPerPage);
+                      const startIndex = (pfkTableCurrentPage - 1) * pfkTableItemsPerPage;
+                      const endIndex = startIndex + pfkTableItemsPerPage;
+                      const paginatedKPIs = filteredKPIs.slice(startIndex, endIndex);
+
+                      return paginatedKPIs.map((item) => {
                         const { kpi, streamName, period, teamOrLeader } = item;
                         return (
                           <TableRow key={kpi.id}>
-                            <TableCell className="font-medium">{kpi.id}</TableCell>
-                            <TableCell>{kpi.name}</TableCell>
-                            <TableCell>{kpi.unit}</TableCell>
-                            <TableCell>
+                            <TableCell className="break-words whitespace-normal">{kpi.name}</TableCell>
+                            <TableCell className="text-center">
                               <Badge variant="outline" className="text-xs">
                                 {period}
                               </Badge>
@@ -1256,8 +1890,24 @@ export default function GoalsKoldPage() {
                             <TableCell>{streamName}</TableCell>
                             <TableCell>{teamOrLeader}</TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                <span>{kpi.plan}</span>
+                              <div className="flex items-center justify-center gap-2">
+                                {isPfkTableEditMode && !(kpi.planStatus && kpi.planStatus.includes("выставление")) ? (
+                                  <Input
+                                    type="number"
+                                    value={kpi.plan ?? ""}
+                                    onChange={(e) => {
+                                      const newValue = e.target.value === "" ? 0 : Number(e.target.value);
+                                      if (!isNaN(newValue)) {
+                                        handleUpdateKPIPFKTable(kpi.id, "plan", newValue, item.streamId, item.source, item.period);
+                                      }
+                                    }}
+                                    className="h-8 w-20 text-center"
+                                  />
+                                ) : kpi.planStatus && kpi.planStatus.includes("выставление") ? (
+                                  <span className="text-muted-foreground">—</span>
+                                ) : (
+                                  <span>{kpi.plan}</span>
+                                )}
                                 {kpi.planFile && (
                                   <Button
                                     variant="ghost"
@@ -1276,16 +1926,73 @@ export default function GoalsKoldPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge 
-                                variant={kpi.planStatus === "План согласован" ? "default" : "secondary"}
-                                className="text-xs"
-                              >
-                                {kpi.planStatus || "—"}
-                              </Badge>
+                              <div className="flex items-center justify-center gap-2">
+                                <Badge 
+                                  variant={getStatusBadgeVariant(kpi.planStatus) as any}
+                                  className={cn("text-xs", getStatusBadgeClassName(kpi.planStatus))}
+                                >
+                                  {kpi.planStatus || "—"}
+                                </Badge>
+                                {kpi.planStatus && kpi.planStatus.includes("отклонен") && kpi.planRejectionComment && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                    onClick={() => {
+                                      setViewingComment({
+                                        comment: kpi.planRejectionComment,
+                                        statusType: "plan",
+                                      });
+                                      setViewCommentDialogOpen(true);
+                                    }}
+                                    title="Просмотреть комментарий отклонения"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {isPfkTableEditMode && kpi.planStatus && !kpi.planStatus.includes("согласован") && !kpi.planStatus.includes("отклонен") && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30"
+                                      onClick={() => handleApproveStatusPFKTable(kpi.id, "plan", item.streamId, item.source, item.period)}
+                                      title="Согласовать план"
+                                    >
+                                      <CheckCircle2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                                      onClick={() => handleOpenRejectionDialog(kpi.id, "plan", item.streamId, item.source, item.period)}
+                                      title="Отклонить план"
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                <span>{kpi.fact}</span>
+                              <div className="flex items-center justify-center gap-2">
+                                {isPfkTableEditMode && !(kpi.factStatus && kpi.factStatus.includes("выставление")) ? (
+                                  <Input
+                                    type="number"
+                                    value={kpi.fact ?? ""}
+                                    onChange={(e) => {
+                                      const newValue = e.target.value === "" ? 0 : Number(e.target.value);
+                                      if (!isNaN(newValue)) {
+                                        handleUpdateKPIPFKTable(kpi.id, "fact", newValue, item.streamId, item.source, item.period);
+                                      }
+                                    }}
+                                    className="h-8 w-20 text-center"
+                                  />
+                                ) : kpi.factStatus && kpi.factStatus.includes("выставление") ? (
+                                  <span className="text-muted-foreground">—</span>
+                                ) : (
+                                  <span>{kpi.fact}</span>
+                                )}
                                 {kpi.factFile && (
                                   <Button
                                     variant="ghost"
@@ -1304,58 +2011,75 @@ export default function GoalsKoldPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge 
-                                variant={kpi.factStatus === "Факт согласован" ? "default" : "secondary"}
-                                className="text-xs"
-                              >
-                                {kpi.factStatus || "—"}
-                              </Badge>
+                              <div className="flex items-center justify-center gap-2">
+                                <Badge 
+                                  variant={getStatusBadgeVariant(kpi.factStatus) as any}
+                                  className={cn("text-xs", getStatusBadgeClassName(kpi.factStatus))}
+                                >
+                                  {kpi.factStatus || "—"}
+                                </Badge>
+                                {kpi.factStatus && kpi.factStatus.includes("отклонен") && kpi.factRejectionComment && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                    onClick={() => {
+                                      setViewingComment({
+                                        comment: kpi.factRejectionComment!,
+                                        statusType: "fact",
+                                      });
+                                      setViewCommentDialogOpen(true);
+                                    }}
+                                    title="Просмотреть комментарий отклонения"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {isPfkTableEditMode && kpi.factStatus && !kpi.factStatus.includes("согласован") && !kpi.factStatus.includes("отклонен") && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30"
+                                      onClick={() => handleApproveStatusPFKTable(kpi.id, "fact", item.streamId, item.source, item.period)}
+                                      title="Согласовать факт"
+                                    >
+                                      <CheckCircle2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                                      onClick={() => handleOpenRejectionDialog(kpi.id, "fact", item.streamId, item.source, item.period)}
+                                      title="Отклонить факт"
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-center">
                               <span className="font-medium">{kpi.completionPercent.toFixed(1)}%</span>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center justify-center gap-2">
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
                                   onClick={() => {
-                                    setEditingKPI(kpi);
-                                    setKpiDialogType(item.source === "annual" ? "annual" : "quarterly");
-                                    setKpiSource(item.source === "itLeader" ? "itLeader" : "stream");
-                                    if (item.source !== "annual") {
-                                      const quarterMatch = period.match(/(\d)Q(\d{4})/);
-                                      if (quarterMatch) {
-                                        setKpiQuarter(`q${quarterMatch[1]}-${quarterMatch[2]}`);
-                                      }
-                                    }
-                                    setPlanFile(kpi.planFile || null);
-                                    setFactFile(kpi.factFile || null);
-                                    setKpiFormData({
-                                      name: kpi.name,
-                                      weight: kpi.weight,
-                                      type: kpi.type,
-                                      unit: kpi.unit,
-                                      plan: kpi.plan,
-                                      fact: kpi.fact,
+                                    setSelectedKpiForHistory({
+                                      kpi,
+                                      streamName,
+                                      period,
+                                      source: item.source,
                                     });
-                                    setIsKPIDialogOpen(true);
+                                    setKpiHistoryDialogOpen(true);
                                   }}
-                                  title="Редактировать"
+                                  title="Посмотреть историю операций с КПЭ"
                                 >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                  onClick={() => {
-                                    // TODO: Реализовать удаление
-                                  }}
-                                  title="Удалить"
-                                >
-                                  <Trash2 className="h-4 w-4" />
+                                  <History className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -1364,8 +2088,208 @@ export default function GoalsKoldPage() {
                       });
                     })()}
                   </TableBody>
-                </Table>
+                  </Table>
+                </div>
               </div>
+              
+              {/* Пагинация для таблицы ПФК */}
+              {(() => {
+                // Собираем все KPI для подсчета (та же логика, что и в таблице)
+                const allKPIs: Array<{
+                  kpi: KPI;
+                  streamId: string;
+                  streamName: string;
+                  period: string;
+                  teamOrLeader: string;
+                  source: "annual" | "quarterly" | "itLeader";
+                }> = [];
+
+                Object.entries(annualKPIs).forEach(([streamId, years]) => {
+                  const stream = streams.find(s => s.id === streamId);
+                  const streamName = stream?.name || streamId;
+                  Object.entries(years).forEach(([year, kpis]) => {
+                    kpis.forEach(kpi => {
+                      allKPIs.push({
+                        kpi,
+                        streamId,
+                        streamName,
+                        period: year,
+                        teamOrLeader: stream?.teams?.[0]?.name || "—",
+                        source: "annual",
+                      });
+                    });
+                  });
+                });
+
+                Object.entries(quarterlyKPIs).forEach(([streamId, quarters]) => {
+                  const stream = streams.find(s => s.id === streamId);
+                  const streamName = stream?.name || streamId;
+                  Object.entries(quarters).forEach(([quarter, kpis]) => {
+                    const quarterMatch = quarter.match(/q(\d)-(\d{4})/);
+                    const quarterLabel = quarterMatch 
+                      ? `${quarterMatch[1]}Q${quarterMatch[2]}`
+                      : quarter.replace("q", "").replace("-", "Q");
+                    kpis.forEach(kpi => {
+                      allKPIs.push({
+                        kpi,
+                        streamId,
+                        streamName,
+                        period: quarterLabel,
+                        teamOrLeader: stream?.teams?.[0]?.name || "—",
+                        source: "quarterly",
+                      });
+                    });
+                  });
+                });
+
+                Object.entries(itLeaderKPIs).forEach(([streamId, quarters]) => {
+                  const stream = streams.find(s => s.id === streamId);
+                  const streamName = stream?.name || streamId;
+                  Object.entries(quarters).forEach(([quarter, kpis]) => {
+                    const quarterMatch = quarter.match(/q(\d)-(\d{4})/);
+                    const quarterLabel = quarterMatch 
+                      ? `${quarterMatch[1]}Q${quarterMatch[2]}`
+                      : quarter.replace("q", "").replace("-", "Q");
+                    kpis.forEach(kpi => {
+                      allKPIs.push({
+                        kpi,
+                        streamId,
+                        streamName,
+                        period: quarterLabel,
+                        teamOrLeader: stream?.itLeader ? `${stream.itLeader.name} (IT лидер)` : "IT лидер",
+                        source: "itLeader",
+                      });
+                    });
+                  });
+                });
+
+                // Применяем фильтры (та же логика, что и в таблице)
+                let filteredKPIs = allKPIs;
+
+                if (pfkTableSearchQuery.trim()) {
+                  const query = pfkTableSearchQuery.toLowerCase();
+                  filteredKPIs = filteredKPIs.filter((item) => {
+                    return (
+                      item.kpi.name.toLowerCase().includes(query) ||
+                      item.streamName.toLowerCase().includes(query) ||
+                      item.teamOrLeader.toLowerCase().includes(query) ||
+                      item.period.toLowerCase().includes(query)
+                    );
+                  });
+                }
+
+                if (pfkTableFilters.streams.length > 0) {
+                  filteredKPIs = filteredKPIs.filter((item) =>
+                    pfkTableFilters.streams.includes(item.streamId)
+                  );
+                }
+
+                if (pfkTableFilters.periods.length > 0) {
+                  filteredKPIs = filteredKPIs.filter((item) => {
+                    if (pfkTableFilters.periods.includes("annual") && item.source === "annual") {
+                      return true;
+                    }
+                    if (pfkTableFilters.periods.includes("quarterly") && item.source === "quarterly") {
+                      return true;
+                    }
+                    return false;
+                  });
+                }
+
+                if (pfkTableFilters.planStatuses.length > 0) {
+                  filteredKPIs = filteredKPIs.filter((item) =>
+                    item.kpi.planStatus && pfkTableFilters.planStatuses.includes(item.kpi.planStatus)
+                  );
+                }
+
+                if (pfkTableFilters.factStatuses.length > 0) {
+                  filteredKPIs = filteredKPIs.filter((item) =>
+                    item.kpi.factStatus && pfkTableFilters.factStatuses.includes(item.kpi.factStatus)
+                  );
+                }
+
+                if (pfkTableFilters.sources.length > 0) {
+                  filteredKPIs = filteredKPIs.filter((item) =>
+                    pfkTableFilters.sources.includes(item.source)
+                  );
+                }
+
+                const totalKPICount = filteredKPIs.length;
+                const totalPages = Math.ceil(totalKPICount / pfkTableItemsPerPage);
+                
+                return totalKPICount > 0 && (
+                  <div className="flex items-center justify-between px-2 mt-4">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="pfk-table-items-per-page" className="text-sm text-muted-foreground">
+                        Показать:
+                      </Label>
+                      <Select
+                        value={pfkTableItemsPerPage.toString()}
+                        onValueChange={(value) => {
+                          setPfkTableItemsPerPage(Number(value));
+                          setPfkTableCurrentPage(1);
+                        }}
+                      >
+                        <SelectTrigger id="pfk-table-items-per-page" className="w-[80px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span className="text-sm text-muted-foreground">
+                        из {totalKPICount}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        Страница {pfkTableCurrentPage} из {totalPages}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setPfkTableCurrentPage(1)}
+                          disabled={pfkTableCurrentPage === 1}
+                        >
+                          <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setPfkTableCurrentPage(pfkTableCurrentPage - 1)}
+                          disabled={pfkTableCurrentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setPfkTableCurrentPage(pfkTableCurrentPage + 1)}
+                          disabled={pfkTableCurrentPage === totalPages}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setPfkTableCurrentPage(totalPages)}
+                          disabled={pfkTableCurrentPage === totalPages}
+                        >
+                          <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
@@ -2530,6 +3454,193 @@ export default function GoalsKoldPage() {
         onFactFileChange={setFactFile}
         onSave={handleSaveKPI}
       />
+
+      {/* Диалог отклонения с комментарием */}
+      <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {pendingRejection?.statusType === "plan" ? "Отклонить план" : "Отклонить факт"}
+            </DialogTitle>
+            <DialogDescription>
+              Пожалуйста, укажите причину отклонения. Комментарий обязателен для заполнения.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejection-comment">
+                Комментарий <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="rejection-comment"
+                value={rejectionComment}
+                onChange={(e) => setRejectionComment(e.target.value)}
+                placeholder="Введите причину отклонения..."
+                className="min-h-[120px] resize-none"
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">
+                {rejectionComment.length} / 500 символов
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRejectionDialogOpen(false);
+                setPendingRejection(null);
+                setRejectionComment("");
+              }}
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={() => handleRejectStatusPFKTable(rejectionComment)}
+              disabled={!rejectionComment.trim()}
+              variant="destructive"
+            >
+              Отклонить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог просмотра комментария отклонения */}
+      <Dialog open={viewCommentDialogOpen} onOpenChange={setViewCommentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Комментарий отклонения {viewingComment?.statusType === "plan" ? "плана" : "факта"}
+            </DialogTitle>
+            <DialogDescription>
+              Причина отклонения, указанная при отклонении.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Комментарий</Label>
+              <div className="p-4 bg-muted rounded-md border min-h-[120px]">
+                <p className="text-sm whitespace-pre-wrap break-words">
+                  {viewingComment?.comment || "Комментарий не найден"}
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setViewCommentDialogOpen(false);
+                setViewingComment(null);
+              }}
+            >
+              Закрыть
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог истории операций с КПЭ */}
+      <Dialog open={kpiHistoryDialogOpen} onOpenChange={setKpiHistoryDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              История операций с КПЭ
+            </DialogTitle>
+            <DialogDescription>
+              {selectedKpiForHistory && (
+                <>
+                  КПЭ: {selectedKpiForHistory.kpi.name}
+                  <br />
+                  Стрим: {selectedKpiForHistory.streamName} | Период: {selectedKpiForHistory.period}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedKpiForHistory && [
+              {
+                date: new Date(2025, 0, 20, 15, 30),
+                user: "Иванов Иван Иванович",
+                action: "Изменение значения",
+                details: `План изменен с ${selectedKpiForHistory.kpi.plan - 5} на ${selectedKpiForHistory.kpi.plan}`,
+                type: "edit" as const,
+              },
+              {
+                date: new Date(2025, 0, 18, 14, 20),
+                user: "Петрова Мария Сергеевна",
+                action: "Изменение значения",
+                details: `Факт изменен с ${selectedKpiForHistory.kpi.fact - 3} на ${selectedKpiForHistory.kpi.fact}`,
+                type: "edit" as const,
+              },
+              selectedKpiForHistory.kpi.planStatus && selectedKpiForHistory.kpi.planStatus.includes("согласован") && {
+                date: new Date(2025, 0, 15, 11, 15),
+                user: "Сидоров Петр Александрович",
+                action: "Согласование",
+                details: `Статус плана изменен на '${selectedKpiForHistory.kpi.planStatus}'`,
+                type: "status" as const,
+              },
+              selectedKpiForHistory.kpi.planStatus && selectedKpiForHistory.kpi.planStatus.includes("отклонен") && selectedKpiForHistory.kpi.planRejectionComment && {
+                date: new Date(2025, 0, 12, 10, 45),
+                user: "Козлова Анна Викторовна",
+                action: "Отклонение",
+                details: `План отклонен. Комментарий: ${selectedKpiForHistory.kpi.planRejectionComment}`,
+                type: "reject" as const,
+              },
+              selectedKpiForHistory.kpi.factStatus && selectedKpiForHistory.kpi.factStatus.includes("согласован") && {
+                date: new Date(2025, 0, 10, 9, 30),
+                user: "Смирнов Алексей Владимирович",
+                action: "Согласование",
+                details: `Статус факта изменен на '${selectedKpiForHistory.kpi.factStatus}'`,
+                type: "status" as const,
+              },
+              selectedKpiForHistory.kpi.factStatus && selectedKpiForHistory.kpi.factStatus.includes("отклонен") && selectedKpiForHistory.kpi.factRejectionComment && {
+                date: new Date(2025, 0, 8, 16, 20),
+                user: "Волкова Елена Дмитриевна",
+                action: "Отклонение",
+                details: `Факт отклонен. Комментарий: ${selectedKpiForHistory.kpi.factRejectionComment}`,
+                type: "reject" as const,
+              },
+              {
+                date: new Date(2024, 11, 28, 16, 45),
+                user: "Администратор системы",
+                action: "Создание КПЭ",
+                details: `КПЭ '${selectedKpiForHistory.kpi.name}' создан`,
+                type: "create" as const,
+              },
+            ].filter(Boolean).map((item, index) => (
+              <div key={index} className="flex gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                <div className="flex-shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{item.user}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {item.action}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {item.date.toLocaleDateString("ru-RU", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}{" "}
+                      {item.date.toLocaleTimeString("ru-RU", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{item.details}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

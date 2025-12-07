@@ -54,6 +54,8 @@ export interface KPI {
   fact: number;
   planStatus?: string;
   factStatus?: string;
+  planRejectionComment?: string;
+  factRejectionComment?: string;
   completionPercent: number;
   evaluationPercent: number;
   planFile?: AttachedFile;
