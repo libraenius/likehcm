@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -162,15 +163,17 @@ export function AnnualKPICards({
                   <History className="h-4 w-4" />
                   История карты результативности
                 </Button>
-                <Button
-                  variant={isEditModeAnnual ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => onEditModeAnnualChange(!isEditModeAnnual)}
-                  className="flex items-center gap-2"
-                >
-                  <Edit className="h-4 w-4" />
-                  Режим редактирования
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="edit-mode-annual-toggle" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                    <Edit className="h-4 w-4" />
+                    Режим редактирования
+                  </Label>
+                  <Switch
+                    id="edit-mode-annual-toggle"
+                    checked={isEditModeAnnual}
+                    onCheckedChange={onEditModeAnnualChange}
+                  />
+                </div>
                 {isEditModeAnnual && (
                   <Button
                     size="sm"

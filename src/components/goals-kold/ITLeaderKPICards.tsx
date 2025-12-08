@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -375,22 +376,23 @@ export function ITLeaderKPICards({
                 <History className="h-4 w-4" />
                 История карты результативности
               </Button>
-              <Button
-                variant={Object.values(isEditModeITLeader).some(v => v) ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  const currentState = Object.values(isEditModeITLeader).some(v => v);
-                  const newModes: Record<string, boolean> = {};
-                  ["q1", "q2", "q3", "q4"].forEach(q => {
-                    newModes[`${q}-${selectedITLeaderYear}`] = !currentState;
-                  });
-                  onEditModeITLeaderChange(newModes);
-                }}
-                className="flex items-center gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Режим редактирования
-              </Button>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="edit-mode-it-leader-toggle" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                  <Edit className="h-4 w-4" />
+                  Режим редактирования
+                </Label>
+                <Switch
+                  id="edit-mode-it-leader-toggle"
+                  checked={Object.values(isEditModeITLeader).some(v => v)}
+                  onCheckedChange={(checked) => {
+                    const newModes: Record<string, boolean> = {};
+                    ["q1", "q2", "q3", "q4"].forEach(q => {
+                      newModes[`${q}-${selectedITLeaderYear}`] = checked;
+                    });
+                    onEditModeITLeaderChange(newModes);
+                  }}
+                />
+              </div>
             </div>
             <TabsContent value={`q1-${selectedITLeaderYear}`} className="mt-4">
               {renderQuarterTab(1)}

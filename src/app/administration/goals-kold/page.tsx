@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar, CheckCircle2, XCircle, Eye, History, Columns, List } from "lucide-react";
+import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar, CheckCircle2, XCircle, Eye, History, Columns, List, Download, Upload, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Leader, Stream, Team, KPI, AttachedFile } from "@/types/goals-kold";
 import { getInitials, formatDate, calculateKPIMetrics } from "@/lib/goals-kold/utils";
@@ -31,6 +31,10 @@ import { AnnualKPICards } from "@/components/goals-kold/AnnualKPICards";
 import { QuarterlyKPICards } from "@/components/goals-kold/QuarterlyKPICards";
 import { ITLeaderKPICards } from "@/components/goals-kold/ITLeaderKPICards";
 import { DashboardTab } from "@/components/goals-kold/DashboardTab";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/contexts/toast-context";
+import * as XLSX from "xlsx";
 
 // Функции для стилизации статусов
 const getStatusBadgeVariant = (status: string | undefined) => {
@@ -50,6 +54,78 @@ const getStatusBadgeClassName = (status: string | undefined) => {
   }
   return "";
 };
+
+// Компонент для ввода плана/факта с поддержкой запятой и без автоподстановки 0
+function PlanFactInput({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const [localValue, setLocalValue] = useState<string>("");
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Инициализируем локальное значение только при первом рендере
+  useEffect(() => {
+    if (!isFocused) {
+      if (value !== undefined && value !== null && value !== 0) {
+        setLocalValue(value.toString().replace('.', ','));
+      } else {
+        setLocalValue("");
+      }
+    }
+  }, [value, isFocused]);
+
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      value={localValue}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => {
+        setIsFocused(false);
+        // При потере фокуса сохраняем значение только если оно не пустое
+        const inputValue = localValue;
+        if (inputValue === "") {
+          // Не сохраняем 0, оставляем поле пустым
+          return;
+        }
+        const normalizedValue = inputValue.replace(',', '.');
+        const numValue = parseFloat(normalizedValue);
+        if (!isNaN(numValue)) {
+          const roundedValue = Math.round(numValue * 100) / 100;
+          onChange(roundedValue);
+          // Обновляем локальное состояние с отформатированным значением
+          setLocalValue(roundedValue.toString().replace('.', ','));
+        }
+      }}
+      onChange={(e) => {
+        const inputValue = e.target.value;
+        
+        // Разрешаем только цифры, запятую и точку
+        const validPattern = /^-?\d*[,.]?\d{0,2}$/;
+        if (inputValue !== "" && !validPattern.test(inputValue)) {
+          return;
+        }
+        
+        // Обновляем локальное состояние
+        setLocalValue(inputValue);
+        
+        // Если поле пустое, не сохраняем значение
+        if (inputValue === "") {
+          return;
+        }
+        
+        // Заменяем запятую на точку для парсинга
+        const normalizedValue = inputValue.replace(',', '.');
+        const numValue = parseFloat(normalizedValue);
+        
+        if (!isNaN(numValue)) {
+          // Округляем до 2 знаков после запятой
+          const roundedValue = Math.round(numValue * 100) / 100;
+          onChange(roundedValue);
+        }
+      }}
+      placeholder=""
+      className="h-8 w-20 text-center"
+    />
+  );
+}
 
 // Компонент строки таблицы стримов с коллапсом
 function StreamTableRow({
@@ -427,7 +503,7 @@ export default function GoalsKoldPage() {
   const [isPfkTableEditMode, setIsPfkTableEditMode] = useState(false);
   
   // Состояние для вида таблицы ПФК (полный/краткий)
-  const [pfkTableViewMode, setPfkTableViewMode] = useState<"full" | "compact">("full");
+  const [pfkTableViewMode, setPfkTableViewMode] = useState<"full" | "compact">("compact");
   
   // Состояние для диалога отклонения с комментарием
   const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
@@ -484,6 +560,300 @@ export default function GoalsKoldPage() {
   useEffect(() => {
     setPfkTableCurrentPage(1);
   }, [pfkTableSearchQuery, pfkTableItemsPerPage, pfkTableFilters, pfkTableSortOrder]);
+
+  // Хук для уведомлений
+  const { success, error: showError } = useToast();
+
+  // Функция для сбора всех данных таблицы ПФК
+  const getAllPfkTableData = () => {
+    const allKPIs: Array<{
+      kpi: KPI;
+      streamId: string;
+      streamName: string;
+      period: string;
+      teamOrLeader: string;
+      source: "annual" | "quarterly" | "itLeader";
+      datEmployee?: string;
+      planResponsible?: string;
+      factResponsible?: string;
+    }> = [];
+
+    // Годовые KPI стримов
+    Object.entries(annualKPIs).forEach(([streamId, years]) => {
+      const stream = streams.find(s => s.id === streamId);
+      const streamName = stream?.name || streamId;
+      const referenceStream = referenceStreams.find(s => s.id === streamId);
+      const datEmployee = referenceStream?.datEmployeeIds && referenceStream.datEmployeeIds.length > 0
+        ? mockDATEmployees.find(emp => emp.id === referenceStream.datEmployeeIds![0])?.fullName || "—"
+        : "—";
+      const planResponsible = datEmployee !== "—" ? datEmployee : "—";
+      const factResponsible = datEmployee !== "—" ? datEmployee : "—";
+      Object.entries(years).forEach(([year, kpis]) => {
+        kpis.forEach(kpi => {
+          allKPIs.push({
+            kpi,
+            streamId,
+            streamName,
+            period: year,
+            teamOrLeader: stream?.teams?.[0]?.name || "—",
+            source: "annual",
+            datEmployee,
+            planResponsible,
+            factResponsible,
+          });
+        });
+      });
+    });
+
+    // Квартальные KPI стримов
+    Object.entries(quarterlyKPIs).forEach(([streamId, quarters]) => {
+      const stream = streams.find(s => s.id === streamId);
+      const streamName = stream?.name || streamId;
+      const referenceStream = referenceStreams.find(s => s.id === streamId);
+      const datEmployee = referenceStream?.datEmployeeIds && referenceStream.datEmployeeIds.length > 0
+        ? mockDATEmployees.find(emp => emp.id === referenceStream.datEmployeeIds![0])?.fullName || "—"
+        : "—";
+      const planResponsible = datEmployee !== "—" ? datEmployee : "—";
+      const factResponsible = datEmployee !== "—" ? datEmployee : "—";
+      Object.entries(quarters).forEach(([quarter, kpis]) => {
+        const quarterMatch = quarter.match(/q(\d)-(\d{4})/);
+        const quarterLabel = quarterMatch 
+          ? `${quarterMatch[1]}Q${quarterMatch[2]}`
+          : quarter.replace("q", "").replace("-", "Q");
+        kpis.forEach(kpi => {
+          allKPIs.push({
+            kpi,
+            streamId,
+            streamName,
+            period: quarterLabel,
+            teamOrLeader: stream?.teams?.[0]?.name || "—",
+            source: "quarterly",
+            datEmployee,
+            planResponsible,
+            factResponsible,
+          });
+        });
+      });
+    });
+
+    // Квартальные KPI IT лидеров
+    Object.entries(itLeaderKPIs).forEach(([streamId, quarters]) => {
+      const stream = streams.find(s => s.id === streamId);
+      const streamName = stream?.name || streamId;
+      const referenceStream = referenceStreams.find(s => s.id === streamId);
+      const datEmployee = referenceStream?.datEmployeeIds && referenceStream.datEmployeeIds.length > 0
+        ? mockDATEmployees.find(emp => emp.id === referenceStream.datEmployeeIds![0])?.fullName || "—"
+        : "—";
+      const planResponsible = datEmployee !== "—" ? datEmployee : "—";
+      const factResponsible = datEmployee !== "—" ? datEmployee : "—";
+      Object.entries(quarters).forEach(([quarter, kpis]) => {
+        const quarterMatch = quarter.match(/q(\d)-(\d{4})/);
+        const quarterLabel = quarterMatch 
+          ? `${quarterMatch[1]}Q${quarterMatch[2]}`
+          : quarter.replace("q", "").replace("-", "Q");
+        kpis.forEach(kpi => {
+          allKPIs.push({
+            kpi,
+            streamId,
+            streamName,
+            period: quarterLabel,
+            teamOrLeader: stream?.itLeader ? `${stream.itLeader.name} (IT лидер)` : "IT лидер",
+            source: "itLeader",
+            datEmployee,
+            planResponsible,
+            factResponsible,
+          });
+        });
+      });
+    });
+
+    return allKPIs;
+  };
+
+  // Экспорт в Excel (краткий вид)
+  const handleExportExcelCompact = () => {
+    try {
+      const allKPIs = getAllPfkTableData();
+      
+      const data = allKPIs.map(item => ({
+        "Наименование КПЭ": item.kpi.name,
+        "Период": item.period,
+        "Стрим": item.streamName,
+        "Команда/IT лидер": item.teamOrLeader,
+        "План": item.kpi.plan,
+        "Статус план": item.kpi.planStatus || "—",
+        "Факт": item.kpi.fact,
+        "Статус факт": item.kpi.factStatus || "—",
+        "Значение выполнения": `${item.kpi.completionPercent.toFixed(2)}%`,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Таблица ПФК");
+      
+      const fileName = `Таблица_ПФК_краткий_вид_${new Date().toISOString().split("T")[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      success("Экспорт в Excel выполнен успешно");
+    } catch (err) {
+      showError("Ошибка при экспорте в Excel: " + (err instanceof Error ? err.message : "Неизвестная ошибка"));
+    }
+  };
+
+  // Экспорт в Excel (полный вид)
+  const handleExportExcelFull = () => {
+    try {
+      const allKPIs = getAllPfkTableData();
+      
+      const data = allKPIs.map(item => ({
+        "Наименование КПЭ": item.kpi.name,
+        "Период": item.period,
+        "Стрим": item.streamName,
+        "Команда/IT лидер": item.teamOrLeader,
+        "Сотрудник ДАТ": item.datEmployee || "—",
+        "План": item.kpi.plan,
+        "Статус план": item.kpi.planStatus || "—",
+        "Ответственный ПЛАН": item.planResponsible || "—",
+        "Факт": item.kpi.fact,
+        "Статус факт": item.kpi.factStatus || "—",
+        "Ответственный ФАКТ": item.factResponsible || "—",
+        "Значение выполнения": `${item.kpi.completionPercent.toFixed(2)}%`,
+        "Вес": item.kpi.weight,
+        "Тип": item.kpi.type,
+        "Единица измерения": item.kpi.unit,
+        "Оценка": `${item.kpi.evaluationPercent.toFixed(2)}%`,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Таблица ПФК");
+      
+      const fileName = `Таблица_ПФК_полный_вид_${new Date().toISOString().split("T")[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      success("Экспорт в Excel выполнен успешно");
+    } catch (err) {
+      showError("Ошибка при экспорте в Excel: " + (err instanceof Error ? err.message : "Неизвестная ошибка"));
+    }
+  };
+
+  // Импорт из Excel (краткий вид)
+  const handleImportExcelCompact = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xlsx,.xls";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet) as Array<Record<string, any>>;
+
+          // Валидация и обработка данных
+          let importedCount = 0;
+          const errors: string[] = [];
+
+          jsonData.forEach((row, index) => {
+            try {
+              const kpiName = row["Наименование КПЭ"];
+              const streamName = row["Стрим"];
+              const period = row["Период"];
+              const plan = parseFloat(row["План"]);
+              const fact = parseFloat(row["Факт"]);
+
+              if (!kpiName || !streamName || !period) {
+                errors.push(`Строка ${index + 2}: отсутствуют обязательные поля`);
+                return;
+              }
+
+              // Находим соответствующий KPI и обновляем его
+              const stream = streams.find(s => s.name === streamName);
+              if (!stream) {
+                errors.push(`Строка ${index + 2}: стрим "${streamName}" не найден`);
+                return;
+              }
+
+              // Ищем KPI в annualKPIs или quarterlyKPIs
+              let found = false;
+              
+              // Проверяем годовые KPI
+              if (annualKPIs[stream.id]) {
+                Object.entries(annualKPIs[stream.id]).forEach(([year, kpis]) => {
+                  if (year === period) {
+                    const kpi = kpis.find(k => k.name === kpiName);
+                    if (kpi) {
+                      kpi.plan = plan || kpi.plan;
+                      kpi.fact = fact || kpi.fact;
+                      if (row["Статус план"]) kpi.planStatus = row["Статус план"];
+                      if (row["Статус факт"]) kpi.factStatus = row["Статус факт"];
+                      const metrics = calculateKPIMetrics(kpi.plan, kpi.fact, kpi.weight);
+                      kpi.completionPercent = metrics.completionPercent;
+                      kpi.evaluationPercent = metrics.evaluationPercent;
+                      found = true;
+                      importedCount++;
+                    }
+                  }
+                });
+              }
+
+              // Проверяем квартальные KPI
+              if (!found && quarterlyKPIs[stream.id]) {
+                Object.entries(quarterlyKPIs[stream.id]).forEach(([quarter, kpis]) => {
+                  const quarterMatch = quarter.match(/q(\d)-(\d{4})/);
+                  const quarterLabel = quarterMatch 
+                    ? `${quarterMatch[1]}Q${quarterMatch[2]}`
+                    : quarter.replace("q", "").replace("-", "Q");
+                  if (quarterLabel === period) {
+                    const kpi = kpis.find(k => k.name === kpiName);
+                    if (kpi) {
+                      kpi.plan = plan || kpi.plan;
+                      kpi.fact = fact || kpi.fact;
+                      if (row["Статус план"]) kpi.planStatus = row["Статус план"];
+                      if (row["Статус факт"]) kpi.factStatus = row["Статус факт"];
+                      const metrics = calculateKPIMetrics(kpi.plan, kpi.fact, kpi.weight);
+                      kpi.completionPercent = metrics.completionPercent;
+                      kpi.evaluationPercent = metrics.evaluationPercent;
+                      found = true;
+                      importedCount++;
+                    }
+                  }
+                });
+              }
+
+              if (!found) {
+                errors.push(`Строка ${index + 2}: KPI "${kpiName}" не найден для стрима "${streamName}" и периода "${period}"`);
+              }
+            } catch (err) {
+              errors.push(`Строка ${index + 2}: ошибка обработки - ${err instanceof Error ? err.message : "Неизвестная ошибка"}`);
+            }
+          });
+
+          // Обновляем состояния
+          setAnnualKPIs({ ...annualKPIs });
+          setQuarterlyKPIs({ ...quarterlyKPIs });
+
+          if (importedCount > 0) {
+            success(`Импортировано ${importedCount} записей${errors.length > 0 ? `. Ошибок: ${errors.length}` : ""}`);
+          } else {
+            showError("Не удалось импортировать данные. Проверьте формат файла.");
+          }
+
+          if (errors.length > 0) {
+            console.error("Ошибки импорта:", errors);
+          }
+        } catch (err) {
+          showError("Ошибка при чтении файла Excel: " + (err instanceof Error ? err.message : "Неизвестная ошибка"));
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+    input.click();
+  };
 
   // Переключение раскрытия стрима
   const toggleStream = (streamId: string, e?: MouseEvent) => {
@@ -1399,13 +1769,37 @@ export default function GoalsKoldPage() {
         <TabsContent value="pfk-table" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Таблица ПФК
-              </CardTitle>
-              <CardDescription>
-                Таблица плановых фактических критических значений
-              </CardDescription>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Таблица ПФК
+                  </CardTitle>
+                  <CardDescription>
+                    Таблица плановых фактических критических значений
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <Label htmlFor="view-mode-toggle" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                    {pfkTableViewMode === "full" ? (
+                      <>
+                        <List className="h-4 w-4" />
+                        Полный вид
+                      </>
+                    ) : (
+                      <>
+                        <Columns className="h-4 w-4" />
+                        Краткий вид
+                      </>
+                    )}
+                  </Label>
+                  <Switch
+                    id="view-mode-toggle"
+                    checked={pfkTableViewMode === "full"}
+                    onCheckedChange={(checked) => setPfkTableViewMode(checked ? "full" : "compact")}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="w-full max-w-full overflow-x-hidden">
               {/* Поиск и фильтры */}
@@ -1705,29 +2099,40 @@ export default function GoalsKoldPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                <Button
-                  variant={pfkTableViewMode === "full" ? "default" : "outline"}
-                  size="default"
-                  onClick={() => setPfkTableViewMode(pfkTableViewMode === "full" ? "compact" : "full")}
-                  className="flex items-center gap-2"
-                  title={pfkTableViewMode === "full" ? "Переключить на краткий вид" : "Переключить на полный вид"}
-                >
-                  {pfkTableViewMode === "full" ? (
-                    <List className="h-4 w-4" />
-                  ) : (
-                    <Columns className="h-4 w-4" />
-                  )}
-                  {pfkTableViewMode === "full" ? "Полный вид" : "Краткий вид"}
-                </Button>
-                <Button
-                  variant={isPfkTableEditMode ? "default" : "outline"}
-                  size="default"
-                  onClick={() => setIsPfkTableEditMode(!isPfkTableEditMode)}
-                  className="flex items-center gap-2"
-                >
-                  <Edit className="h-4 w-4" />
-                  Режим редактирования
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="default" className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Экспорт/импорт excel
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleExportExcelCompact}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Экспорт краткий вид таблица ПФК
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportExcelFull}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Экспорт полный вид таблица ПФК
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleImportExcelCompact}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Импорт краткий вид таблица ПФК
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="edit-mode-toggle" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                    <Edit className="h-4 w-4" />
+                    Режим редактирования
+                  </Label>
+                  <Switch
+                    id="edit-mode-toggle"
+                    checked={isPfkTableEditMode}
+                    onCheckedChange={setIsPfkTableEditMode}
+                  />
+                </div>
               </div>
 
               <div className="rounded-md border bg-card overflow-hidden w-full max-w-full">
@@ -1966,22 +2371,15 @@ export default function GoalsKoldPage() {
                             )}
                             <TableCell>
                               <div className="flex items-center justify-center gap-2">
-                                {isPfkTableEditMode && !(kpi.planStatus && kpi.planStatus.includes("выставление")) ? (
-                                  <Input
-                                    type="number"
-                                    value={kpi.plan ?? ""}
-                                    onChange={(e) => {
-                                      const newValue = e.target.value === "" ? 0 : Number(e.target.value);
-                                      if (!isNaN(newValue)) {
-                                        handleUpdateKPIPFKTable(kpi.id, "plan", newValue, item.streamId, item.source, item.period);
-                                      }
+                                {isPfkTableEditMode ? (
+                                  <PlanFactInput
+                                    value={kpi.plan}
+                                    onChange={(newValue) => {
+                                      handleUpdateKPIPFKTable(kpi.id, "plan", newValue, item.streamId, item.source, item.period);
                                     }}
-                                    className="h-8 w-20 text-center"
                                   />
-                                ) : kpi.planStatus && kpi.planStatus.includes("выставление") ? (
-                                  <span className="text-muted-foreground">—</span>
                                 ) : (
-                                  <span>{kpi.plan}</span>
+                                  <span>{kpi.plan !== undefined && kpi.plan !== null && kpi.plan !== 0 ? kpi.plan.toString().replace('.', ',') : "—"}</span>
                                 )}
                                 {kpi.planFile && (
                                   <Button
@@ -2054,22 +2452,15 @@ export default function GoalsKoldPage() {
                             )}
                             <TableCell>
                               <div className="flex items-center justify-center gap-2">
-                                {isPfkTableEditMode && !(kpi.factStatus && kpi.factStatus.includes("выставление")) ? (
-                                  <Input
-                                    type="number"
-                                    value={kpi.fact ?? ""}
-                                    onChange={(e) => {
-                                      const newValue = e.target.value === "" ? 0 : Number(e.target.value);
-                                      if (!isNaN(newValue)) {
-                                        handleUpdateKPIPFKTable(kpi.id, "fact", newValue, item.streamId, item.source, item.period);
-                                      }
+                                {isPfkTableEditMode ? (
+                                  <PlanFactInput
+                                    value={kpi.fact}
+                                    onChange={(newValue) => {
+                                      handleUpdateKPIPFKTable(kpi.id, "fact", newValue, item.streamId, item.source, item.period);
                                     }}
-                                    className="h-8 w-20 text-center"
                                   />
-                                ) : kpi.factStatus && kpi.factStatus.includes("выставление") ? (
-                                  <span className="text-muted-foreground">—</span>
                                 ) : (
-                                  <span>{kpi.fact}</span>
+                                  <span>{kpi.fact !== undefined && kpi.fact !== null && kpi.fact !== 0 ? kpi.fact.toString().replace('.', ',') : "—"}</span>
                                 )}
                                 {kpi.factFile && (
                                   <Button
