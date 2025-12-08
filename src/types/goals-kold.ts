@@ -42,6 +42,26 @@ export interface AttachedFile {
   size?: number;
 }
 
+// Тип для задачи Jira
+export interface JiraTask {
+  id: string;
+  key: string; // PROJ-123
+  summary: string;
+  status: string;
+  statusColor?: string;
+  assignee?: string;
+  assigneeAvatar?: string;
+  issueType?: string;
+  issueTypeIcon?: string;
+  priority?: string;
+  priorityIcon?: string;
+  dueDate?: string;
+  createdDate?: string;
+  updatedDate?: string;
+  url: string;
+  kpiIds?: string[]; // ID связанных КПЭ
+}
+
 // Тип для КПЭ (ключевого показателя эффективности)
 export interface KPI {
   id: string;
@@ -60,6 +80,7 @@ export interface KPI {
   evaluationPercent: number;
   planFile?: AttachedFile;
   factFile?: AttachedFile;
+  jiraTasks?: JiraTask[]; // массив связанных задач Jira
 }
 
 // Тип для единицы измерения

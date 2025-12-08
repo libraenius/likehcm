@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Target, ChevronDown, ChevronRight, Plus, Edit, Trash2, GripVertical, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { calculateKPIMetrics } from "@/lib/goals-kold/utils";
-import type { KPI, Stream } from "@/types/goals-kold";
+import type { KPI, Stream, JiraTask } from "@/types/goals-kold";
+import { JiraTasksWidget } from "./JiraTasksWidget";
 
 const getStatusBadgeVariant = (status: string | undefined) => {
   return "outline";
@@ -114,6 +115,22 @@ export function QuarterlyKPICards({
         }
       }
     };
+
+    // Собираем все задачи Jira из всех КПЭ квартала
+    const allJiraTasks: JiraTask[] = [];
+    const taskMap = new Map<string, JiraTask>();
+    
+    currentKPIs.forEach(kpi => {
+      if (kpi.jiraTasks && kpi.jiraTasks.length > 0) {
+        kpi.jiraTasks.forEach(task => {
+          // Избегаем дубликатов задач
+          if (!taskMap.has(task.id)) {
+            taskMap.set(task.id, task);
+            allJiraTasks.push(task);
+          }
+        });
+      }
+    });
 
     return (
       <>
@@ -304,6 +321,21 @@ export function QuarterlyKPICards({
                 {integralKPI.toFixed(1)}%
               </span>
             </div>
+          </div>
+        )}
+
+        {/* Виджет задач Jira */}
+        {allJiraTasks.length > 0 && (
+          <div className="mt-6">
+            <JiraTasksWidget
+              tasks={allJiraTasks}
+              kpis={currentKPIs}
+              quarter={quarter}
+              onLinkTask={(taskKey, kpiIds) => {
+                // Здесь можно добавить логику связывания задачи с КПЭ
+                console.log("Link task", taskKey, "to KPIs", kpiIds);
+              }}
+            />
           </div>
         )}
       </>

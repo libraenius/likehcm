@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar, CheckCircle2, XCircle, Eye, History, Columns, List, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar, CheckCircle2, XCircle, Eye, History, Download, Upload, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Leader, Stream, Team, KPI, AttachedFile } from "@/types/goals-kold";
 import { getInitials, formatDate, calculateKPIMetrics } from "@/lib/goals-kold/utils";
@@ -502,9 +502,6 @@ export default function GoalsKoldPage() {
   // Состояние для режима редактирования таблицы ПФК
   const [isPfkTableEditMode, setIsPfkTableEditMode] = useState(false);
   
-  // Состояние для вида таблицы ПФК (полный/краткий)
-  const [pfkTableViewMode, setPfkTableViewMode] = useState<"full" | "compact">("compact");
-  
   // Состояние для диалога отклонения с комментарием
   const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
   const [rejectionComment, setRejectionComment] = useState("");
@@ -670,8 +667,8 @@ export default function GoalsKoldPage() {
     return allKPIs;
   };
 
-  // Экспорт в Excel (краткий вид)
-  const handleExportExcelCompact = () => {
+  // Экспорт в Excel
+  const handleExportExcel = () => {
     try {
       const allKPIs = getAllPfkTableData();
       
@@ -691,7 +688,7 @@ export default function GoalsKoldPage() {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Таблица ПФК");
       
-      const fileName = `Таблица_ПФК_краткий_вид_${new Date().toISOString().split("T")[0]}.xlsx`;
+      const fileName = `Таблица_ПФК_${new Date().toISOString().split("T")[0]}.xlsx`;
       XLSX.writeFile(wb, fileName);
       
       success("Экспорт в Excel выполнен успешно");
@@ -700,45 +697,8 @@ export default function GoalsKoldPage() {
     }
   };
 
-  // Экспорт в Excel (полный вид)
-  const handleExportExcelFull = () => {
-    try {
-      const allKPIs = getAllPfkTableData();
-      
-      const data = allKPIs.map(item => ({
-        "Наименование КПЭ": item.kpi.name,
-        "Период": item.period,
-        "Стрим": item.streamName,
-        "Команда/IT лидер": item.teamOrLeader,
-        "Сотрудник ДАТ": item.datEmployee || "—",
-        "План": item.kpi.plan,
-        "Статус план": item.kpi.planStatus || "—",
-        "Ответственный ПЛАН": item.planResponsible || "—",
-        "Факт": item.kpi.fact,
-        "Статус факт": item.kpi.factStatus || "—",
-        "Ответственный ФАКТ": item.factResponsible || "—",
-        "Значение выполнения": `${item.kpi.completionPercent.toFixed(2)}%`,
-        "Вес": item.kpi.weight,
-        "Тип": item.kpi.type,
-        "Единица измерения": item.kpi.unit,
-        "Оценка": `${item.kpi.evaluationPercent.toFixed(2)}%`,
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Таблица ПФК");
-      
-      const fileName = `Таблица_ПФК_полный_вид_${new Date().toISOString().split("T")[0]}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      
-      success("Экспорт в Excel выполнен успешно");
-    } catch (err) {
-      showError("Ошибка при экспорте в Excel: " + (err instanceof Error ? err.message : "Неизвестная ошибка"));
-    }
-  };
-
-  // Импорт из Excel (краткий вид)
-  const handleImportExcelCompact = () => {
+  // Импорт из Excel
+  const handleImportExcel = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".xlsx,.xls";
@@ -1468,7 +1428,7 @@ export default function GoalsKoldPage() {
     return null;
   }).filter(Boolean) as Stream[];
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Целеполагание Стримы</h1>
@@ -1478,7 +1438,7 @@ export default function GoalsKoldPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="streams-teams" className="w-full">
+      <Tabs defaultValue="streams-teams" className="w-full max-w-full overflow-x-hidden">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="streams-teams" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -1563,172 +1523,170 @@ export default function GoalsKoldPage() {
               />
 
               {/* Правая колонка - детальная информация о стриме или команде */}
-              <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-280px)]">
+              <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-280px)] pr-2">
                 {selectedTeam ? (
                   <TeamDetails team={selectedTeam} />
                 ) : selectedStream ? (
                   <Card className="w-full max-w-full overflow-hidden">
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="text-xl mb-1 break-words">{selectedStream.name}</CardTitle>
+                          <CardTitle className="text-xl break-words">{selectedStream.name}</CardTitle>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-0 overflow-x-hidden">
-                      <div className="space-y-4 max-w-full">
-                        {/* Информация о стриме */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-semibold flex items-center gap-2">
-                            <Building2 className="h-4 w-4" />
-                            Информация о стриме
-                          </Label>
-                          <div className="p-4 border rounded-lg bg-muted/30">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {/* Левая колонка */}
-                              <div className="space-y-3">
-                                {selectedStream.businessType && (
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Вид бизнеса</Label>
-                                    <div>
-                                      <Badge variant="default" className="text-sm">
-                                        {selectedStream.businessType}
-                                      </Badge>
-                                    </div>
+                    <CardContent className="space-y-6 overflow-x-hidden">
+                      {/* Информация о стриме */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold flex items-center gap-2">
+                          <Building2 className="h-4 w-4" />
+                          Информация о стриме
+                        </Label>
+                        <div className="p-5 border rounded-lg bg-muted/30">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Левая колонка */}
+                            <div className="space-y-4">
+                              {selectedStream.businessType && (
+                                <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground">Вид бизнеса</Label>
+                                  <div>
+                                    <Badge variant="default" className="text-sm">
+                                      {selectedStream.businessType}
+                                    </Badge>
                                   </div>
-                                )}
-                                {selectedStream.type && (
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Тип стрима</Label>
-                                    <div>
-                                      <Badge variant="default" className="text-sm">
-                                        {selectedStream.type}
-                                      </Badge>
-                                    </div>
+                                </div>
+                              )}
+                              {selectedStream.type && (
+                                <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground">Тип стрима</Label>
+                                  <div>
+                                    <Badge variant="default" className="text-sm">
+                                      {selectedStream.type}
+                                    </Badge>
                                   </div>
-                                )}
-                              </div>
+                                </div>
+                              )}
+                            </div>
 
-                              {/* Правая колонка */}
-                              <div className="space-y-3">
-                            {selectedStream.leader && (
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Лидер стрима</Label>
-                                    <div className="flex items-start gap-2">
-                                      <Avatar className="h-10 w-10 flex-shrink-0">
-                                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                      {getInitials(selectedStream.leader)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium">{selectedStream.leader.name}</p>
-                                        <p className="text-xs text-muted-foreground">{selectedStream.leader.position}</p>
-                                      </div>
+                            {/* Правая колонка */}
+                            <div className="space-y-4">
+                              {selectedStream.leader && (
+                                <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground">Лидер стрима</Label>
+                                  <div className="flex items-start gap-3">
+                                    <Avatar className="h-10 w-10 flex-shrink-0">
+                                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                        {getInitials(selectedStream.leader)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0 pt-0.5">
+                                      <p className="text-sm font-medium">{selectedStream.leader.name}</p>
+                                      <p className="text-xs text-muted-foreground mt-0.5">{selectedStream.leader.position}</p>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            {selectedStream.itLeader && (
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">ИТ лидер стрима</Label>
-                                    <div className="flex items-start gap-2">
-                                      <Avatar className="h-10 w-10 flex-shrink-0">
-                                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                      {getInitials(selectedStream.itLeader)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium">{selectedStream.itLeader.name}</p>
-                                        <p className="text-xs text-muted-foreground">{selectedStream.itLeader.position}</p>
-                                      </div>
+                              )}
+                              {selectedStream.itLeader && (
+                                <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground">ИТ лидер стрима</Label>
+                                  <div className="flex items-start gap-3">
+                                    <Avatar className="h-10 w-10 flex-shrink-0">
+                                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                        {getInitials(selectedStream.itLeader)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0 pt-0.5">
+                                      <p className="text-sm font-medium">{selectedStream.itLeader.name}</p>
+                                      <p className="text-xs text-muted-foreground mt-0.5">{selectedStream.itLeader.position}</p>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                              </div>
+                              )}
                             </div>
                           </div>
                         </div>
-
-                        <Separator />
-
-                        {/* Команды стрима */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-semibold flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            Команды стрима
-                          </Label>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedStream.teams.map((team) => (
-                              <Badge
-                                key={team.id}
-                                variant="outline"
-                                className="text-sm cursor-pointer border-orange-500/50 bg-orange-500/10 text-orange-600 dark:text-orange-400 dark:bg-orange-500/20 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-500 dark:hover:text-white transition-colors px-3 py-1.5"
-                                onClick={() => handleSelectTeam(team)}
-                              >
-                                {team.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-
-                        <AnnualKPICards
-                          stream={selectedStream}
-                          annualKPIs={annualKPIs}
-                          isAnnualExpanded={isAnnualExpanded}
-                          isEditModeAnnual={isEditModeAnnual}
-                          selectedAnnualYear={selectedAnnualYear}
-                          draggedKPIId={draggedKPIId}
-                          onAnnualExpandedChange={setIsAnnualExpanded}
-                          onEditModeAnnualChange={setIsEditModeAnnual}
-                          onSelectedAnnualYearChange={setSelectedAnnualYear}
-                          onDraggedKPIIdChange={setDraggedKPIId}
-                          onDraggedKPIQuarterChange={setDraggedKPIQuarter}
-                          onAddKPI={handleAddKPI}
-                          onDeleteKPI={handleDeleteKPI}
-                          onMoveKPI={handleMoveKPI}
-                          onUpdateKPIInTable={handleUpdateKPIInTable}
-                          onAnnualKPIsChange={setAnnualKPIs}
-                        />
-
-                        <QuarterlyKPICards
-                          stream={selectedStream}
-                          quarterlyKPIs={quarterlyKPIs}
-                          isQuarterlyExpanded={isQuarterlyExpanded}
-                          isEditModeQuarterly={isEditModeQuarterly}
-                          selectedQuarterlyYear={selectedQuarterlyYear}
-                          draggedKPIId={draggedKPIId}
-                          draggedKPIQuarter={draggedKPIQuarter}
-                          onQuarterlyExpandedChange={setIsQuarterlyExpanded}
-                          onEditModeQuarterlyChange={setIsEditModeQuarterly}
-                          onSelectedQuarterlyYearChange={setSelectedQuarterlyYear}
-                          onDraggedKPIIdChange={setDraggedKPIId}
-                          onDraggedKPIQuarterChange={setDraggedKPIQuarter}
-                          onAddKPI={handleAddKPI}
-                          onDeleteKPI={handleDeleteKPI}
-                          onMoveKPI={handleMoveKPI}
-                          onUpdateKPIInTable={handleUpdateKPIInTable}
-                          onQuarterlyKPIsChange={setQuarterlyKPIs}
-                        />
-
-                        <ITLeaderKPICards
-                          stream={selectedStream}
-                          itLeaderKPIs={itLeaderKPIs}
-                          isITLeaderExpanded={isITLeaderExpanded}
-                          isEditModeITLeader={isEditModeITLeader}
-                          selectedITLeaderYear={selectedITLeaderYear}
-                          draggedKPIId={draggedKPIId}
-                          draggedKPIQuarter={draggedKPIQuarter}
-                          onITLeaderExpandedChange={setIsITLeaderExpanded}
-                          onEditModeITLeaderChange={setIsEditModeITLeader}
-                          onSelectedITLeaderYearChange={setSelectedITLeaderYear}
-                          onDraggedKPIIdChange={setDraggedKPIId}
-                          onDraggedKPIQuarterChange={setDraggedKPIQuarter}
-                          onAddKPI={handleAddKPI}
-                          onDeleteKPI={handleDeleteKPI}
-                          onMoveKPI={handleMoveKPI}
-                          onUpdateKPIInTable={handleUpdateKPIInTable}
-                          onITLeaderKPIsChange={setItLeaderKPIs}
-                        />
                       </div>
+
+                      <Separator />
+
+                      {/* Команды стрима */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Команды стрима
+                        </Label>
+                        <div className="flex flex-wrap gap-2.5">
+                          {selectedStream.teams.map((team) => (
+                            <Badge
+                              key={team.id}
+                              variant="outline"
+                              className="text-sm cursor-pointer border-orange-500/50 bg-orange-500/10 text-orange-600 dark:text-orange-400 dark:bg-orange-500/20 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-500 dark:hover:text-white transition-colors px-3 py-1.5"
+                              onClick={() => handleSelectTeam(team)}
+                            >
+                              {team.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <AnnualKPICards
+                        stream={selectedStream}
+                        annualKPIs={annualKPIs}
+                        isAnnualExpanded={isAnnualExpanded}
+                        isEditModeAnnual={isEditModeAnnual}
+                        selectedAnnualYear={selectedAnnualYear}
+                        draggedKPIId={draggedKPIId}
+                        onAnnualExpandedChange={setIsAnnualExpanded}
+                        onEditModeAnnualChange={setIsEditModeAnnual}
+                        onSelectedAnnualYearChange={setSelectedAnnualYear}
+                        onDraggedKPIIdChange={setDraggedKPIId}
+                        onDraggedKPIQuarterChange={setDraggedKPIQuarter}
+                        onAddKPI={handleAddKPI}
+                        onDeleteKPI={handleDeleteKPI}
+                        onMoveKPI={handleMoveKPI}
+                        onUpdateKPIInTable={handleUpdateKPIInTable}
+                        onAnnualKPIsChange={setAnnualKPIs}
+                      />
+
+                      <QuarterlyKPICards
+                        stream={selectedStream}
+                        quarterlyKPIs={quarterlyKPIs}
+                        isQuarterlyExpanded={isQuarterlyExpanded}
+                        isEditModeQuarterly={isEditModeQuarterly}
+                        selectedQuarterlyYear={selectedQuarterlyYear}
+                        draggedKPIId={draggedKPIId}
+                        draggedKPIQuarter={draggedKPIQuarter}
+                        onQuarterlyExpandedChange={setIsQuarterlyExpanded}
+                        onEditModeQuarterlyChange={setIsEditModeQuarterly}
+                        onSelectedQuarterlyYearChange={setSelectedQuarterlyYear}
+                        onDraggedKPIIdChange={setDraggedKPIId}
+                        onDraggedKPIQuarterChange={setDraggedKPIQuarter}
+                        onAddKPI={handleAddKPI}
+                        onDeleteKPI={handleDeleteKPI}
+                        onMoveKPI={handleMoveKPI}
+                        onUpdateKPIInTable={handleUpdateKPIInTable}
+                        onQuarterlyKPIsChange={setQuarterlyKPIs}
+                      />
+
+                      <ITLeaderKPICards
+                        stream={selectedStream}
+                        itLeaderKPIs={itLeaderKPIs}
+                        isITLeaderExpanded={isITLeaderExpanded}
+                        isEditModeITLeader={isEditModeITLeader}
+                        selectedITLeaderYear={selectedITLeaderYear}
+                        draggedKPIId={draggedKPIId}
+                        draggedKPIQuarter={draggedKPIQuarter}
+                        onITLeaderExpandedChange={setIsITLeaderExpanded}
+                        onEditModeITLeaderChange={setIsEditModeITLeader}
+                        onSelectedITLeaderYearChange={setSelectedITLeaderYear}
+                        onDraggedKPIIdChange={setDraggedKPIId}
+                        onDraggedKPIQuarterChange={setDraggedKPIQuarter}
+                        onAddKPI={handleAddKPI}
+                        onDeleteKPI={handleDeleteKPI}
+                        onMoveKPI={handleMoveKPI}
+                        onUpdateKPIInTable={handleUpdateKPIInTable}
+                        onITLeaderKPIsChange={setItLeaderKPIs}
+                      />
                     </CardContent>
                   </Card>
                 ) : (
@@ -1766,8 +1724,8 @@ export default function GoalsKoldPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="pfk-table" className="space-y-6">
-          <Card>
+        <TabsContent value="pfk-table" className="space-y-6 w-full max-w-full">
+          <Card className="w-full max-w-full">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -1779,29 +1737,9 @@ export default function GoalsKoldPage() {
                     Таблица плановых фактических критических значений
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <Label htmlFor="view-mode-toggle" className="text-sm font-medium cursor-pointer flex items-center gap-2">
-                    {pfkTableViewMode === "full" ? (
-                      <>
-                        <List className="h-4 w-4" />
-                        Полный вид
-                      </>
-                    ) : (
-                      <>
-                        <Columns className="h-4 w-4" />
-                        Краткий вид
-                      </>
-                    )}
-                  </Label>
-                  <Switch
-                    id="view-mode-toggle"
-                    checked={pfkTableViewMode === "full"}
-                    onCheckedChange={(checked) => setPfkTableViewMode(checked ? "full" : "compact")}
-                  />
-                </div>
               </div>
             </CardHeader>
-            <CardContent className="w-full max-w-full overflow-x-hidden">
+            <CardContent className="w-full max-w-full">
               {/* Поиск и фильтры */}
               <div className="flex gap-2 mb-4">
                 <div className="relative flex-1">
@@ -2108,17 +2046,13 @@ export default function GoalsKoldPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleExportExcelCompact}>
+                    <DropdownMenuItem onClick={handleExportExcel}>
                       <Download className="h-4 w-4 mr-2" />
-                      Экспорт краткий вид таблица ПФК
+                      Экспорт таблица ПФК
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleExportExcelFull}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Экспорт полный вид таблица ПФК
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleImportExcelCompact}>
+                    <DropdownMenuItem onClick={handleImportExcel}>
                       <Upload className="h-4 w-4 mr-2" />
-                      Импорт краткий вид таблица ПФК
+                      Импорт таблица ПФК
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -2135,28 +2069,19 @@ export default function GoalsKoldPage() {
                 </div>
               </div>
 
-              <div className="rounded-md border bg-card overflow-hidden w-full max-w-full">
-                <div className="w-full">
-                  <Table className="table-fixed w-full">
+              <div className="rounded-md border bg-card" style={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
+                <div className="overflow-x-auto" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                  <table className="caption-bottom text-sm table-fixed w-full">
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className="min-w-[300px] font-bold text-base text-foreground">Наименование КПЭ</TableHead>
                         <TableHead className="w-[100px] text-center font-bold text-base text-foreground">Период</TableHead>
                         <TableHead className="min-w-[150px] font-bold text-base text-foreground">Стрим</TableHead>
                         <TableHead className="min-w-[150px] font-bold text-base text-foreground">Команда/IT лидер</TableHead>
-                        {pfkTableViewMode === "full" && (
-                          <TableHead className="min-w-[150px] font-bold text-base text-foreground">Сотрудник ДАТ</TableHead>
-                        )}
                         <TableHead className="w-[180px] text-center font-bold text-base text-foreground">План</TableHead>
                         <TableHead className="w-[130px] font-bold text-base text-foreground">Статус план</TableHead>
-                        {pfkTableViewMode === "full" && (
-                          <TableHead className="min-w-[150px] font-bold text-base text-foreground">Ответственный ПЛАН</TableHead>
-                        )}
                         <TableHead className="w-[180px] text-center font-bold text-base text-foreground">Факт</TableHead>
                         <TableHead className="w-[130px] font-bold text-base text-foreground">Статус факт</TableHead>
-                        {pfkTableViewMode === "full" && (
-                          <TableHead className="min-w-[150px] font-bold text-base text-foreground">Ответственный ФАКТ</TableHead>
-                        )}
                         <TableHead className="w-[180px] text-center font-bold text-base text-foreground">Значение выполнения</TableHead>
                         <TableHead className="w-[120px] text-center font-bold text-base text-foreground">Действия</TableHead>
                       </TableRow>
@@ -2326,7 +2251,7 @@ export default function GoalsKoldPage() {
                       }
 
                       if (filteredKPIs.length === 0) {
-                        const colSpan = pfkTableViewMode === "full" ? 13 : 10;
+                        const colSpan = 10;
                         return (
                           <TableRow>
                             <TableCell colSpan={colSpan} className="text-center text-muted-foreground py-8">
@@ -2366,9 +2291,6 @@ export default function GoalsKoldPage() {
                             </TableCell>
                             <TableCell>{streamName}</TableCell>
                             <TableCell>{teamOrLeader}</TableCell>
-                            {pfkTableViewMode === "full" && (
-                              <TableCell>{item.datEmployee || "—"}</TableCell>
-                            )}
                             <TableCell>
                               <div className="flex items-center justify-center gap-2">
                                 {isPfkTableEditMode ? (
@@ -2447,9 +2369,6 @@ export default function GoalsKoldPage() {
                                 )}
                               </div>
                             </TableCell>
-                            {pfkTableViewMode === "full" && (
-                              <TableCell>{item.planResponsible || "—"}</TableCell>
-                            )}
                             <TableCell>
                               <div className="flex items-center justify-center gap-2">
                                 {isPfkTableEditMode ? (
@@ -2528,9 +2447,6 @@ export default function GoalsKoldPage() {
                                 )}
                               </div>
                             </TableCell>
-                            {pfkTableViewMode === "full" && (
-                              <TableCell>{item.factResponsible || "—"}</TableCell>
-                            )}
                             <TableCell className="text-center">
                               <span className="font-medium">{kpi.completionPercent.toFixed(1)}%</span>
                             </TableCell>
@@ -2560,7 +2476,7 @@ export default function GoalsKoldPage() {
                       });
                     })()}
                   </TableBody>
-                  </Table>
+                  </table>
                 </div>
               </div>
               
