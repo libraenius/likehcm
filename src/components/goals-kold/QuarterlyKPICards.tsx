@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -365,10 +365,15 @@ export function QuarterlyKPICards({
           </Label>
         </div>
         {isQuarterlyExpanded && (
-          <div className="flex items-center mb-3">
-            <div className="w-[100px] flex-shrink-0">
+          <Tabs 
+            value={selectedQuarter} 
+            onValueChange={setSelectedQuarter}
+            className="w-full" 
+            key={selectedQuarterlyYear}
+          >
+            <div className="flex items-center gap-3 mb-3 w-full flex-nowrap">
               <Select value={selectedQuarterlyYear} onValueChange={onSelectedQuarterlyYearChange}>
-                <SelectTrigger className="w-[100px] h-8">
+                <SelectTrigger className="w-[100px] h-8 flex-shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent 
@@ -382,22 +387,13 @@ export function QuarterlyKPICards({
                   <SelectItem value="2026">2026</SelectItem>
                 </SelectContent>
               </Select>
+              <TabsList className="!inline-flex !h-8 !p-0.5 flex-1 gap-1">
+                <TabsTrigger value={`q1-${selectedQuarterlyYear}`} className="!text-xs !px-2 !py-1 flex-1">1 квартал {selectedQuarterlyYear}</TabsTrigger>
+                <TabsTrigger value={`q2-${selectedQuarterlyYear}`} className="!text-xs !px-2 !py-1 flex-1">2 квартал {selectedQuarterlyYear}</TabsTrigger>
+                <TabsTrigger value={`q3-${selectedQuarterlyYear}`} className="!text-xs !px-2 !py-1 flex-1">3 квартал {selectedQuarterlyYear}</TabsTrigger>
+                <TabsTrigger value={`q4-${selectedQuarterlyYear}`} className="!text-xs !px-2 !py-1 flex-1">4 квартал {selectedQuarterlyYear}</TabsTrigger>
+              </TabsList>
             </div>
-          </div>
-        )}
-        {isQuarterlyExpanded && (
-          <Tabs 
-            defaultValue={`q1-${selectedQuarterlyYear}`} 
-            className="w-full" 
-            key={selectedQuarterlyYear}
-            onValueChange={(value) => setSelectedQuarter(value)}
-          >
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value={`q1-${selectedQuarterlyYear}`}>1 квартал {selectedQuarterlyYear}</TabsTrigger>
-              <TabsTrigger value={`q2-${selectedQuarterlyYear}`}>2 квартал {selectedQuarterlyYear}</TabsTrigger>
-              <TabsTrigger value={`q3-${selectedQuarterlyYear}`}>3 квартал {selectedQuarterlyYear}</TabsTrigger>
-              <TabsTrigger value={`q4-${selectedQuarterlyYear}`}>4 квартал {selectedQuarterlyYear}</TabsTrigger>
-            </TabsList>
             <div className="flex items-center justify-end gap-2 mt-3 mb-3">
               <Button
                 variant="outline"
@@ -426,18 +422,12 @@ export function QuarterlyKPICards({
                 />
               </div>
             </div>
-            <TabsContent value={`q1-${selectedQuarterlyYear}`} className="mt-4">
-              {renderQuarterTab(1)}
-            </TabsContent>
-            <TabsContent value={`q2-${selectedQuarterlyYear}`} className="mt-4">
-              {renderQuarterTab(2)}
-            </TabsContent>
-            <TabsContent value={`q3-${selectedQuarterlyYear}`} className="mt-4">
-              {renderQuarterTab(3)}
-            </TabsContent>
-            <TabsContent value={`q4-${selectedQuarterlyYear}`} className="mt-4">
-              {renderQuarterTab(4)}
-            </TabsContent>
+            <div className="mt-4">
+              {(() => {
+                const quarterNum = parseInt(selectedQuarter.split('-')[0].replace('q', ''));
+                return renderQuarterTab(quarterNum);
+              })()}
+            </div>
           </Tabs>
         )}
       </div>

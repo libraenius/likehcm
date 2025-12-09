@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -333,10 +333,15 @@ export function ITLeaderKPICards({
           </Label>
         </div>
         {isITLeaderExpanded && (
-          <div className="flex items-center mb-3">
-            <div className="w-[100px] flex-shrink-0">
+          <Tabs 
+            value={selectedQuarter} 
+            onValueChange={setSelectedQuarter}
+            className="w-full" 
+            key={selectedITLeaderYear}
+          >
+            <div className="flex items-center gap-3 mb-3 w-full flex-nowrap">
               <Select value={selectedITLeaderYear} onValueChange={onSelectedITLeaderYearChange}>
-                <SelectTrigger className="w-[100px] h-8">
+                <SelectTrigger className="w-[100px] h-8 flex-shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent 
@@ -350,22 +355,13 @@ export function ITLeaderKPICards({
                   <SelectItem value="2026">2026</SelectItem>
                 </SelectContent>
               </Select>
+              <TabsList className="!inline-flex !h-8 !p-0.5 flex-1 gap-1">
+                <TabsTrigger value={`q1-${selectedITLeaderYear}`} className="!text-xs !px-2 !py-1 flex-1">1 квартал {selectedITLeaderYear}</TabsTrigger>
+                <TabsTrigger value={`q2-${selectedITLeaderYear}`} className="!text-xs !px-2 !py-1 flex-1">2 квартал {selectedITLeaderYear}</TabsTrigger>
+                <TabsTrigger value={`q3-${selectedITLeaderYear}`} className="!text-xs !px-2 !py-1 flex-1">3 квартал {selectedITLeaderYear}</TabsTrigger>
+                <TabsTrigger value={`q4-${selectedITLeaderYear}`} className="!text-xs !px-2 !py-1 flex-1">4 квартал {selectedITLeaderYear}</TabsTrigger>
+              </TabsList>
             </div>
-          </div>
-        )}
-        {isITLeaderExpanded && (
-          <Tabs 
-            defaultValue={`q1-${selectedITLeaderYear}`} 
-            className="w-full" 
-            key={selectedITLeaderYear}
-            onValueChange={(value) => setSelectedQuarter(value)}
-          >
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value={`q1-${selectedITLeaderYear}`}>1 квартал {selectedITLeaderYear}</TabsTrigger>
-              <TabsTrigger value={`q2-${selectedITLeaderYear}`}>2 квартал {selectedITLeaderYear}</TabsTrigger>
-              <TabsTrigger value={`q3-${selectedITLeaderYear}`}>3 квартал {selectedITLeaderYear}</TabsTrigger>
-              <TabsTrigger value={`q4-${selectedITLeaderYear}`}>4 квартал {selectedITLeaderYear}</TabsTrigger>
-            </TabsList>
             <div className="flex items-center justify-end gap-2 mt-3 mb-3">
               <Button
                 variant="outline"
@@ -394,18 +390,12 @@ export function ITLeaderKPICards({
                 />
               </div>
             </div>
-            <TabsContent value={`q1-${selectedITLeaderYear}`} className="mt-4">
-              {renderQuarterTab(1)}
-            </TabsContent>
-            <TabsContent value={`q2-${selectedITLeaderYear}`} className="mt-4">
-              {renderQuarterTab(2)}
-            </TabsContent>
-            <TabsContent value={`q3-${selectedITLeaderYear}`} className="mt-4">
-              {renderQuarterTab(3)}
-            </TabsContent>
-            <TabsContent value={`q4-${selectedITLeaderYear}`} className="mt-4">
-              {renderQuarterTab(4)}
-            </TabsContent>
+            <div className="mt-4">
+              {(() => {
+                const quarterNum = parseInt(selectedQuarter.split('-')[0].replace('q', ''));
+                return renderQuarterTab(quarterNum);
+              })()}
+            </div>
           </Tabs>
         )}
       </div>

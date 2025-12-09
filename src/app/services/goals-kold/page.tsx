@@ -854,167 +854,225 @@ export default function GoalsKoldPage() {
                   <TeamDetails team={selectedTeam} />
                 ) : selectedStream ? (
                   <Card className="w-full max-w-full overflow-hidden">
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <CardTitle className="text-xl mb-1 break-words">{selectedStream.name}</CardTitle>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-0 overflow-x-hidden">
-                      <div className="space-y-4 max-w-full">
-                        {/* Информация о стриме */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-semibold flex items-center gap-2">
-                            <Building2 className="h-4 w-4" />
+                    <CardContent className="overflow-x-hidden p-0">
+                      <Tabs defaultValue="stream-info" className="w-full">
+                        <div className="px-6 pt-2">
+                          <TabsList className="grid w-full grid-cols-4 rounded-lg">
+                          <TabsTrigger value="stream-info" className="rounded-l-lg">
                             Информация о стриме
-                          </Label>
-                          <div className="p-4 border rounded-lg bg-muted/30">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {/* Левая колонка */}
-                              <div className="space-y-3">
-                                {selectedStream.businessType && (
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Вид бизнеса</Label>
-                                    <div>
-                                      <Badge variant="default" className="text-sm">
-                                        {selectedStream.businessType}
-                                      </Badge>
+                          </TabsTrigger>
+                          <TabsTrigger value="annual-kpi">
+                            Годовые КР стрима
+                          </TabsTrigger>
+                          <TabsTrigger value="quarterly-kpi">
+                            Квартальные КР стрима
+                          </TabsTrigger>
+                          <TabsTrigger value="it-leader-kpi" className="rounded-r-lg">
+                            Квартальные КР ИТ лидера
+                          </TabsTrigger>
+                        </TabsList>
+                        </div>
+                        
+                        <TabsContent value="stream-info" className="space-y-4 p-6 mt-4">
+                          {/* Информация о стриме */}
+                          <div className="space-y-2">
+                            <div className="p-4 border rounded-lg bg-muted/30">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Левая колонка */}
+                                <div className="space-y-3">
+                                  {selectedStream.businessType && (
+                                    <div className="space-y-1">
+                                      <Label className="text-xs text-muted-foreground">Вид бизнеса</Label>
+                                      <div>
+                                        <Badge variant="default" className="text-sm">
+                                          {selectedStream.businessType}
+                                        </Badge>
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
-                                {selectedStream.type && (
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Тип стрима</Label>
-                                    <div>
-                                      <Badge variant="default" className="text-sm">
-                                        {selectedStream.type}
-                                      </Badge>
+                                  )}
+                                  {selectedStream.type && (
+                                    <div className="space-y-1">
+                                      <Label className="text-xs text-muted-foreground">Тип стрима</Label>
+                                      <div>
+                                        <Badge variant="default" className="text-sm">
+                                          {selectedStream.type}
+                                        </Badge>
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
-                              </div>
+                                  )}
+                                </div>
 
-                              {/* Правая колонка */}
-                              <div className="space-y-3">
-                            {selectedStream.leader && (
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Лидер стрима</Label>
-                                    <div className="flex items-start gap-2">
-                                      <Avatar className="h-10 w-10 flex-shrink-0">
-                                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                      {getInitials(selectedStream.leader)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium">{selectedStream.leader.name}</p>
-                                        <p className="text-xs text-muted-foreground">{selectedStream.leader.position}</p>
+                                {/* Правая колонка */}
+                                <div className="space-y-3">
+                                  {selectedStream.leader && (
+                                    <div className="space-y-1">
+                                      <Label className="text-xs text-muted-foreground">Лидер стрима</Label>
+                                      <div className="flex items-start gap-2">
+                                        <Avatar className="h-10 w-10 flex-shrink-0">
+                                          <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                            {getInitials(selectedStream.leader)}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium">{selectedStream.leader.name}</p>
+                                          <p className="text-xs text-muted-foreground">{selectedStream.leader.position}</p>
+                                        </div>
                                       </div>
-                                </div>
-                              </div>
-                            )}
-                            {selectedStream.itLeader && (
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">ИТ лидер стрима</Label>
-                                    <div className="flex items-start gap-2">
-                                      <Avatar className="h-10 w-10 flex-shrink-0">
-                                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                      {getInitials(selectedStream.itLeader)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium">{selectedStream.itLeader.name}</p>
-                                        <p className="text-xs text-muted-foreground">{selectedStream.itLeader.position}</p>
+                                    </div>
+                                  )}
+                                  {selectedStream.itLeader && (
+                                    <div className="space-y-1">
+                                      <Label className="text-xs text-muted-foreground">ИТ лидер стрима</Label>
+                                      <div className="flex items-start gap-2">
+                                        <Avatar className="h-10 w-10 flex-shrink-0">
+                                          <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                            {getInitials(selectedStream.itLeader)}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium">{selectedStream.itLeader.name}</p>
+                                          <p className="text-xs text-muted-foreground">{selectedStream.itLeader.position}</p>
+                                        </div>
                                       </div>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                            )}
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        <Separator />
+                          {/* Сотрудники ДАТ */}
+                          {(() => {
+                            const referenceStream = referenceStreams.find(s => s.id === selectedStream.id);
+                            const streamDATEmployees = referenceStream?.datEmployeeIds 
+                              ? mockDATEmployees.filter(emp => referenceStream.datEmployeeIds!.includes(emp.id))
+                              : [];
+                            
+                            return streamDATEmployees.length > 0 ? (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-semibold flex items-center gap-2">
+                                  <UserCircle className="h-4 w-4" />
+                                  Сотрудники ДАТ
+                                </Label>
+                                <div className="p-4 border rounded-lg bg-muted/30">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {streamDATEmployees.map((employee) => (
+                                      <div key={employee.id} className="flex items-start gap-2">
+                                        <Avatar className="h-10 w-10 flex-shrink-0">
+                                          {employee.avatar ? (
+                                            <AvatarImage src={employee.avatar} alt={employee.fullName} />
+                                          ) : null}
+                                          <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                            {getInitialsFromName(employee.fullName)}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium">{employee.fullName}</p>
+                                          <p className="text-xs text-muted-foreground">{employee.position}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null;
+                          })()}
 
-                        {/* Команды стрима */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-semibold flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            Команды стрима
-                          </Label>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedStream.teams.map((team) => (
-                              <Badge
-                                key={team.id}
-                                variant="outline"
-                                className="text-sm cursor-pointer border-orange-500/50 bg-orange-500/10 text-orange-600 dark:text-orange-400 dark:bg-orange-500/20 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-500 dark:hover:text-white transition-colors px-3 py-1.5"
-                                onClick={() => handleSelectTeam(team)}
-                              >
-                                {team.name}
-                              </Badge>
-                            ))}
+                          <Separator />
+
+                          {/* Команды стрима */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-semibold flex items-center gap-2">
+                              <Users className="h-4 w-4" />
+                              Команды стрима
+                            </Label>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedStream.teams.map((team) => (
+                                <Badge
+                                  key={team.id}
+                                  variant="outline"
+                                  className="text-sm cursor-pointer border-orange-500/50 bg-orange-500/10 text-orange-600 dark:text-orange-400 dark:bg-orange-500/20 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-500 dark:hover:text-white transition-colors px-3 py-1.5"
+                                  onClick={() => handleSelectTeam(team)}
+                                >
+                                  {team.name}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        </TabsContent>
 
-                        <AnnualKPICards
-                          stream={selectedStream}
-                          annualKPIs={annualKPIs}
-                          isAnnualExpanded={isAnnualExpanded}
-                          isEditModeAnnual={isEditModeAnnual}
-                          selectedAnnualYear={selectedAnnualYear}
-                          draggedKPIId={draggedKPIId}
-                          onAnnualExpandedChange={setIsAnnualExpanded}
-                          onEditModeAnnualChange={setIsEditModeAnnual}
-                          onSelectedAnnualYearChange={setSelectedAnnualYear}
-                          onDraggedKPIIdChange={setDraggedKPIId}
-                          onDraggedKPIQuarterChange={setDraggedKPIQuarter}
-                          onAddKPI={handleAddKPI}
-                          onDeleteKPI={handleDeleteKPI}
-                          onMoveKPI={handleMoveKPI}
-                          onUpdateKPIInTable={handleUpdateKPIInTable}
-                          onAnnualKPIsChange={setAnnualKPIs}
-                        />
+                        <TabsContent value="annual-kpi" className="space-y-4 p-6 mt-4">
+                          <AnnualKPICards
+                            stream={selectedStream}
+                            annualKPIs={annualKPIs}
+                            isAnnualExpanded={isAnnualExpanded}
+                            isEditModeAnnual={isEditModeAnnual}
+                            selectedAnnualYear={selectedAnnualYear}
+                            draggedKPIId={draggedKPIId}
+                            onAnnualExpandedChange={setIsAnnualExpanded}
+                            onEditModeAnnualChange={setIsEditModeAnnual}
+                            onSelectedAnnualYearChange={setSelectedAnnualYear}
+                            onDraggedKPIIdChange={setDraggedKPIId}
+                            onDraggedKPIQuarterChange={setDraggedKPIQuarter}
+                            onAddKPI={handleAddKPI}
+                            onDeleteKPI={handleDeleteKPI}
+                            onMoveKPI={handleMoveKPI}
+                            onUpdateKPIInTable={handleUpdateKPIInTable}
+                            onAnnualKPIsChange={setAnnualKPIs}
+                          />
+                        </TabsContent>
 
-                        <QuarterlyKPICards
-                          stream={selectedStream}
-                          quarterlyKPIs={quarterlyKPIs}
-                          isQuarterlyExpanded={isQuarterlyExpanded}
-                          isEditModeQuarterly={isEditModeQuarterly}
-                          selectedQuarterlyYear={selectedQuarterlyYear}
-                          draggedKPIId={draggedKPIId}
-                          draggedKPIQuarter={draggedKPIQuarter}
-                          onQuarterlyExpandedChange={setIsQuarterlyExpanded}
-                          onEditModeQuarterlyChange={setIsEditModeQuarterly}
-                          onSelectedQuarterlyYearChange={setSelectedQuarterlyYear}
-                          onDraggedKPIIdChange={setDraggedKPIId}
-                          onDraggedKPIQuarterChange={setDraggedKPIQuarter}
-                          onAddKPI={handleAddKPI}
-                          onDeleteKPI={handleDeleteKPI}
-                          onMoveKPI={handleMoveKPI}
-                          onUpdateKPIInTable={handleUpdateKPIInTable}
-                          onQuarterlyKPIsChange={setQuarterlyKPIs}
-                        />
+                        <TabsContent value="quarterly-kpi" className="space-y-4 p-6 mt-4">
+                          <QuarterlyKPICards
+                            stream={selectedStream}
+                            quarterlyKPIs={quarterlyKPIs}
+                            isQuarterlyExpanded={isQuarterlyExpanded}
+                            isEditModeQuarterly={isEditModeQuarterly}
+                            selectedQuarterlyYear={selectedQuarterlyYear}
+                            draggedKPIId={draggedKPIId}
+                            draggedKPIQuarter={draggedKPIQuarter}
+                            onQuarterlyExpandedChange={setIsQuarterlyExpanded}
+                            onEditModeQuarterlyChange={setIsEditModeQuarterly}
+                            onSelectedQuarterlyYearChange={setSelectedQuarterlyYear}
+                            onDraggedKPIIdChange={setDraggedKPIId}
+                            onDraggedKPIQuarterChange={setDraggedKPIQuarter}
+                            onAddKPI={handleAddKPI}
+                            onDeleteKPI={handleDeleteKPI}
+                            onMoveKPI={handleMoveKPI}
+                            onUpdateKPIInTable={handleUpdateKPIInTable}
+                            onQuarterlyKPIsChange={setQuarterlyKPIs}
+                          />
+                        </TabsContent>
 
-                        <ITLeaderKPICards
-                          stream={selectedStream}
-                          itLeaderKPIs={itLeaderKPIs}
-                          isITLeaderExpanded={isITLeaderExpanded}
-                          isEditModeITLeader={isEditModeITLeader}
-                          selectedITLeaderYear={selectedITLeaderYear}
-                          draggedKPIId={draggedKPIId}
-                          draggedKPIQuarter={draggedKPIQuarter}
-                          onITLeaderExpandedChange={setIsITLeaderExpanded}
-                          onEditModeITLeaderChange={setIsEditModeITLeader}
-                          onSelectedITLeaderYearChange={setSelectedITLeaderYear}
-                          onDraggedKPIIdChange={setDraggedKPIId}
-                          onDraggedKPIQuarterChange={setDraggedKPIQuarter}
-                          onAddKPI={handleAddKPI}
-                          onDeleteKPI={handleDeleteKPI}
-                          onMoveKPI={handleMoveKPI}
-                          onUpdateKPIInTable={handleUpdateKPIInTable}
-                          onITLeaderKPIsChange={setItLeaderKPIs}
-                        />
-                      </div>
+                        <TabsContent value="it-leader-kpi" className="space-y-4 p-6 mt-4">
+                          <ITLeaderKPICards
+                            stream={selectedStream}
+                            itLeaderKPIs={itLeaderKPIs}
+                            isITLeaderExpanded={isITLeaderExpanded}
+                            isEditModeITLeader={isEditModeITLeader}
+                            selectedITLeaderYear={selectedITLeaderYear}
+                            draggedKPIId={draggedKPIId}
+                            draggedKPIQuarter={draggedKPIQuarter}
+                            onITLeaderExpandedChange={setIsITLeaderExpanded}
+                            onEditModeITLeaderChange={setIsEditModeITLeader}
+                            onSelectedITLeaderYearChange={setSelectedITLeaderYear}
+                            onDraggedKPIIdChange={setDraggedKPIId}
+                            onDraggedKPIQuarterChange={setDraggedKPIQuarter}
+                            onAddKPI={handleAddKPI}
+                            onDeleteKPI={handleDeleteKPI}
+                            onMoveKPI={handleMoveKPI}
+                            onUpdateKPIInTable={handleUpdateKPIInTable}
+                            onITLeaderKPIsChange={setItLeaderKPIs}
+                          />
+                        </TabsContent>
+                      </Tabs>
                     </CardContent>
                   </Card>
                 ) : (
