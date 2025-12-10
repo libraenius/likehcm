@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import type { MouseEvent } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -532,6 +532,11 @@ export default function GoalsKoldPage() {
   // Состояние для модального окна КПЭ в таблице ПФК
   const [pfkTableKPIDialogOpen, setPfkTableKPIDialogOpen] = useState(false);
   const [selectedPfkTableKPI, setSelectedPfkTableKPI] = useState<KPI | null>(null);
+  const [selectedPfkTableKPIMeta, setSelectedPfkTableKPIMeta] = useState<{
+    streamId: string;
+    period: string;
+    source: "annual" | "quarterly" | "itLeader";
+  } | null>(null);
   
   const [unitSortOrder, setUnitSortOrder] = useState<"asc" | "desc">("asc");
   const [formulaSortOrder, setFormulaSortOrder] = useState<"asc" | "desc">("asc");
@@ -560,6 +565,195 @@ export default function GoalsKoldPage() {
 
   // Хук для уведомлений
   const { success, error: showError } = useToast();
+
+  // Refs для input элементов загрузки файлов в модальном окне ПФК
+  const pfkTablePlanFileInputRef = useRef<HTMLInputElement>(null);
+  const pfkTableFactFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Функция для обновления KPI в данных
+  const updateKPIFile = (kpiId: string, fileType: "planFile" | "factFile", file: AttachedFile | null) => {
+    if (!selectedPfkTableKPIMeta) return;
+
+    const { streamId, period, source } = selectedPfkTableKPIMeta;
+    const updatedKPI = { ...selectedPfkTableKPI! };
+    
+    if (fileType === "planFile") {
+      updatedKPI.planFile = file;
+    } else {
+      updatedKPI.factFile = file;
+    }
+
+    // Обновляем KPI в соответствующих данных
+    if (source === "annual") {
+      const years = annualKPIs[streamId];
+      if (years) {
+        const yearKPIs = years[period];
+        if (yearKPIs) {
+          const updatedKPIs = yearKPIs.map(kpi => 
+            kpi.id === kpiId ? updatedKPI : kpi
+          );
+          setAnnualKPIs({
+            ...annualKPIs,
+            [streamId]: {
+              ...years,
+              [period]: updatedKPIs,
+            },
+          });
+        }
+      }
+    } else if (source === "quarterly") {
+      // Преобразуем период обратно в формат quarter (например, "1Q2025" -> "q1-2025")
+      const quarterMatch = period.match(/(\d)Q(\d{4})/);
+      const quarter = quarterMatch ? `q${quarterMatch[1]}-${quarterMatch[2]}` : period;
+      const quarters = quarterlyKPIs[streamId];
+      if (quarters) {
+        const quarterKPIs = quarters[quarter];
+        if (quarterKPIs) {
+          const updatedKPIs = quarterKPIs.map(kpi => 
+            kpi.id === kpiId ? updatedKPI : kpi
+          );
+          setQuarterlyKPIs({
+            ...quarterlyKPIs,
+            [streamId]: {
+              ...quarters,
+              [quarter]: updatedKPIs,
+            },
+          });
+        }
+      }
+    } else if (source === "itLeader") {
+      // Преобразуем период обратно в формат quarter
+      const quarterMatch = period.match(/(\d)Q(\d{4})/);
+      const quarter = quarterMatch ? `q${quarterMatch[1]}-${quarterMatch[2]}` : period;
+      const quarters = itLeaderKPIs[streamId];
+      if (quarters) {
+        const quarterKPIs = quarters[quarter];
+        if (quarterKPIs) {
+          const updatedKPIs = quarterKPIs.map(kpi => 
+            kpi.id === kpiId ? updatedKPI : kpi
+          );
+          setItLeaderKPIs({
+            ...itLeaderKPIs,
+            [streamId]: {
+              ...quarters,
+              [quarter]: updatedKPIs,
+            },
+          });
+        }
+      }
+    }
+    
+    // Обновляем выбранный KPI
+    setSelectedPfkTableKPI(updatedKPI);
+  };
+
+  // Обработчики загрузки файлов
+  const handlePfkTablePlanFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const file = event.target.files?.[0];
+    if (!file || !selectedPfkTableKPI) {
+      if (pfkTablePlanFileInputRef.current) {
+        pfkTablePlanFileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Проверяем, что файл Excel
+    const validExtensions = ['.xlsx', '.xls', '.xlsm'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!validExtensions.includes(fileExtension)) {
+      if (pfkTablePlanFileInputRef.current) {
+        pfkTablePlanFileInputRef.current.value = '';
+      }
+      showError('Пожалуйста, загрузите файл Excel (.xlsx, .xls, .xlsm)');
+      return;
+    }
+
+    // Создаем объект файла
+    const fileUrl = URL.createObjectURL(file);
+    const attachedFile: AttachedFile = {
+      id: `file-${Date.now()}`,
+      name: file.name,
+      url: fileUrl,
+      uploadedAt: new Date().toISOString(),
+      size: file.size,
+    };
+
+    updateKPIFile(selectedPfkTableKPI.id, "planFile", attachedFile);
+    success('Файл для плана успешно загружен');
+  };
+
+  const handlePfkTableFactFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const file = event.target.files?.[0];
+    if (!file || !selectedPfkTableKPI) {
+      if (pfkTableFactFileInputRef.current) {
+        pfkTableFactFileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Проверяем, что файл Excel
+    const validExtensions = ['.xlsx', '.xls', '.xlsm'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!validExtensions.includes(fileExtension)) {
+      if (pfkTableFactFileInputRef.current) {
+        pfkTableFactFileInputRef.current.value = '';
+      }
+      showError('Пожалуйста, загрузите файл Excel (.xlsx, .xls, .xlsm)');
+      return;
+    }
+
+    // Создаем объект файла
+    const fileUrl = URL.createObjectURL(file);
+    const attachedFile: AttachedFile = {
+      id: `file-${Date.now()}`,
+      name: file.name,
+      url: fileUrl,
+      uploadedAt: new Date().toISOString(),
+      size: file.size,
+    };
+
+    updateKPIFile(selectedPfkTableKPI.id, "factFile", attachedFile);
+    success('Файл для факта успешно загружен');
+  };
+
+  const handleRemovePfkTablePlanFile = () => {
+    if (selectedPfkTableKPI?.planFile?.url) {
+      URL.revokeObjectURL(selectedPfkTableKPI.planFile.url);
+    }
+    if (selectedPfkTableKPI) {
+      updateKPIFile(selectedPfkTableKPI.id, "planFile", null);
+    }
+    if (pfkTablePlanFileInputRef.current) {
+      pfkTablePlanFileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemovePfkTableFactFile = () => {
+    if (selectedPfkTableKPI?.factFile?.url) {
+      URL.revokeObjectURL(selectedPfkTableKPI.factFile.url);
+    }
+    if (selectedPfkTableKPI) {
+      updateKPIFile(selectedPfkTableKPI.id, "factFile", null);
+    }
+    if (pfkTableFactFileInputRef.current) {
+      pfkTableFactFileInputRef.current.value = '';
+    }
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} Б`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+  };
 
   // Функция для сбора всех данных таблицы ПФК
   const getAllPfkTableData = () => {
@@ -2342,7 +2536,7 @@ export default function GoalsKoldPage() {
                       const paginatedKPIs = filteredKPIs.slice(startIndex, endIndex);
 
                       return paginatedKPIs.map((item) => {
-                        const { kpi, streamName, period, teamOrLeader } = item;
+                        const { kpi, streamName, period, teamOrLeader, streamId, source } = item;
                         return (
                           <TableRow key={kpi.id}>
                             <TableCell className="break-words whitespace-normal">
@@ -2350,6 +2544,7 @@ export default function GoalsKoldPage() {
                                 className="cursor-pointer hover:text-primary hover:underline"
                                 onClick={() => {
                                   setSelectedPfkTableKPI(kpi);
+                                  setSelectedPfkTableKPIMeta({ streamId, period, source });
                                   setPfkTableKPIDialogOpen(true);
                                 }}
                               >
@@ -4103,7 +4298,12 @@ export default function GoalsKoldPage() {
       </Dialog>
 
       {/* Модальное окно с подробной информацией о КПЭ из таблицы ПФК */}
-      <Dialog open={pfkTableKPIDialogOpen} onOpenChange={setPfkTableKPIDialogOpen}>
+      <Dialog open={pfkTableKPIDialogOpen} onOpenChange={(open) => {
+        setPfkTableKPIDialogOpen(open);
+        if (!open) {
+          setSelectedPfkTableKPIMeta(null);
+        }
+      }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Подробная информация о КПЭ</DialogTitle>
@@ -4148,31 +4348,173 @@ export default function GoalsKoldPage() {
                 </div>
               </div>
               <Separator />
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Статус ПЛАН</Label>
-                {selectedPfkTableKPI.planStatus ? (
-                  <Badge 
-                    variant={getStatusBadgeVariant(selectedPfkTableKPI.planStatus) as any} 
-                    className={cn("text-xs", getStatusBadgeClassName(selectedPfkTableKPI.planStatus))}
-                  >
-                    {selectedPfkTableKPI.planStatus}
-                  </Badge>
-                ) : (
-                  <span className="text-muted-foreground text-sm">—</span>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Статус ФАКТ</Label>
-                {selectedPfkTableKPI.factStatus ? (
-                  <Badge 
-                    variant={getStatusBadgeVariant(selectedPfkTableKPI.factStatus) as any} 
-                    className={cn("text-xs", getStatusBadgeClassName(selectedPfkTableKPI.factStatus))}
-                  >
-                    {selectedPfkTableKPI.factStatus}
-                  </Badge>
-                ) : (
-                  <span className="text-muted-foreground text-sm">—</span>
-                )}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Статус ПЛАН</Label>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedPfkTableKPI.planStatus ? (
+                      <Badge 
+                        variant={getStatusBadgeVariant(selectedPfkTableKPI.planStatus) as any} 
+                        className={cn("text-xs", getStatusBadgeClassName(selectedPfkTableKPI.planStatus))}
+                      >
+                        {selectedPfkTableKPI.planStatus}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
+                    <div className="flex items-center gap-2">
+                      {selectedPfkTableKPI.planFile ? (
+                        <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                          <FileText className="h-4 w-4 text-primary" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{selectedPfkTableKPI.planFile.name}</p>
+                            {selectedPfkTableKPI.planFile.size && (
+                              <p className="text-xs text-muted-foreground">{formatFileSize(selectedPfkTableKPI.planFile.size)}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                if (selectedPfkTableKPI.planFile?.url) {
+                                  window.open(selectedPfkTableKPI.planFile.url, '_blank');
+                                }
+                              }}
+                              title="Скачать файл"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={handleRemovePfkTablePlanFile}
+                              title="Удалить файл"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            ref={pfkTablePlanFileInputRef}
+                            type="file"
+                            accept=".xlsx,.xls,.xlsm"
+                            onChange={handlePfkTablePlanFileUpload}
+                            onClick={(e) => e.stopPropagation()}
+                            className="hidden"
+                            id="pfk-table-plan-file-upload"
+                          />
+                          <label htmlFor="pfk-table-plan-file-upload" className="cursor-pointer">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                pfkTablePlanFileInputRef.current?.click();
+                              }}
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Загрузить Excel
+                            </Button>
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Статус ФАКТ</Label>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedPfkTableKPI.factStatus ? (
+                      <Badge 
+                        variant={getStatusBadgeVariant(selectedPfkTableKPI.factStatus) as any} 
+                        className={cn("text-xs", getStatusBadgeClassName(selectedPfkTableKPI.factStatus))}
+                      >
+                        {selectedPfkTableKPI.factStatus}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
+                    <div className="flex items-center gap-2">
+                      {selectedPfkTableKPI.factFile ? (
+                        <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                          <FileText className="h-4 w-4 text-primary" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{selectedPfkTableKPI.factFile.name}</p>
+                            {selectedPfkTableKPI.factFile.size && (
+                              <p className="text-xs text-muted-foreground">{formatFileSize(selectedPfkTableKPI.factFile.size)}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                if (selectedPfkTableKPI.factFile?.url) {
+                                  window.open(selectedPfkTableKPI.factFile.url, '_blank');
+                                }
+                              }}
+                              title="Скачать файл"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={handleRemovePfkTableFactFile}
+                              title="Удалить файл"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            ref={pfkTableFactFileInputRef}
+                            type="file"
+                            accept=".xlsx,.xls,.xlsm"
+                            onChange={handlePfkTableFactFileUpload}
+                            onClick={(e) => e.stopPropagation()}
+                            className="hidden"
+                            id="pfk-table-fact-file-upload"
+                          />
+                          <label htmlFor="pfk-table-fact-file-upload" className="cursor-pointer">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                pfkTableFactFileInputRef.current?.click();
+                              }}
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Загрузить Excel
+                            </Button>
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
