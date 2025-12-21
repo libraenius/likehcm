@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { getProfiles, getUserProfile, saveUserProfile, getProfileById, createDefaultUserProfile, resetUserProfile, getCompetenceById, getCareerTrackByProfileId, getCareerTracks, getCompetences } from "@/lib/data";
+import { getProfiles, getUserProfile, saveUserProfile, getProfileById, createDefaultUserProfile, resetUserProfile, getCompetenceById, getCareerTrackByProfileId, getCareerTracks, getCompetences, updateProfileWithAssessmentData } from "@/lib/data";
 import { getUserCareerTrackProgress, calculateProfileMatch, calculateCareerTrackProgress } from "@/lib/calculations";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -2941,8 +2941,18 @@ export default function CareerPage() {
 
     setUserProfile(updatedProfile);
     saveUserProfile(updatedProfile);
+    
+    // Обновляем прогресс карьерного трека в профиле
+    updateProfileWithAssessmentData();
+    
     // Обновляем профили на случай изменений
     setProfiles(getProfiles());
+    
+    // Перезагружаем профиль из хранилища, чтобы получить обновленный careerTrackProgress
+    const refreshedProfile = getUserProfile();
+    if (refreshedProfile) {
+      setUserProfile(refreshedProfile);
+    }
   };
 
   const handleResetProfile = () => {
@@ -2961,7 +2971,7 @@ export default function CareerPage() {
       return null;
     }
     return getUserCareerTrackProgress(userProfile);
-  }, [userProfile?.mainProfileId, userProfile?.skills]);
+  }, [userProfile]);
 
   const mainProfile = profiles.find((p) => p.id === mainProfileId);
   const hasCompletedSetup = !!userProfile?.mainProfileId && userProfile.skills && userProfile.skills.length > 0;
