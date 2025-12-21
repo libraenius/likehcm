@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
 import { calculateKPIMetrics } from "@/lib/goals-kold/utils";
 import type { KPI, Stream } from "@/types/goals-kold";
 
-// Функция для определения цвета статуса
-const getStatusBadgeVariant = (status: string | undefined) => {
+// Функция для определения варианта badge статуса
+const getStatusBadgeVariant = (status: string | undefined): "outline" => {
   return "outline";
 };
 
@@ -293,7 +293,7 @@ export function AnnualKPICards({
                         <TableCell className="text-center">
                           {kpi.planStatus ? (
                             <Badge 
-                              variant={getStatusBadgeVariant(kpi.planStatus) as any} 
+                              variant={getStatusBadgeVariant(kpi.planStatus)} 
                               className={cn("text-xs", getStatusBadgeClassName(kpi.planStatus))}
                             >
                               {kpi.planStatus}
@@ -412,7 +412,7 @@ export function AnnualKPICards({
                 <Label className="text-xs text-muted-foreground">Статус ПЛАН</Label>
                 {selectedKPI.planStatus ? (
                   <Badge 
-                    variant={getStatusBadgeVariant(selectedKPI.planStatus) as any} 
+                    variant={getStatusBadgeVariant(selectedKPI.planStatus)} 
                     className={cn("text-xs", getStatusBadgeClassName(selectedKPI.planStatus))}
                   >
                     {selectedKPI.planStatus}

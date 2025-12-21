@@ -516,7 +516,7 @@ export default function GoalsKoldPage() {
   // Состояние для диалога просмотра комментария отклонения
   const [viewCommentDialogOpen, setViewCommentDialogOpen] = useState(false);
   const [viewingComment, setViewingComment] = useState<{
-    comment: string;
+    comment: string | undefined;
     statusType: "plan" | "fact";
   } | null>(null);
   
@@ -578,9 +578,9 @@ export default function GoalsKoldPage() {
     const updatedKPI = { ...selectedPfkTableKPI! };
     
     if (fileType === "planFile") {
-      updatedKPI.planFile = file;
+      updatedKPI.planFile = file ?? undefined;
     } else {
-      updatedKPI.factFile = file;
+      updatedKPI.factFile = file ?? undefined;
     }
 
     // Обновляем KPI в соответствующих данных
@@ -3773,7 +3773,7 @@ export default function GoalsKoldPage() {
                           
                           // Фильтры
                           const matchesTypeFilter = streamFilters.types.length === 0 ||
-                            (s.type && streamFilters.types.includes(s.type));
+                            (s.type && streamFilters.types.includes(s.type as "продуктовый" | "канальный" | "сегментный" | "платформенный" | "сервисный"));
                           const matchesBusinessFilter = streamFilters.businessTypes.length === 0 ||
                             (s.businessType && streamFilters.businessTypes.includes(s.businessType));
                           
@@ -4264,7 +4264,9 @@ export default function GoalsKoldPage() {
                 details: `КПЭ '${selectedKpiForHistory.kpi.name}' создан`,
                 type: "create" as const,
               },
-            ].filter(Boolean).map((item, index) => (
+            ].filter((item): item is { date: Date; user: string; action: string; details: string; type: "edit" | "status" | "reject" | "create" } => 
+              Boolean(item) && typeof item === 'object' && item !== null && 'user' in item && 'date' in item
+            ).map((item, index) => (
               <div key={index} className="flex gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                 <div className="flex-shrink-0">
                   <div className="w-2 h-2 rounded-full bg-primary mt-2" />

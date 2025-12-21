@@ -107,7 +107,7 @@ function CompetenceTableRow({
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6"
+              className="h-6 w-6 flex-shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
@@ -119,7 +119,7 @@ function CompetenceTableRow({
                 <ChevronRight className="h-4 w-4" />
               )}
             </Button>
-            {competence.name}
+            <span className="break-words whitespace-normal">{competence.name}</span>
           </div>
         </TableCell>
         <TableCell className="w-[120px]">

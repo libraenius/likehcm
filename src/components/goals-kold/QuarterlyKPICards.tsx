@@ -17,7 +17,7 @@ import { calculateKPIMetrics } from "@/lib/goals-kold/utils";
 import type { KPI, Stream, JiraTask } from "@/types/goals-kold";
 import { JiraTasksWidget } from "./JiraTasksWidget";
 
-const getStatusBadgeVariant = (status: string | undefined) => {
+const getStatusBadgeVariant = (status: string | undefined): "outline" => {
   return "outline";
 };
 
@@ -254,7 +254,7 @@ export function QuarterlyKPICards({
                     <TableCell className="text-center">
                       {kpi.planStatus ? (
                         <Badge 
-                          variant={getStatusBadgeVariant(kpi.planStatus) as any} 
+                          variant={getStatusBadgeVariant(kpi.planStatus)} 
                           className={cn("text-xs", getStatusBadgeClassName(kpi.planStatus))}
                         >
                           {kpi.planStatus}
@@ -478,7 +478,7 @@ export function QuarterlyKPICards({
                 <Label className="text-xs text-muted-foreground">Статус ПЛАН</Label>
                 {selectedKPI.planStatus ? (
                   <Badge 
-                    variant={getStatusBadgeVariant(selectedKPI.planStatus) as any} 
+                    variant={getStatusBadgeVariant(selectedKPI.planStatus)} 
                     className={cn("text-xs", getStatusBadgeClassName(selectedKPI.planStatus))}
                   >
                     {selectedKPI.planStatus}

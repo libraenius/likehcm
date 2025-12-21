@@ -274,7 +274,7 @@ export function JiraTasksWidget({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Все</SelectItem>
-                    {uniqueAssignees.map(assignee => (
+                    {uniqueAssignees.filter((assignee): assignee is string => Boolean(assignee)).map(assignee => (
                       <SelectItem key={assignee} value={assignee}>{assignee}</SelectItem>
                     ))}
                   </SelectContent>
