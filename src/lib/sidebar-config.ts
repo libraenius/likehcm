@@ -15,6 +15,7 @@ import {
   Shield,
   FolderOpen,
   Settings,
+  Users,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -82,6 +83,11 @@ export const menuSections: MenuSection[] = [
         title: "Оценка внешние провайдеры",
         href: "/services/external-providers",
         icon: Building2,
+      },
+      {
+        title: "Преемники",
+        href: "/services/succession",
+        icon: Users,
       },
     ],
   },

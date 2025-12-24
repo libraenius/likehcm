@@ -38,6 +38,9 @@ export const STORAGE_KEYS = {
   CAREER_TRACKS: "skillmap_career_tracks",
   USER_PROFILE: "userProfile",
   DATA_VERSION: "skillmap_data_version",
+  KEY_POSITIONS: "skillmap_key_positions",
+  SUCCESSORS: "skillmap_successors",
+  DEVELOPMENT_PLANS: "skillmap_development_plans",
 } as const;
 
 // Версия схемы данных
