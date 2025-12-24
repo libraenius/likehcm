@@ -16,6 +16,7 @@ import {
   FolderOpen,
   Settings,
   Users,
+  GraduationCap,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -88,6 +89,11 @@ export const menuSections: MenuSection[] = [
         title: "Преемники",
         href: "/services/succession",
         icon: Users,
+      },
+      {
+        title: "Единая платформа по работе с ВУЗами",
+        href: "/services/universities",
+        icon: GraduationCap,
       },
     ],
   },
