@@ -1,22 +1,26 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
+import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Download, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, CheckSquare, Square, Edit3, Copy, Tag, Eye, EyeOff } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
 
 // Тип для университета
 interface University {
@@ -96,6 +100,44 @@ interface Notification {
   recipientEmails: string[];
   sentAt: Date;
   status: "sent" | "pending" | "failed";
+}
+
+// Интерфейс для комментария
+interface Comment {
+  id: string;
+  partnershipId: string;
+  author: string;
+  text: string;
+  createdAt: Date;
+}
+
+// Интерфейс для истории изменений
+interface ChangeHistory {
+  id: string;
+  partnershipId?: string;
+  universityId?: string;
+  action: "created" | "updated" | "deleted" | "status_changed" | "student_added" | "student_removed";
+  field?: string;
+  oldValue?: string;
+  newValue?: string;
+  user: string;
+  timestamp: Date;
+}
+
+// Интерфейс для шаблона email
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  variables: string[];
+}
+
+// Расширенный интерфейс партнерства с архивом и комментариями
+interface PartnershipExtended extends Partnership {
+  comments?: Comment[];
+  isArchived?: boolean;
+  archivedAt?: Date;
 }
 
 // Моковые данные для истории уведомлений
@@ -181,41 +223,6 @@ const mockUniversities: University[] = [
         link: "https://partnership.example.com/partnership/3",
       },
     ],
-  },
-];
-
-// Моковые данные для вкладки "Мои партнерства"
-const mockPartnerships: Partnership[] = [
-  {
-    id: "part-1",
-    name: "Программа стажировок для студентов IT-направлений",
-    universityId: "univ-1",
-    universityName: "МГУ",
-    type: "internship",
-    startDate: new Date("2024-01-15"),
-    endDate: new Date("2024-06-30"),
-    status: "active",
-    link: "https://partnership.example.com/partnership/1",
-  },
-  {
-    id: "part-2",
-    name: "Совместная образовательная программа",
-    universityId: "univ-2",
-    universityName: "СПбГУ",
-    type: "education",
-    startDate: new Date("2024-02-01"),
-    status: "active",
-    link: "https://partnership.example.com/partnership/2",
-  },
-  {
-    id: "part-3",
-    name: "Программа рекрутинга выпускников",
-    universityId: "univ-3",
-    universityName: "МФТИ",
-    type: "recruitment",
-    startDate: new Date("2024-03-01"),
-    status: "planned",
-    link: "https://partnership.example.com/partnership/3",
   },
 ];
 
@@ -321,6 +328,97 @@ const getInitials = (fullName: string) => {
   return "??";
 };
 
+// Функции валидации
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validateURL = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const validateDates = (startDate: string, endDate?: string): string | null => {
+  if (!startDate) return "Дата начала обязательна";
+  const start = new Date(startDate);
+  if (isNaN(start.getTime())) return "Некорректная дата начала";
+  if (endDate) {
+    const end = new Date(endDate);
+    if (isNaN(end.getTime())) return "Некорректная дата окончания";
+    if (end < start) return "Дата окончания не может быть раньше даты начала";
+  }
+  return null;
+};
+
+// Функция дебаунс для поиска
+const debounce = <T extends (...args: any[]) => void>(
+  func: T,
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout | null = null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
+// Функции экспорта
+const exportToExcel = (data: any[], filename: string) => {
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+  XLSX.writeFile(wb, `${filename}.xlsx`);
+};
+
+const exportUniversitiesToExcel = (universities: University[]) => {
+  const data = universities.flatMap(uni => 
+    uni.partnerships.map(p => ({
+      "Университет": uni.name,
+      "Город": uni.city,
+      "Регион": uni.region,
+      "Партнерство": p.name,
+      "Тип": getPartnershipTypeText(p.type),
+      "Статус": getStatusText(p.status),
+      "Дата начала": formatDate(p.startDate),
+      "Дата окончания": p.endDate ? formatDate(p.endDate) : "",
+      "Студентов": p.students?.length || 0,
+    }))
+  );
+  exportToExcel(data, `universities_${new Date().toISOString().split('T')[0]}`);
+};
+
+// Шаблоны email
+const emailTemplates: EmailTemplate[] = [
+  {
+    id: "invitation",
+    name: "Приглашение на партнерство",
+    subject: "Приглашение участвовать в партнерстве: {{partnershipName}}",
+    body: "Уважаемый(ая) {{studentName}}!\n\nПриглашаем вас принять участие в программе {{partnershipName}}.\n\nДата начала: {{startDate}}\n\nСсылка на партнерство: {{uniqueLink}}\n\nС уважением,\nКоманда университета",
+    variables: ["studentName", "partnershipName", "startDate", "uniqueLink"],
+  },
+  {
+    id: "reminder",
+    name: "Напоминание о партнерстве",
+    subject: "Напоминание: {{partnershipName}}",
+    body: "Уважаемый(ая) {{studentName}}!\n\nНапоминаем вам о вашем участии в программе {{partnershipName}}.\n\nТекущий статус: {{status}}\n\nСсылка: {{uniqueLink}}\n\nС уважением,\nКоманда университета",
+    variables: ["studentName", "partnershipName", "status", "uniqueLink"],
+  },
+];
+
+// Замена переменных в шаблоне
+const replaceTemplateVariables = (template: string, variables: Record<string, string>): string => {
+  let result = template;
+  Object.entries(variables).forEach(([key, value]) => {
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
+  });
+  return result;
+};
+
 export default function UniversitiesPage() {
   // Состояние для администрирования
   const [universities, setUniversities] = useState<University[]>(mockUniversities);
@@ -371,6 +469,29 @@ export default function UniversitiesPage() {
     recipientIds: [] as string[],
   });
   const [notificationSearchQuery, setNotificationSearchQuery] = useState("");
+  
+  // Новое состояние для улучшений
+  const [deleteUniversityId, setDeleteUniversityId] = useState<string | null>(null);
+  const [deletePartnershipId, setDeletePartnershipId] = useState<{ universityId: string; partnershipId: string } | null>(null);
+  const [deleteStudentId, setDeleteStudentId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"name" | "city" | "partnerships" | "date">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [showArchived, setShowArchived] = useState(false);
+  const [selectedUniversityIds, setSelectedUniversityIds] = useState<Set<string>>(new Set());
+  const [selectedPartnershipIds, setSelectedPartnershipIds] = useState<Set<string>>(new Set());
+  const [editingStudent, setEditingStudent] = useState<{ partnershipId: string; student: Student } | null>(null);
+  const [studentStatusFilter, setStudentStatusFilter] = useState<string>("all");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [changeHistory, setChangeHistory] = useState<ChangeHistory[]>([]);
+  const [isCommentsDialogOpen, setIsCommentsDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+  const [newComment, setNewComment] = useState("");
+  const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   
   // Переключение раскрытия университета
   const toggleUniversity = (universityId: string) => {
@@ -437,6 +558,16 @@ export default function UniversitiesPage() {
   // Создание или обновление партнерства
   const handleCreatePartnership = () => {
     if (!partnershipFormData.name.trim() || !partnershipFormData.universityId || !partnershipFormData.startDate) {
+      return;
+    }
+    
+    // Валидация
+    const dateError = validateDates(partnershipFormData.startDate, partnershipFormData.endDate);
+    if (dateError) {
+      return;
+    }
+    
+    if (partnershipFormData.link && !validateURL(partnershipFormData.link)) {
       return;
     }
     
@@ -541,29 +672,283 @@ export default function UniversitiesPage() {
     });
   };
   
-  // Фильтрация данных
+  // Вычисление статистики
+  const stats = useMemo(() => {
+    const allPartnerships = universities.flatMap(u => u.partnerships.filter(p => !(p as PartnershipExtended).isArchived));
+    return {
+      totalUniversities: universities.length,
+      totalPartnerships: allPartnerships.length,
+      activePartnerships: allPartnerships.filter(p => p.status === "active").length,
+      plannedPartnerships: allPartnerships.filter(p => p.status === "planned").length,
+      completedPartnerships: allPartnerships.filter(p => p.status === "completed").length,
+      totalStudents: allPartnerships.reduce((sum, p) => sum + (p.students?.length || 0), 0),
+    };
+  }, [universities]);
+
+  // Фильтрация и сортировка данных
   const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return universities;
-    
-    const query = searchQuery.toLowerCase();
-    return universities.map(university => {
-      const universityMatches = 
+    let result = universities.map(university => {
+      const query = searchQuery.toLowerCase();
+      const universityMatches = !searchQuery.trim() ||
         university.name.toLowerCase().includes(query) ||
         university.shortName?.toLowerCase().includes(query) ||
         university.city.toLowerCase().includes(query) ||
-        university.region.toLowerCase().includes(query);
+        university.region.toLowerCase().includes(query) ||
+        university.description?.toLowerCase().includes(query);
       
-      const filteredPartnerships = university.partnerships.filter(partnership =>
-        partnership.name.toLowerCase().includes(query) ||
-        partnership.description?.toLowerCase().includes(query)
-      );
+      let filteredPartnerships = university.partnerships.filter(partnership => {
+        const extended = partnership as PartnershipExtended;
+        if (showArchived && !extended.isArchived) return false;
+        if (!showArchived && extended.isArchived) return false;
+        
+        if (searchQuery.trim()) {
+          const matchesSearch = 
+            partnership.name.toLowerCase().includes(query) ||
+            partnership.description?.toLowerCase().includes(query);
+          if (!matchesSearch && !universityMatches) return false;
+        }
+        
+        if (statusFilter !== "all" && partnership.status !== statusFilter) return false;
+        if (typeFilter !== "all" && partnership.type !== typeFilter) return false;
+        
+        return true;
+      });
       
-      if (universityMatches || filteredPartnerships.length > 0) {
-        return { ...university, partnerships: universityMatches ? university.partnerships : filteredPartnerships };
+      return { ...university, partnerships: universityMatches ? filteredPartnerships : filteredPartnerships };
+    }).filter(u => {
+      if (cityFilter !== "all" && u.city !== cityFilter) return false;
+      return u.partnerships.length > 0 || !searchQuery.trim();
+    });
+    
+    // Сортировка
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "city":
+          comparison = a.city.localeCompare(b.city);
+          break;
+        case "partnerships":
+          comparison = a.partnerships.length - b.partnerships.length;
+          break;
+        case "date":
+          const aLatest = a.partnerships.length > 0 
+            ? Math.max(...a.partnerships.map(p => p.startDate.getTime()))
+            : 0;
+          const bLatest = b.partnerships.length > 0
+            ? Math.max(...b.partnerships.map(p => p.startDate.getTime()))
+            : 0;
+          comparison = aLatest - bLatest;
+          break;
       }
-      return null;
-    }).filter(Boolean) as University[];
-  }, [universities, searchQuery]);
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+    
+    return result;
+  }, [universities, searchQuery, statusFilter, typeFilter, cityFilter, sortBy, sortOrder, showArchived]);
+
+  // Получение уникальных городов для фильтра
+  const uniqueCities = useMemo(() => {
+    const cities = new Set(universities.map(u => u.city));
+    return Array.from(cities).sort();
+  }, [universities]);
+
+  // Функции удаления
+  const handleDeleteUniversity = useCallback(() => {
+    if (!deleteUniversityId) return;
+    const university = universities.find(u => u.id === deleteUniversityId);
+    if (university && university.partnerships.length > 0) {
+      // Предупреждение если есть партнерства
+      return;
+    }
+    setUniversities(universities.filter(u => u.id !== deleteUniversityId));
+    if (selectedPartnership && selectedPartnership.universityId === deleteUniversityId) {
+      setSelectedPartnership(null);
+    }
+    setDeleteUniversityId(null);
+  }, [deleteUniversityId, universities, selectedPartnership]);
+
+  const handleDeletePartnership = useCallback(() => {
+    if (!deletePartnershipId) return;
+    const { universityId, partnershipId } = deletePartnershipId;
+    const university = universities.find(u => u.id === universityId);
+    const partnership = university?.partnerships.find(p => p.id === partnershipId);
+    
+    if (partnership && partnership.students && partnership.students.length > 0) {
+      // Предупреждение
+      return;
+    }
+    
+    setUniversities(universities.map(u => {
+      if (u.id === universityId) {
+        return {
+          ...u,
+          partnerships: u.partnerships.filter(p => p.id !== partnershipId),
+        };
+      }
+      return u;
+    }));
+    
+    if (selectedPartnership?.id === partnershipId) {
+      setSelectedPartnership(null);
+    }
+    setDeletePartnershipId(null);
+  }, [deletePartnershipId, universities, selectedPartnership]);
+
+  const handleDeleteStudent = useCallback(() => {
+    if (!deleteStudentId || !selectedPartnership) return;
+    
+    setUniversities(universities.map(u => {
+      if (u.id === selectedPartnership.universityId) {
+        return {
+          ...u,
+          partnerships: u.partnerships.map(p => {
+            if (p.id === selectedPartnership.id) {
+              return {
+                ...p,
+                students: (p.students || []).filter(s => s.id !== deleteStudentId),
+              };
+            }
+            return p;
+          }),
+        };
+      }
+      return u;
+    }));
+    
+    const updatedPartnership = universities
+      .find(u => u.id === selectedPartnership.universityId)
+      ?.partnerships.find(p => p.id === selectedPartnership.id);
+    if (updatedPartnership) {
+      setSelectedPartnership({
+        ...updatedPartnership,
+        students: (updatedPartnership.students || []).filter(s => s.id !== deleteStudentId),
+      });
+    }
+    setDeleteStudentId(null);
+  }, [deleteStudentId, selectedPartnership, universities]);
+
+  // Изменение статуса студента
+  const handleChangeStudentStatus = useCallback((studentId: string, newStatus: Student["status"]) => {
+    if (!selectedPartnership) return;
+    
+    setUniversities(universities.map(u => {
+      if (u.id === selectedPartnership.universityId) {
+        return {
+          ...u,
+          partnerships: u.partnerships.map(p => {
+            if (p.id === selectedPartnership.id) {
+              return {
+                ...p,
+                students: (p.students || []).map(s =>
+                  s.id === studentId ? { ...s, status: newStatus } : s
+                ),
+              };
+            }
+            return p;
+          }),
+        };
+      }
+      return u;
+    }));
+    
+    const updatedPartnership = universities
+      .find(u => u.id === selectedPartnership.universityId)
+      ?.partnerships.find(p => p.id === selectedPartnership.id);
+    if (updatedPartnership) {
+      const updatedStudents = (updatedPartnership.students || []).map(s =>
+        s.id === studentId ? { ...s, status: newStatus } : s
+      );
+      setSelectedPartnership({ ...updatedPartnership, students: updatedStudents });
+    }
+  }, [selectedPartnership, universities]);
+
+  // Работа с комментариями
+  const handleAddComment = useCallback(() => {
+    if (!newComment.trim() || !selectedPartnership) return;
+    
+    const comment: Comment = {
+      id: `comment-${Date.now()}`,
+      partnershipId: selectedPartnership.id,
+      author: "Текущий пользователь", // В реальном приложении брать из контекста
+      text: newComment.trim(),
+      createdAt: new Date(),
+    };
+    
+    setComments([...comments, comment]);
+    setNewComment("");
+  }, [newComment, selectedPartnership, comments]);
+
+  // Массовые операции
+  const handleBulkDeletePartnerships = useCallback(() => {
+    if (selectedPartnershipIds.size === 0) return;
+    
+    setUniversities(universities.map(u => ({
+      ...u,
+      partnerships: u.partnerships.filter(p => !selectedPartnershipIds.has(p.id)),
+    })));
+    
+    if (selectedPartnership && selectedPartnershipIds.has(selectedPartnership.id)) {
+      setSelectedPartnership(null);
+    }
+    setSelectedPartnershipIds(new Set());
+  }, [selectedPartnershipIds, universities, selectedPartnership]);
+
+  const handleBulkChangeStatus = useCallback((newStatus: Partnership["status"]) => {
+    if (selectedPartnershipIds.size === 0) return;
+    
+    setUniversities(universities.map(u => ({
+      ...u,
+      partnerships: u.partnerships.map(p =>
+        selectedPartnershipIds.has(p.id) ? { ...p, status: newStatus } : p
+      ),
+    })));
+    
+    if (selectedPartnership && selectedPartnershipIds.has(selectedPartnership.id)) {
+      setSelectedPartnership({ ...selectedPartnership, status: newStatus });
+    }
+    setSelectedPartnershipIds(new Set());
+  }, [selectedPartnershipIds, universities, selectedPartnership]);
+
+  // Фильтрация студентов
+  const filteredStudents = useMemo(() => {
+    if (!selectedPartnership?.students) return [];
+    if (studentStatusFilter === "all") return selectedPartnership.students;
+    return selectedPartnership.students.filter(s => s.status === studentStatusFilter);
+  }, [selectedPartnership, studentStatusFilter]);
+
+  // Применение шаблона email
+  const handleApplyTemplate = useCallback((template: EmailTemplate) => {
+    if (!selectedPartnership) return;
+    
+    const variables: Record<string, string> = {
+      partnershipName: selectedPartnership.name,
+      startDate: formatDate(selectedPartnership.startDate),
+      status: getStatusText(selectedPartnership.status),
+    };
+    
+    let subject = replaceTemplateVariables(template.subject, variables);
+    let message = replaceTemplateVariables(template.body, variables);
+    
+    setNotificationFormData(prev => ({
+      ...prev,
+      subject,
+      message,
+    }));
+    setSelectedTemplate(template);
+    setIsTemplateDialogOpen(false);
+  }, [selectedPartnership]);
+
+  // Дебаунсированный поиск
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -576,159 +961,52 @@ export default function UniversitiesPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="my-partnerships" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="my-partnerships" className="flex items-center gap-2">
-            <ClipboardCheck className="h-4 w-4" />
-            <span>Мои партнерства</span>
-          </TabsTrigger>
-          <TabsTrigger value="students-partnerships" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span>Партнерства студентов</span>
-          </TabsTrigger>
+      <Tabs defaultValue="administration" className="w-full">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="administration" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             <span>Администрирование</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="my-partnerships" className="space-y-6">
-          {mockPartnerships.length === 0 ? (
+        <TabsContent value="administration" className="space-y-4">
+          {/* Статистика */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
-              <CardContent className="py-8">
-                <p className="text-muted-foreground text-center">
-                  У вас пока нет партнерств
-                </p>
+              <CardHeader className="pb-2">
+                <CardDescription>Всего университетов</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalUniversities}</div>
               </CardContent>
             </Card>
-          ) : (
-            <>
-              {/* Активные партнерства */}
-              {(() => {
-                const activePartnerships = mockPartnerships.filter(
-                  (p) => p.status === "planned" || p.status === "active"
-                );
-                if (activePartnerships.length === 0) return null;
-                return (
-                  <div className="space-y-3">
-                    <h2 className="text-lg font-semibold text-foreground">Активные</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {activePartnerships.map((partnership) => (
-                        <Card key={partnership.id} className="border">
-                          <CardContent className="p-4 space-y-3">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 min-w-0 space-y-2">
-                                <div className="flex items-start justify-between gap-2">
-                                  <h3 className="font-semibold text-base">{partnership.name}</h3>
-                                  <Badge
-                                    variant="outline"
-                                    className={cn("text-xs px-2 py-0.5 flex-shrink-0", getStatusColor(partnership.status))}
-                                  >
-                                    {getStatusText(partnership.status)}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                  <GraduationCap className="h-3.5 w-3.5 flex-shrink-0" />
-                                  <span className="truncate">{partnership.universityName}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                  <Badge variant="secondary" className="text-xs">
-                                    {getPartnershipTypeText(partnership.type)}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                  <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                                  <span>
-                                    {formatDate(partnership.startDate)}
-                                    {partnership.endDate && ` - ${formatDate(partnership.endDate)}`}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {partnership.link && (
-                              <div className="py-3 px-4 bg-muted/50 rounded-lg border">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span className="text-sm text-muted-foreground whitespace-nowrap">Ссылка:</span>
-                                  <a
-                                    href={partnership.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-primary hover:underline font-mono break-all flex items-center gap-1"
-                                  >
-                                    {partnership.link}
-                                    <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
-                                  </a>
-                                </div>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Активных партнерств</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{stats.activePartnerships}</div>
+                <p className="text-xs text-muted-foreground mt-1">из {stats.totalPartnerships} всего</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Всего студентов</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">{stats.totalStudents}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Запланировано</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">{stats.plannedPartnerships}</div>
+              </CardContent>
+            </Card>
+          </div>
 
-              {/* Завершенные партнерства */}
-              {(() => {
-                const completedPartnerships = mockPartnerships.filter(
-                  (p) => p.status === "completed" || p.status === "cancelled"
-                );
-                if (completedPartnerships.length === 0) return null;
-                return (
-                  <div className="space-y-3">
-                    <h2 className="text-lg font-semibold text-foreground">Завершенные</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {completedPartnerships.map((partnership) => (
-                        <Card key={partnership.id} className="border">
-                          <CardContent className="p-4 space-y-3">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 min-w-0 space-y-2">
-                                <div className="flex items-start justify-between gap-2">
-                                  <h3 className="font-semibold text-base">{partnership.name}</h3>
-                                  <Badge
-                                    variant="outline"
-                                    className={cn("text-xs px-2 py-0.5 flex-shrink-0", getStatusColor(partnership.status))}
-                                  >
-                                    {getStatusText(partnership.status)}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                  <GraduationCap className="h-3.5 w-3.5 flex-shrink-0" />
-                                  <span className="truncate">{partnership.universityName}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                  <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                                  <span>
-                                    {formatDate(partnership.startDate)}
-                                    {partnership.endDate && ` - ${formatDate(partnership.endDate)}`}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="students-partnerships" className="space-y-6">
-          <Card>
-            <CardContent className="py-8">
-              <p className="text-muted-foreground text-center">
-                Партнерства студентов будут отображаться здесь
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="administration" className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-2">Администрирование</h2>
@@ -736,32 +1014,91 @@ export default function UniversitiesPage() {
                 Управление университетами и партнерствами
               </p>
             </div>
-            <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              Добавить университет/партнерство
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => exportUniversitiesToExcel(universities)}>
+                <Download className="mr-2 h-4 w-4" />
+                Экспорт
+              </Button>
+              <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                Добавить
+              </Button>
+            </div>
           </div>
 
           {/* Поиск */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Поиск по университетам и партнерствам..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
-                onClick={() => setSearchQuery("")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по университетам и партнерствам..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsFiltersDialogOpen(true)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Фильтры
+              {(statusFilter !== "all" || typeFilter !== "all" || cityFilter !== "all" || showArchived) && (
+                <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                  {[
+                    statusFilter !== "all" ? 1 : 0,
+                    typeFilter !== "all" ? 1 : 0,
+                    cityFilter !== "all" ? 1 : 0,
+                    showArchived ? 1 : 0,
+                  ].reduce((a, b) => a + b, 0)}
+                </Badge>
+              )}
+            </Button>
           </div>
+          
+          {/* Массовые операции */}
+          {selectedPartnershipIds.size > 0 && (
+            <Card className="border-primary">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    Выбрано партнерств: {selectedPartnershipIds.size}
+                  </span>
+                  <div className="flex gap-2">
+                    <Select onValueChange={(v) => handleBulkChangeStatus(v as Partnership["status"])}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Изменить статус" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="planned">Запланировано</SelectItem>
+                        <SelectItem value="active">Активно</SelectItem>
+                        <SelectItem value="completed">Завершено</SelectItem>
+                        <SelectItem value="cancelled">Отменено</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="destructive" onClick={handleBulkDeletePartnerships}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Удалить
+                    </Button>
+                    <Button variant="outline" onClick={() => setSelectedPartnershipIds(new Set())}>
+                      Отменить выбор
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Двухколоночная структура */}
           {filteredData.length === 0 ? (
@@ -832,40 +1169,79 @@ export default function UniversitiesPage() {
                             <Badge variant="outline" className="text-xs flex-shrink-0">
                               {university.partnerships.length}
                             </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 flex-shrink-0 text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteUniversityId(university.id);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                         </div>
                         
                         {/* Партнерства университета */}
                         {expandedUniversities.has(university.id) && (
                           <div className="ml-6 space-y-1">
-                            {university.partnerships.map((partnership) => (
-                              <div
-                                key={partnership.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectPartnership(partnership);
-                                }}
-                                className={cn(
-                                  "p-2 rounded-md cursor-pointer transition-colors text-sm",
-                                  selectedPartnership?.id === partnership.id
-                                    ? "bg-accent text-accent-foreground"
-                                    : "hover:bg-muted/50"
-                                )}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Link2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium break-words">{partnership.name}</div>
-                                    <Badge
-                                      variant="outline"
-                                      className={cn("text-xs mt-1", getStatusColor(partnership.status))}
+                            {university.partnerships.map((partnership) => {
+                              const isSelected = selectedPartnershipIds.has(partnership.id);
+                              return (
+                                <div
+                                  key={partnership.id}
+                                  onClick={(e) => {
+                                    if ((e.target as HTMLElement).closest('button, input')) return;
+                                    e.stopPropagation();
+                                    handleSelectPartnership(partnership);
+                                  }}
+                                  className={cn(
+                                    "p-2 rounded-md cursor-pointer transition-colors text-sm",
+                                    selectedPartnership?.id === partnership.id
+                                      ? "bg-accent text-accent-foreground"
+                                      : "hover:bg-muted/50"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={(checked) => {
+                                        const newSet = new Set(selectedPartnershipIds);
+                                        if (checked) {
+                                          newSet.add(partnership.id);
+                                        } else {
+                                          newSet.delete(partnership.id);
+                                        }
+                                        setSelectedPartnershipIds(newSet);
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                    <Link2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium break-words">{partnership.name}</div>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn("text-xs mt-1", getStatusColor(partnership.status))}
+                                      >
+                                        {getStatusText(partnership.status)}
+                                      </Badge>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 flex-shrink-0 text-destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeletePartnershipId({ universityId: university.id, partnershipId: partnership.id });
+                                      }}
                                     >
-                                      {getStatusText(partnership.status)}
-                                    </Badge>
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -886,27 +1262,46 @@ export default function UniversitiesPage() {
                             {selectedPartnership.description || "Описание отсутствует"}
                           </CardDescription>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            setEditingPartnership(selectedPartnership);
-                            setPartnershipFormData({
-                              name: selectedPartnership.name,
-                              universityId: selectedPartnership.universityId,
-                              description: selectedPartnership.description || "",
-                              type: selectedPartnership.type,
-                              startDate: selectedPartnership.startDate.toISOString().split('T')[0],
-                              endDate: selectedPartnership.endDate ? selectedPartnership.endDate.toISOString().split('T')[0] : "",
-                              link: selectedPartnership.link || "",
-                              status: selectedPartnership.status,
-                            });
-                            setCreateType("partnership");
-                            setIsCreateDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setIsCommentsDialogOpen(true)}
+                            title="Комментарии"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setIsHistoryDialogOpen(true)}
+                            title="История изменений"
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => {
+                              setEditingPartnership(selectedPartnership);
+                              setPartnershipFormData({
+                                name: selectedPartnership.name,
+                                universityId: selectedPartnership.universityId,
+                                description: selectedPartnership.description || "",
+                                type: selectedPartnership.type,
+                                startDate: selectedPartnership.startDate.toISOString().split('T')[0],
+                                endDate: selectedPartnership.endDate ? selectedPartnership.endDate.toISOString().split('T')[0] : "",
+                                link: selectedPartnership.link || "",
+                                status: selectedPartnership.status,
+                              });
+                              setCreateType("partnership");
+                              setIsCreateDialogOpen(true);
+                            }}
+                            title="Редактировать"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0 overflow-x-hidden">
@@ -982,27 +1377,37 @@ export default function UniversitiesPage() {
 
                         {/* Студенты */}
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
                             <Label className="text-sm font-semibold flex items-center gap-2">
                               <Users className="h-4 w-4" />
-                              Студенты ({selectedPartnership.students?.length || 0})
+                              Студенты ({filteredStudents.length})
                             </Label>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap">
+                              <Select value={studentStatusFilter} onValueChange={setStudentStatusFilter}>
+                                <SelectTrigger className="w-[150px]">
+                                  <SelectValue placeholder="Фильтр по статусу" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Все статусы</SelectItem>
+                                  <SelectItem value="not-started">Не начато</SelectItem>
+                                  <SelectItem value="invited">Приглашен</SelectItem>
+                                  <SelectItem value="in-progress">В процессе</SelectItem>
+                                  <SelectItem value="completed">Завершено</SelectItem>
+                                </SelectContent>
+                              </Select>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setIsNotificationsDialogOpen(true)}
                               >
                                 <Mail className="h-4 w-4 mr-2" />
-                                Управление нотификациями
+                                Уведомления
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  // Получаем ID уже добавленных студентов
                                   const existingStudentIds = selectedPartnership.students?.map(s => {
-                                    // Ищем сотрудника по email или fullName
                                     const employee = mockEmployees.find(emp => 
                                       emp.email === s.email || emp.fullName === s.fullName
                                     );
@@ -1013,11 +1418,11 @@ export default function UniversitiesPage() {
                                 }}
                               >
                                 <Plus className="h-4 w-4 mr-2" />
-                                Добавить студентов
+                                Добавить
                               </Button>
                             </div>
                           </div>
-                          {selectedPartnership.students && selectedPartnership.students.length > 0 ? (
+                          {filteredStudents.length > 0 ? (
                               <div className="space-y-3">
                                 <div className="border rounded-lg overflow-hidden">
                                   <Table>
@@ -1027,15 +1432,15 @@ export default function UniversitiesPage() {
                                       <TableHead className="w-[200px]">Должность / Подразделение</TableHead>
                                       <TableHead className="w-[300px]">Уникальная ссылка на партнерство</TableHead>
                                         <TableHead className="w-[150px]">Статус</TableHead>
+                                        <TableHead className="w-[120px]">Действия</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                       {(() => {
-                                        // Логика пагинации
-                                        const totalPages = Math.ceil((selectedPartnership.students?.length || 0) / studentsItemsPerPage);
+                                        const totalPages = Math.ceil(filteredStudents.length / studentsItemsPerPage);
                                         const startIndex = (studentsCurrentPage - 1) * studentsItemsPerPage;
                                         const endIndex = startIndex + studentsItemsPerPage;
-                                        const paginatedStudents = selectedPartnership.students?.slice(startIndex, endIndex) || [];
+                                        const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
                                         
                                         return paginatedStudents.length === 0 ? (
                                           <TableRow>
@@ -1093,15 +1498,32 @@ export default function UniversitiesPage() {
                                                 )}
                                               </TableCell>
                                               <TableCell>
-                                                <Badge
-                                                  variant="outline"
-                                                  className={cn(
-                                                    "text-xs px-2 py-0.5",
-                                                    getStudentStatusColor(student.status)
-                                                  )}
+                                                <Select
+                                                  value={student.status}
+                                                  onValueChange={(value) => handleChangeStudentStatus(student.id, value as Student["status"])}
                                                 >
-                                                  {getStudentStatusText(student.status)}
-                                                </Badge>
+                                                  <SelectTrigger className="h-8 w-[120px]">
+                                                    <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="not-started">Не начато</SelectItem>
+                                                    <SelectItem value="invited">Приглашен</SelectItem>
+                                                    <SelectItem value="in-progress">В процессе</SelectItem>
+                                                    <SelectItem value="completed">Завершено</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                              </TableCell>
+                                              <TableCell>
+                                                <div className="flex gap-1">
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 text-destructive"
+                                                    onClick={() => setDeleteStudentId(student.id)}
+                                                  >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                  </Button>
+                                                </div>
                                               </TableCell>
                                             </TableRow>
                                           ))
@@ -1112,8 +1534,8 @@ export default function UniversitiesPage() {
                                 </div>
                                 
                                 {/* Пагинация */}
-                                {selectedPartnership.students && selectedPartnership.students.length > 0 && (() => {
-                                  const totalPages = Math.ceil(selectedPartnership.students.length / studentsItemsPerPage);
+                                {filteredStudents.length > 0 && (() => {
+                                  const totalPages = Math.ceil(filteredStudents.length / studentsItemsPerPage);
                                   
                                   return (
                                     <div className="flex items-center justify-between px-2">
@@ -1139,7 +1561,7 @@ export default function UniversitiesPage() {
                                           </SelectContent>
                                         </Select>
                                         <span className="text-sm text-muted-foreground">
-                                          из {selectedPartnership.students.length}
+                                          из {filteredStudents.length}
                                         </span>
                                       </div>
 
@@ -1500,16 +1922,24 @@ export default function UniversitiesPage() {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="partnership-link">Ссылка</Label>
-                    <Input
-                      id="partnership-link"
-                      type="url"
-                      value={partnershipFormData.link}
-                      onChange={(e) => setPartnershipFormData({ ...partnershipFormData, link: e.target.value })}
-                      placeholder="https://partnership.example.com/partnership/1"
-                    />
-                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="partnership-link">Ссылка</Label>
+                      <Input
+                        id="partnership-link"
+                        type="url"
+                        value={partnershipFormData.link}
+                        onChange={(e) => setPartnershipFormData({ ...partnershipFormData, link: e.target.value })}
+                        placeholder="https://partnership.example.com/partnership/1"
+                      />
+                      {partnershipFormData.link && !validateURL(partnershipFormData.link) && (
+                        <p className="text-xs text-destructive">Некорректный URL</p>
+                      )}
+                    </div>
+                    {validateDates(partnershipFormData.startDate, partnershipFormData.endDate) && (
+                      <div className="text-sm text-destructive">
+                        {validateDates(partnershipFormData.startDate, partnershipFormData.endDate)}
+                      </div>
+                    )}
                   <DialogFooter>
                     <Button variant="outline" onClick={() => {
                       setCreateType(null);
@@ -1540,6 +1970,343 @@ export default function UniversitiesPage() {
                   </DialogFooter>
                 </div>
               )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Диалог удаления университета */}
+          <AlertDialog open={deleteUniversityId !== null} onOpenChange={(open) => !open && setDeleteUniversityId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {(() => {
+                    const university = universities.find(u => u.id === deleteUniversityId);
+                    if (university?.partnerships.length) {
+                      return `Университет "${university.name}" содержит ${university.partnerships.length} партнерств. Удаление невозможно. Сначала удалите все партнерства.`;
+                    }
+                    return `Вы уверены, что хотите удалить университет "${university?.name}"? Это действие нельзя отменить.`;
+                  })()}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteUniversity}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={(() => {
+                    const university = universities.find(u => u.id === deleteUniversityId);
+                    return university?.partnerships.length ? true : false;
+                  })()}
+                >
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Диалог удаления партнерства */}
+          <AlertDialog open={deletePartnershipId !== null} onOpenChange={(open) => !open && setDeletePartnershipId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {(() => {
+                    if (!deletePartnershipId) return "";
+                    const university = universities.find(u => u.id === deletePartnershipId.universityId);
+                    const partnership = university?.partnerships.find(p => p.id === deletePartnershipId.partnershipId);
+                    if (partnership?.students && partnership.students.length > 0) {
+                      return `Партнерство "${partnership.name}" содержит ${partnership.students.length} студентов. Удаление невозможно. Сначала удалите всех студентов.`;
+                    }
+                    return `Вы уверены, что хотите удалить партнерство "${partnership?.name}"? Это действие нельзя отменить.`;
+                  })()}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeletePartnership}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={(() => {
+                    if (!deletePartnershipId) return false;
+                    const university = universities.find(u => u.id === deletePartnershipId.universityId);
+                    const partnership = university?.partnerships.find(p => p.id === deletePartnershipId.partnershipId);
+                    return partnership?.students && partnership.students.length > 0 ? true : false;
+                  })()}
+                >
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Диалог удаления студента */}
+          <AlertDialog open={deleteStudentId !== null} onOpenChange={(open) => !open && setDeleteStudentId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Вы уверены, что хотите удалить этого студента из партнерства? Это действие нельзя отменить.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteStudent}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Диалог комментариев */}
+          <Dialog open={isCommentsDialogOpen} onOpenChange={setIsCommentsDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Комментарии</DialogTitle>
+                <DialogDescription>
+                  Комментарии к партнерству "{selectedPartnership?.name}"
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                {comments.filter(c => c.partnershipId === selectedPartnership?.id).length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Нет комментариев
+                  </p>
+                ) : (
+                  comments
+                    .filter(c => c.partnershipId === selectedPartnership?.id)
+                    .map(comment => (
+                      <Card key={comment.id}>
+                        <CardContent className="pt-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">{comment.author}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(comment.createdAt)}
+                              </span>
+                            </div>
+                            <p className="text-sm">{comment.text}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                )}
+              </div>
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Добавить комментарий..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  rows={3}
+                />
+                <Button onClick={handleAddComment} disabled={!newComment.trim()}>
+                  Добавить комментарий
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Диалог истории изменений */}
+          <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>История изменений</DialogTitle>
+                <DialogDescription>
+                  История изменений партнерства "{selectedPartnership?.name}"
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2">
+                {changeHistory.filter(h => h.partnershipId === selectedPartnership?.id).length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Нет истории изменений
+                  </p>
+                ) : (
+                  changeHistory
+                    .filter(h => h.partnershipId === selectedPartnership?.id)
+                    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+                    .map(change => (
+                      <Card key={change.id}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">{change.action}</Badge>
+                                <span className="text-sm font-medium">{change.user}</span>
+                              </div>
+                              {change.field && (
+                                <div className="text-sm text-muted-foreground">
+                                  {change.field}: {change.oldValue} → {change.newValue}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(change.timestamp)} {change.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Диалог шаблонов email */}
+          <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Выберите шаблон</DialogTitle>
+                <DialogDescription>
+                  Выберите шаблон для заполнения уведомления
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {emailTemplates.map(template => (
+                  <Card
+                    key={template.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleApplyTemplate(template)}
+                  >
+                    <CardContent className="pt-4">
+                      <div className="space-y-2">
+                        <div className="font-medium">{template.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {template.subject.substring(0, 80)}...
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Диалог фильтров */}
+          <Dialog open={isFiltersDialogOpen} onOpenChange={setIsFiltersDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Фильтры и сортировка</DialogTitle>
+                <DialogDescription>
+                  Настройте фильтры для поиска университетов и партнерств
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-6 py-4">
+                <div className="space-y-2">
+                  <Label>Статус партнерства</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите статус" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все статусы</SelectItem>
+                      <SelectItem value="planned">Запланировано</SelectItem>
+                      <SelectItem value="active">Активно</SelectItem>
+                      <SelectItem value="completed">Завершено</SelectItem>
+                      <SelectItem value="cancelled">Отменено</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Тип партнерства</Label>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите тип" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все типы</SelectItem>
+                      <SelectItem value="internship">Стажировка</SelectItem>
+                      <SelectItem value="recruitment">Рекрутинг</SelectItem>
+                      <SelectItem value="research">Исследования</SelectItem>
+                      <SelectItem value="education">Образование</SelectItem>
+                      <SelectItem value="joint_program">Совместная программа</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Город</Label>
+                  <Select value={cityFilter} onValueChange={setCityFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите город" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все города</SelectItem>
+                      {uniqueCities.map(city => (
+                        <SelectItem key={city} value={city}>{city}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Сортировка</Label>
+                  <div className="flex items-center gap-2">
+                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Сортировать по" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name">По названию</SelectItem>
+                        <SelectItem value="city">По городу</SelectItem>
+                        <SelectItem value="partnerships">По количеству партнерств</SelectItem>
+                        <SelectItem value="date">По дате</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                      title={sortOrder === "asc" ? "По возрастанию" : "По убыванию"}
+                    >
+                      {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Архив</Label>
+                    <Button
+                      variant={showArchived ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowArchived(!showArchived)}
+                    >
+                      {showArchived ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
+                      {showArchived ? "Показать активные" : "Показать архив"}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {showArchived 
+                      ? "Отображаются только архивированные партнерства" 
+                      : "Отображаются только активные партнерства"}
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setTypeFilter("all");
+                    setCityFilter("all");
+                    setSortBy("name");
+                    setSortOrder("asc");
+                    setShowArchived(false);
+                  }}
+                >
+                  Сбросить фильтры
+                </Button>
+                <Button onClick={() => setIsFiltersDialogOpen(false)}>
+                  Применить
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </TabsContent>
@@ -1672,6 +2439,17 @@ export default function UniversitiesPage() {
             
             <TabsContent value="send" className="space-y-4 mt-4">
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Шаблоны</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsTemplateDialogOpen(true)}
+                  >
+                    <FileTextIcon className="h-4 w-4 mr-2" />
+                    Выбрать шаблон
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="notification-subject">
                     Тема письма <span className="text-destructive">*</span>
