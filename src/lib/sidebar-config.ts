@@ -135,26 +135,3 @@ export const menuSections: MenuSection[] = [
   },
 ];
 
-/**
- * @deprecated Используйте menuSections вместо отдельных массивов
- * Пункты меню справочников
- */
-export const referenceItems: MenuItem[] = menuSections.find(
-  (s) => s.id === "reference"
-)?.items || [];
-
-/**
- * @deprecated Используйте menuSections вместо отдельных массивов
- * Пункты меню сервисов
- */
-export const serviceItems: MenuItem[] = menuSections.find(
-  (s) => s.id === "services"
-)?.items || [];
-
-/**
- * @deprecated Используйте menuSections вместо отдельных массивов
- * Пункты меню администрирования
- */
-export const administrationItems: MenuItem[] = menuSections.find(
-  (s) => s.id === "administration"
-)?.items || [];

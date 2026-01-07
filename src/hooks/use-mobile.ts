@@ -1,19 +1,47 @@
-import * as React from "react"
+import * as React from "react";
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = 768;
 
-export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+/**
+ * Хук для определения мобильного устройства
+ * 
+ * Использует matchMedia API для эффективного отслеживания изменений размера экрана.
+ * 
+ * @returns {boolean} true если ширина экрана меньше MOBILE_BREAKPOINT
+ */
+export function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = React.useState<boolean>(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.innerWidth < MOBILE_BREAKPOINT;
+  });
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    if (typeof window === "undefined") {
+      return;
     }
-    mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
-  }, [])
 
-  return !!isMobile
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    
+    // Используем matches из MediaQueryList вместо проверки innerWidth
+    const updateIsMobile = (e: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobile(e.matches);
+    };
+
+    // Инициализируем значение
+    setIsMobile(mql.matches);
+
+    // Современный API для matchMedia
+    if (mql.addEventListener) {
+      mql.addEventListener("change", updateIsMobile);
+      return () => mql.removeEventListener("change", updateIsMobile);
+    } else {
+      // Fallback для старых браузеров
+      mql.addListener(updateIsMobile);
+      return () => mql.removeListener(updateIsMobile);
+    }
+  }, []);
+
+  return isMobile;
 }

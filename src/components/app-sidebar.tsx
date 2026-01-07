@@ -20,28 +20,22 @@ import {
 
 /**
  * Хук для управления состоянием раскрытия разделов меню
+ * 
+ * Автоматически открывает разделы, соответствующие текущему пути.
  */
 function useMenuSectionsState(pathname: string) {
-  // Инициализируем состояние на основе текущего пути
-  const initialState = React.useMemo(
-    () => {
-      if (!menuSections || menuSections.length === 0) {
-        return {} as Record<string, boolean>;
-      }
-      return menuSections.reduce(
-        (acc, section) => ({
-          ...acc,
-          [section.id]: pathname.startsWith(section.basePath),
-        }),
-        {} as Record<string, boolean>
-      );
-    },
-    [pathname]
-  );
-
-  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>(
-    initialState
-  );
+  const [openSections, setOpenSections] = React.useState<Record<string, boolean>>(() => {
+    if (!menuSections || menuSections.length === 0) {
+      return {};
+    }
+    return menuSections.reduce(
+      (acc, section) => ({
+        ...acc,
+        [section.id]: pathname.startsWith(section.basePath),
+      }),
+      {} as Record<string, boolean>
+    );
+  });
 
   // Обновляем состояние при изменении pathname
   // Автоматически открываем раздел, если текущий путь начинается с basePath
@@ -49,16 +43,21 @@ function useMenuSectionsState(pathname: string) {
     if (!menuSections || menuSections.length === 0) {
       return;
     }
+
     setOpenSections((prev) => {
+      let hasChanges = false;
       const newState = { ...prev };
+
       menuSections.forEach((section) => {
         const shouldBeOpen = pathname.startsWith(section.basePath);
         // Открываем раздел, если путь соответствует, но сохраняем состояние, если пользователь вручную закрыл
         if (shouldBeOpen && !prev[section.id]) {
           newState[section.id] = true;
+          hasChanges = true;
         }
       });
-      return newState;
+
+      return hasChanges ? newState : prev;
     });
   }, [pathname]);
 

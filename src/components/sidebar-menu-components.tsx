@@ -70,6 +70,84 @@ export function SimpleMenuItem({ item, pathname }: SimpleMenuItemProps) {
 }
 
 /**
+ * Компонент для отображения элемента подменю
+ */
+interface SubMenuItemProps {
+  item: MenuItem;
+  pathname: string;
+  isCollapsed: boolean;
+  onItemClick?: () => void;
+}
+
+function SubMenuItem({ item, pathname, isCollapsed, onItemClick }: SubMenuItemProps) {
+  const isItemActive = pathname === item.href;
+
+  if (isCollapsed) {
+    return (
+      <li className="list-none">
+        <Link
+          href={item.href}
+          className={cn(
+            "flex items-center gap-3 h-9 px-3 mx-1 rounded-md transition-all duration-200 text-sm cursor-pointer relative z-10",
+            isItemActive
+              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              : "hover:bg-sidebar-accent/50 text-sidebar-foreground"
+          )}
+          onClick={onItemClick}
+        >
+          <item.icon className="h-4 w-4 shrink-0 pointer-events-none" />
+          <span className="truncate pointer-events-none">{item.title}</span>
+        </Link>
+      </li>
+    );
+  }
+
+  return (
+    <SidebarMenuSubItem>
+      <SidebarMenuSubButton
+        asChild
+        isActive={isItemActive}
+        className={cn(
+          subMenuButtonStyles.base,
+          isItemActive ? subMenuButtonStyles.active : subMenuButtonStyles.inactive
+        )}
+      >
+        <Link href={item.href} className="flex items-center gap-3">
+          <item.icon className={iconStyles.sub} />
+          <span>{item.title}</span>
+        </Link>
+      </SidebarMenuSubButton>
+    </SidebarMenuSubItem>
+  );
+}
+
+/**
+ * Компонент для отображения пустого состояния подменю
+ */
+interface EmptySubMenuProps {
+  isCollapsed: boolean;
+}
+
+function EmptySubMenu({ isCollapsed }: EmptySubMenuProps) {
+  const emptyMessage = "Пункты меню будут добавлены позже";
+  const className = "h-9 flex items-center text-xs text-sidebar-foreground/50 px-3";
+
+  if (isCollapsed) {
+    return (
+      <li className="list-none">
+        <div className={cn(className, "mx-1")}>{emptyMessage}</div>
+      </li>
+    );
+  }
+
+  return (
+    <SidebarMenuSubItem>
+      <div className={cn(className, "ml-4")}>{emptyMessage}</div>
+    </SidebarMenuSubItem>
+  );
+}
+
+/**
  * Компонент для отображения раздела с подменю
  */
 interface CollapsibleMenuSectionProps {
@@ -204,34 +282,16 @@ export function CollapsibleMenuSection({
           )}
         >
           {items.length > 0 ? (
-            items.map((item) => {
-              const isItemActive = pathname === item.href;
-              return (
-                <SidebarMenuSubItem key={item.href}>
-                  <SidebarMenuSubButton
-                    asChild
-                    isActive={isItemActive}
-                    className={cn(
-                      subMenuButtonStyles.base,
-                      isItemActive
-                        ? subMenuButtonStyles.active
-                        : subMenuButtonStyles.inactive
-                    )}
-                  >
-                    <Link href={item.href} className="flex items-center gap-3">
-                      <item.icon className={iconStyles.sub} />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              );
-            })
+            items.map((item) => (
+              <SubMenuItem
+                key={item.href}
+                item={item}
+                pathname={pathname}
+                isCollapsed={false}
+              />
+            ))
           ) : (
-            <SidebarMenuSubItem>
-              <div className="ml-4 h-9 flex items-center text-xs text-sidebar-foreground/50 px-3">
-                Пункты меню будут добавлены позже
-              </div>
-            </SidebarMenuSubItem>
+            <EmptySubMenu isCollapsed={false} />
           )}
         </SidebarMenuSub>
       )}
@@ -252,39 +312,23 @@ export function CollapsibleMenuSection({
         >
           <ul className="flex flex-col gap-0.5">
             {items.length > 0 ? (
-              items.map((item) => {
-                const isItemActive = pathname === item.href;
-                return (
-                  <li key={item.href} className="list-none">
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 h-9 px-3 mx-1 rounded-md transition-all duration-200 text-sm cursor-pointer relative z-10",
-                        isItemActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground"
-                      )}
-                      onClick={(e) => {
-                        // Разрешаем навигацию - не останавливаем событие
-                        // Закрываем подменю после небольшой задержки
-                        setTimeout(() => {
-                          setIsClicked(false);
-                          setSubmenuPosition(null);
-                        }, 100);
-                      }}
-                    >
-                      <item.icon className="h-4 w-4 shrink-0 pointer-events-none" />
-                      <span className="truncate pointer-events-none">{item.title}</span>
-                    </Link>
-                  </li>
-                );
-              })
+              items.map((item) => (
+                <SubMenuItem
+                  key={item.href}
+                  item={item}
+                  pathname={pathname}
+                  isCollapsed={true}
+                  onItemClick={() => {
+                    // Закрываем подменю после небольшой задержки
+                    setTimeout(() => {
+                      setIsClicked(false);
+                      setSubmenuPosition(null);
+                    }, 100);
+                  }}
+                />
+              ))
             ) : (
-              <li className="list-none">
-                <div className="h-9 flex items-center text-xs text-sidebar-foreground/50 px-3 mx-1">
-                  Пункты меню будут добавлены позже
-                </div>
-              </li>
+              <EmptySubMenu isCollapsed={true} />
             )}
           </ul>
         </div>,

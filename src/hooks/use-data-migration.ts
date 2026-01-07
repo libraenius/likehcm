@@ -1,23 +1,17 @@
 /**
  * Хук для выполнения миграции данных при загрузке приложения
  * 
- * @returns {boolean} true если миграция была выполнена успешно
+ * Выполняет миграцию данных один раз при монтировании компонента.
+ * Не возвращает значение, так как миграция выполняется синхронно.
  */
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { migrateData } from "@/lib/storage";
 
-export function useDataMigration(): boolean {
-  const [migrated, setMigrated] = useState(false);
-
+export function useDataMigration(): void {
   useEffect(() => {
     const migration = migrateData();
-    if (migration.migrated) {
-      setMigrated(true);
-      if (process.env.NODE_ENV === "development") {
-        console.log("Data migration completed successfully");
-      }
+    if (migration.migrated && process.env.NODE_ENV === "development") {
+      console.log("Data migration completed successfully");
     }
   }, []);
-
-  return migrated;
 }

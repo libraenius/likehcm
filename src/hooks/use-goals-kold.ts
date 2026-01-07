@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { Stream, Team, KPI } from "@/types/goals-kold";
 import { calculateKPIMetrics } from "@/lib/goals-kold/utils";
 
@@ -79,6 +79,105 @@ export function useKPIManagement() {
   };
 }
 
+/**
+ * Тип для источника KPI данных
+ */
+type KPISource = "annual" | "quarterly" | "itLeader";
+
+/**
+ * Тип для контекста KPI операций
+ */
+type KPIContext = {
+  type: "annual" | "quarterly";
+  quarter?: string;
+  source?: "stream" | "itLeader";
+};
+
+/**
+ * Получить текущие KPI и сеттер на основе контекста
+ */
+function getKPIData(
+  context: KPIContext,
+  streamId: string,
+  annualKPIs: Record<string, Record<string, KPI[]>>,
+  quarterlyKPIs: Record<string, Record<string, KPI[]>>,
+  itLeaderKPIs: Record<string, Record<string, KPI[]>>
+): { kpis: KPI[]; period: string } {
+  if (context.type === "annual") {
+    const year = "2025";
+    return {
+      kpis: annualKPIs[streamId]?.[year] || [],
+      period: year,
+    };
+  }
+
+  const period = context.quarter || "";
+  if (context.source === "itLeader") {
+    return {
+      kpis: itLeaderKPIs[streamId]?.[period] || [],
+      period,
+    };
+  }
+
+  return {
+    kpis: quarterlyKPIs[streamId]?.[period] || [],
+    period,
+  };
+}
+
+/**
+ * Обновить KPI данные в соответствующем хранилище
+ */
+function updateKPIData(
+  context: KPIContext,
+  streamId: string,
+  period: string,
+  updatedKPIs: KPI[],
+  annualKPIs: Record<string, Record<string, KPI[]>>,
+  quarterlyKPIs: Record<string, Record<string, KPI[]>>,
+  itLeaderKPIs: Record<string, Record<string, KPI[]>>,
+  setAnnualKPIs: (kpis: Record<string, Record<string, KPI[]>>) => void,
+  setQuarterlyKPIs: (kpis: Record<string, Record<string, KPI[]>>) => void,
+  setITLeaderKPIs: (kpis: Record<string, Record<string, KPI[]>>) => void
+): void {
+  if (context.type === "annual") {
+    setAnnualKPIs({
+      ...annualKPIs,
+      [streamId]: {
+        ...(annualKPIs[streamId] || {}),
+        [period]: updatedKPIs,
+      },
+    });
+    return;
+  }
+
+  if (context.source === "itLeader") {
+    setITLeaderKPIs({
+      ...itLeaderKPIs,
+      [streamId]: {
+        ...(itLeaderKPIs[streamId] || {}),
+        [period]: updatedKPIs,
+      },
+    });
+    return;
+  }
+
+  setQuarterlyKPIs({
+    ...quarterlyKPIs,
+    [streamId]: {
+      ...(quarterlyKPIs[streamId] || {}),
+      [period]: updatedKPIs,
+    },
+  });
+}
+
+/**
+ * Пересчитать номера KPI после изменений
+ */
+function renumberKPIs(kpis: KPI[]): KPI[] {
+  return kpis.map((kpi, index) => ({ ...kpi, number: index + 1 }));
+}
+
 export function useKPIOperations(
   annualKPIs: Record<string, Record<string, KPI[]>>,
   quarterlyKPIs: Record<string, Record<string, KPI[]>>,
@@ -87,15 +186,24 @@ export function useKPIOperations(
   setQuarterlyKPIs: (kpis: Record<string, Record<string, KPI[]>>) => void,
   setITLeaderKPIs: (kpis: Record<string, Record<string, KPI[]>>) => void
 ) {
-  const addKPI = (
+  const addKPI = useCallback((
     streamId: string,
     type: "annual" | "quarterly",
     quarter?: string,
     source?: "stream" | "itLeader"
   ) => {
+    const context: KPIContext = { type, quarter, source };
+    const { kpis: currentKPIs, period } = getKPIData(
+      context,
+      streamId,
+      annualKPIs,
+      quarterlyKPIs,
+      itLeaderKPIs
+    );
+
     const newKPI: KPI = {
       id: `kpi-${Date.now()}`,
-      number: 1,
+      number: currentKPIs.length + 1,
       name: "",
       weight: 0,
       type: "Количественный",
@@ -106,93 +214,56 @@ export function useKPIOperations(
       evaluationPercent: 0,
     };
 
-    if (type === "annual") {
-      const year = "2025";
-      const currentKPIs = annualKPIs[streamId]?.[year] || [];
-      newKPI.number = currentKPIs.length + 1;
-      setAnnualKPIs({
-        ...annualKPIs,
-        [streamId]: {
-          ...(annualKPIs[streamId] || {}),
-          [year]: [...currentKPIs, newKPI],
-        },
-      });
-    } else if (quarter) {
-      const currentKPIs = source === "itLeader"
-        ? (itLeaderKPIs[streamId]?.[quarter] || [])
-        : (quarterlyKPIs[streamId]?.[quarter] || []);
-      newKPI.number = currentKPIs.length + 1;
-      
-      if (source === "itLeader") {
-        setITLeaderKPIs({
-          ...itLeaderKPIs,
-          [streamId]: {
-            ...(itLeaderKPIs[streamId] || {}),
-            [quarter]: [...currentKPIs, newKPI],
-          },
-        });
-      } else {
-        setQuarterlyKPIs({
-          ...quarterlyKPIs,
-          [streamId]: {
-            ...(quarterlyKPIs[streamId] || {}),
-            [quarter]: [...currentKPIs, newKPI],
-          },
-        });
-      }
-    }
-  };
+    const updatedKPIs = [...currentKPIs, newKPI];
+    updateKPIData(
+      context,
+      streamId,
+      period,
+      updatedKPIs,
+      annualKPIs,
+      quarterlyKPIs,
+      itLeaderKPIs,
+      setAnnualKPIs,
+      setQuarterlyKPIs,
+      setITLeaderKPIs
+    );
+  }, [annualKPIs, quarterlyKPIs, itLeaderKPIs, setAnnualKPIs, setQuarterlyKPIs, setITLeaderKPIs]);
 
-  const deleteKPI = (
+  const deleteKPI = useCallback((
     streamId: string,
     kpiId: string,
     type: "annual" | "quarterly",
     quarter?: string,
     source?: "stream" | "itLeader"
   ) => {
-    if (type === "annual") {
-      const year = "2025";
-      const currentKPIs = annualKPIs[streamId]?.[year] || [];
-      const updatedKPIs = currentKPIs
-        .filter(kpi => kpi.id !== kpiId)
-        .map((kpi, index) => ({ ...kpi, number: index + 1 }));
-      setAnnualKPIs({
-        ...annualKPIs,
-        [streamId]: {
-          ...(annualKPIs[streamId] || {}),
-          [year]: updatedKPIs,
-        },
-      });
-    } else if (quarter) {
-      if (source === "itLeader") {
-        const currentKPIs = itLeaderKPIs[streamId]?.[quarter] || [];
-        const updatedKPIs = currentKPIs
-          .filter(kpi => kpi.id !== kpiId)
-          .map((kpi, index) => ({ ...kpi, number: index + 1 }));
-        setITLeaderKPIs({
-          ...itLeaderKPIs,
-          [streamId]: {
-            ...(itLeaderKPIs[streamId] || {}),
-            [quarter]: updatedKPIs,
-          },
-        });
-      } else {
-        const currentKPIs = quarterlyKPIs[streamId]?.[quarter] || [];
-        const updatedKPIs = currentKPIs
-          .filter(kpi => kpi.id !== kpiId)
-          .map((kpi, index) => ({ ...kpi, number: index + 1 }));
-        setQuarterlyKPIs({
-          ...quarterlyKPIs,
-          [streamId]: {
-            ...(quarterlyKPIs[streamId] || {}),
-            [quarter]: updatedKPIs,
-          },
-        });
-      }
-    }
-  };
+    const context: KPIContext = { type, quarter, source };
+    const { kpis: currentKPIs, period } = getKPIData(
+      context,
+      streamId,
+      annualKPIs,
+      quarterlyKPIs,
+      itLeaderKPIs
+    );
 
-  const moveKPI = (
+    const updatedKPIs = renumberKPIs(
+      currentKPIs.filter(kpi => kpi.id !== kpiId)
+    );
+
+    updateKPIData(
+      context,
+      streamId,
+      period,
+      updatedKPIs,
+      annualKPIs,
+      quarterlyKPIs,
+      itLeaderKPIs,
+      setAnnualKPIs,
+      setQuarterlyKPIs,
+      setITLeaderKPIs
+    );
+  }, [annualKPIs, quarterlyKPIs, itLeaderKPIs, setAnnualKPIs, setQuarterlyKPIs, setITLeaderKPIs]);
+
+  const moveKPI = useCallback((
     streamId: string,
     dragIndex: number,
     dropIndex: number,
@@ -200,49 +271,36 @@ export function useKPIOperations(
     quarter?: string,
     source?: "stream" | "itLeader"
   ) => {
-    if (type === "annual") {
-      const year = "2025";
-      const currentKPIs = [...(annualKPIs[streamId]?.[year] || [])];
-      const [movedKPI] = currentKPIs.splice(dragIndex, 1);
-      currentKPIs.splice(dropIndex, 0, movedKPI);
-      const updatedKPIs = currentKPIs.map((kpi, index) => ({ ...kpi, number: index + 1 }));
-      setAnnualKPIs({
-        ...annualKPIs,
-        [streamId]: {
-          ...(annualKPIs[streamId] || {}),
-          [year]: updatedKPIs,
-        },
-      });
-    } else if (quarter) {
-      if (source === "itLeader") {
-        const currentKPIs = [...(itLeaderKPIs[streamId]?.[quarter] || [])];
-        const [movedKPI] = currentKPIs.splice(dragIndex, 1);
-        currentKPIs.splice(dropIndex, 0, movedKPI);
-        const updatedKPIs = currentKPIs.map((kpi, index) => ({ ...kpi, number: index + 1 }));
-        setITLeaderKPIs({
-          ...itLeaderKPIs,
-          [streamId]: {
-            ...(itLeaderKPIs[streamId] || {}),
-            [quarter]: updatedKPIs,
-          },
-        });
-      } else {
-        const currentKPIs = [...(quarterlyKPIs[streamId]?.[quarter] || [])];
-        const [movedKPI] = currentKPIs.splice(dragIndex, 1);
-        currentKPIs.splice(dropIndex, 0, movedKPI);
-        const updatedKPIs = currentKPIs.map((kpi, index) => ({ ...kpi, number: index + 1 }));
-        setQuarterlyKPIs({
-          ...quarterlyKPIs,
-          [streamId]: {
-            ...(quarterlyKPIs[streamId] || {}),
-            [quarter]: updatedKPIs,
-          },
-        });
-      }
-    }
-  };
+    const context: KPIContext = { type, quarter, source };
+    const { kpis: currentKPIs, period } = getKPIData(
+      context,
+      streamId,
+      annualKPIs,
+      quarterlyKPIs,
+      itLeaderKPIs
+    );
 
-  const updateKPI = (
+    const reorderedKPIs = [...currentKPIs];
+    const [movedKPI] = reorderedKPIs.splice(dragIndex, 1);
+    reorderedKPIs.splice(dropIndex, 0, movedKPI);
+
+    const updatedKPIs = renumberKPIs(reorderedKPIs);
+
+    updateKPIData(
+      context,
+      streamId,
+      period,
+      updatedKPIs,
+      annualKPIs,
+      quarterlyKPIs,
+      itLeaderKPIs,
+      setAnnualKPIs,
+      setQuarterlyKPIs,
+      setITLeaderKPIs
+    );
+  }, [annualKPIs, quarterlyKPIs, itLeaderKPIs, setAnnualKPIs, setQuarterlyKPIs, setITLeaderKPIs]);
+
+  const updateKPI = useCallback((
     streamId: string,
     kpiId: string,
     field: keyof KPI | string,
@@ -251,71 +309,47 @@ export function useKPIOperations(
     quarter?: string,
     source?: "stream" | "itLeader"
   ) => {
-    if (type === "annual") {
-      const year = "2025";
-      const currentKPIs = annualKPIs[streamId]?.[year] || [];
-      const updatedKPIs = currentKPIs.map(kpi => {
-        if (kpi.id === kpiId) {
-          const updatedKpi = { ...kpi, [field]: value };
-          if (field === "plan" || field === "fact") {
-            const metrics = calculateKPIMetrics(updatedKpi.plan, updatedKpi.fact, updatedKpi.weight);
-            return { ...updatedKpi, ...metrics };
-          }
-          return updatedKpi;
-        }
+    const context: KPIContext = { type, quarter, source };
+    const { kpis: currentKPIs, period } = getKPIData(
+      context,
+      streamId,
+      annualKPIs,
+      quarterlyKPIs,
+      itLeaderKPIs
+    );
+
+    const updatedKPIs = currentKPIs.map(kpi => {
+      if (kpi.id !== kpiId) {
         return kpi;
-      });
-      setAnnualKPIs({
-        ...annualKPIs,
-        [streamId]: {
-          ...(annualKPIs[streamId] || {}),
-          [year]: updatedKPIs,
-        },
-      });
-    } else if (quarter) {
-      if (source === "itLeader") {
-        const currentKPIs = itLeaderKPIs[streamId]?.[quarter] || [];
-        const updatedKPIs = currentKPIs.map(kpi => {
-          if (kpi.id === kpiId) {
-            const updatedKpi = { ...kpi, [field]: value };
-            if (field === "plan" || field === "fact") {
-              const metrics = calculateKPIMetrics(updatedKpi.plan, updatedKpi.fact, updatedKpi.weight);
-              return { ...updatedKpi, ...metrics };
-            }
-            return updatedKpi;
-          }
-          return kpi;
-        });
-        setITLeaderKPIs({
-          ...itLeaderKPIs,
-          [streamId]: {
-            ...(itLeaderKPIs[streamId] || {}),
-            [quarter]: updatedKPIs,
-          },
-        });
-      } else {
-        const currentKPIs = quarterlyKPIs[streamId]?.[quarter] || [];
-        const updatedKPIs = currentKPIs.map(kpi => {
-          if (kpi.id === kpiId) {
-            const updatedKpi = { ...kpi, [field]: value };
-            if (field === "plan" || field === "fact") {
-              const metrics = calculateKPIMetrics(updatedKpi.plan, updatedKpi.fact, updatedKpi.weight);
-              return { ...updatedKpi, ...metrics };
-            }
-            return updatedKpi;
-          }
-          return kpi;
-        });
-        setQuarterlyKPIs({
-          ...quarterlyKPIs,
-          [streamId]: {
-            ...(quarterlyKPIs[streamId] || {}),
-            [quarter]: updatedKPIs,
-          },
-        });
       }
-    }
-  };
+
+      const updatedKpi = { ...kpi, [field]: value };
+      
+      if (field === "plan" || field === "fact") {
+        const metrics = calculateKPIMetrics(
+          updatedKpi.plan,
+          updatedKpi.fact,
+          updatedKpi.weight
+        );
+        return { ...updatedKpi, ...metrics };
+      }
+
+      return updatedKpi;
+    });
+
+    updateKPIData(
+      context,
+      streamId,
+      period,
+      updatedKPIs,
+      annualKPIs,
+      quarterlyKPIs,
+      itLeaderKPIs,
+      setAnnualKPIs,
+      setQuarterlyKPIs,
+      setITLeaderKPIs
+    );
+  }, [annualKPIs, quarterlyKPIs, itLeaderKPIs, setAnnualKPIs, setQuarterlyKPIs, setITLeaderKPIs]);
 
   return {
     addKPI,

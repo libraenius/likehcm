@@ -7,10 +7,51 @@ import { STORAGE_KEYS, DATA_SCHEMA_VERSION, MAX_LOCALSTORAGE_SIZE } from "./cons
 // Реэкспортируем STORAGE_KEYS для удобства использования
 export { STORAGE_KEYS, DATA_SCHEMA_VERSION, MAX_LOCALSTORAGE_SIZE };
 
+/**
+ * Типы ошибок хранилища
+ */
+export type StorageErrorCode = "QUOTA_EXCEEDED" | "PARSE_ERROR" | "UNKNOWN";
+
+/**
+ * Интерфейс ошибки хранилища
+ */
 export interface StorageError {
-  code: "QUOTA_EXCEEDED" | "PARSE_ERROR" | "UNKNOWN";
+  code: StorageErrorCode;
   message: string;
   originalError?: unknown;
+}
+
+/**
+ * Результат операции сохранения
+ */
+export interface SaveResult {
+  success: boolean;
+  error?: StorageError;
+}
+
+/**
+ * Результат операции миграции
+ */
+export interface MigrationResult {
+  success: boolean;
+  migrated: boolean;
+}
+
+/**
+ * Результат операции импорта
+ */
+export interface ImportResult {
+  success: boolean;
+  errors: string[];
+}
+
+/**
+ * Информация о размере хранилища
+ */
+export interface StorageSize {
+  used: number;
+  total: number;
+  percentage: number;
 }
 
 /**
@@ -39,7 +80,7 @@ export function getFromStorage<T>(key: string, defaultValue: T): T {
 /**
  * Сохранить данные в localStorage с обработкой ошибок
  */
-export function saveToStorage<T>(key: string, value: T): { success: boolean; error?: StorageError } {
+export function saveToStorage<T>(key: string, value: T): SaveResult {
   if (typeof window === "undefined") {
     return { success: false, error: { code: "UNKNOWN", message: "localStorage недоступен" } };
   }
@@ -62,9 +103,12 @@ export function saveToStorage<T>(key: string, value: T): { success: boolean; err
     localStorage.setItem(key, serialized);
     return { success: true };
   } catch (error) {
-    const storageError = error as DOMException;
+    // Проверяем, является ли ошибка DOMException с кодом QuotaExceededError
+    const isQuotaExceeded = 
+      error instanceof DOMException &&
+      (error.code === 22 || error.name === "QuotaExceededError");
     
-    if (storageError.code === 22 || storageError.name === "QuotaExceededError") {
+    if (isQuotaExceeded) {
       return {
         success: false,
         error: {
@@ -75,11 +119,12 @@ export function saveToStorage<T>(key: string, value: T): { success: boolean; err
       };
     }
 
+    const errorMessage = error instanceof Error ? error.message : "Неизвестная ошибка";
     return {
       success: false,
       error: {
         code: "UNKNOWN",
-        message: `Ошибка при сохранении данных: ${storageError.message}`,
+        message: `Ошибка при сохранении данных: ${errorMessage}`,
         originalError: error,
       },
     };
@@ -146,7 +191,7 @@ export function needsMigration(): boolean {
 /**
  * Выполнить миграцию данных (базовая версия)
  */
-export function migrateData(): { success: boolean; migrated: boolean } {
+export function migrateData(): MigrationResult {
   if (!needsMigration()) {
     return { success: true, migrated: false };
   }
@@ -166,18 +211,17 @@ export function migrateData(): { success: boolean; migrated: boolean } {
 /**
  * Получить размер используемого localStorage
  */
-export function getStorageSize(): { used: number; total: number; percentage: number } {
+export function getStorageSize(): StorageSize {
   if (typeof window === "undefined") {
     return { used: 0, total: MAX_LOCALSTORAGE_SIZE, percentage: 0 };
   }
 
   let total = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      const item = localStorage.getItem(key);
-      if (item) {
-        total += new Blob([item]).size;
-      }
+  // Используем Object.keys для более безопасного итератора
+  for (const key of Object.keys(localStorage)) {
+    const item = localStorage.getItem(key);
+    if (item) {
+      total += new Blob([item]).size;
     }
   }
 
@@ -216,7 +260,7 @@ export function exportAppData(): string | null {
 /**
  * Импорт данных приложения
  */
-export function importAppData(jsonData: string): { success: boolean; errors: string[] } {
+export function importAppData(jsonData: string): ImportResult {
   if (typeof window === "undefined") {
     return { success: false, errors: ["localStorage недоступен"] };
   }
