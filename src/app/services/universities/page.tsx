@@ -13,13 +13,42 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, CheckSquare, Square, Edit3, Copy, Tag, Eye, EyeOff } from "lucide-react";
+import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { EvaluationDialog } from "@/components/internships/evaluation-dialog";
+import type { 
+  Internship, 
+  InternshipApplication, 
+  InternshipStatus, 
+  ApplicationStatus,
+  InternshipStudent,
+  InternshipSettings,
+  InternshipStatistics,
+  InternshipEvaluation,
+} from "@/types/internships";
+import { 
+  mockInternships, 
+  mockApplications, 
+  mockStudents, 
+  mockMentors,
+  defaultInternshipSettings 
+} from "@/lib/internships/mock-data";
+import {
+  canChangeInternshipStatus,
+  canChangeApplicationStatus,
+  calculateMatchScore,
+  canSubmitApplication,
+  formParticipantList,
+  shouldAutoCloseApplications,
+  calculateConversionRate,
+  canStartInternship,
+  getNextReserveStudent,
+} from "@/lib/internships/business-logic";
 
 // Тип для университета
 interface University {
@@ -455,8 +484,6 @@ export default function UniversitiesPage() {
   const [sortBy, setSortBy] = useState<"name" | "city" | "partnerships" | "date">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showArchived, setShowArchived] = useState(false);
-  const [selectedUniversityIds, setSelectedUniversityIds] = useState<Set<string>>(new Set());
-  const [selectedPartnershipIds, setSelectedPartnershipIds] = useState<Set<string>>(new Set());
   const [editingStudent, setEditingStudent] = useState<{ partnershipId: string; student: Student } | null>(null);
   const [studentStatusFilter, setStudentStatusFilter] = useState<string>("all");
   const [comments, setComments] = useState<Comment[]>([]);
@@ -467,6 +494,45 @@ export default function UniversitiesPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [newComment, setNewComment] = useState("");
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
+  
+  // Состояние для стажировок
+  const [activeTab, setActiveTab] = useState<"partnerships" | "internships">("partnerships");
+  const [internships, setInternships] = useState<Internship[]>(mockInternships);
+  const [internshipApplications, setInternshipApplications] = useState<InternshipApplication[]>(mockApplications);
+  const [internshipStudents] = useState<InternshipStudent[]>(mockStudents);
+  const [internshipSettings] = useState<InternshipSettings>(defaultInternshipSettings);
+  const [evaluations, setEvaluations] = useState<InternshipEvaluation[]>([]);
+  const [selectedInternship, setSelectedInternship] = useState<Internship | null>(null);
+  const [selectedInternshipApplication, setSelectedInternshipApplication] = useState<InternshipApplication | null>(null);
+  const [internshipSearchQuery, setInternshipSearchQuery] = useState("");
+  const [internshipStatusFilter, setInternshipStatusFilter] = useState<InternshipStatus | "all">("all");
+  const [internshipUniversityFilter, setInternshipUniversityFilter] = useState<string>("all");
+  const [isInternshipCreateDialogOpen, setIsInternshipCreateDialogOpen] = useState(false);
+  const [isInternshipApplicationDialogOpen, setIsInternshipApplicationDialogOpen] = useState(false);
+  const [isInternshipDetailsDialogOpen, setIsInternshipDetailsDialogOpen] = useState(false);
+  const [isInternshipStatisticsDialogOpen, setIsInternshipStatisticsDialogOpen] = useState(false);
+  const [isEvaluationDialogOpen, setIsEvaluationDialogOpen] = useState(false);
+  const [evaluationApplicationId, setEvaluationApplicationId] = useState<string | null>(null);
+  const [deleteInternshipId, setDeleteInternshipId] = useState<string | null>(null);
+  const [editingInternship, setEditingInternship] = useState<Internship | null>(null);
+  const [internshipFormData, setInternshipFormData] = useState({
+    title: "",
+    description: "",
+    partnershipId: "",
+    universityId: "",
+    startDate: "",
+    endDate: "",
+    applicationDeadline: "",
+    maxParticipants: 10,
+    status: "planned" as InternshipStatus,
+    location: "hybrid" as "remote" | "office" | "hybrid",
+    city: "",
+    address: "",
+    salary: "",
+    requiredSkills: [] as string[],
+    preferredSkills: [] as string[],
+    mentorId: "",
+  });
   
   // Переключение раскрытия университета
   const toggleUniversity = (universityId: string) => {
@@ -844,36 +910,6 @@ export default function UniversitiesPage() {
     setNewComment("");
   }, [newComment, selectedPartnership, comments]);
 
-  // Массовые операции
-  const handleBulkDeletePartnerships = useCallback(() => {
-    if (selectedPartnershipIds.size === 0) return;
-    
-    setUniversities(universities.map(u => ({
-      ...u,
-      partnerships: u.partnerships.filter(p => !selectedPartnershipIds.has(p.id)),
-    })));
-    
-    if (selectedPartnership && selectedPartnershipIds.has(selectedPartnership.id)) {
-      setSelectedPartnership(null);
-    }
-    setSelectedPartnershipIds(new Set());
-  }, [selectedPartnershipIds, universities, selectedPartnership]);
-
-  const handleBulkChangeStatus = useCallback((newStatus: Partnership["status"]) => {
-    if (selectedPartnershipIds.size === 0) return;
-    
-    setUniversities(universities.map(u => ({
-      ...u,
-      partnerships: u.partnerships.map(p =>
-        selectedPartnershipIds.has(p.id) ? { ...p, status: newStatus } : p
-      ),
-    })));
-    
-    if (selectedPartnership && selectedPartnershipIds.has(selectedPartnership.id)) {
-      setSelectedPartnership({ ...selectedPartnership, status: newStatus });
-    }
-    setSelectedPartnershipIds(new Set());
-  }, [selectedPartnershipIds, universities, selectedPartnership]);
 
   // Фильтрация студентов
   const filteredStudents = useMemo(() => {
@@ -913,6 +949,324 @@ export default function UniversitiesPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Обработчики для стажировок
+  const filteredInternshipsForTab = useMemo(() => {
+    return internships.filter(internship => {
+      const matchesSearch = internshipSearchQuery === "" || 
+        internship.title.toLowerCase().includes(internshipSearchQuery.toLowerCase()) ||
+        internship.universityName.toLowerCase().includes(internshipSearchQuery.toLowerCase());
+      
+      const matchesStatus = internshipStatusFilter === "all" || internship.status === internshipStatusFilter;
+      const matchesUniversity = internshipUniversityFilter === "all" || internship.universityId === internshipUniversityFilter;
+      
+      return matchesSearch && matchesStatus && matchesUniversity;
+    });
+  }, [internships, internshipSearchQuery, internshipStatusFilter, internshipUniversityFilter]);
+
+  const currentInternshipApplications = useMemo(() => {
+    if (!selectedInternship) return [];
+    return internshipApplications.filter(app => app.internshipId === selectedInternship.id);
+  }, [internshipApplications, selectedInternship]);
+
+  const internshipStatistics = useMemo((): InternshipStatistics | null => {
+    if (!selectedInternship) return null;
+    
+    const apps = currentInternshipApplications;
+    const total = apps.length;
+    const pending = apps.filter(a => a.status === 'pending').length;
+    const approved = apps.filter(a => ['approved', 'confirmed', 'active', 'completed'].includes(a.status)).length;
+    const rejected = apps.filter(a => a.status === 'rejected').length;
+    const confirmed = apps.filter(a => ['confirmed', 'active', 'completed'].includes(a.status)).length;
+    const active = apps.filter(a => a.status === 'active').length;
+    const completed = apps.filter(a => a.status === 'completed').length;
+    
+    const avgMatchScore = apps.length > 0
+      ? apps.reduce((sum, a) => sum + (a.matchScore || 0), 0) / apps.length
+      : 0;
+    
+    const universityMap = new Map<string, { universityName: string; applicationsCount: number; approvedCount: number }>();
+    apps.forEach(app => {
+      const existing = universityMap.get(app.universityId) || { universityName: app.universityName, applicationsCount: 0, approvedCount: 0 };
+      existing.applicationsCount++;
+      if (['approved', 'confirmed', 'active', 'completed'].includes(app.status)) {
+        existing.approvedCount++;
+      }
+      universityMap.set(app.universityId, existing);
+    });
+    
+    const topUniversities = Array.from(universityMap.entries())
+      .map(([id, data]) => ({ universityId: id, ...data }))
+      .sort((a, b) => b.applicationsCount - a.applicationsCount)
+      .slice(0, 5);
+    
+    const conversion = calculateConversionRate(apps);
+    
+    return {
+      internshipId: selectedInternship.id,
+      totalApplications: total,
+      pendingApplications: pending,
+      approvedApplications: approved,
+      rejectedApplications: rejected,
+      confirmedApplications: confirmed,
+      activeStudents: active,
+      completedStudents: completed,
+      averageMatchScore: Math.round(avgMatchScore),
+      topUniversities,
+      topSkills: [],
+      conversionRate: conversion,
+    };
+  }, [selectedInternship, currentInternshipApplications]);
+
+  const uniqueInternshipUniversities = useMemo(() => {
+    const univs = new Map<string, string>();
+    internships.forEach(i => {
+      if (!univs.has(i.universityId)) {
+        univs.set(i.universityId, i.universityName);
+      }
+    });
+    return Array.from(univs.entries()).map(([id, name]) => ({ id, name }));
+  }, [internships]);
+
+  const handleCreateInternship = useCallback(() => {
+    setEditingInternship(null);
+    setInternshipFormData({
+      title: "",
+      description: "",
+      partnershipId: "",
+      universityId: "",
+      startDate: "",
+      endDate: "",
+      applicationDeadline: "",
+      maxParticipants: 10,
+      status: "planned",
+      location: "hybrid",
+      city: "",
+      address: "",
+      salary: "",
+      requiredSkills: [],
+      preferredSkills: [],
+      mentorId: "",
+    });
+    setIsInternshipCreateDialogOpen(true);
+  }, []);
+
+  const handleEditInternship = useCallback((internship: Internship) => {
+    setEditingInternship(internship);
+    setInternshipFormData({
+      title: internship.title,
+      description: internship.description,
+      partnershipId: internship.partnershipId,
+      universityId: internship.universityId,
+      startDate: internship.startDate.toISOString().split('T')[0],
+      endDate: internship.endDate.toISOString().split('T')[0],
+      applicationDeadline: internship.applicationDeadline.toISOString().split('T')[0],
+      maxParticipants: internship.maxParticipants,
+      status: internship.status,
+      location: internship.location,
+      city: internship.city || "",
+      address: internship.address || "",
+      salary: internship.salary?.toString() || "",
+      requiredSkills: internship.requiredSkills,
+      preferredSkills: internship.preferredSkills,
+      mentorId: internship.mentorId || "",
+    });
+    setIsInternshipCreateDialogOpen(true);
+  }, []);
+
+  const handleSaveInternship = useCallback(() => {
+    if (editingInternship) {
+      setInternships(prev => prev.map(i => 
+        i.id === editingInternship.id 
+          ? {
+              ...i,
+              ...internshipFormData,
+              startDate: new Date(internshipFormData.startDate),
+              endDate: new Date(internshipFormData.endDate),
+              applicationDeadline: new Date(internshipFormData.applicationDeadline),
+              salary: internshipFormData.salary ? parseFloat(internshipFormData.salary) : undefined,
+              updatedAt: new Date(),
+            }
+          : i
+      ));
+    } else {
+      const newInternship: Internship = {
+        id: `internship-${Date.now()}`,
+        partnershipId: internshipFormData.partnershipId,
+        partnershipName: "Партнерство",
+        universityId: internshipFormData.universityId,
+        universityName: uniqueInternshipUniversities.find(u => u.id === internshipFormData.universityId)?.name || "",
+        title: internshipFormData.title,
+        description: internshipFormData.description,
+        startDate: new Date(internshipFormData.startDate),
+        endDate: new Date(internshipFormData.endDate),
+        applicationDeadline: new Date(internshipFormData.applicationDeadline),
+        status: internshipFormData.status,
+        maxParticipants: internshipFormData.maxParticipants,
+        currentParticipants: 0,
+        requirements: [],
+        requiredSkills: internshipFormData.requiredSkills,
+        preferredSkills: internshipFormData.preferredSkills,
+        mentorId: internshipFormData.mentorId || undefined,
+        mentorName: mockMentors.find(m => m.id === internshipFormData.mentorId)?.fullName,
+        location: internshipFormData.location,
+        city: internshipFormData.city || undefined,
+        address: internshipFormData.address || undefined,
+        salary: internshipFormData.salary ? parseFloat(internshipFormData.salary) : undefined,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: "user-1",
+      };
+      setInternships(prev => [...prev, newInternship]);
+    }
+    setIsInternshipCreateDialogOpen(false);
+  }, [editingInternship, internshipFormData, uniqueInternshipUniversities]);
+
+  const handleDeleteInternshipConfirm = useCallback(() => {
+    if (!deleteInternshipId) return;
+    setInternships(prev => prev.filter(i => i.id !== deleteInternshipId));
+    if (selectedInternship?.id === deleteInternshipId) {
+      setSelectedInternship(null);
+    }
+    setDeleteInternshipId(null);
+  }, [deleteInternshipId, selectedInternship]);
+
+  const handleApproveInternshipApplication = useCallback((applicationId: string) => {
+    const app = internshipApplications.find(a => a.id === applicationId);
+    if (!app) return;
+    
+    const check = canChangeApplicationStatus(app.status, 'approved', app);
+    if (!check.allowed) {
+      alert(check.reason);
+      return;
+    }
+    
+    setInternshipApplications(prev => prev.map(a => 
+      a.id === applicationId
+        ? { 
+            ...a, 
+            status: 'approved' as ApplicationStatus,
+            reviewedAt: new Date(),
+            reviewerId: 'user-1',
+            reviewerName: 'HR Менеджер',
+          }
+        : a
+    ));
+  }, [internshipApplications]);
+
+  const handleRejectInternshipApplication = useCallback((applicationId: string, reason: string) => {
+    const app = internshipApplications.find(a => a.id === applicationId);
+    if (!app) return;
+    
+    const check = canChangeApplicationStatus(app.status, 'rejected', app);
+    if (!check.allowed) {
+      alert(check.reason);
+      return;
+    }
+    
+    setInternshipApplications(prev => prev.map(a => 
+      a.id === applicationId
+        ? { 
+            ...a, 
+            status: 'rejected' as ApplicationStatus,
+            reviewedAt: new Date(),
+            reviewerId: 'user-1',
+            reviewerName: 'HR Менеджер',
+            rejectionReason: reason,
+          }
+        : a
+    ));
+  }, [internshipApplications]);
+
+  const handleConfirmInternshipApplication = useCallback((applicationId: string) => {
+    const app = internshipApplications.find(a => a.id === applicationId);
+    if (!app) return;
+    
+    const check = canChangeApplicationStatus(app.status, 'confirmed', app);
+    if (!check.allowed) {
+      alert(check.reason);
+      return;
+    }
+    
+    setInternshipApplications(prev => prev.map(a => 
+      a.id === applicationId
+        ? { 
+            ...a, 
+            status: 'confirmed' as ApplicationStatus,
+            confirmedAt: new Date(),
+          }
+        : a
+    ));
+    
+    if (app.internshipId) {
+      setInternships(prev => prev.map(i => 
+        i.id === app.internshipId
+          ? { ...i, currentParticipants: i.currentParticipants + 1 }
+          : i
+      ));
+    }
+  }, [internshipApplications]);
+
+  const handleSaveInternshipEvaluation = useCallback((evaluationData: Omit<InternshipEvaluation, 'id' | 'evaluationDate'>) => {
+    const newEvaluation: InternshipEvaluation = {
+      ...evaluationData,
+      id: `eval-${Date.now()}`,
+      evaluationDate: new Date(),
+      internshipId: selectedInternship?.id || '',
+      studentId: internshipApplications.find(a => a.id === evaluationData.applicationId)?.studentId || '',
+    };
+    
+    setEvaluations(prev => {
+      const existing = prev.findIndex(e => 
+        e.applicationId === evaluationData.applicationId && 
+        e.period === evaluationData.period
+      );
+      if (existing >= 0) {
+        return prev.map((e, idx) => idx === existing ? newEvaluation : e);
+      }
+      return [...prev, newEvaluation];
+    });
+    
+    if (evaluationData.period === 'final') {
+      setInternshipApplications(prev => prev.map(a => 
+        a.id === evaluationData.applicationId
+          ? { ...a, finalRating: evaluationData.overallRating }
+          : a
+      ));
+    }
+  }, [selectedInternship, internshipApplications]);
+
+  const getInternshipStatusText = (status: InternshipStatus | ApplicationStatus) => {
+    const statusMap: Record<string, string> = {
+      planned: "Запланировано",
+      recruiting: "Набор",
+      active: "Активно",
+      completed: "Завершено",
+      cancelled: "Отменено",
+      pending: "На рассмотрении",
+      approved: "Одобрено",
+      rejected: "Отклонено",
+      withdrawn: "Отозвано",
+      confirmed: "Подтверждено",
+    };
+    return statusMap[status] || status;
+  };
+
+  const getInternshipStatusColor = (status: InternshipStatus | ApplicationStatus) => {
+    const colorMap: Record<string, string> = {
+      planned: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      recruiting: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      active: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      completed: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+      cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      approved: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      rejected: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      withdrawn: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+      confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    };
+    return colorMap[status] || "";
+  };
+
   return (
     <div className="space-y-6">
       {/* Заголовок */}
@@ -924,9 +1278,13 @@ export default function UniversitiesPage() {
               Управление партнерствами с образовательными учреждениями
             </p>
           </div>
-          <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto">
+          <Button 
+            onClick={activeTab === "partnerships" ? handleCreate : handleCreateInternship} 
+            size="lg" 
+            className="w-full sm:w-auto"
+          >
             <Plus className="mr-2 h-4 w-4" />
-            Добавить
+            {activeTab === "partnerships" ? "Добавить" : "Создать стажировку"}
           </Button>
         </div>
 
@@ -935,75 +1293,80 @@ export default function UniversitiesPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Поиск по университетам и партнерствам..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={activeTab === "partnerships" ? "Поиск по университетам и партнерствам..." : "Поиск по названию стажировки или вузу..."}
+                value={activeTab === "partnerships" ? searchQuery : internshipSearchQuery}
+                onChange={(e) => activeTab === "partnerships" ? setSearchQuery(e.target.value) : setInternshipSearchQuery(e.target.value)}
                 className="pl-10"
               />
-              {searchQuery && (
+              {(activeTab === "partnerships" ? searchQuery : internshipSearchQuery) && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => activeTab === "partnerships" ? setSearchQuery("") : setInternshipSearchQuery("")}
                 >
                   <X className="h-4 w-4" />
                 </Button>
               )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsFiltersDialogOpen(true)}
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Фильтры
-              {(statusFilter !== "all" || typeFilter !== "all" || cityFilter !== "all" || showArchived) && (
-                <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                  {[
-                    statusFilter !== "all" ? 1 : 0,
-                    typeFilter !== "all" ? 1 : 0,
-                    cityFilter !== "all" ? 1 : 0,
-                    showArchived ? 1 : 0,
-                  ].reduce((a, b) => a + b, 0)}
-                </Badge>
-              )}
-            </Button>
+            {activeTab === "partnerships" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFiltersDialogOpen(true)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Фильтры
+                {(statusFilter !== "all" || typeFilter !== "all" || cityFilter !== "all" || showArchived) && (
+                  <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                    {[
+                      statusFilter !== "all" ? 1 : 0,
+                      typeFilter !== "all" ? 1 : 0,
+                      cityFilter !== "all" ? 1 : 0,
+                      showArchived ? 1 : 0,
+                    ].reduce((a, b) => a + b, 0)}
+                  </Badge>
+                )}
+              </Button>
+            ) : (
+              <>
+                <Select value={internshipStatusFilter} onValueChange={(v) => setInternshipStatusFilter(v as InternshipStatus | "all")}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Статус" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все статусы</SelectItem>
+                    <SelectItem value="planned">Запланировано</SelectItem>
+                    <SelectItem value="recruiting">Набор</SelectItem>
+                    <SelectItem value="active">Активно</SelectItem>
+                    <SelectItem value="completed">Завершено</SelectItem>
+                    <SelectItem value="cancelled">Отменено</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={internshipUniversityFilter} onValueChange={setInternshipUniversityFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="ВУЗ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все ВУЗы</SelectItem>
+                    {uniqueInternshipUniversities.map(u => (
+                      <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
           </div>
-          
-          {/* Массовые операции */}
-          {selectedPartnershipIds.size > 0 && (
-            <Card className="border-primary">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    Выбрано партнерств: {selectedPartnershipIds.size}
-                  </span>
-                  <div className="flex gap-2">
-                    <Select onValueChange={(v) => handleBulkChangeStatus(v as Partnership["status"])}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Изменить статус" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="planned">Запланировано</SelectItem>
-                        <SelectItem value="active">Активно</SelectItem>
-                        <SelectItem value="completed">Завершено</SelectItem>
-                        <SelectItem value="cancelled">Отменено</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="destructive" onClick={handleBulkDeletePartnerships}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Удалить
-                    </Button>
-                    <Button variant="outline" onClick={() => setSelectedPartnershipIds(new Set())}>
-                      Отменить выбор
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        </div>
 
+        {/* Вкладки */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "partnerships" | "internships")}>
+          <TabsList>
+            <TabsTrigger value="partnerships">Партнерства</TabsTrigger>
+            <TabsTrigger value="internships">Стажировки</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="partnerships" className="space-y-4">
           {/* Двухколоночная структура */}
           {filteredData.length === 0 ? (
             <Card>
@@ -1090,7 +1453,6 @@ export default function UniversitiesPage() {
                         {expandedUniversities.has(university.id) && (
                           <div className="ml-6 space-y-1">
                             {university.partnerships.map((partnership) => {
-                              const isSelected = selectedPartnershipIds.has(partnership.id);
                               return (
                                 <div
                                   key={partnership.id}
@@ -1100,47 +1462,32 @@ export default function UniversitiesPage() {
                                     handleSelectPartnership(partnership);
                                   }}
                                   className={cn(
-                                    "p-2 rounded-md cursor-pointer transition-colors text-sm",
+                                    "p-2 rounded-md cursor-pointer transition-colors text-sm flex items-center gap-2",
                                     selectedPartnership?.id === partnership.id
                                       ? "bg-accent text-accent-foreground"
                                       : "hover:bg-muted/50"
                                   )}
                                 >
-                                  <div className="flex items-center gap-2">
-                                    <Checkbox
-                                      checked={isSelected}
-                                      onCheckedChange={(checked) => {
-                                        const newSet = new Set(selectedPartnershipIds);
-                                        if (checked) {
-                                          newSet.add(partnership.id);
-                                        } else {
-                                          newSet.delete(partnership.id);
-                                        }
-                                        setSelectedPartnershipIds(newSet);
-                                      }}
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium text-sm break-words">{partnership.name}</div>
-                                      <Badge
-                                        variant="outline"
-                                        className={cn("text-xs mt-0.5", getStatusColor(partnership.status))}
-                                      >
-                                        {getStatusText(partnership.status)}
-                                      </Badge>
-                                    </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 flex-shrink-0 text-destructive"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeletePartnershipId({ universityId: university.id, partnershipId: partnership.id });
-                                      }}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm break-words">{partnership.name}</div>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn("text-xs mt-0.5", getStatusColor(partnership.status))}
                                     >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </Button>
+                                      {getStatusText(partnership.status)}
+                                    </Badge>
                                   </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 flex-shrink-0 text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeletePartnershipId({ universityId: university.id, partnershipId: partnership.id });
+                                    }}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
                                 </div>
                               );
                             })}
@@ -1552,7 +1899,122 @@ export default function UniversitiesPage() {
               </div>
             </div>
           )}
-      </div>
+          </TabsContent>
+
+          <TabsContent value="internships" className="space-y-4">
+            {/* Список стажировок */}
+            {filteredInternshipsForTab.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-12">
+                    <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-lg font-medium mb-2">Стажировки не найдены</p>
+                    <p className="text-muted-foreground mb-4">
+                      {internshipSearchQuery || internshipStatusFilter !== "all" || internshipUniversityFilter !== "all"
+                        ? "Попробуйте изменить фильтры"
+                        : "Создайте первую стажировку, чтобы начать работу"}
+                    </p>
+                    {!internshipSearchQuery && internshipStatusFilter === "all" && internshipUniversityFilter === "all" && (
+                      <Button onClick={handleCreateInternship} size="lg">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Создать стажировку
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {filteredInternshipsForTab.map((internship) => (
+                  <Card 
+                    key={internship.id}
+                    className={cn(
+                      "cursor-pointer transition-all hover:shadow-md",
+                      selectedInternship?.id === internship.id && "ring-2 ring-primary"
+                    )}
+                    onClick={() => {
+                      setSelectedInternship(internship);
+                      setIsInternshipDetailsDialogOpen(true);
+                    }}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-xl mb-2">{internship.title}</CardTitle>
+                          <CardDescription className="flex items-center gap-4 flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <Building2 className="h-4 w-4" />
+                              {internship.universityName}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {internship.startDate.toLocaleDateString('ru-RU')} - {internship.endDate.toLocaleDateString('ru-RU')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              {internship.currentParticipants} / {internship.maxParticipants}
+                            </span>
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={cn(getInternshipStatusColor(internship.status))}>
+                            {getInternshipStatusText(internship.status)}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditInternship(internship);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteInternshipId(internship.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                        {internship.description}
+                      </p>
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <Badge variant="outline" className="text-xs">
+                          {internship.location === 'remote' ? 'Удаленно' : 
+                           internship.location === 'office' ? 'Офис' : 'Гибридно'}
+                        </Badge>
+                        {internship.city && (
+                          <Badge variant="outline" className="text-xs">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {internship.city}
+                          </Badge>
+                        )}
+                        {internship.salary && (
+                          <Badge variant="outline" className="text-xs">
+                            {internship.salary.toLocaleString('ru-RU')} ₽
+                          </Badge>
+                        )}
+                      </div>
+                      <Progress 
+                        value={(internship.currentParticipants / internship.maxParticipants) * 100} 
+                        className="mt-4"
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
 
       {/* Модальное окно создания университета или партнерства */}
           <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
@@ -2086,8 +2548,9 @@ export default function UniversitiesPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Диалог фильтров */}
-          <Dialog open={isFiltersDialogOpen} onOpenChange={setIsFiltersDialogOpen}>
+      {/* Диалоги для партнерств */}
+      {/* Диалог фильтров */}
+      <Dialog open={isFiltersDialogOpen} onOpenChange={setIsFiltersDialogOpen}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Фильтры и сортировка</DialogTitle>
@@ -2567,6 +3030,586 @@ export default function UniversitiesPage() {
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      {/* Диалоги для стажировок */}
+      {/* Диалог создания/редактирования стажировки */}
+      <Dialog open={isInternshipCreateDialogOpen} onOpenChange={setIsInternshipCreateDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingInternship ? "Редактировать стажировку" : "Создать стажировку"}
+            </DialogTitle>
+            <DialogDescription>
+              Заполните информацию о стажировке
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="internship-title">Название стажировки *</Label>
+                <Input
+                  id="internship-title"
+                  value={internshipFormData.title}
+                  onChange={(e) => setInternshipFormData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Например: Frontend разработка на React"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="internship-university">ВУЗ *</Label>
+                <Select 
+                  value={internshipFormData.universityId} 
+                  onValueChange={(v) => setInternshipFormData(prev => ({ ...prev, universityId: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите ВУЗ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {uniqueInternshipUniversities.map(u => (
+                      <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="internship-description">Описание *</Label>
+              <Textarea
+                id="internship-description"
+                value={internshipFormData.description}
+                onChange={(e) => setInternshipFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Подробное описание стажировки..."
+                rows={4}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="internship-startDate">Дата начала *</Label>
+                <Input
+                  id="internship-startDate"
+                  type="date"
+                  value={internshipFormData.startDate}
+                  onChange={(e) => setInternshipFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="internship-endDate">Дата окончания *</Label>
+                <Input
+                  id="internship-endDate"
+                  type="date"
+                  value={internshipFormData.endDate}
+                  onChange={(e) => setInternshipFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="internship-deadline">Дедлайн заявок *</Label>
+                <Input
+                  id="internship-deadline"
+                  type="date"
+                  value={internshipFormData.applicationDeadline}
+                  onChange={(e) => setInternshipFormData(prev => ({ ...prev, applicationDeadline: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="internship-maxParticipants">Максимум участников *</Label>
+                <Input
+                  id="internship-maxParticipants"
+                  type="number"
+                  min="1"
+                  value={internshipFormData.maxParticipants}
+                  onChange={(e) => setInternshipFormData(prev => ({ ...prev, maxParticipants: parseInt(e.target.value) || 1 }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="internship-status">Статус</Label>
+                <Select 
+                  value={internshipFormData.status} 
+                  onValueChange={(v) => setInternshipFormData(prev => ({ ...prev, status: v as InternshipStatus }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="planned">Запланировано</SelectItem>
+                    <SelectItem value="recruiting">Набор</SelectItem>
+                    <SelectItem value="active">Активно</SelectItem>
+                    <SelectItem value="completed">Завершено</SelectItem>
+                    <SelectItem value="cancelled">Отменено</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="internship-location">Формат</Label>
+                <Select 
+                  value={internshipFormData.location} 
+                  onValueChange={(v) => setInternshipFormData(prev => ({ ...prev, location: v as "remote" | "office" | "hybrid" }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="remote">Удаленно</SelectItem>
+                    <SelectItem value="office">Офис</SelectItem>
+                    <SelectItem value="hybrid">Гибридно</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="internship-city">Город</Label>
+                <Input
+                  id="internship-city"
+                  value={internshipFormData.city}
+                  onChange={(e) => setInternshipFormData(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Москва"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="internship-salary">Зарплата (₽)</Label>
+                <Input
+                  id="internship-salary"
+                  type="number"
+                  value={internshipFormData.salary}
+                  onChange={(e) => setInternshipFormData(prev => ({ ...prev, salary: e.target.value }))}
+                  placeholder="30000"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="internship-mentor">Наставник</Label>
+              <Select 
+                value={internshipFormData.mentorId} 
+                onValueChange={(v) => setInternshipFormData(prev => ({ ...prev, mentorId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите наставника" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockMentors.map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.fullName} - {m.position}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsInternshipCreateDialogOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleSaveInternship}>
+              {editingInternship ? "Сохранить изменения" : "Создать стажировку"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог деталей стажировки с заявками */}
+      <Dialog open={isInternshipDetailsDialogOpen} onOpenChange={setIsInternshipDetailsDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{selectedInternship?.title}</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsInternshipStatisticsDialogOpen(true)}
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Статистика
+                </Button>
+                <Badge className={cn(selectedInternship && getInternshipStatusColor(selectedInternship.status))}>
+                  {selectedInternship && getInternshipStatusText(selectedInternship.status)}
+                </Badge>
+              </div>
+            </DialogTitle>
+            <DialogDescription>
+              {selectedInternship?.universityName} • {selectedInternship?.startDate.toLocaleDateString('ru-RU')} - {selectedInternship?.endDate.toLocaleDateString('ru-RU')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedInternship && (
+            <Tabs defaultValue="applications" className="w-full">
+              <TabsList>
+                <TabsTrigger value="applications">
+                  Заявки ({currentInternshipApplications.length})
+                </TabsTrigger>
+                <TabsTrigger value="details">Детали</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="applications" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">
+                      На рассмотрении: {currentInternshipApplications.filter(a => a.status === 'pending').length}
+                    </Badge>
+                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+                      Одобрено: {currentInternshipApplications.filter(a => a.status === 'approved').length}
+                    </Badge>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                      Подтверждено: {currentInternshipApplications.filter(a => a.status === 'confirmed').length}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Студент</TableHead>
+                        <TableHead>ВУЗ</TableHead>
+                        <TableHead>Курс</TableHead>
+                        <TableHead>Релевантность</TableHead>
+                        <TableHead>Статус</TableHead>
+                        <TableHead>Дата подачи</TableHead>
+                        <TableHead className="text-right">Действия</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentInternshipApplications
+                        .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+                        .map((application) => {
+                          const student = internshipStudents.find(s => s.id === application.studentId);
+                          return (
+                            <TableRow key={application.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback>
+                                      {application.studentName.split(' ').map(n => n[0]).join('')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <div className="font-medium">{application.studentName}</div>
+                                    <div className="text-xs text-muted-foreground">{application.studentEmail}</div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{application.universityName}</TableCell>
+                              <TableCell>{application.course} курс</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Progress value={application.matchScore || 0} className="w-20 h-2" />
+                                  <span className="text-sm font-medium">{application.matchScore || 0}%</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={cn(getInternshipStatusColor(application.status))}>
+                                  {getInternshipStatusText(application.status)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {application.appliedAt.toLocaleDateString('ru-RU')}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedInternshipApplication(application);
+                                      setIsInternshipApplicationDialogOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  {application.status === 'pending' && (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-green-600 hover:text-green-700"
+                                        onClick={() => handleApproveInternshipApplication(application.id)}
+                                      >
+                                        <CheckCircle2 className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-600 hover:text-red-700"
+                                        onClick={() => {
+                                          const reason = prompt('Причина отклонения:');
+                                          if (reason) {
+                                            handleRejectInternshipApplication(application.id, reason);
+                                          }
+                                        }}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {application.status === 'approved' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleConfirmInternshipApplication(application.id)}
+                                    >
+                                      <UserCheck className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {(application.status === 'active' || application.status === 'confirmed') && selectedInternship?.status === 'active' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEvaluationApplicationId(application.id);
+                                        setIsEvaluationDialogOpen(true);
+                                      }}
+                                      title="Оценить студента"
+                                    >
+                                      <Star className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="details" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Информация</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Описание</Label>
+                        <p className="text-sm">{selectedInternship.description}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Формат</Label>
+                        <p className="text-sm">
+                          {selectedInternship.location === 'remote' ? 'Удаленно' : 
+                           selectedInternship.location === 'office' ? 'Офис' : 'Гибридно'}
+                        </p>
+                      </div>
+                      {selectedInternship.city && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Город</Label>
+                          <p className="text-sm">{selectedInternship.city}</p>
+                        </div>
+                      )}
+                      {selectedInternship.salary && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Зарплата</Label>
+                          <p className="text-sm">{selectedInternship.salary.toLocaleString('ru-RU')} ₽</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Участники</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Текущее количество</span>
+                          <span className="font-medium">{selectedInternship.currentParticipants} / {selectedInternship.maxParticipants}</span>
+                        </div>
+                        <Progress 
+                          value={(selectedInternship.currentParticipants / selectedInternship.maxParticipants) * 100} 
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог деталей заявки стажировки */}
+      <Dialog open={isInternshipApplicationDialogOpen} onOpenChange={setIsInternshipApplicationDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Заявка студента</DialogTitle>
+            <DialogDescription>
+              {selectedInternshipApplication?.studentName} • {selectedInternshipApplication?.universityName}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedInternshipApplication && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Курс</Label>
+                  <p className="text-sm font-medium">{selectedInternshipApplication.course} курс</p>
+                </div>
+                {selectedInternshipApplication.gpa && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Средний балл</Label>
+                    <p className="text-sm font-medium">{selectedInternshipApplication.gpa}</p>
+                  </div>
+                )}
+              </div>
+              {selectedInternshipApplication.matchScore !== undefined && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Релевантность</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Progress value={selectedInternshipApplication.matchScore} className="flex-1" />
+                    <span className="text-sm font-medium">{selectedInternshipApplication.matchScore}%</span>
+                  </div>
+                </div>
+              )}
+              {selectedInternshipApplication.motivationLetter && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Мотивационное письмо</Label>
+                  <p className="text-sm mt-1 p-3 bg-muted rounded-md">
+                    {selectedInternshipApplication.motivationLetter}
+                  </p>
+                </div>
+              )}
+              {selectedInternshipApplication.rejectionReason && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Причина отклонения</Label>
+                  <p className="text-sm mt-1 p-3 bg-red-50 dark:bg-red-900/20 rounded-md text-red-700 dark:text-red-300">
+                    {selectedInternshipApplication.rejectionReason}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsInternshipApplicationDialogOpen(false)}>
+              Закрыть
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог статистики стажировки */}
+      <Dialog open={isInternshipStatisticsDialogOpen} onOpenChange={setIsInternshipStatisticsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Статистика стажировки</DialogTitle>
+            <DialogDescription>
+              {selectedInternship?.title}
+            </DialogDescription>
+          </DialogHeader>
+          {internshipStatistics && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold">{internshipStatistics.totalApplications}</div>
+                    <div className="text-xs text-muted-foreground">Всего заявок</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-green-600">{internshipStatistics.approvedApplications}</div>
+                    <div className="text-xs text-muted-foreground">Одобрено</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-blue-600">{internshipStatistics.confirmedApplications}</div>
+                    <div className="text-xs text-muted-foreground">Подтверждено</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold">{internshipStatistics.averageMatchScore}%</div>
+                    <div className="text-xs text-muted-foreground">Средняя релевантность</div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Конверсия</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Заявки → Одобрено</span>
+                    <span className="font-medium">{internshipStatistics.conversionRate.applicationsToApproved}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Одобрено → Подтверждено</span>
+                    <span className="font-medium">{internshipStatistics.conversionRate.approvedToConfirmed}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Подтверждено → Завершено</span>
+                    <span className="font-medium">{internshipStatistics.conversionRate.confirmedToCompleted}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {internshipStatistics.topUniversities.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Топ ВУЗы по заявкам</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {internshipStatistics.topUniversities.map((univ, idx) => (
+                        <div key={univ.universityId} className="flex items-center justify-between">
+                          <span className="text-sm">
+                            {idx + 1}. {univ.universityName}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{univ.applicationsCount} заявок</Badge>
+                            <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+                              {univ.approvedCount} одобрено
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsInternshipStatisticsDialogOpen(false)}>
+              Закрыть
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог подтверждения удаления стажировки */}
+      <AlertDialog open={!!deleteInternshipId} onOpenChange={() => setDeleteInternshipId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить стажировку?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие нельзя отменить. Стажировка и все связанные заявки будут удалены.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteInternshipConfirm} className="bg-destructive text-destructive-foreground">
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Диалог оценки студента */}
+      {evaluationApplicationId && (
+        <EvaluationDialog
+          open={isEvaluationDialogOpen}
+          onOpenChange={setIsEvaluationDialogOpen}
+          applicationId={evaluationApplicationId}
+          studentName={internshipApplications.find(a => a.id === evaluationApplicationId)?.studentName || ''}
+          internshipTitle={selectedInternship?.title || ''}
+          onSubmit={handleSaveInternshipEvaluation}
+          existingEvaluation={evaluations.find(e => 
+            e.applicationId === evaluationApplicationId && 
+            e.period === 'final'
+          )}
+        />
+      )}
     </div>
   );
 }
