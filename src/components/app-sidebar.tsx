@@ -3,6 +3,7 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useSidebar } from "@/components/ui/sidebar";
 import { menuSections } from "@/lib/sidebar-config";
 import {
@@ -90,18 +91,15 @@ export function AppSidebar() {
           href="/" 
           className="flex items-center gap-2 justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:h-full w-full hover:opacity-80 transition-opacity pb-0"
         >
-          <div className="flex aspect-square h-10 w-10 group-data-[collapsible=icon]:size-9 items-center justify-center rounded-lg border-2 border-sidebar-border bg-sidebar-accent/50 overflow-hidden shrink-0">
-            <img
+          <div className="flex aspect-square h-10 w-10 group-data-[collapsible=icon]:size-9 items-center justify-center rounded-lg border-2 border-sidebar-border bg-sidebar-accent/50 overflow-hidden shrink-0 relative">
+            <Image
               src="/Снимок экрана 2025-11-27 125418.png"
               alt="РИТМ Logo"
-              className="w-full h-full object-cover"
-              loading="lazy"
-              onError={(e) => {
-                // Fallback если изображение не найдено
-                const target = e.currentTarget;
-                target.style.display = "none";
-                console.error("Logo image not found");
-              }}
+              fill
+              className="object-cover"
+              priority
+              sizes="40px"
+              unoptimized
             />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
