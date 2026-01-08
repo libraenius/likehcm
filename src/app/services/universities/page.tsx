@@ -13,14 +13,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Download, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, CheckSquare, Square, Edit3, Copy, Tag, Eye, EyeOff } from "lucide-react";
+import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, CheckSquare, Square, Edit3, Copy, Tag, Eye, EyeOff } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import * as XLSX from "xlsx";
 
 // Тип для университета
 interface University {
@@ -367,30 +366,6 @@ const debounce = <T extends (...args: any[]) => void>(
   };
 };
 
-// Функции экспорта
-const exportToExcel = (data: any[], filename: string) => {
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-  XLSX.writeFile(wb, `${filename}.xlsx`);
-};
-
-const exportUniversitiesToExcel = (universities: University[]) => {
-  const data = universities.flatMap(uni => 
-    uni.partnerships.map(p => ({
-      "Университет": uni.name,
-      "Город": uni.city,
-      "Регион": uni.region,
-      "Партнерство": p.name,
-      "Тип": getPartnershipTypeText(p.type),
-      "Статус": getStatusText(p.status),
-      "Дата начала": formatDate(p.startDate),
-      "Дата окончания": p.endDate ? formatDate(p.endDate) : "",
-      "Студентов": p.students?.length || 0,
-    }))
-  );
-  exportToExcel(data, `universities_${new Date().toISOString().split('T')[0]}`);
-};
 
 // Шаблоны email
 const emailTemplates: EmailTemplate[] = [
@@ -672,18 +647,6 @@ export default function UniversitiesPage() {
     });
   };
   
-  // Вычисление статистики
-  const stats = useMemo(() => {
-    const allPartnerships = universities.flatMap(u => u.partnerships.filter(p => !(p as PartnershipExtended).isArchived));
-    return {
-      totalUniversities: universities.length,
-      totalPartnerships: allPartnerships.length,
-      activePartnerships: allPartnerships.filter(p => p.status === "active").length,
-      plannedPartnerships: allPartnerships.filter(p => p.status === "planned").length,
-      completedPartnerships: allPartnerships.filter(p => p.status === "completed").length,
-      totalStudents: allPartnerships.reduce((sum, p) => sum + (p.students?.length || 0), 0),
-    };
-  }, [universities]);
 
   // Фильтрация и сортировка данных
   const filteredData = useMemo(() => {
@@ -952,73 +915,16 @@ export default function UniversitiesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Заголовок */}
+      <div className="space-y-4">
         <div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Единая платформа по работе с ВУЗами</h1>
           <p className="text-muted-foreground">
             Управление партнерствами с образовательными учреждениями
           </p>
         </div>
-      </div>
-
-      <Tabs defaultValue="administration" className="w-full">
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger value="administration" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span>Администрирование</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="administration" className="space-y-4">
-          {/* Статистика */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Всего университетов</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalUniversities}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Активных партнерств</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">{stats.activePartnerships}</div>
-                <p className="text-xs text-muted-foreground mt-1">из {stats.totalPartnerships} всего</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Всего студентов</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{stats.totalStudents}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Запланировано</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{stats.plannedPartnerships}</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">Администрирование</h2>
-              <p className="text-muted-foreground">
-                Управление университетами и партнерствами
-              </p>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => exportUniversitiesToExcel(universities)}>
-                <Download className="mr-2 h-4 w-4" />
-                Экспорт
-              </Button>
               <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить
@@ -1126,7 +1032,7 @@ export default function UniversitiesPage() {
           ) : (
             <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
               {/* Левая колонка - иерархия университетов и партнерств */}
-              <div className="w-[480px] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
+              <div className="w-[20rem] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
                 <div className="p-2 border-b bg-muted/30">
                   <h3 className="font-semibold text-sm">Университеты и партнерства</h3>
                 </div>
@@ -1155,13 +1061,12 @@ export default function UniversitiesPage() {
                                 <ChevronRight className="h-3.5 w-3.5" />
                               )}
                             </Button>
-                            <GraduationCap className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm break-words">{university.name}</div>
                               {university.description && (
-                                <div className="text-xs text-muted-foreground break-words mt-0.5">
-                                  {university.description.length > 40
-                                    ? university.description.substring(0, 40) + "..."
+                                <div className="text-xs break-words mt-0.5 text-muted-foreground">
+                                  {university.description.length > 50
+                                    ? university.description.substring(0, 50) + "..."
                                     : university.description}
                                 </div>
                               )}
@@ -1217,12 +1122,11 @@ export default function UniversitiesPage() {
                                       }}
                                       onClick={(e) => e.stopPropagation()}
                                     />
-                                    <Link2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                      <div className="font-medium break-words">{partnership.name}</div>
+                                      <div className="font-medium text-sm break-words">{partnership.name}</div>
                                       <Badge
                                         variant="outline"
-                                        className={cn("text-xs mt-1", getStatusColor(partnership.status))}
+                                        className={cn("text-xs mt-0.5", getStatusColor(partnership.status))}
                                       >
                                         {getStatusText(partnership.status)}
                                       </Badge>
@@ -1650,8 +1554,9 @@ export default function UniversitiesPage() {
               </div>
             </div>
           )}
+      </div>
 
-          {/* Модальное окно создания университета или партнерства */}
+      {/* Модальное окно создания университета или партнерства */}
           <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
             setIsCreateDialogOpen(open);
             if (!open) {
@@ -2309,9 +2214,6 @@ export default function UniversitiesPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </TabsContent>
-
-      </Tabs>
 
       {/* Диалог добавления студентов */}
       <Dialog open={isAddStudentsDialogOpen} onOpenChange={setIsAddStudentsDialogOpen}>

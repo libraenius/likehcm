@@ -717,7 +717,7 @@ export default function ProfilesPage() {
       ) : (
         <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
           {/* Левая колонка - список профилей (фиксированная ширина) */}
-          <div className="w-[300px] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
+          <div className="w-[20rem] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
             <div className="p-2 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Список профилей</h3>
             </div>
