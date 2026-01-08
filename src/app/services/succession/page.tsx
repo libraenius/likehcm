@@ -420,7 +420,7 @@ export default function SuccessionPage() {
             Управление ключевыми позициями и преемниками
           </p>
         </div>
-        <Button onClick={handleCreatePosition}>
+        <Button onClick={handleCreatePosition} size="lg">
           <Plus className="mr-2 h-4 w-4" />
           Добавить позицию
         </Button>

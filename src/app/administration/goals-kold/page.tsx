@@ -2978,11 +2978,14 @@ export default function GoalsKoldPage() {
                     }
                   }}>
                     <DialogTrigger asChild>
-                      <Button onClick={() => {
-                        setEditingUnit(null);
-                        setUnitFormData({ name: "", abbreviation: "", description: "" });
-                        setUnitDialogOpen(true);
-                      }}>
+                      <Button 
+                        onClick={() => {
+                          setEditingUnit(null);
+                          setUnitFormData({ name: "", abbreviation: "", description: "" });
+                          setUnitDialogOpen(true);
+                        }}
+                        size="lg"
+                      >
                         <Plus className="mr-2 h-4 w-4" />
                         Добавить единицу
                       </Button>

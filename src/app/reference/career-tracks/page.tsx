@@ -223,7 +223,7 @@ export default function CareerTracksPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={handleCreate}>
+            <Button onClick={handleCreate} size="lg">
               <Plus className="mr-2 h-4 w-4" />
               Добавить карьерный трек
             </Button>
@@ -488,7 +488,7 @@ export default function CareerTracksPage() {
                     : "Создайте первый карьерный трек, чтобы начать работу"}
                 </p>
                 {!searchQuery && (
-                  <Button onClick={handleCreate}>
+                  <Button onClick={handleCreate} size="lg">
                     <Plus className="mr-2 h-4 w-4" />
                     Добавить карьерный трек
                   </Button>

@@ -1164,11 +1164,14 @@ export default function GoalsKoldPage() {
                     }
                   }}>
                     <DialogTrigger asChild>
-                      <Button onClick={() => {
-                        setEditingUnit(null);
-                        setUnitFormData({ name: "", abbreviation: "", description: "" });
-                        setUnitDialogOpen(true);
-                      }}>
+                      <Button 
+                        onClick={() => {
+                          setEditingUnit(null);
+                          setUnitFormData({ name: "", abbreviation: "", description: "" });
+                          setUnitDialogOpen(true);
+                        }}
+                        size="lg"
+                      >
                         <Plus className="mr-2 h-4 w-4" />
                         Добавить единицу
                       </Button>
@@ -1458,11 +1461,14 @@ export default function GoalsKoldPage() {
                     }
                   }}>
                     <DialogTrigger asChild>
-                      <Button onClick={() => {
-                        setEditingFormula(null);
-                        setFormulaFormData({ name: "", formula: "", description: "" });
-                        setFormulaDialogOpen(true);
-                      }}>
+                      <Button 
+                        onClick={() => {
+                          setEditingFormula(null);
+                          setFormulaFormData({ name: "", formula: "", description: "" });
+                          setFormulaDialogOpen(true);
+                        }}
+                        size="lg"
+                      >
                         <Plus className="mr-2 h-4 w-4" />
                         Добавить формулу
                       </Button>
@@ -1752,11 +1758,14 @@ export default function GoalsKoldPage() {
                     }
                   }}>
                     <DialogTrigger asChild>
-                      <Button onClick={() => {
-                        setEditingStream(null);
-                        setStreamFormData({ name: "", type: "продуктовый", businessType: "РБ", datEmployeeIds: [], description: "" });
-                        setStreamDialogOpen(true);
-                      }}>
+                      <Button 
+                        onClick={() => {
+                          setEditingStream(null);
+                          setStreamFormData({ name: "", type: "продуктовый", businessType: "РБ", datEmployeeIds: [], description: "" });
+                          setStreamDialogOpen(true);
+                        }}
+                        size="lg"
+                      >
                         <Plus className="mr-2 h-4 w-4" />
                         Добавить стрим
                       </Button>

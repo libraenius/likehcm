@@ -654,7 +654,7 @@ export default function CompetencesPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={handleCreate}>
+            <Button onClick={handleCreate} size="lg">
               <Plus className="mr-2 h-4 w-4" />
               Добавить компетенцию
             </Button>

@@ -917,23 +917,21 @@ export default function UniversitiesPage() {
     <div className="space-y-6">
       {/* Заголовок */}
       <div className="space-y-4">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Единая платформа по работе с ВУЗами</h1>
-          <p className="text-muted-foreground">
-            Управление партнерствами с образовательными учреждениями
-          </p>
-        </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
-            <div className="flex gap-2">
-              <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                Добавить
-              </Button>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Единая платформа по работе с ВУЗами</h1>
+            <p className="text-muted-foreground">
+              Управление партнерствами с образовательными учреждениями
+            </p>
           </div>
+          <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            Добавить
+          </Button>
+        </div>
 
           {/* Поиск */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -1021,7 +1019,7 @@ export default function UniversitiesPage() {
                       : "Создайте первый университет, чтобы начать работу"}
                   </p>
                   {!searchQuery && (
-                    <Button onClick={handleCreate}>
+                    <Button onClick={handleCreate} size="lg">
                       <Plus className="mr-2 h-4 w-4" />
                       Добавить университет
                     </Button>

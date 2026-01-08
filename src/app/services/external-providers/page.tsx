@@ -960,7 +960,7 @@ export default function ExternalProvidersPage() {
                       : "Создайте первого провайдера, чтобы начать работу"}
                   </p>
                   {!searchQuery && (
-                    <Button onClick={handleCreate}>
+                    <Button onClick={handleCreate} size="lg">
                       <Plus className="mr-2 h-4 w-4" />
                       Добавить провайдера
                     </Button>
