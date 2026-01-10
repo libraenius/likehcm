@@ -387,7 +387,7 @@ export function QuarterlyKPICards({
                   <SelectItem value="2026">2026</SelectItem>
                 </SelectContent>
               </Select>
-              <TabsList className="!inline-flex !h-8 !p-0.5 flex-1 gap-1">
+              <TabsList variant="inline">
                 <TabsTrigger value={`q1-${selectedQuarterlyYear}`} className="!text-xs !px-2 !py-1 flex-1">1 квартал {selectedQuarterlyYear}</TabsTrigger>
                 <TabsTrigger value={`q2-${selectedQuarterlyYear}`} className="!text-xs !px-2 !py-1 flex-1">2 квартал {selectedQuarterlyYear}</TabsTrigger>
                 <TabsTrigger value={`q3-${selectedQuarterlyYear}`} className="!text-xs !px-2 !py-1 flex-1">3 квартал {selectedQuarterlyYear}</TabsTrigger>

@@ -420,7 +420,7 @@ export function SkillAssessment({ userProfile, onSkillUpdate, onClose }: SkillAs
       {/* Вкладки для основного и дополнительных профилей */}
       {additionalProfileCompetences.length > 0 ? (
         <Tabs defaultValue="main" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList variant="grid2">
             <TabsTrigger value="main">
               Основной профиль
             </TabsTrigger>

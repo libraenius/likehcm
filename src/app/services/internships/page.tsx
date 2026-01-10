@@ -816,14 +816,14 @@ export default function InternshipsPage() {
           
           {selectedInternship && (
             <Tabs defaultValue="applications" className="w-full">
-              <TabsList>
+              <TabsList variant="grid2">
                 <TabsTrigger value="applications">
                   Заявки ({internshipApplications.length})
                 </TabsTrigger>
                 <TabsTrigger value="details">Детали</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="applications" className="space-y-4">
+              <TabsContent value="applications" className="mt-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">
@@ -971,7 +971,7 @@ export default function InternshipsPage() {
                 </div>
               </TabsContent>
               
-              <TabsContent value="details" className="space-y-4">
+              <TabsContent value="details" className="mt-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
                     <CardHeader>

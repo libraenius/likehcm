@@ -668,22 +668,19 @@ export default function ExternalProvidersPage() {
       </div>
 
       <Tabs defaultValue="my-procedures" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="my-procedures" className="flex items-center gap-2">
-            <ClipboardCheck className="h-4 w-4" />
-            <span>Мои оценочные процедуры</span>
+        <TabsList variant="grid3">
+          <TabsTrigger value="my-procedures">
+            Мои оценочные процедуры
           </TabsTrigger>
-          <TabsTrigger value="employees-procedures" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span>Оценочные процедуры сотрудников</span>
+          <TabsTrigger value="employees-procedures">
+            Оценочные процедуры сотрудников
           </TabsTrigger>
-          <TabsTrigger value="administration" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span>Администрирование</span>
+          <TabsTrigger value="administration">
+            Администрирование
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="my-procedures" className="space-y-6">
+        <TabsContent value="my-procedures" className="mt-4 space-y-6">
           {mockProcedures.length === 0 ? (
             <Card>
               <CardContent className="py-8">
@@ -891,7 +888,7 @@ export default function ExternalProvidersPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="employees-procedures" className="space-y-4">
+        <TabsContent value="employees-procedures" className="mt-4 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -910,7 +907,7 @@ export default function ExternalProvidersPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="administration" className="space-y-4">
+        <TabsContent value="administration" className="mt-4 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-2">Администрирование</h2>
@@ -1722,7 +1719,7 @@ export default function ExternalProvidersPage() {
           </DialogHeader>
           
           <Tabs defaultValue="send" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList variant="grid2">
               <TabsTrigger value="send">Отправить уведомление</TabsTrigger>
               <TabsTrigger value="history">История отправленных</TabsTrigger>
             </TabsList>
@@ -1827,7 +1824,7 @@ export default function ExternalProvidersPage() {
               </div>
             </TabsContent>
             
-            <TabsContent value="history" className="space-y-4 mt-4">
+            <TabsContent value="history" className="mt-4 space-y-4">
               <div className="space-y-4">
                 {/* Поиск по истории */}
                 <div className="relative">

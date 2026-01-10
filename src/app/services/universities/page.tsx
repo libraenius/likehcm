@@ -1329,28 +1329,35 @@ export default function UniversitiesPage() {
           </Button>
         </div>
 
-          {/* Поиск */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
+        {/* Вкладки */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "partnerships" | "internships")} className="w-full">
+          <TabsList variant="grid2">
+            <TabsTrigger value="partnerships">Партнерства</TabsTrigger>
+            <TabsTrigger value="internships">Стажировки</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="partnerships" className="mt-4 space-y-4">
+            {/* Поиск и фильтры для партнерств */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={activeTab === "partnerships" ? "Поиск по университетам и партнерствам..." : "Поиск по названию стажировки или вузу..."}
-                value={activeTab === "partnerships" ? searchQuery : internshipSearchQuery}
-                onChange={(e) => activeTab === "partnerships" ? setSearchQuery(e.target.value) : setInternshipSearchQuery(e.target.value)}
+                placeholder="Поиск по университетам и партнерствам..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
-              {(activeTab === "partnerships" ? searchQuery : internshipSearchQuery) && (
+              {searchQuery && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
-                  onClick={() => activeTab === "partnerships" ? setSearchQuery("") : setInternshipSearchQuery("")}
+                  onClick={() => setSearchQuery("")}
                 >
                   <X className="h-4 w-4" />
                 </Button>
               )}
-            </div>
-            {activeTab === "partnerships" ? (
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -1369,50 +1376,12 @@ export default function UniversitiesPage() {
                   </Badge>
                 )}
               </Button>
-            ) : (
-              <>
-                <Select value={internshipStatusFilter} onValueChange={(v) => setInternshipStatusFilter(v as InternshipStatus | "all")}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Статус" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Все статусы</SelectItem>
-                    <SelectItem value="planned">Запланировано</SelectItem>
-                    <SelectItem value="recruiting">Набор</SelectItem>
-                    <SelectItem value="active">Активно</SelectItem>
-                    <SelectItem value="completed">Завершено</SelectItem>
-                    <SelectItem value="cancelled">Отменено</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={internshipUniversityFilter} onValueChange={setInternshipUniversityFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="ВУЗ" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Все ВУЗы</SelectItem>
-                    {uniqueInternshipUniversities.map(u => (
-                      <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Вкладки */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "partnerships" | "internships")} className="w-full">
-          <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="partnerships">Партнерства</TabsTrigger>
-            <TabsTrigger value="internships">Стажировки</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="partnerships" className="space-y-4">
-          {/* Двухколоночная структура */}
-          {filteredData.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-12">
+            </div>
+            {/* Двухколоночная структура */}
+            {filteredData.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-12">
                   <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">
                     {searchQuery ? "Университеты не найдены" : "Нет университетов"}
@@ -1422,17 +1391,17 @@ export default function UniversitiesPage() {
                       ? "Попробуйте изменить поисковый запрос"
                       : "Создайте первый университет, чтобы начать работу"}
                   </p>
-                  {!searchQuery && (
-                    <Button onClick={handleCreate} size="lg">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Добавить университет
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
+                    {!searchQuery && (
+                      <Button onClick={handleCreate} size="lg">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Добавить университет
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
               {/* Левая колонка - иерархия университетов и партнерств */}
               <div className="w-[20rem] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
                 <div className="p-2 border-b bg-muted/30">
@@ -1938,11 +1907,58 @@ export default function UniversitiesPage() {
                   </Card>
                 )}
               </div>
-            </div>
-          )}
+              </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="internships" className="space-y-4">
+          <TabsContent value="internships" className="mt-4 space-y-4 w-full">
+            {/* Поиск и фильтры для стажировок */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Поиск по названию стажировки или вузу..."
+                  value={internshipSearchQuery}
+                  onChange={(e) => setInternshipSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+                {internshipSearchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                    onClick={() => setInternshipSearchQuery("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <Select value={internshipStatusFilter} onValueChange={(v) => setInternshipStatusFilter(v as InternshipStatus | "all")}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Статус" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все статусы</SelectItem>
+                  <SelectItem value="planned">Запланировано</SelectItem>
+                  <SelectItem value="recruiting">Набор</SelectItem>
+                  <SelectItem value="active">Активно</SelectItem>
+                  <SelectItem value="completed">Завершено</SelectItem>
+                  <SelectItem value="cancelled">Отменено</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={internshipUniversityFilter} onValueChange={setInternshipUniversityFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="ВУЗ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все ВУЗы</SelectItem>
+                  {uniqueInternshipUniversities.map(u => (
+                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Список стажировок */}
             {filteredInternshipsForTab.length === 0 ? (
               <Card>
@@ -1965,27 +1981,14 @@ export default function UniversitiesPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-8">
-                {groupedInternships.map((group) => (
-                  <div key={group.status} className="space-y-4">
-                    {/* Заголовок группы */}
-                    <div className="flex items-center justify-between border-b pb-2">
-                      <div className="flex items-center gap-3">
-                        <group.icon className="h-5 w-5 text-muted-foreground" />
-                        <h2 className="text-xl font-semibold">{group.label}</h2>
-                        <Badge variant="secondary" className="ml-2">
-                          {group.internships.length}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Стажировки в группе */}
-                    <div className="grid gap-4">
-                      {group.internships.map((internship) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 w-full">
+                {filteredInternshipsForTab
+                  .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
+                  .map((internship) => (
                         <Card 
                           key={internship.id}
                           className={cn(
-                            "cursor-pointer transition-all hover:shadow-md",
+                            "cursor-pointer transition-all hover:shadow-md h-[280px] flex flex-col overflow-hidden",
                             selectedInternship?.id === internship.id && "ring-2 ring-primary"
                           )}
                           onClick={() => {
@@ -1993,130 +1996,138 @@ export default function UniversitiesPage() {
                             setIsInternshipDetailsDialogOpen(true);
                           }}
                         >
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <CardTitle className="text-xl mb-2">{internship.title}</CardTitle>
-                                <CardDescription className="flex items-center gap-4 flex-wrap">
-                                  <span className="flex items-center gap-1">
-                                    <Building2 className="h-4 w-4" />
-                                    {internship.universityName}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-4 w-4" />
-                                    {internship.startDate.toLocaleDateString('ru-RU')} - {internship.endDate.toLocaleDateString('ru-RU')}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Users className="h-4 w-4" />
-                                    {internship.currentParticipants} / {internship.maxParticipants}
-                                  </span>
+                          <CardHeader className="pb-3 flex-shrink-0 overflow-hidden">
+                            <div className="flex items-start justify-between gap-2 min-w-0">
+                              <div className="flex-1 min-w-0 overflow-hidden">
+                                <CardTitle className="text-base mb-1.5 line-clamp-2 leading-tight break-words">{internship.title}</CardTitle>
+                                <CardDescription className="text-xs mt-1.5 space-y-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Building2 className="h-4 w-4 flex-shrink-0" />
+                                    <span className="truncate">{internship.universityName}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                                    <span className="truncate">{internship.startDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} - {internship.endDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}</span>
+                                  </div>
                                 </CardDescription>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Badge className={cn(getInternshipStatusColor(internship.status))}>
+                              <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                <Badge className={cn(getInternshipStatusColor(internship.status), "text-xs px-2 py-0.5 whitespace-nowrap")}>
                                   {getInternshipStatusText(internship.status)}
                                 </Badge>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditInternship(internship);
-                                  }}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteInternshipId(internship.id);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
+                                <div className="flex items-center gap-0.5 flex-shrink-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 flex-shrink-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditInternship(internship);
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 flex-shrink-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteInternshipId(internship.id);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                              {internship.description}
-                            </p>
-                            <div className="flex items-center gap-4 flex-wrap">
-                              <Badge variant="outline" className="text-xs">
-                                {internship.location === 'remote' ? 'Удаленно' : 
-                                 internship.location === 'office' ? 'Офис' : 'Гибридно'}
-                              </Badge>
-                              {internship.city && (
-                                <Badge variant="outline" className="text-xs">
-                                  <MapPin className="h-3 w-3 mr-1" />
-                                  {internship.city}
+                          <CardContent className="pt-0 flex-1 flex flex-col justify-between min-h-0 overflow-hidden">
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                              <p className="text-xs text-muted-foreground mb-3 line-clamp-3 leading-relaxed break-words">
+                                {internship.description}
+                              </p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant="outline" className="text-xs px-2 py-0.5 whitespace-nowrap">
+                                  {internship.location === 'remote' ? 'Удаленно' : 
+                                   internship.location === 'office' ? 'Офис' : 'Гибридно'}
                                 </Badge>
-                              )}
+                                {internship.city && (
+                                  <Badge variant="outline" className="text-xs px-2 py-0.5 whitespace-nowrap">
+                                    <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                                    <span className="truncate max-w-[80px]">{internship.city}</span>
+                                  </Badge>
+                                )}
+                              </div>
                               {internship.salary && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="text-xs px-2 py-0.5 mt-2 whitespace-nowrap">
                                   {internship.salary.toLocaleString('ru-RU')} ₽
                                 </Badge>
                               )}
                             </div>
-                            <Progress 
-                              value={(internship.currentParticipants / internship.maxParticipants) * 100} 
-                              className="mt-4"
-                            />
+                            <div className="mt-3 space-y-1.5 flex-shrink-0">
+                              <div className="flex items-center justify-between text-xs text-muted-foreground min-w-0">
+                                <span className="flex items-center gap-1.5 min-w-0 truncate">
+                                  <Users className="h-4 w-4 flex-shrink-0" />
+                                  <span className="truncate">{internship.currentParticipants} / {internship.maxParticipants}</span>
+                                </span>
+                              </div>
+                              <Progress 
+                                value={(internship.currentParticipants / internship.maxParticipants) * 100} 
+                                className="h-1.5 w-full"
+                              />
+                            </div>
                           </CardContent>
                         </Card>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </TabsContent>
         </Tabs>
+      </div>
 
       {/* Модальное окно создания университета или партнерства */}
-          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
-            setIsCreateDialogOpen(open);
-            if (!open) {
-              setCreateType(null);
-              setEditingPartnership(null);
-              setUniversityFormData({ name: "", shortName: "", city: "", region: "", description: "" });
-              setPartnershipFormData({
-                name: "",
-                universityId: "",
-                description: "",
-                type: "internship",
-                startDate: "",
-                endDate: "",
-                link: "",
-                status: "planned",
-              });
-            }
-          }}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {!createType 
-                    ? "Добавить" 
-                    : createType === "university" 
-                    ? "Добавить университет" 
-                    : editingPartnership 
-                    ? "Редактировать партнерство" 
-                    : "Добавить партнерство"}
-                </DialogTitle>
-                <DialogDescription>
-                  {!createType 
-                    ? "Выберите, что вы хотите добавить"
-                    : createType === "university"
-                    ? "Заполните информацию об университете"
-                    : editingPartnership
-                    ? "Внесите изменения в партнерство"
-                    : "Заполните информацию о партнерстве"}
-                </DialogDescription>
-              </DialogHeader>
-              {!createType ? (
-                <div className="space-y-3 py-4">
+      <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+        setIsCreateDialogOpen(open);
+        if (!open) {
+          setCreateType(null);
+          setEditingPartnership(null);
+          setUniversityFormData({ name: "", shortName: "", city: "", region: "", description: "" });
+          setPartnershipFormData({
+            name: "",
+            universityId: "",
+            description: "",
+            type: "internship",
+            startDate: "",
+            endDate: "",
+            link: "",
+            status: "planned",
+          });
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {!createType 
+                ? "Добавить" 
+                : createType === "university" 
+                ? "Добавить университет" 
+                : editingPartnership 
+                ? "Редактировать партнерство" 
+                : "Добавить партнерство"}
+            </DialogTitle>
+            <DialogDescription>
+              {!createType 
+                ? "Выберите, что вы хотите добавить"
+                : createType === "university"
+                ? "Заполните информацию об университете"
+                : editingPartnership
+                ? "Внесите изменения в партнерство"
+                : "Заполните информацию о партнерстве"}
+            </DialogDescription>
+          </DialogHeader>
+          {!createType ? (
+            <div className="space-y-3 py-4">
                   <Button
                     variant="outline"
                     className="w-full justify-start h-auto p-4"
@@ -2394,15 +2405,15 @@ export default function UniversitiesPage() {
                   </DialogFooter>
                 </div>
               )}
-            </DialogContent>
-          </Dialog>
+        </DialogContent>
+      </Dialog>
 
-          {/* Диалог удаления университета */}
-          <AlertDialog open={deleteUniversityId !== null} onOpenChange={(open) => !open && setDeleteUniversityId(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
-                <AlertDialogDescription>
+      {/* Диалог удаления университета */}
+      <AlertDialog open={deleteUniversityId !== null} onOpenChange={(open) => !open && setDeleteUniversityId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+            <AlertDialogDescription>
                   {(() => {
                     const university = universities.find(u => u.id === deleteUniversityId);
                     if (university?.partnerships.length) {
@@ -2411,29 +2422,29 @@ export default function UniversitiesPage() {
                     return `Вы уверены, что хотите удалить университет "${university?.name}"? Это действие нельзя отменить.`;
                   })()}
                 </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Отмена</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDeleteUniversity}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  disabled={(() => {
-                    const university = universities.find(u => u.id === deleteUniversityId);
-                    return university?.partnerships.length ? true : false;
-                  })()}
-                >
-                  Удалить
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUniversity}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={(() => {
+                const university = universities.find(u => u.id === deleteUniversityId);
+                return university?.partnerships.length ? true : false;
+              })()}
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          {/* Диалог удаления партнерства */}
-          <AlertDialog open={deletePartnershipId !== null} onOpenChange={(open) => !open && setDeletePartnershipId(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
-                <AlertDialogDescription>
+      {/* Диалог удаления партнерства */}
+      <AlertDialog open={deletePartnershipId !== null} onOpenChange={(open) => !open && setDeletePartnershipId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+            <AlertDialogDescription>
                   {(() => {
                     if (!deletePartnershipId) return "";
                     const university = universities.find(u => u.id === deletePartnershipId.universityId);
@@ -2444,181 +2455,181 @@ export default function UniversitiesPage() {
                     return `Вы уверены, что хотите удалить партнерство "${partnership?.name}"? Это действие нельзя отменить.`;
                   })()}
                 </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Отмена</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDeletePartnership}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  disabled={(() => {
-                    if (!deletePartnershipId) return false;
-                    const university = universities.find(u => u.id === deletePartnershipId.universityId);
-                    const partnership = university?.partnerships.find(p => p.id === deletePartnershipId.partnershipId);
-                    return partnership?.students && partnership.students.length > 0 ? true : false;
-                  })()}
-                >
-                  Удалить
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePartnership}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={(() => {
+                if (!deletePartnershipId) return false;
+                const university = universities.find(u => u.id === deletePartnershipId.universityId);
+                const partnership = university?.partnerships.find(p => p.id === deletePartnershipId.partnershipId);
+                return partnership?.students && partnership.students.length > 0 ? true : false;
+              })()}
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          {/* Диалог удаления студента */}
-          <AlertDialog open={deleteStudentId !== null} onOpenChange={(open) => !open && setDeleteStudentId(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
-                <AlertDialogDescription>
+      {/* Диалог удаления студента */}
+      <AlertDialog open={deleteStudentId !== null} onOpenChange={(open) => !open && setDeleteStudentId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+            <AlertDialogDescription>
                   Вы уверены, что хотите удалить этого студента из партнерства? Это действие нельзя отменить.
                 </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Отмена</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDeleteStudent}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Удалить
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteStudent}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          {/* Диалог комментариев */}
-          <Dialog open={isCommentsDialogOpen} onOpenChange={setIsCommentsDialogOpen}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Комментарии</DialogTitle>
-                <DialogDescription>
+      {/* Диалог комментариев */}
+      <Dialog open={isCommentsDialogOpen} onOpenChange={setIsCommentsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Комментарии</DialogTitle>
+            <DialogDescription>
                   Комментарии к партнерству "{selectedPartnership?.name}"
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 max-h-[400px] overflow-y-auto">
-                {comments.filter(c => c.partnershipId === selectedPartnership?.id).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Нет комментариев
-                  </p>
-                ) : (
-                  comments
-                    .filter(c => c.partnershipId === selectedPartnership?.id)
-                    .map(comment => (
-                      <Card key={comment.id}>
-                        <CardContent className="pt-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">{comment.author}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatDate(comment.createdAt)}
-                              </span>
-                            </div>
-                            <p className="text-sm">{comment.text}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                )}
-              </div>
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Добавить комментарий..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={3}
-                />
-                <Button onClick={handleAddComment} disabled={!newComment.trim()}>
-                  Добавить комментарий
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Диалог истории изменений */}
-          <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>История изменений</DialogTitle>
-                <DialogDescription>
-                  История изменений партнерства "{selectedPartnership?.name}"
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-2">
-                {changeHistory.filter(h => h.partnershipId === selectedPartnership?.id).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Нет истории изменений
-                  </p>
-                ) : (
-                  changeHistory
-                    .filter(h => h.partnershipId === selectedPartnership?.id)
-                    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-                    .map(change => (
-                      <Card key={change.id}>
-                        <CardContent className="pt-4">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline">{change.action}</Badge>
-                                <span className="text-sm font-medium">{change.user}</span>
-                              </div>
-                              {change.field && (
-                                <div className="text-sm text-muted-foreground">
-                                  {change.field}: {change.oldValue} → {change.newValue}
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(change.timestamp)} {change.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Диалог шаблонов email */}
-          <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Выберите шаблон</DialogTitle>
-                <DialogDescription>
-                  Выберите шаблон для заполнения уведомления
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {emailTemplates.map(template => (
-                  <Card
-                    key={template.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleApplyTemplate(template)}
-                  >
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[400px] overflow-y-auto">
+            {comments.filter(c => c.partnershipId === selectedPartnership?.id).length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Нет комментариев
+              </p>
+            ) : (
+              comments
+                .filter(c => c.partnershipId === selectedPartnership?.id)
+                .map(comment => (
+                  <Card key={comment.id}>
                     <CardContent className="pt-4">
                       <div className="space-y-2">
-                        <div className="font-medium">{template.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {template.subject.substring(0, 80)}...
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{comment.author}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(comment.createdAt)}
+                          </span>
                         </div>
+                        <p className="text-sm">{comment.text}</p>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            </DialogContent>
-          </Dialog>
+                ))
+            )}
+          </div>
+          <div className="space-y-2">
+            <Textarea
+              placeholder="Добавить комментарий..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              rows={3}
+            />
+            <Button onClick={handleAddComment} disabled={!newComment.trim()}>
+              Добавить комментарий
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог истории изменений */}
+      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>История изменений</DialogTitle>
+            <DialogDescription>
+              История изменений партнерства "{selectedPartnership?.name}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {changeHistory.filter(h => h.partnershipId === selectedPartnership?.id).length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Нет истории изменений
+              </p>
+            ) : (
+              changeHistory
+                .filter(h => h.partnershipId === selectedPartnership?.id)
+                .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+                .map(change => (
+                  <Card key={change.id}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{change.action}</Badge>
+                            <span className="text-sm font-medium">{change.user}</span>
+                          </div>
+                          {change.field && (
+                            <div className="text-sm text-muted-foreground">
+                              {change.field}: {change.oldValue} → {change.newValue}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(change.timestamp)} {change.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог шаблонов email */}
+      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Выберите шаблон</DialogTitle>
+            <DialogDescription>
+              Выберите шаблон для заполнения уведомления
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {emailTemplates.map(template => (
+              <Card
+                key={template.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleApplyTemplate(template)}
+              >
+                <CardContent className="pt-4">
+                  <div className="space-y-2">
+                    <div className="font-medium">{template.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {template.subject.substring(0, 80)}...
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Диалоги для партнерств */}
       {/* Диалог фильтров */}
       <Dialog open={isFiltersDialogOpen} onOpenChange={setIsFiltersDialogOpen}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Фильтры и сортировка</DialogTitle>
-                <DialogDescription>
-                  Настройте фильтры для поиска университетов и партнерств
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-6 py-4">
-                <div className="space-y-2">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Фильтры и сортировка</DialogTitle>
+            <DialogDescription>
+              Настройте фильтры для поиска университетов и партнерств
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
                   <Label>Статус партнерства</Label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger>
@@ -2712,28 +2723,28 @@ export default function UniversitiesPage() {
                       ? "Отображаются только архивированные партнерства" 
                       : "Отображаются только активные партнерства"}
                   </p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setStatusFilter("all");
-                    setTypeFilter("all");
-                    setCityFilter("all");
-                    setSortBy("name");
-                    setSortOrder("asc");
-                    setShowArchived(false);
-                  }}
-                >
-                  Сбросить фильтры
-                </Button>
-                <Button onClick={() => setIsFiltersDialogOpen(false)}>
-                  Применить
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStatusFilter("all");
+                setTypeFilter("all");
+                setCityFilter("all");
+                setSortBy("name");
+                setSortOrder("asc");
+                setShowArchived(false);
+              }}
+            >
+              Сбросить фильтры
+            </Button>
+            <Button onClick={() => setIsFiltersDialogOpen(false)}>
+              Применить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Диалог добавления студентов */}
       <Dialog open={isAddStudentsDialogOpen} onOpenChange={setIsAddStudentsDialogOpen}>
@@ -2854,12 +2865,12 @@ export default function UniversitiesPage() {
           </DialogHeader>
           
           <Tabs defaultValue="send" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList variant="grid2">
               <TabsTrigger value="send">Отправить уведомление</TabsTrigger>
               <TabsTrigger value="history">История отправленных</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="send" className="space-y-4 mt-4">
+
+            <TabsContent value="send" className="mt-4 space-y-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label>Шаблоны</Label>
@@ -2969,8 +2980,8 @@ export default function UniversitiesPage() {
                 </DialogFooter>
               </div>
             </TabsContent>
-            
-            <TabsContent value="history" className="space-y-4 mt-4">
+
+            <TabsContent value="history" className="mt-4 space-y-4">
               <div className="space-y-4">
                 {/* Поиск по истории */}
                 <div className="relative">
@@ -3291,14 +3302,17 @@ export default function UniversitiesPage() {
           
           {selectedInternship && (
             <Tabs defaultValue="applications" className="w-full">
-              <TabsList>
+              <TabsList variant="grid3">
                 <TabsTrigger value="applications">
                   Заявки ({currentInternshipApplications.length})
+                </TabsTrigger>
+                <TabsTrigger value="students">
+                  Студенты ({currentInternshipApplications.filter(a => ['confirmed', 'active', 'completed'].includes(a.status)).length})
                 </TabsTrigger>
                 <TabsTrigger value="details">Детали</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="applications" className="space-y-4">
+              <TabsContent value="applications" className="mt-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">
@@ -3431,7 +3445,131 @@ export default function UniversitiesPage() {
                 </div>
               </TabsContent>
               
-              <TabsContent value="details" className="space-y-4">
+              <TabsContent value="students" className="mt-4 space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                      Подтверждено: {currentInternshipApplications.filter(a => a.status === 'confirmed').length}
+                    </Badge>
+                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+                      Активно: {currentInternshipApplications.filter(a => a.status === 'active').length}
+                    </Badge>
+                    <Badge variant="outline" className="bg-purple-50 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
+                      Завершено: {currentInternshipApplications.filter(a => a.status === 'completed').length}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Студент</TableHead>
+                        <TableHead>ВУЗ</TableHead>
+                        <TableHead>Курс</TableHead>
+                        <TableHead>Средний балл</TableHead>
+                        <TableHead>Релевантность</TableHead>
+                        <TableHead>Статус</TableHead>
+                        <TableHead>Дата подтверждения</TableHead>
+                        <TableHead className="text-right">Действия</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentInternshipApplications
+                        .filter(a => ['confirmed', 'active', 'completed'].includes(a.status))
+                        .sort((a, b) => {
+                          const statusOrder = { 'active': 0, 'confirmed': 1, 'completed': 2 };
+                          return statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
+                        })
+                        .map((application) => {
+                          const student = internshipStudents.find(s => s.id === application.studentId);
+                          return (
+                            <TableRow key={application.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback>
+                                      {application.studentName.split(' ').map(n => n[0]).join('')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <div className="font-medium">{application.studentName}</div>
+                                    <div className="text-xs text-muted-foreground">{application.studentEmail}</div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{application.universityName}</TableCell>
+                              <TableCell>{application.course} курс</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium">{application.gpa}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Progress value={application.matchScore || 0} className="w-20 h-2" />
+                                  <span className="text-sm font-medium">{application.matchScore || 0}%</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={cn(
+                                  application.status === 'confirmed' && "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+                                  application.status === 'active' && "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+                                  application.status === 'completed' && "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                )}>
+                                  {application.status === 'confirmed' ? 'Подтверждено' :
+                                   application.status === 'active' ? 'Активно' :
+                                   application.status === 'completed' ? 'Завершено' : application.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {application.confirmedAt 
+                                  ? application.confirmedAt.toLocaleDateString('ru-RU')
+                                  : application.appliedAt.toLocaleDateString('ru-RU')}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedInternshipApplication(application);
+                                      setIsInternshipApplicationDialogOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  {(application.status === 'active' || application.status === 'confirmed') && selectedInternship?.status === 'active' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEvaluationApplicationId(application.id);
+                                        setIsEvaluationDialogOpen(true);
+                                      }}
+                                      title="Оценить студента"
+                                    >
+                                      <Star className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      {currentInternshipApplications.filter(a => ['confirmed', 'active', 'completed'].includes(a.status)).length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                            Нет студентов, участвующих в стажировке
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="details" className="mt-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
                     <CardHeader>
@@ -3666,7 +3804,7 @@ export default function UniversitiesPage() {
           existingEvaluation={evaluations.find(e => 
             e.applicationId === evaluationApplicationId && 
             e.period === 'final'
-          )}
+          ) || undefined}
         />
       )}
     </div>

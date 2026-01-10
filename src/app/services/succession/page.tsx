@@ -426,24 +426,21 @@ export default function SuccessionPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList variant="grid3">
           <TabsTrigger value="overview">
-            <BarChart3 className="mr-2 h-4 w-4" />
             Обзор
           </TabsTrigger>
           <TabsTrigger value="positions">
-            <Target className="mr-2 h-4 w-4" />
             Ключевые позиции
           </TabsTrigger>
           <TabsTrigger value="successors">
-            <Users className="mr-2 h-4 w-4" />
             Преемники
           </TabsTrigger>
         </TabsList>
 
         {/* Вкладка Обзор */}
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -540,7 +537,7 @@ export default function SuccessionPage() {
         </TabsContent>
 
         {/* Вкладка Ключевые позиции */}
-        <TabsContent value="positions" className="space-y-4">
+        <TabsContent value="positions" className="mt-4 space-y-4">
           {/* Фильтры */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
@@ -621,7 +618,7 @@ export default function SuccessionPage() {
         </TabsContent>
 
         {/* Вкладка Преемники */}
-        <TabsContent value="successors" className="space-y-4">
+        <TabsContent value="successors" className="mt-4 space-y-4">
           {successors.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">

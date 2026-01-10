@@ -355,7 +355,7 @@ export function ITLeaderKPICards({
                   <SelectItem value="2026">2026</SelectItem>
                 </SelectContent>
               </Select>
-              <TabsList className="!inline-flex !h-8 !p-0.5 flex-1 gap-1">
+              <TabsList variant="inline">
                 <TabsTrigger value={`q1-${selectedITLeaderYear}`} className="!text-xs !px-2 !py-1 flex-1">1 квартал {selectedITLeaderYear}</TabsTrigger>
                 <TabsTrigger value={`q2-${selectedITLeaderYear}`} className="!text-xs !px-2 !py-1 flex-1">2 квартал {selectedITLeaderYear}</TabsTrigger>
                 <TabsTrigger value={`q3-${selectedITLeaderYear}`} className="!text-xs !px-2 !py-1 flex-1">3 квартал {selectedITLeaderYear}</TabsTrigger>

@@ -1076,7 +1076,7 @@ export default function ProfilesPage() {
 
           {selectedProfile && selectedProfile.levels && selectedProfile.levels.length > 0 && (
             <Tabs defaultValue="responsibilities" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList variant="grid3">
                 <TabsTrigger value="responsibilities">Обязанности и требования к образованию и стажу работы</TabsTrigger>
                 <TabsTrigger value="competences">Компетенции</TabsTrigger>
                 <TabsTrigger value="tasks">Уровень сложности решаемых задач</TabsTrigger>

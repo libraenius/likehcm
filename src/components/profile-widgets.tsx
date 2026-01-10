@@ -582,7 +582,7 @@ function AssessmentResultsWidget({
 
               {/* Вкладки для активных и архивных процедур */}
               <Tabs defaultValue="active" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList variant="grid2">
                   <TabsTrigger value="active">
                     Активные ({activeProcedures.length}
                     {(selectedPeriod || selectedRole) && allAssessmentProcedures.length > 0 && (

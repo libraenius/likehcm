@@ -1633,30 +1633,25 @@ export default function GoalsKoldPage() {
       </div>
 
       <Tabs defaultValue="streams-teams" className="w-full max-w-full overflow-x-hidden">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="streams-teams" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span>КР стримов и команд</span>
+        <TabsList variant="grid5">
+          <TabsTrigger value="streams-teams">
+            КР стримов и команд
           </TabsTrigger>
-          <TabsTrigger value="kpi-registry" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span>Реестр КПЭ</span>
+          <TabsTrigger value="kpi-registry">
+            Реестр КПЭ
           </TabsTrigger>
-          <TabsTrigger value="pfk-table" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            <span>Таблица ПФК</span>
+          <TabsTrigger value="pfk-table">
+            Таблица ПФК
           </TabsTrigger>
-          <TabsTrigger value="reference" className="flex items-center gap-2">
-            <FolderOpen className="h-4 w-4" />
-            <span>Справочники</span>
+          <TabsTrigger value="reference">
+            Справочники
           </TabsTrigger>
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            <span>Дэшборд</span>
+          <TabsTrigger value="dashboard">
+            Дэшборд
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="streams-teams" className="space-y-4">
+        <TabsContent value="streams-teams" className="mt-4 space-y-4">
           {/* Поиск и фильтры */}
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -1732,7 +1727,7 @@ export default function GoalsKoldPage() {
                     <CardContent className="overflow-x-hidden p-0">
                       <Tabs defaultValue="stream-info" className="w-full">
                         <div className="px-6 pt-2">
-                          <TabsList className="grid w-full grid-cols-5 rounded-lg">
+                          <TabsList variant="grid5" className="rounded-lg">
                           <TabsTrigger value="stream-info" className="rounded-l-lg">
                             Информация о стриме
                           </TabsTrigger>
@@ -1751,7 +1746,7 @@ export default function GoalsKoldPage() {
                         </TabsList>
                         </div>
                         
-                        <TabsContent value="stream-info" className="space-y-6 p-6 mt-4">
+                        <TabsContent value="stream-info" className="mt-4 space-y-6 p-6">
                           {/* Информация о стриме */}
                           <div className="space-y-3">
                             <div className="p-5 border rounded-lg bg-muted/30">
@@ -1879,7 +1874,7 @@ export default function GoalsKoldPage() {
                           </div>
                         </TabsContent>
 
-                        <TabsContent value="annual-kpi" className="space-y-6 p-6 mt-4">
+                        <TabsContent value="annual-kpi" className="mt-4 space-y-6 p-6">
                           <AnnualKPICards
                             stream={selectedStream}
                             annualKPIs={annualKPIs}
@@ -1900,7 +1895,7 @@ export default function GoalsKoldPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="quarterly-kpi" className="space-y-6 p-6 mt-4">
+                        <TabsContent value="quarterly-kpi" className="mt-4 space-y-6 p-6">
                           <QuarterlyKPICards
                             stream={selectedStream}
                             quarterlyKPIs={quarterlyKPIs}
@@ -1922,7 +1917,7 @@ export default function GoalsKoldPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="it-leader-kpi" className="space-y-6 p-6 mt-4">
+                        <TabsContent value="it-leader-kpi" className="mt-4 space-y-6 p-6">
                           <ITLeaderKPICards
                             stream={selectedStream}
                             itLeaderKPIs={itLeaderKPIs}
@@ -1944,7 +1939,7 @@ export default function GoalsKoldPage() {
                           />
                         </TabsContent>
 
-                        <TabsContent value="dashboard" className="p-6 mt-4">
+                        <TabsContent value="dashboard" className="mt-4 p-6">
                           <DashboardTab
                             streams={[selectedStream]}
                             annualKPIs={annualKPIs}
@@ -1971,7 +1966,7 @@ export default function GoalsKoldPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="kpi-registry" className="space-y-6">
+        <TabsContent value="kpi-registry" className="mt-4 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1990,7 +1985,7 @@ export default function GoalsKoldPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="pfk-table" className="space-y-6 w-full max-w-full">
+        <TabsContent value="pfk-table" className="mt-4 space-y-6 w-full max-w-full">
           <Card className="w-full max-w-full">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -2949,7 +2944,7 @@ export default function GoalsKoldPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="reference" className="space-y-6">
+        <TabsContent value="reference" className="mt-4 space-y-6">
           {/* Выпадающий список для выбора типа справочника */}
           <div className="flex items-center gap-4">
             <Label className="text-sm font-medium whitespace-nowrap">Тип справочника:</Label>
@@ -3944,7 +3939,7 @@ export default function GoalsKoldPage() {
           </AlertDialog>
         </TabsContent>
 
-        <TabsContent value="dashboard" className="space-y-6">
+        <TabsContent value="dashboard" className="mt-4 space-y-6">
           <DashboardTab
             streams={filteredStreams}
             annualKPIs={annualKPIs}

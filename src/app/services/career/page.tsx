@@ -866,22 +866,19 @@ function TeamCareerContent() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="assessment" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="assessment" className="flex items-center gap-2">
-            <ClipboardCheck className="h-4 w-4" />
-            <span>Оценка сотрудников</span>
+        <TabsList variant="grid3">
+          <TabsTrigger value="assessment">
+            Оценка сотрудников
           </TabsTrigger>
-          <TabsTrigger value="competences-members" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            <span>Компетенции команды (сотрудники)</span>
+          <TabsTrigger value="competences-members">
+            Компетенции команды (сотрудники)
           </TabsTrigger>
-          <TabsTrigger value="competences-competences" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            <span>Компетенции команды (компетенции)</span>
+          <TabsTrigger value="competences-competences">
+            Компетенции команды (компетенции)
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="assessment" className="space-y-4">
+        <TabsContent value="assessment" className="mt-4 space-y-4">
           {/* Поиск */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -2026,7 +2023,7 @@ function TeamCareerContent() {
           )}
         </TabsContent>
 
-        <TabsContent value="competences-members" className="space-y-4">
+        <TabsContent value="competences-members" className="mt-4 space-y-4">
           {/* Поиск и фильтрация */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
@@ -2468,7 +2465,7 @@ function TeamCareerContent() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="competences-competences" className="space-y-4">
+        <TabsContent value="competences-competences" className="mt-4 space-y-4">
           {/* Поиск и фильтрация */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
@@ -2987,18 +2984,16 @@ export default function CareerPage() {
       </div>
 
       <Tabs defaultValue="my-career" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="my-career" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span>Моя карьера</span>
+        <TabsList variant="grid2">
+          <TabsTrigger value="my-career">
+            Моя карьера
           </TabsTrigger>
-          <TabsTrigger value="team-career" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span>Карьера команды</span>
+          <TabsTrigger value="team-career">
+            Карьера команды
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="my-career" className="space-y-6">
+        <TabsContent value="my-career" className="mt-4 space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             {/* Основной профиль */}
             <Card className="border-2">
@@ -3285,7 +3280,7 @@ export default function CareerPage() {
 
         </TabsContent>
 
-        <TabsContent value="team-career" className="space-y-6">
+        <TabsContent value="team-career" className="mt-4 space-y-6">
           <TeamCareerContent />
         </TabsContent>
       </Tabs>

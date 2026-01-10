@@ -360,12 +360,12 @@ export default function ProfilePage() {
         
         {/* Вкладки */}
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList variant="grid2">
             <TabsTrigger value="profile">Мой профиль</TabsTrigger>
             <TabsTrigger value="team">Моя команда</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="profile" className="space-y-4">
+          <TabsContent value="profile" className="mt-4 space-y-4">
             {/* Два контейнера: 1/4 и 3/4 */}
             <div className="flex gap-4 w-full">
               <div className="w-1/4">
@@ -530,7 +530,7 @@ export default function ProfilePage() {
 
           </TabsContent>
           
-          <TabsContent value="team" className="space-y-4">
+          <TabsContent value="team" className="mt-4 space-y-4">
             <div className="flex flex-col items-center justify-center py-12">
               <p className="text-muted-foreground mb-4">Просмотр информации о команде</p>
               <Link href="/services/career">

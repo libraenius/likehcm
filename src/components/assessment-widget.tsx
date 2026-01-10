@@ -388,19 +388,16 @@ export function AssessmentWidget({ userProfile }: AssessmentWidgetProps) {
   return (
     <>
       <Tabs defaultValue="my_participation" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="my_participation" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
+        <TabsList variant="grid3">
+          <TabsTrigger value="my_participation">
             <span className="hidden sm:inline">Мои заявки</span>
             <span className="sm:hidden">Мои</span>
           </TabsTrigger>
-          <TabsTrigger value="as_assessor" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
+          <TabsTrigger value="as_assessor">
             <span className="hidden sm:inline">Ассессор</span>
             <span className="sm:hidden">Асс.</span>
           </TabsTrigger>
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
+          <TabsTrigger value="all">
             <span className="hidden sm:inline">Аналитика</span>
             <span className="sm:hidden">Анал.</span>
           </TabsTrigger>
