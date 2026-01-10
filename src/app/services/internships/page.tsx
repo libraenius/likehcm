@@ -618,7 +618,7 @@ export default function InternshipsPage() {
 
       {/* Диалог создания/редактирования стажировки */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingInternship ? "Редактировать стажировку" : "Создать стажировку"}
@@ -1028,7 +1028,7 @@ export default function InternshipsPage() {
 
       {/* Диалог деталей заявки */}
       <Dialog open={isApplicationDialogOpen} onOpenChange={setIsApplicationDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Заявка студента</DialogTitle>
             <DialogDescription>

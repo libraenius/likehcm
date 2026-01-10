@@ -473,7 +473,7 @@ export function AssessmentWidget({ userProfile }: AssessmentWidgetProps) {
                 )}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader className="pb-3">
                 <DialogTitle className="text-lg">Фильтры</DialogTitle>
               </DialogHeader>
@@ -704,7 +704,7 @@ export function AssessmentWidget({ userProfile }: AssessmentWidgetProps) {
                 )}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader className="pb-3">
                 <DialogTitle className="text-lg">Фильтры</DialogTitle>
               </DialogHeader>
@@ -890,7 +890,7 @@ export function AssessmentWidget({ userProfile }: AssessmentWidgetProps) {
     </Tabs>
 
     <Dialog open={isInfoDialogOpen} onOpenChange={setIsInfoDialogOpen}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Мои заявки на ассессмент (прохождение)</DialogTitle>
           <DialogDescription>
@@ -901,7 +901,7 @@ export function AssessmentWidget({ userProfile }: AssessmentWidgetProps) {
     </Dialog>
 
     <Dialog open={isAssessorInfoDialogOpen} onOpenChange={setIsAssessorInfoDialogOpen}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Заявки на ассессмент (ассессор)</DialogTitle>
           <DialogDescription>
@@ -912,7 +912,7 @@ export function AssessmentWidget({ userProfile }: AssessmentWidgetProps) {
     </Dialog>
 
     <Dialog open={isAnalyticsInfoDialogOpen} onOpenChange={setIsAnalyticsInfoDialogOpen}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Все заявки (аналитика)</DialogTitle>
           <DialogDescription>

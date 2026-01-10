@@ -2060,7 +2060,7 @@ function TeamCareerContent() {
                   )}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="pb-3">
                   <DialogTitle className="text-lg">Фильтры</DialogTitle>
                 </DialogHeader>
@@ -2502,7 +2502,7 @@ function TeamCareerContent() {
                   )}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="pb-3">
                   <DialogTitle className="text-lg">Фильтры</DialogTitle>
                 </DialogHeader>
@@ -2871,7 +2871,7 @@ function TeamCareerContent() {
 
       {/* Модальное окно для информации о профиле */}
       <Dialog open={isProfileInfoDialogOpen} onOpenChange={setIsProfileInfoDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-7xl">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedProfileForInfo?.name}</DialogTitle>
             <DialogDescription>
@@ -3319,7 +3319,7 @@ export default function CareerPage() {
       </Dialog>
 
       <Dialog open={isProfileInfoDialogOpen} onOpenChange={setIsProfileInfoDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-7xl">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedProfileForInfo?.name || mainProfile?.name}</DialogTitle>
             <DialogDescription>

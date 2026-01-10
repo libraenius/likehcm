@@ -649,7 +649,7 @@ export default function SuccessionPage() {
 
       {/* Диалог создания/редактирования позиции */}
       <Dialog open={isPositionDialogOpen} onOpenChange={setIsPositionDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingPosition ? "Редактировать позицию" : "Создать позицию"}
@@ -785,7 +785,7 @@ export default function SuccessionPage() {
 
       {/* Диалог создания/редактирования преемника */}
       <Dialog open={isSuccessorDialogOpen} onOpenChange={setIsSuccessorDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingSuccessor ? "Редактировать преемника" : "Добавить преемника"}

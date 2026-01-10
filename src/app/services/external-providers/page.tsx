@@ -1710,7 +1710,7 @@ export default function ExternalProvidersPage() {
 
       {/* Модальное окно управления нотификациями */}
       <Dialog open={isNotificationsDialogOpen} onOpenChange={setIsNotificationsDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
@@ -1949,7 +1949,7 @@ export default function ExternalProvidersPage() {
 
       {/* Модальное окно для QR кода */}
       <Dialog open={selectedQrCode !== null} onOpenChange={() => setSelectedQrCode(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <QrCode className="h-5 w-5" />

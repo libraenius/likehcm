@@ -121,6 +121,7 @@ export function createDefaultUserProfile(overrides?: Partial<UserProfile>): User
     skills: [],
     email: DEFAULT_USER_PROFILE.email,
     phone: DEFAULT_USER_PROFILE.phone,
+    telegram: DEFAULT_USER_PROFILE.telegram,
     ...overrides,
   };
 }

@@ -62,5 +62,6 @@ export const DEFAULT_USER_PROFILE = {
   mainProfileId: "profile-2",
   email: "latarho@gmail.com",
   phone: "8-999-555-5555",
+  telegram: "",
 } as const;
 

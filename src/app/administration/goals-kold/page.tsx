@@ -2990,7 +2990,7 @@ export default function GoalsKoldPage() {
                         Добавить единицу
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+                    <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle className="text-xl">
                           {editingUnit ? "Редактировать единицу измерения" : "Создать единицу измерения"}
@@ -3106,7 +3106,7 @@ export default function GoalsKoldPage() {
                         )}
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-md">
+                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                       <DialogHeader className="pb-3">
                         <DialogTitle className="text-lg">Фильтры</DialogTitle>
                       </DialogHeader>
@@ -3379,7 +3379,7 @@ export default function GoalsKoldPage() {
                         )}
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-md">
+                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                       <DialogHeader className="pb-3">
                         <DialogTitle className="text-lg">Фильтры</DialogTitle>
                       </DialogHeader>
@@ -3652,7 +3652,7 @@ export default function GoalsKoldPage() {
                         )}
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-md">
+                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                       <DialogHeader className="pb-3">
                         <DialogTitle className="text-lg">Фильтры</DialogTitle>
                       </DialogHeader>
@@ -3962,7 +3962,7 @@ export default function GoalsKoldPage() {
           setStreamFormData({ name: "", type: "продуктовый", businessType: "РБ", datEmployeeIds: [], description: "" });
         }
       }}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">
               {editingStream ? "Редактировать стрим" : "Создать стрим"}
@@ -4115,7 +4115,7 @@ export default function GoalsKoldPage() {
 
       {/* Диалог отклонения с комментарием */}
       <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {pendingRejection?.statusType === "plan" ? "Отклонить план" : "Отклонить факт"}
@@ -4166,7 +4166,7 @@ export default function GoalsKoldPage() {
 
       {/* Диалог просмотра комментария отклонения */}
       <Dialog open={viewCommentDialogOpen} onOpenChange={setViewCommentDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Комментарий отклонения {viewingComment?.statusType === "plan" ? "плана" : "факта"}
@@ -4309,7 +4309,7 @@ export default function GoalsKoldPage() {
           setSelectedPfkTableKPIMeta(null);
         }
       }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Подробная информация о КПЭ</DialogTitle>
             <DialogDescription>

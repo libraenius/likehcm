@@ -32,6 +32,7 @@ export default function ProfilePage() {
   const [agileRoles, setAgileRoles] = useState<AgileRole[]>([{ role: "Разработчик" }]);
   const [mainProfileId, setMainProfileId] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
+  const [telegram, setTelegram] = useState<string>("");
   const [profiles] = useState(getProfiles());
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
@@ -55,6 +56,7 @@ export default function ProfilePage() {
         mainProfileId: profile.mainProfileId || defaultProfile.mainProfileId,
         email: profile.email || defaultProfile.email,
         phone: profile.phone || defaultProfile.phone,
+        telegram: profile.telegram || defaultProfile.telegram,
         skills: profile.skills || [],
         additionalProfileIds: profile.additionalProfileIds || [],
         tags: profile.tags || [],
@@ -71,6 +73,7 @@ export default function ProfilePage() {
       setAgileRoles(updatedProfile.agileRoles || [{ role: "Разработчик" }]);
       setMainProfileId(updatedProfile.mainProfileId || "");
       setTags(updatedProfile.tags || []);
+      setTelegram(updatedProfile.telegram || "");
 
       // Сохраняем обновленный профиль, если были изменения
       const hasChanges = 
@@ -106,9 +109,17 @@ export default function ProfilePage() {
       setAgileRoles(newProfile.agileRoles || [{ role: "Разработчик" }]);
       setMainProfileId(newProfile.mainProfileId || "");
       setTags(newProfile.tags || []);
+      setTelegram(newProfile.telegram || "");
       saveUserProfile(newProfile);
     }
   }, []);
+
+  // Синхронизация состояния формы с userProfile при его изменении
+  useEffect(() => {
+    if (userProfile) {
+      setTelegram(userProfile.telegram || "");
+    }
+  }, [userProfile]);
 
   const handleResetProfile = () => {
     resetUserProfile();
@@ -123,6 +134,7 @@ export default function ProfilePage() {
     setAgileRoles(newProfile.agileRoles || [{ role: "Разработчик" }]);
     setMainProfileId(newProfile.mainProfileId || "");
     setTags(newProfile.tags || []);
+    setTelegram(newProfile.telegram || "");
     setIsResetDialogOpen(false);
   };
 
@@ -222,6 +234,7 @@ export default function ProfilePage() {
       })) : undefined,
       mainProfileId: mainProfileId || undefined,
       tags: tags.filter(tag => tag.trim()).length > 0 ? tags.filter(tag => tag.trim()) : undefined,
+      telegram: telegram.trim() || undefined,
     };
 
     const result = saveUserProfile(updatedProfile);
@@ -530,7 +543,7 @@ export default function ProfilePage() {
 
       {/* Диалог для загрузки фотографии */}
       <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Camera className="h-5 w-5" />
@@ -787,6 +800,23 @@ export default function ProfilePage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Telegram */}
+            <div className="space-y-2">
+              <Label htmlFor="telegram">Логин Telegram</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">@</span>
+                <Input
+                  id="telegram"
+                  value={telegram}
+                  onChange={(e) => setTelegram(e.target.value.replace(/^@/, ""))}
+                  placeholder="username"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Укажите логин Telegram без символа @
+              </p>
             </div>
 
             {/* Теги */}

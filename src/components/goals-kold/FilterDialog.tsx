@@ -39,7 +39,7 @@ export function FilterDialog({ open, onOpenChange, filters, onFiltersChange }: F
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-3">
           <DialogTitle className="text-lg">Фильтры</DialogTitle>
         </DialogHeader>

@@ -1894,6 +1894,42 @@ const defaultCompetences: Competence[] = [
       ],
     },
   },
+  {
+    id: "comp-51",
+    name: "Работа с очередями данных (Kafka)",
+    description: "Работа с Apache Kafka для построения распределенных систем обработки потоков данных и событийно-ориентированной архитектуры",
+    type: "профессиональные компетенции",
+    levels: {
+      level1: "Понимание основных концепций Kafka (producer, consumer, topic, partition), базовое использование CLI инструментов",
+      level2: "Настройка Kafka кластера, создание topics и partitions, работа с producer и consumer API, базовое понимание offset management",
+      level3: "Оптимизация производительности (partitioning strategy, batch size, compression), работа с Kafka Streams, обработка ошибок и retry логика, мониторинг метрик",
+      level4: "Проектирование масштабируемых архитектур на Kafka, работа с Schema Registry, Kafka Connect для интеграций, настройка replication и fault tolerance, оптимизация throughput и latency",
+      level5: "Экспертные знания внутренней архитектуры Kafka, тюнинг JVM параметров, проектирование enterprise-решений, менторинг команды, создание best practices и стандартов",
+    },
+    resources: {
+      literature: [
+        { name: "Kafka: The Definitive Guide - Нина Нейхаус и Гвен Шапира", level: 3 },
+        { name: "Kafka Streams in Action - Билл Бейнс", level: 4 },
+        { name: "Designing Event-Driven Systems - Бен Стопфорд", level: 4 },
+        { name: "Kafka: The Definitive Guide - официальная документация", level: 2 },
+        { name: "Building Microservices with Kafka - Джейсон Густафсон", level: 5 }
+      ],
+      videos: [
+        { name: "Apache Kafka Tutorial for Beginners - Confluent", level: 1 },
+        { name: "Kafka Crash Course - Traversy Media", level: 2 },
+        { name: "Kafka Streams Tutorial - Confluent", level: 3 },
+        { name: "Advanced Kafka Patterns - Confluent", level: 4 },
+        { name: "Kafka Performance Tuning - LinkedIn Learning", level: 5 }
+      ],
+      courses: [
+        { name: "Apache Kafka для начинающих - Stepik", level: 1 },
+        { name: "Apache Kafka Series - Udemy", level: 2 },
+        { name: "Kafka Streams - Confluent Developer", level: 3 },
+        { name: "Kafka Advanced Concepts - Pluralsight", level: 4 },
+        { name: "Kafka Expert Certification - Confluent", level: 5 }
+      ],
+    },
+  },
 ];
 
 const defaultProfiles: Profile[] = [

@@ -105,6 +105,7 @@ export interface UserProfile {
   tags?: string[]; // Теги пользователя
   email?: string; // Email
   phone?: string; // Телефон
+  telegram?: string; // Логин Telegram
 }
 
 export interface CareerTrackProgress {

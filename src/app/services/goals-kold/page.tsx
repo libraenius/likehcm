@@ -1176,7 +1176,7 @@ export default function GoalsKoldPage() {
                         Добавить единицу
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+                    <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle className="text-xl">
                           {editingUnit ? "Редактировать единицу измерения" : "Создать единицу измерения"}
@@ -1473,7 +1473,7 @@ export default function GoalsKoldPage() {
                         Добавить формулу
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+                    <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle className="text-xl">
                           {editingFormula ? "Редактировать формулу" : "Создать формулу"}
@@ -1770,7 +1770,7 @@ export default function GoalsKoldPage() {
                         Добавить стрим
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+                    <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle className="text-xl">
                           {editingStream ? "Редактировать стрим" : "Создать стрим"}

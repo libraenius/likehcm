@@ -673,7 +673,7 @@ export default function ProfilesPage() {
               Фильтры
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader className="pb-3">
               <DialogTitle className="text-lg">Фильтры</DialogTitle>
             </DialogHeader>
@@ -1003,7 +1003,7 @@ export default function ProfilesPage() {
 
       {/* Диалог создания/редактирования */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingProfile ? "Редактировать профиль" : "Создать профиль"}
@@ -1063,7 +1063,7 @@ export default function ProfilesPage() {
 
       {/* Диалог сравнения уровней и экспертов */}
       <Dialog open={comparisonDialogOpen} onOpenChange={setComparisonDialogOpen}>
-        <DialogContent className="max-w-[95vw] w-full max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-8xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl flex items-center gap-2">
               <GitCompare className="h-5 w-5" />

@@ -963,6 +963,47 @@ export default function UniversitiesPage() {
     });
   }, [internships, internshipSearchQuery, internshipStatusFilter, internshipUniversityFilter]);
 
+  // Группировка стажировок по статусам с сортировкой
+  const groupedInternships = useMemo(() => {
+    const groups: Record<string, typeof filteredInternshipsForTab> = {
+      active: [],
+      recruiting: [],
+      planned: [],
+      completed: [],
+      cancelled: [],
+    };
+
+    // Распределяем по группам
+    filteredInternshipsForTab.forEach(internship => {
+      if (groups[internship.status]) {
+        groups[internship.status].push(internship);
+      }
+    });
+
+    // Сортируем внутри каждой группы по дате начала (ближайшие сверху)
+    Object.keys(groups).forEach(status => {
+      groups[status].sort((a, b) => {
+        return a.startDate.getTime() - b.startDate.getTime();
+      });
+    });
+
+    // Порядок отображения групп
+    const order: Array<{ status: InternshipStatus; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+      { status: 'active', label: 'Активные стажировки', icon: Calendar },
+      { status: 'recruiting', label: 'Набор участников', icon: Users },
+      { status: 'planned', label: 'Запланированные', icon: Clock },
+      { status: 'completed', label: 'Завершенные', icon: CheckCircle2 },
+      { status: 'cancelled', label: 'Отмененные', icon: X },
+    ];
+
+    return order.map(({ status, label, icon }) => ({
+      status,
+      label,
+      icon,
+      internships: groups[status],
+    })).filter(group => group.internships.length > 0);
+  }, [filteredInternshipsForTab]);
+
   const currentInternshipApplications = useMemo(() => {
     if (!selectedInternship) return [];
     return internshipApplications.filter(app => app.internshipId === selectedInternship.id);
@@ -1284,7 +1325,7 @@ export default function UniversitiesPage() {
             className="w-full sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {activeTab === "partnerships" ? "Добавить" : "Создать стажировку"}
+            {activeTab === "partnerships" ? "Добавить" : "Добавить стажировку"}
           </Button>
         </div>
 
@@ -1360,8 +1401,8 @@ export default function UniversitiesPage() {
         </div>
 
         {/* Вкладки */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "partnerships" | "internships")}>
-          <TabsList>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "partnerships" | "internships")} className="w-full">
+          <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="partnerships">Партнерства</TabsTrigger>
             <TabsTrigger value="internships">Стажировки</TabsTrigger>
           </TabsList>
@@ -1917,99 +1958,117 @@ export default function UniversitiesPage() {
                     {!internshipSearchQuery && internshipStatusFilter === "all" && internshipUniversityFilter === "all" && (
                       <Button onClick={handleCreateInternship} size="lg">
                         <Plus className="mr-2 h-4 w-4" />
-                        Создать стажировку
+                        Добавить стажировку
                       </Button>
                     )}
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
-                {filteredInternshipsForTab.map((internship) => (
-                  <Card 
-                    key={internship.id}
-                    className={cn(
-                      "cursor-pointer transition-all hover:shadow-md",
-                      selectedInternship?.id === internship.id && "ring-2 ring-primary"
-                    )}
-                    onClick={() => {
-                      setSelectedInternship(internship);
-                      setIsInternshipDetailsDialogOpen(true);
-                    }}
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-xl mb-2">{internship.title}</CardTitle>
-                          <CardDescription className="flex items-center gap-4 flex-wrap">
-                            <span className="flex items-center gap-1">
-                              <Building2 className="h-4 w-4" />
-                              {internship.universityName}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {internship.startDate.toLocaleDateString('ru-RU')} - {internship.endDate.toLocaleDateString('ru-RU')}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              {internship.currentParticipants} / {internship.maxParticipants}
-                            </span>
-                          </CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className={cn(getInternshipStatusColor(internship.status))}>
-                            {getInternshipStatusText(internship.status)}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditInternship(internship);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteInternshipId(internship.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        {internship.description}
-                      </p>
-                      <div className="flex items-center gap-4 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          {internship.location === 'remote' ? 'Удаленно' : 
-                           internship.location === 'office' ? 'Офис' : 'Гибридно'}
+              <div className="space-y-8">
+                {groupedInternships.map((group) => (
+                  <div key={group.status} className="space-y-4">
+                    {/* Заголовок группы */}
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <div className="flex items-center gap-3">
+                        <group.icon className="h-5 w-5 text-muted-foreground" />
+                        <h2 className="text-xl font-semibold">{group.label}</h2>
+                        <Badge variant="secondary" className="ml-2">
+                          {group.internships.length}
                         </Badge>
-                        {internship.city && (
-                          <Badge variant="outline" className="text-xs">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {internship.city}
-                          </Badge>
-                        )}
-                        {internship.salary && (
-                          <Badge variant="outline" className="text-xs">
-                            {internship.salary.toLocaleString('ru-RU')} ₽
-                          </Badge>
-                        )}
                       </div>
-                      <Progress 
-                        value={(internship.currentParticipants / internship.maxParticipants) * 100} 
-                        className="mt-4"
-                      />
-                    </CardContent>
-                  </Card>
+                    </div>
+
+                    {/* Стажировки в группе */}
+                    <div className="grid gap-4">
+                      {group.internships.map((internship) => (
+                        <Card 
+                          key={internship.id}
+                          className={cn(
+                            "cursor-pointer transition-all hover:shadow-md",
+                            selectedInternship?.id === internship.id && "ring-2 ring-primary"
+                          )}
+                          onClick={() => {
+                            setSelectedInternship(internship);
+                            setIsInternshipDetailsDialogOpen(true);
+                          }}
+                        >
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-xl mb-2">{internship.title}</CardTitle>
+                                <CardDescription className="flex items-center gap-4 flex-wrap">
+                                  <span className="flex items-center gap-1">
+                                    <Building2 className="h-4 w-4" />
+                                    {internship.universityName}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-4 w-4" />
+                                    {internship.startDate.toLocaleDateString('ru-RU')} - {internship.endDate.toLocaleDateString('ru-RU')}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Users className="h-4 w-4" />
+                                    {internship.currentParticipants} / {internship.maxParticipants}
+                                  </span>
+                                </CardDescription>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge className={cn(getInternshipStatusColor(internship.status))}>
+                                  {getInternshipStatusText(internship.status)}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditInternship(internship);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteInternshipId(internship.id);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                              {internship.description}
+                            </p>
+                            <div className="flex items-center gap-4 flex-wrap">
+                              <Badge variant="outline" className="text-xs">
+                                {internship.location === 'remote' ? 'Удаленно' : 
+                                 internship.location === 'office' ? 'Офис' : 'Гибридно'}
+                              </Badge>
+                              {internship.city && (
+                                <Badge variant="outline" className="text-xs">
+                                  <MapPin className="h-3 w-3 mr-1" />
+                                  {internship.city}
+                                </Badge>
+                              )}
+                              {internship.salary && (
+                                <Badge variant="outline" className="text-xs">
+                                  {internship.salary.toLocaleString('ru-RU')} ₽
+                                </Badge>
+                              )}
+                            </div>
+                            <Progress 
+                              value={(internship.currentParticipants / internship.maxParticipants) * 100} 
+                              className="mt-4"
+                            />
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -2427,7 +2486,7 @@ export default function UniversitiesPage() {
 
           {/* Диалог комментариев */}
           <Dialog open={isCommentsDialogOpen} onOpenChange={setIsCommentsDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Комментарии</DialogTitle>
                 <DialogDescription>
@@ -2475,7 +2534,7 @@ export default function UniversitiesPage() {
 
           {/* Диалог истории изменений */}
           <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>История изменений</DialogTitle>
                 <DialogDescription>
@@ -2520,7 +2579,7 @@ export default function UniversitiesPage() {
 
           {/* Диалог шаблонов email */}
           <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Выберите шаблон</DialogTitle>
                 <DialogDescription>
@@ -2551,7 +2610,7 @@ export default function UniversitiesPage() {
       {/* Диалоги для партнерств */}
       {/* Диалог фильтров */}
       <Dialog open={isFiltersDialogOpen} onOpenChange={setIsFiltersDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Фильтры и сортировка</DialogTitle>
                 <DialogDescription>
@@ -2678,7 +2737,7 @@ export default function UniversitiesPage() {
 
       {/* Диалог добавления студентов */}
       <Dialog open={isAddStudentsDialogOpen} onOpenChange={setIsAddStudentsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Добавить студентов</DialogTitle>
             <DialogDescription>
@@ -2783,7 +2842,7 @@ export default function UniversitiesPage() {
 
       {/* Модальное окно управления нотификациями */}
       <Dialog open={isNotificationsDialogOpen} onOpenChange={setIsNotificationsDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
@@ -3034,10 +3093,10 @@ export default function UniversitiesPage() {
       {/* Диалоги для стажировок */}
       {/* Диалог создания/редактирования стажировки */}
       <Dialog open={isInternshipCreateDialogOpen} onOpenChange={setIsInternshipCreateDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingInternship ? "Редактировать стажировку" : "Создать стажировку"}
+              {editingInternship ? "Редактировать стажировку" : "Добавить стажировку"}
             </DialogTitle>
             <DialogDescription>
               Заполните информацию о стажировке
@@ -3199,7 +3258,7 @@ export default function UniversitiesPage() {
               Отмена
             </Button>
             <Button onClick={handleSaveInternship}>
-              {editingInternship ? "Сохранить изменения" : "Создать стажировку"}
+              {editingInternship ? "Сохранить изменения" : "Добавить стажировку"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3429,7 +3488,7 @@ export default function UniversitiesPage() {
 
       {/* Диалог деталей заявки стажировки */}
       <Dialog open={isInternshipApplicationDialogOpen} onOpenChange={setIsInternshipApplicationDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Заявка студента</DialogTitle>
             <DialogDescription>
