@@ -781,7 +781,7 @@ export const mockInternships: Internship[] = [
     startDate: new Date('2024-07-20'),
     endDate: new Date('2024-09-20'),
     applicationDeadline: new Date('2024-07-05'),
-    status: 'cancelled',
+    status: 'completed',
     maxParticipants: 8,
     currentParticipants: 0,
     requirements: [

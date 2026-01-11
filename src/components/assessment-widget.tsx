@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { 
   getProfileById,
 } from "@/lib/data";
+import { getStatusBadgeColor } from "@/lib/badge-colors";
 import type { UserProfile } from "@/types";
 
 interface AssessmentWidgetProps {
@@ -142,43 +143,35 @@ function generateAssessmentRequests(
 }
 
 const getStatusBadge = (status: string) => {
+  // Использует централизованные цвета из badge-colors.ts
+  const colorClass = getStatusBadgeColor(status);
+  if (!colorClass) return null;
+  
   switch (status) {
     case "completed":
       return (
-        <Badge 
-          variant="outline" 
-          className="bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
-        >
+        <Badge variant="outline" className={colorClass}>
           <CheckCircle2 className="h-3 w-3 mr-1" />
           Завершен
         </Badge>
       );
     case "in_progress":
       return (
-        <Badge 
-          variant="outline" 
-          className="bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
-        >
+        <Badge variant="outline" className={colorClass}>
           <Clock className="h-3 w-3 mr-1" />
           В процессе
         </Badge>
       );
     case "pending":
       return (
-        <Badge 
-          variant="outline" 
-          className="bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800"
-        >
+        <Badge variant="outline" className={colorClass}>
           <Calendar className="h-3 w-3 mr-1" />
           Ожидает
         </Badge>
       );
     case "cancelled":
       return (
-        <Badge 
-          variant="outline" 
-          className="bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800"
-        >
+        <Badge variant="outline" className={colorClass}>
           <AlertCircle className="h-3 w-3 mr-1" />
           Отменен
         </Badge>

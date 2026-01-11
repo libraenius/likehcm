@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck } from "lucide-react";
+import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, ArrowRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +22,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { EvaluationDialog } from "@/components/internships/evaluation-dialog";
+import { getStatusBadgeColor } from "@/lib/badge-colors";
 import type { 
   Internship, 
   InternshipApplication, 
@@ -255,20 +256,9 @@ const mockUniversities: University[] = [
   },
 ];
 
-// Функция для получения цвета статуса
+// Функция для получения цвета статуса (использует централизованные цвета)
 const getStatusColor = (status: Partnership["status"]) => {
-  switch (status) {
-    case "planned":
-      return "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800";
-    case "active":
-      return "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800";
-    case "completed":
-      return "bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800";
-    case "cancelled":
-      return "bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-800";
-    default:
-      return "bg-gray-100 text-gray-700 border-gray-300";
-  }
+  return getStatusBadgeColor(status);
 };
 
 // Функция для получения текста статуса
@@ -314,20 +304,9 @@ const formatDate = (date: Date) => {
   });
 };
 
-// Функция для получения цвета статуса студента
+// Функция для получения цвета статуса студента (использует централизованные цвета)
 const getStudentStatusColor = (status: Student["status"]) => {
-  switch (status) {
-    case "not-started":
-      return "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800";
-    case "invited":
-      return "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800";
-    case "in-progress":
-      return "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800";
-    case "completed":
-      return "bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-800";
-    default:
-      return "bg-gray-100 text-gray-700 border-gray-300";
-  }
+  return getStatusBadgeColor(status);
 };
 
 // Функция для получения текста статуса студента
@@ -993,7 +972,6 @@ export default function UniversitiesPage() {
       recruiting: [],
       planned: [],
       completed: [],
-      cancelled: [],
     };
 
     // Распределяем по группам
@@ -1016,7 +994,6 @@ export default function UniversitiesPage() {
       { status: 'recruiting', label: 'Набор участников', icon: Users },
       { status: 'planned', label: 'Запланированные', icon: Clock },
       { status: 'completed', label: 'Завершенные', icon: CheckCircle2 },
-      { status: 'cancelled', label: 'Отмененные', icon: X },
     ];
 
     return order.map(({ status, label, icon }) => ({
@@ -1301,11 +1278,10 @@ export default function UniversitiesPage() {
 
   const getInternshipStatusText = (status: InternshipStatus | ApplicationStatus) => {
     const statusMap: Record<string, string> = {
-      planned: "Запланировано",
+      planned: "План",
       recruiting: "Набор",
-      active: "Активно",
-      completed: "Завершено",
-      cancelled: "Отменено",
+      active: "Активна",
+      completed: "Завершена",
       pending: "На рассмотрении",
       approved: "Одобрено",
       rejected: "Отклонено",
@@ -1315,41 +1291,20 @@ export default function UniversitiesPage() {
     return statusMap[status] || status;
   };
 
+  // Использует централизованные цвета из badge-colors.ts
   const getInternshipStatusColor = (status: InternshipStatus | ApplicationStatus) => {
-    const colorMap: Record<string, string> = {
-      planned: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      recruiting: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      active: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      completed: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-      cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-      approved: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      rejected: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      withdrawn: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-      confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    };
-    return colorMap[status] || "";
+    return getStatusBadgeColor(status);
   };
 
   return (
     <div className="space-y-6">
       {/* Заголовок */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Единая платформа по работе с ВУЗами</h1>
-            <p className="text-muted-foreground">
-              Управление партнерствами с образовательными учреждениями
-            </p>
-          </div>
-          <Button 
-            onClick={activeTab === "partnerships" ? handleCreate : handleCreateInternship} 
-            size="lg" 
-            className="w-full sm:w-auto"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {activeTab === "partnerships" ? "Добавить" : "Добавить стажировку"}
-          </Button>
+        <div>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Единая платформа по работе с ВУЗами</h1>
+          <p className="text-muted-foreground">
+            Управление партнерствами с образовательными учреждениями
+          </p>
         </div>
 
         {/* Вкладки */}
@@ -1398,6 +1353,10 @@ export default function UniversitiesPage() {
                     ].reduce((a, b) => a + b, 0)}
                   </Badge>
                 )}
+              </Button>
+              <Button onClick={handleCreate} size="lg">
+                <Plus className="mr-2 h-4 w-4" />
+                Добавить партнерство
               </Button>
             </div>
             {/* Двухколоночная структура */}
@@ -1976,7 +1935,7 @@ export default function UniversitiesPage() {
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Статус</Label>
                       <div className="space-y-1.5">
-                        {(["planned", "recruiting", "active", "completed", "cancelled"] as InternshipStatus[]).map((status) => (
+                        {(["planned", "recruiting", "active", "completed"] as InternshipStatus[]).map((status) => (
                           <div key={status} className="flex items-center space-x-2">
                             <Checkbox
                               id={`filter-status-${status}`}
@@ -2054,6 +2013,10 @@ export default function UniversitiesPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              <Button onClick={handleCreateInternship} size="lg">
+                <Plus className="mr-2 h-4 w-4" />
+                Добавить стажировку
+              </Button>
             </div>
 
             {/* Список стажировок */}
@@ -2108,33 +2071,9 @@ export default function UniversitiesPage() {
                                 </CardDescription>
                               </div>
                               <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                                <Badge className={cn(getInternshipStatusColor(internship.status), "text-xs px-2 py-0.5 whitespace-nowrap")}>
+                                <Badge variant="outline" className={cn(getInternshipStatusColor(internship.status), "text-xs px-2 py-0.5 whitespace-nowrap")}>
                                   {getInternshipStatusText(internship.status)}
                                 </Badge>
-                                <div className="flex items-center gap-0.5 flex-shrink-0">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 flex-shrink-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditInternship(internship);
-                                    }}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 flex-shrink-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeleteInternshipId(internship.id);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
                               </div>
                             </div>
                           </CardHeader>
@@ -2172,6 +2111,18 @@ export default function UniversitiesPage() {
                                 value={(internship.currentParticipants / internship.maxParticipants) * 100} 
                                 className="h-1.5 w-full"
                               />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full mt-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/services/universities/internship/${internship.id}`);
+                                }}
+                              >
+                                Подробнее
+                                <ArrowRight className="h-3.5 w-3.5 ml-2" />
+                              </Button>
                             </div>
                           </CardContent>
                         </Card>
@@ -3141,9 +3092,9 @@ export default function UniversitiesPage() {
                                       variant="outline"
                                       className={cn(
                                         "text-xs",
-                                        notification.status === "sent" && "bg-green-100 text-green-700 border-green-300",
-                                        notification.status === "pending" && "bg-yellow-100 text-yellow-700 border-yellow-300",
-                                        notification.status === "failed" && "bg-red-100 text-red-700 border-red-300"
+                                        notification.status === "sent" && "bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700",
+                                        notification.status === "pending" && "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700",
+                                        notification.status === "failed" && "bg-red-100 text-red-700 border-red-300 dark:bg-red-900 dark:text-red-200 dark:border-red-700"
                                       )}
                                     >
                                       {notification.status === "sent" && (
@@ -3297,11 +3248,10 @@ export default function UniversitiesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="planned">Запланировано</SelectItem>
+                    <SelectItem value="planned">План</SelectItem>
                     <SelectItem value="recruiting">Набор</SelectItem>
-                    <SelectItem value="active">Активно</SelectItem>
-                    <SelectItem value="completed">Завершено</SelectItem>
-                    <SelectItem value="cancelled">Отменено</SelectItem>
+                    <SelectItem value="active">Активна</SelectItem>
+                    <SelectItem value="completed">Завершена</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -3386,7 +3336,7 @@ export default function UniversitiesPage() {
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Статистика
                 </Button>
-                <Badge className={cn(selectedInternship && getInternshipStatusColor(selectedInternship.status))}>
+                <Badge variant="outline" className={cn(selectedInternship && getInternshipStatusColor(selectedInternship.status))}>
                   {selectedInternship && getInternshipStatusText(selectedInternship.status)}
                 </Badge>
               </div>
@@ -3414,10 +3364,10 @@ export default function UniversitiesPage() {
                     <Badge variant="outline">
                       На рассмотрении: {currentInternshipApplications.filter(a => a.status === 'pending').length}
                     </Badge>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700">
                       Одобрено: {currentInternshipApplications.filter(a => a.status === 'approved').length}
                     </Badge>
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
                       Подтверждено: {currentInternshipApplications.filter(a => a.status === 'confirmed').length}
                     </Badge>
                   </div>
@@ -3465,7 +3415,7 @@ export default function UniversitiesPage() {
                                 </div>
                               </TableCell>
                               <TableCell className="break-words whitespace-normal">
-                                <Badge className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
+                                <Badge variant="outline" className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
                                   {getInternshipStatusText(application.status)}
                                 </Badge>
                               </TableCell>
@@ -3544,13 +3494,13 @@ export default function UniversitiesPage() {
               <TabsContent value="students" className="mt-4 space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
                       Подтверждено: {currentInternshipApplications.filter(a => a.status === 'confirmed').length}
                     </Badge>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+                    <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700">
                       Активно: {currentInternshipApplications.filter(a => a.status === 'active').length}
                     </Badge>
-                    <Badge variant="outline" className="bg-purple-50 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
+                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700">
                       Завершено: {currentInternshipApplications.filter(a => a.status === 'completed').length}
                     </Badge>
                   </div>
@@ -3608,12 +3558,7 @@ export default function UniversitiesPage() {
                                 </div>
                               </TableCell>
                               <TableCell className="break-words whitespace-normal">
-                                <Badge className={cn(
-                                  application.status === 'confirmed' && "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-                                  application.status === 'active' && "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-                                  application.status === 'completed' && "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-                                  "whitespace-nowrap"
-                                )}>
+                                <Badge variant="outline" className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
                                   {application.status === 'confirmed' ? 'Подтверждено' :
                                    application.status === 'active' ? 'Активно' :
                                    application.status === 'completed' ? 'Завершено' : application.status}
@@ -3851,7 +3796,7 @@ export default function UniversitiesPage() {
                           </span>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline">{univ.applicationsCount} заявок</Badge>
-                            <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+                            <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700">
                               {univ.approvedCount} одобрено
                             </Badge>
                           </div>

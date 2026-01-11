@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { EvaluationDialog } from "@/components/internships/evaluation-dialog";
 import { cn } from "@/lib/utils";
+import { getStatusBadgeColor } from "@/lib/badge-colors";
 import type { 
   Internship, 
   InternshipApplication, 
@@ -410,12 +411,12 @@ export default function InternshipsPage() {
 
   // Получение текста статуса
   const getStatusText = (status: InternshipStatus | ApplicationStatus) => {
+    // Статусы стажировок: план, набор, активна, завершена
     const statusMap: Record<string, string> = {
-      planned: "Запланировано",
+      planned: "План",
       recruiting: "Набор",
-      active: "Активно",
-      completed: "Завершено",
-      cancelled: "Отменено",
+      active: "Активна",
+      completed: "Завершена",
       pending: "На рассмотрении",
       approved: "Одобрено",
       rejected: "Отклонено",
@@ -425,20 +426,9 @@ export default function InternshipsPage() {
     return statusMap[status] || status;
   };
 
+  // Использует централизованные цвета из badge-colors.ts
   const getStatusColor = (status: InternshipStatus | ApplicationStatus) => {
-    const colorMap: Record<string, string> = {
-      planned: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      recruiting: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      active: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      completed: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-      cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-      approved: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      rejected: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      withdrawn: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-      confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    };
-    return colorMap[status] || "";
+    return getStatusBadgeColor(status);
   };
 
   return (
@@ -559,7 +549,7 @@ export default function InternshipsPage() {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={cn(getStatusColor(internship.status))}>
+                    <Badge variant="outline" className={cn(getStatusColor(internship.status))}>
                       {getStatusText(internship.status)}
                     </Badge>
                     <Button
@@ -804,7 +794,7 @@ export default function InternshipsPage() {
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Статистика
                 </Button>
-                <Badge className={cn(selectedInternship && getStatusColor(selectedInternship.status))}>
+                <Badge variant="outline" className={cn(selectedInternship && getStatusColor(selectedInternship.status))}>
                   {selectedInternship && getStatusText(selectedInternship.status)}
                 </Badge>
               </div>
@@ -895,7 +885,7 @@ export default function InternshipsPage() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge className={cn(getStatusColor(application.status))}>
+                                <Badge variant="outline" className={cn(getStatusColor(application.status))}>
                                   {getStatusText(application.status)}
                                 </Badge>
                               </TableCell>

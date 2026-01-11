@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { calculateKPIMetrics } from "@/lib/goals-kold/utils";
 import type { KPI, Stream, JiraTask } from "@/types/goals-kold";
 import { JiraTasksWidget } from "./JiraTasksWidget";
+import { getAgreementBadgeColor } from "@/lib/badge-colors";
 
 const getStatusBadgeVariant = (status: string | undefined): "outline" => {
   return "outline";
@@ -23,13 +24,18 @@ const getStatusBadgeVariant = (status: string | undefined): "outline" => {
 
 const getStatusBadgeClassName = (status: string | undefined) => {
   if (!status) return "";
+  const baseColor = getAgreementBadgeColor(status);
+  // Для Goals Kold используем прозрачность для визуального отличия
   if (status.includes("согласован")) {
-    return "bg-green-50 text-green-700 border-green-300 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800";
+    return baseColor.replace("dark:bg-green-900", "dark:bg-green-950/30").replace("dark:text-green-200", "dark:text-green-400");
+  }
+  if (status.includes("отклонен")) {
+    return baseColor.replace("dark:bg-red-900", "dark:bg-red-950/30").replace("dark:text-red-200", "dark:text-red-400");
   }
   if (status.includes("выставление")) {
     return "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400";
   }
-  return "";
+  return baseColor;
 };
 
 interface QuarterlyKPICardsProps {

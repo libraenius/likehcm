@@ -20,6 +20,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Target, Users, FileText, Table as TableIcon, Search, X, ChevronDown, ChevronRight, Building2, UserCircle, Plus, Pencil, Trash2, BarChart3, Edit, Filter, GripVertical, FolderOpen, LayoutDashboard, Ruler, Calculator, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, Calendar, CheckCircle2, XCircle, Eye, History, Download, Upload, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAgreementBadgeColor } from "@/lib/badge-colors";
 import type { Leader, Stream, Team, KPI, AttachedFile } from "@/types/goals-kold";
 import { getInitials, formatDate, calculateKPIMetrics } from "@/lib/goals-kold/utils";
 import { mockStreamKPIs, mockQuarterlyKPIsData, mockITLeaderKPIsData, generateMockStreams, mockStreams } from "@/lib/goals-kold/mock-data";
@@ -41,18 +42,22 @@ const getStatusBadgeVariant = (status: string | undefined) => {
   return "outline";
 };
 
+// Использует централизованные цвета из badge-colors.ts
+// Для Goals Kold оставляем специальную прозрачность для визуального отличия
 const getStatusBadgeClassName = (status: string | undefined) => {
   if (!status) return "";
+  const baseColor = getAgreementBadgeColor(status);
+  // Для Goals Kold используем прозрачность для визуального отличия
   if (status.includes("согласован")) {
-    return "bg-green-50 text-green-700 border-green-300 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800";
+    return baseColor.replace("dark:bg-green-900", "dark:bg-green-950/30").replace("dark:text-green-200", "dark:text-green-400");
   }
   if (status.includes("отклонен")) {
-    return "bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800";
+    return baseColor.replace("dark:bg-red-900", "dark:bg-red-950/30").replace("dark:text-red-200", "dark:text-red-400");
   }
   if (status.includes("выставление")) {
     return "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400";
   }
-  return "";
+  return baseColor;
 };
 
 // Компонент для ввода плана/факта с поддержкой запятой и без автоподстановки 0

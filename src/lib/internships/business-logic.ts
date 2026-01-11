@@ -17,11 +17,10 @@ export function canChangeInternshipStatus(
   internship: Internship
 ): { allowed: boolean; reason?: string } {
   const transitions: Record<InternshipStatus, InternshipStatus[]> = {
-    planned: ['recruiting', 'cancelled'],
-    recruiting: ['active', 'cancelled'],
-    active: ['completed', 'cancelled'],
+    planned: ['recruiting'],
+    recruiting: ['active'],
+    active: ['completed'],
     completed: [], // Финальный статус
-    cancelled: [], // Финальный статус
   };
 
   if (!transitions[currentStatus].includes(newStatus)) {

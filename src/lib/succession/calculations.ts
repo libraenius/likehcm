@@ -4,6 +4,7 @@
 
 import type { SkillLevel, UserSkill, ProfileCompetence } from "@/types";
 import type { ReadinessCalculation, SkillGap, RiskLevel, PositionCriticality } from "@/types/succession";
+import { getReadinessBadgeColor, getRiskBadgeColor, getCriticalityBadgeColor } from "@/lib/badge-colors";
 
 /**
  * Рассчитывает готовность сотрудника на основе его навыков и требований позиции
@@ -118,57 +119,24 @@ export function calculatePositionRisk(
 }
 
 /**
- * Получает цвет для уровня готовности
+ * Получает цвет для уровня готовности (использует централизованные цвета)
  */
 export function getReadinessColor(readinessLevel: 1 | 2 | 3 | 4 | 5): string {
-  switch (readinessLevel) {
-    case 5:
-      return "text-green-600 bg-green-50 border-green-200";
-    case 4:
-      return "text-blue-600 bg-blue-50 border-blue-200";
-    case 3:
-      return "text-yellow-600 bg-yellow-50 border-yellow-200";
-    case 2:
-      return "text-orange-600 bg-orange-50 border-orange-200";
-    case 1:
-      return "text-red-600 bg-red-50 border-red-200";
-    default:
-      return "text-gray-600 bg-gray-50 border-gray-200";
-  }
+  return getReadinessBadgeColor(readinessLevel);
 }
 
 /**
- * Получает цвет для уровня риска
+ * Получает цвет для уровня риска (использует централизованные цвета)
  */
 export function getRiskColor(riskLevel: RiskLevel): string {
-  switch (riskLevel) {
-    case "low":
-      return "text-green-600 bg-green-50 border-green-200";
-    case "medium":
-      return "text-yellow-600 bg-yellow-50 border-yellow-200";
-    case "high":
-      return "text-red-600 bg-red-50 border-red-200";
-    default:
-      return "text-gray-600 bg-gray-50 border-gray-200";
-  }
+  return getRiskBadgeColor(riskLevel);
 }
 
 /**
- * Получает цвет для критичности позиции
+ * Получает цвет для критичности позиции (использует централизованные цвета)
  */
 export function getCriticalityColor(criticality: PositionCriticality): string {
-  switch (criticality) {
-    case "critical":
-      return "text-red-600 bg-red-50 border-red-200";
-    case "high":
-      return "text-orange-600 bg-orange-50 border-orange-200";
-    case "medium":
-      return "text-yellow-600 bg-yellow-50 border-yellow-200";
-    case "low":
-      return "text-green-600 bg-green-50 border-green-200";
-    default:
-      return "text-gray-600 bg-gray-50 border-gray-200";
-  }
+  return getCriticalityBadgeColor(criticality);
 }
 
 /**

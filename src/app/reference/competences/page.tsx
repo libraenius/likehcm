@@ -127,8 +127,8 @@ function CompetenceTableRow({
             variant="outline" 
             className={`whitespace-nowrap ${
               competence.type === "профессиональные компетенции"
-                ? "bg-purple-50 text-purple-700 border-purple-300"
-                : "bg-cyan-50 text-cyan-700 border-cyan-300"
+                ? "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700"
+                : "bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-900 dark:text-cyan-200 dark:border-cyan-700"
             }`}
           >
             {competence.type.charAt(0).toUpperCase() + competence.type.slice(1)}

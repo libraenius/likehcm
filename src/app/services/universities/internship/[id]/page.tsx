@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EvaluationDialog } from "@/components/internships/evaluation-dialog";
+import { getStatusBadgeColor } from "@/lib/badge-colors";
 import type { 
   Internship, 
   InternshipApplication, 
@@ -130,11 +131,10 @@ export default function InternshipDetailsPage() {
 
   const getInternshipStatusText = (status: InternshipStatus | ApplicationStatus) => {
     const statusMap: Record<string, string> = {
-      planned: "Запланировано",
+      planned: "План",
       recruiting: "Набор",
-      active: "Активно",
-      completed: "Завершено",
-      cancelled: "Отменено",
+      active: "Активна",
+      completed: "Завершена",
       pending: "На рассмотрении",
       approved: "Одобрено",
       rejected: "Отклонено",
@@ -144,20 +144,9 @@ export default function InternshipDetailsPage() {
     return statusMap[status] || status;
   };
 
+  // Использует централизованные цвета из badge-colors.ts
   const getInternshipStatusColor = (status: InternshipStatus | ApplicationStatus) => {
-    const colorMap: Record<string, string> = {
-      planned: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-      recruiting: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      completed: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-      approved: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      rejected: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      withdrawn: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-      confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    };
-    return colorMap[status] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+    return getStatusBadgeColor(status);
   };
 
   const handleApproveInternshipApplication = useCallback((applicationId: string) => {
@@ -298,7 +287,7 @@ export default function InternshipDetailsPage() {
             <BarChart3 className="h-4 w-4 mr-2" />
             Статистика
           </Button>
-          <Badge className={cn(getInternshipStatusColor(selectedInternship.status))}>
+          <Badge variant="outline" className={cn(getInternshipStatusColor(selectedInternship.status))}>
             {getInternshipStatusText(selectedInternship.status)}
           </Badge>
         </div>
@@ -375,10 +364,10 @@ export default function InternshipDetailsPage() {
               <Badge variant="outline">
                 На рассмотрении: {currentInternshipApplications.filter(a => a.status === 'pending').length}
               </Badge>
-              <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700">
                 Одобрено: {currentInternshipApplications.filter(a => a.status === 'approved').length}
               </Badge>
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+              <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
                 Подтверждено: {currentInternshipApplications.filter(a => a.status === 'confirmed').length}
               </Badge>
             </div>
@@ -426,7 +415,7 @@ export default function InternshipDetailsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="break-words whitespace-normal">
-                          <Badge className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
+                          <Badge variant="outline" className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
                             {getInternshipStatusText(application.status)}
                           </Badge>
                         </TableCell>
@@ -506,13 +495,13 @@ export default function InternshipDetailsPage() {
         <TabsContent value="students" className="mt-4 space-y-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+              <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
                 Подтверждено: {currentInternshipApplications.filter(a => a.status === 'confirmed').length}
               </Badge>
-              <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+              <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700">
                 Активно: {currentInternshipApplications.filter(a => a.status === 'active').length}
               </Badge>
-              <Badge variant="outline" className="bg-purple-50 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
+              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700">
                 Завершено: {currentInternshipApplications.filter(a => a.status === 'completed').length}
               </Badge>
             </div>
@@ -570,12 +559,7 @@ export default function InternshipDetailsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="break-words whitespace-normal">
-                          <Badge className={cn(
-                            application.status === 'confirmed' && "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-                            application.status === 'active' && "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-                            application.status === 'completed' && "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-                            "whitespace-nowrap"
-                          )}>
+                          <Badge variant="outline" className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
                             {application.status === 'confirmed' ? 'Подтверждено' :
                              application.status === 'active' ? 'Активно' :
                              application.status === 'completed' ? 'Завершено' : application.status}
