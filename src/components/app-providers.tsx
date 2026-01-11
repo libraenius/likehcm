@@ -5,6 +5,7 @@ import { ToastProvider } from "@/contexts/toast-context";
 import { ToastDisplay } from "@/components/toast-provider";
 import { ThemeProvider } from "next-themes";
 import { useDataMigration } from "@/hooks/use-data-migration";
+import { BreadcrumbProvider } from "@/contexts/breadcrumb-context";
 
 /**
  * Провайдеры приложения (ErrorBoundary, Toast, Theme, миграция данных)
@@ -27,8 +28,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="light">
         <ToastProvider>
-          {children}
-          <ToastDisplay />
+          <BreadcrumbProvider>
+            {children}
+            <ToastDisplay />
+          </BreadcrumbProvider>
         </ToastProvider>
       </ThemeProvider>
     </ErrorBoundary>

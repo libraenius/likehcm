@@ -25,6 +25,8 @@ const pathLabels: Record<string, string> = {
   "/services/goals": "Целеполагание",
   "/services/goals-kold": "Целеполагание Стримы",
   "/services/external-providers": "Внешние поставщики",
+  "/services/universities": "Работа с ВУЗами",
+  "/services/universities/internship": "Стажировки",
   "/administration": "Администрирование",
   "/administration/goals-kold": "Целеполагание Стримы",
   "/team": "Команда",
@@ -47,6 +49,8 @@ const segmentLabels: Record<string, string> = {
   "goals": "Целеполагание",
   "goals-kold": "Целеполагание Стримы",
   "external-providers": "Внешние поставщики",
+  "universities": "Работа с ВУЗами",
+  "internship": "Стажировка",
   "administration": "Администрирование",
   "team": "Команда",
 };
@@ -117,8 +121,17 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
     currentPath += `/${segments[i]}`;
     
     // Получаем название для текущего пути
-    // Сначала проверяем полный путь, затем отдельный сегмент
-    const label = pathLabels[currentPath] || translateSegment(segments[i]);
+    let label = pathLabels[currentPath];
+    
+    // Если путь не найден, проверяем специальные случаи
+    if (!label) {
+      // Если это ID стажировки (начинается с "internship-")
+      if (segments[i].startsWith("internship-") && i > 0 && segments[i - 1] === "internship") {
+        label = "Детали стажировки";
+      } else {
+        label = translateSegment(segments[i]);
+      }
+    }
     
     breadcrumbs.push({
       label: label,

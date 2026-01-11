@@ -12,6 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { generateBreadcrumbs } from "@/lib/breadcrumbs";
+import { useBreadcrumb } from "@/contexts/breadcrumb-context";
 import { Home } from "lucide-react";
 
 /**
@@ -24,6 +25,7 @@ import { Home } from "lucide-react";
  */
 export function AppBreadcrumb() {
   const pathname = usePathname();
+  const { customLabel } = useBreadcrumb();
   const breadcrumbs = generateBreadcrumbs(pathname);
 
   // Если только главная страница, не показываем breadcrumbs
@@ -31,11 +33,20 @@ export function AppBreadcrumb() {
     return null;
   }
 
+  // Если есть кастомное название, заменяем последний элемент
+  const finalBreadcrumbs = customLabel && breadcrumbs.length > 0
+    ? breadcrumbs.map((item, index) => 
+        index === breadcrumbs.length - 1 
+          ? { ...item, label: customLabel }
+          : item
+      )
+    : breadcrumbs;
+
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        {breadcrumbs.map((item, index) => {
-          const isLast = index === breadcrumbs.length - 1;
+        {finalBreadcrumbs.map((item, index) => {
+          const isLast = index === finalBreadcrumbs.length - 1;
           
           return (
             <React.Fragment key={item.href}>

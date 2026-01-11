@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -424,6 +425,9 @@ const replaceTemplateVariables = (template: string, variables: Record<string, st
 };
 
 export default function UniversitiesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   // Состояние для администрирования
   const [universities, setUniversities] = useState<University[]>(mockUniversities);
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
@@ -496,7 +500,20 @@ export default function UniversitiesPage() {
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   
   // Состояние для стажировок
-  const [activeTab, setActiveTab] = useState<"partnerships" | "internships">("partnerships");
+  // Проверяем query параметр для определения активной вкладки
+  const tabFromQuery = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"partnerships" | "internships">(
+    tabFromQuery === "internships" ? "internships" : "partnerships"
+  );
+  
+  // Обновляем активную вкладку при изменении query параметра
+  useEffect(() => {
+    if (tabFromQuery === "internships") {
+      setActiveTab("internships");
+    } else if (tabFromQuery === "partnerships") {
+      setActiveTab("partnerships");
+    }
+  }, [tabFromQuery]);
   const [internships, setInternships] = useState<Internship[]>(mockInternships);
   const [internshipApplications, setInternshipApplications] = useState<InternshipApplication[]>(mockApplications);
   const [internshipStudents] = useState<InternshipStudent[]>(mockStudents);
@@ -505,8 +522,14 @@ export default function UniversitiesPage() {
   const [selectedInternship, setSelectedInternship] = useState<Internship | null>(null);
   const [selectedInternshipApplication, setSelectedInternshipApplication] = useState<InternshipApplication | null>(null);
   const [internshipSearchQuery, setInternshipSearchQuery] = useState("");
-  const [internshipStatusFilter, setInternshipStatusFilter] = useState<InternshipStatus | "all">("all");
-  const [internshipUniversityFilter, setInternshipUniversityFilter] = useState<string>("all");
+  const [internshipFilters, setInternshipFilters] = useState<{
+    statuses: InternshipStatus[];
+    universities: string[];
+  }>({
+    statuses: [],
+    universities: [],
+  });
+  const [isInternshipFiltersDialogOpen, setIsInternshipFiltersDialogOpen] = useState(false);
   const [isInternshipCreateDialogOpen, setIsInternshipCreateDialogOpen] = useState(false);
   const [isInternshipApplicationDialogOpen, setIsInternshipApplicationDialogOpen] = useState(false);
   const [isInternshipDetailsDialogOpen, setIsInternshipDetailsDialogOpen] = useState(false);
@@ -956,12 +979,12 @@ export default function UniversitiesPage() {
         internship.title.toLowerCase().includes(internshipSearchQuery.toLowerCase()) ||
         internship.universityName.toLowerCase().includes(internshipSearchQuery.toLowerCase());
       
-      const matchesStatus = internshipStatusFilter === "all" || internship.status === internshipStatusFilter;
-      const matchesUniversity = internshipUniversityFilter === "all" || internship.universityId === internshipUniversityFilter;
+      const matchesStatus = internshipFilters.statuses.length === 0 || internshipFilters.statuses.includes(internship.status);
+      const matchesUniversity = internshipFilters.universities.length === 0 || internshipFilters.universities.includes(internship.universityId);
       
       return matchesSearch && matchesStatus && matchesUniversity;
     });
-  }, [internships, internshipSearchQuery, internshipStatusFilter, internshipUniversityFilter]);
+  }, [internships, internshipSearchQuery, internshipFilters]);
 
   // Группировка стажировок по статусам с сортировкой
   const groupedInternships = useMemo(() => {
@@ -1683,15 +1706,15 @@ export default function UniversitiesPage() {
                           </div>
                           {filteredStudents.length > 0 ? (
                               <div className="space-y-3">
-                                <div className="border rounded-lg overflow-hidden">
+                                <div className="rounded-md border bg-card overflow-hidden">
                                   <Table>
                                     <TableHeader>
-                                      <TableRow>
-                                      <TableHead className="w-[250px]">Студент</TableHead>
-                                      <TableHead className="w-[200px]">Должность / Подразделение</TableHead>
-                                      <TableHead className="w-[300px]">Уникальная ссылка на партнерство</TableHead>
-                                        <TableHead className="w-[150px]">Статус</TableHead>
-                                        <TableHead className="w-[120px]">Действия</TableHead>
+                                      <TableRow className="bg-muted/50">
+                                      <TableHead className="w-[250px] font-bold text-base text-foreground">Студент</TableHead>
+                                      <TableHead className="w-[200px] font-bold text-base text-foreground">Должность / Подразделение</TableHead>
+                                      <TableHead className="w-[300px] font-bold text-base text-foreground">Уникальная ссылка на партнерство</TableHead>
+                                        <TableHead className="w-[150px] font-bold text-base text-foreground">Статус</TableHead>
+                                        <TableHead className="w-[120px] font-bold text-base text-foreground">Действия</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -1756,7 +1779,7 @@ export default function UniversitiesPage() {
                                                   <span className="text-sm text-muted-foreground">—</span>
                                                 )}
                                               </TableCell>
-                                              <TableCell>
+                                              <TableCell className="break-words whitespace-normal">
                                                 <Select
                                                   value={student.status}
                                                   onValueChange={(value) => handleChangeStudentStatus(student.id, value as Student["status"])}
@@ -1772,7 +1795,7 @@ export default function UniversitiesPage() {
                                                   </SelectContent>
                                                 </Select>
                                               </TableCell>
-                                              <TableCell>
+                                              <TableCell className="break-words whitespace-normal">
                                                 <div className="flex gap-1">
                                                   <Button
                                                     variant="ghost"
@@ -1933,30 +1956,104 @@ export default function UniversitiesPage() {
                   </Button>
                 )}
               </div>
-              <Select value={internshipStatusFilter} onValueChange={(v) => setInternshipStatusFilter(v as InternshipStatus | "all")}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Статус" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все статусы</SelectItem>
-                  <SelectItem value="planned">Запланировано</SelectItem>
-                  <SelectItem value="recruiting">Набор</SelectItem>
-                  <SelectItem value="active">Активно</SelectItem>
-                  <SelectItem value="completed">Завершено</SelectItem>
-                  <SelectItem value="cancelled">Отменено</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={internshipUniversityFilter} onValueChange={setInternshipUniversityFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="ВУЗ" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все ВУЗы</SelectItem>
-                  {uniqueInternshipUniversities.map(u => (
-                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Dialog open={isInternshipFiltersDialogOpen} onOpenChange={setIsInternshipFiltersDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Фильтры
+                    {(internshipFilters.statuses.length > 0 || internshipFilters.universities.length > 0) && (
+                      <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                        {internshipFilters.statuses.length + internshipFilters.universities.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="pb-3">
+                    <DialogTitle className="text-lg">Фильтры</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Статус</Label>
+                      <div className="space-y-1.5">
+                        {(["planned", "recruiting", "active", "completed", "cancelled"] as InternshipStatus[]).map((status) => (
+                          <div key={status} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`filter-status-${status}`}
+                              checked={internshipFilters.statuses.includes(status)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setInternshipFilters({
+                                    ...internshipFilters,
+                                    statuses: [...internshipFilters.statuses, status],
+                                  });
+                                } else {
+                                  setInternshipFilters({
+                                    ...internshipFilters,
+                                    statuses: internshipFilters.statuses.filter((s) => s !== status),
+                                  });
+                                }
+                              }}
+                            />
+                            <Label
+                              htmlFor={`filter-status-${status}`}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {getInternshipStatusText(status)}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">ВУЗ</Label>
+                      <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                        {uniqueInternshipUniversities.map((university) => (
+                          <div key={university.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`filter-university-${university.id}`}
+                              checked={internshipFilters.universities.includes(university.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setInternshipFilters({
+                                    ...internshipFilters,
+                                    universities: [...internshipFilters.universities, university.id],
+                                  });
+                                } else {
+                                  setInternshipFilters({
+                                    ...internshipFilters,
+                                    universities: internshipFilters.universities.filter((id) => id !== university.id),
+                                  });
+                                }
+                              }}
+                            />
+                            <Label
+                              htmlFor={`filter-university-${university.id}`}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {university.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter className="pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setInternshipFilters({ statuses: [], universities: [] });
+                      }}
+                    >
+                      Сбросить
+                    </Button>
+                    <Button size="sm" onClick={() => setIsInternshipFiltersDialogOpen(false)}>
+                      Применить
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Список стажировок */}
@@ -1967,11 +2064,11 @@ export default function UniversitiesPage() {
                     <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <p className="text-lg font-medium mb-2">Стажировки не найдены</p>
                     <p className="text-muted-foreground mb-4">
-                      {internshipSearchQuery || internshipStatusFilter !== "all" || internshipUniversityFilter !== "all"
+                      {internshipSearchQuery || internshipFilters.statuses.length > 0 || internshipFilters.universities.length > 0
                         ? "Попробуйте изменить фильтры"
                         : "Создайте первую стажировку, чтобы начать работу"}
                     </p>
-                    {!internshipSearchQuery && internshipStatusFilter === "all" && internshipUniversityFilter === "all" && (
+                    {!internshipSearchQuery && internshipFilters.statuses.length === 0 && internshipFilters.universities.length === 0 && (
                       <Button onClick={handleCreateInternship} size="lg">
                         <Plus className="mr-2 h-4 w-4" />
                         Добавить стажировку
@@ -1992,8 +2089,7 @@ export default function UniversitiesPage() {
                             selectedInternship?.id === internship.id && "ring-2 ring-primary"
                           )}
                           onClick={() => {
-                            setSelectedInternship(internship);
-                            setIsInternshipDetailsDialogOpen(true);
+                            router.push(`/services/universities/internship/${internship.id}`);
                           }}
                         >
                           <CardHeader className="pb-3 flex-shrink-0 overflow-hidden">
@@ -3327,17 +3423,17 @@ export default function UniversitiesPage() {
                   </div>
                 </div>
                 
-                <div className="border rounded-lg">
+                <div className="rounded-md border bg-card">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Студент</TableHead>
-                        <TableHead>ВУЗ</TableHead>
-                        <TableHead>Курс</TableHead>
-                        <TableHead>Релевантность</TableHead>
-                        <TableHead>Статус</TableHead>
-                        <TableHead>Дата подачи</TableHead>
-                        <TableHead className="text-right">Действия</TableHead>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-bold text-base text-foreground">Студент</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">ВУЗ</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">Курс</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">Релевантность</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">Статус</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">Дата подачи</TableHead>
+                        <TableHead className="text-right font-bold text-base text-foreground">Действия</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -3347,33 +3443,33 @@ export default function UniversitiesPage() {
                           const student = internshipStudents.find(s => s.id === application.studentId);
                           return (
                             <TableRow key={application.id}>
-                              <TableCell>
+                              <TableCell className="break-words whitespace-normal">
                                 <div className="flex items-center gap-2">
-                                  <Avatar className="h-8 w-8">
+                                  <Avatar className="h-8 w-8 flex-shrink-0">
                                     <AvatarFallback>
                                       {application.studentName.split(' ').map(n => n[0]).join('')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <div>
-                                    <div className="font-medium">{application.studentName}</div>
-                                    <div className="text-xs text-muted-foreground">{application.studentEmail}</div>
+                                  <div className="min-w-0">
+                                    <div className="font-medium break-words">{application.studentName}</div>
+                                    <div className="text-xs text-muted-foreground break-words">{application.studentEmail}</div>
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>{application.universityName}</TableCell>
-                              <TableCell>{application.course} курс</TableCell>
-                              <TableCell>
+                              <TableCell className="break-words whitespace-normal">{application.universityName}</TableCell>
+                              <TableCell className="break-words whitespace-normal">{application.course} курс</TableCell>
+                              <TableCell className="break-words whitespace-normal">
                                 <div className="flex items-center gap-2">
                                   <Progress value={application.matchScore || 0} className="w-20 h-2" />
                                   <span className="text-sm font-medium">{application.matchScore || 0}%</span>
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <Badge className={cn(getInternshipStatusColor(application.status))}>
+                              <TableCell className="break-words whitespace-normal">
+                                <Badge className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
                                   {getInternshipStatusText(application.status)}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="break-words whitespace-normal">
                                 {application.appliedAt.toLocaleDateString('ru-RU')}
                               </TableCell>
                               <TableCell className="text-right">
@@ -3460,18 +3556,18 @@ export default function UniversitiesPage() {
                   </div>
                 </div>
                 
-                <div className="border rounded-lg">
+                <div className="rounded-md border bg-card">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Студент</TableHead>
-                        <TableHead>ВУЗ</TableHead>
-                        <TableHead>Курс</TableHead>
-                        <TableHead>Средний балл</TableHead>
-                        <TableHead>Релевантность</TableHead>
-                        <TableHead>Статус</TableHead>
-                        <TableHead>Дата подтверждения</TableHead>
-                        <TableHead className="text-right">Действия</TableHead>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-bold text-base text-foreground">Студент</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">ВУЗ</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">Курс</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">Средний балл</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">Релевантность</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">Статус</TableHead>
+                        <TableHead className="font-bold text-base text-foreground">Дата подтверждения</TableHead>
+                        <TableHead className="text-right font-bold text-base text-foreground">Действия</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -3485,44 +3581,45 @@ export default function UniversitiesPage() {
                           const student = internshipStudents.find(s => s.id === application.studentId);
                           return (
                             <TableRow key={application.id}>
-                              <TableCell>
+                              <TableCell className="break-words whitespace-normal">
                                 <div className="flex items-center gap-2">
-                                  <Avatar className="h-8 w-8">
+                                  <Avatar className="h-8 w-8 flex-shrink-0">
                                     <AvatarFallback>
                                       {application.studentName.split(' ').map(n => n[0]).join('')}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <div>
-                                    <div className="font-medium">{application.studentName}</div>
-                                    <div className="text-xs text-muted-foreground">{application.studentEmail}</div>
+                                  <div className="min-w-0">
+                                    <div className="font-medium break-words">{application.studentName}</div>
+                                    <div className="text-xs text-muted-foreground break-words">{application.studentEmail}</div>
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>{application.universityName}</TableCell>
-                              <TableCell>{application.course} курс</TableCell>
-                              <TableCell>
+                              <TableCell className="break-words whitespace-normal">{application.universityName}</TableCell>
+                              <TableCell className="break-words whitespace-normal">{application.course} курс</TableCell>
+                              <TableCell className="break-words whitespace-normal">
                                 <div className="flex items-center gap-1">
                                   <span className="font-medium">{application.gpa}</span>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="break-words whitespace-normal">
                                 <div className="flex items-center gap-2">
                                   <Progress value={application.matchScore || 0} className="w-20 h-2" />
                                   <span className="text-sm font-medium">{application.matchScore || 0}%</span>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="break-words whitespace-normal">
                                 <Badge className={cn(
                                   application.status === 'confirmed' && "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
                                   application.status === 'active' && "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-                                  application.status === 'completed' && "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                  application.status === 'completed' && "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+                                  "whitespace-nowrap"
                                 )}>
                                   {application.status === 'confirmed' ? 'Подтверждено' :
                                    application.status === 'active' ? 'Активно' :
                                    application.status === 'completed' ? 'Завершено' : application.status}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="break-words whitespace-normal">
                                 {application.confirmedAt 
                                   ? application.confirmedAt.toLocaleDateString('ru-RU')
                                   : application.appliedAt.toLocaleDateString('ru-RU')}
