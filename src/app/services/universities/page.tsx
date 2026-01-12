@@ -20,6 +20,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { EvaluationDialog } from "@/components/internships/evaluation-dialog";
 import { getStatusBadgeColor } from "@/lib/badge-colors";
@@ -52,31 +53,48 @@ import {
   getNextReserveStudent,
 } from "@/lib/internships/business-logic";
 
+// Тип для куратора от филиала
+interface BranchCurator {
+  id: string;
+  city: string;
+  branch: string;
+  curatorName: string;
+}
+
+// Тип для договора
+interface Contract {
+  id: string;
+  type: "cooperation" | "scholarship" | "internship";
+  hasContract: boolean;
+  contractFile?: string; // URL или путь к файлу
+  bankDepartment?: string;
+}
+
 // Тип для университета
 interface University {
   id: string;
   name: string;
   shortName?: string;
   city: string;
-  region: string;
+  branch?: string; // Филиал в ГПБ
+  cooperationStartYear?: number;
+  targetAudience?: string;
+  initiatorBlock?: string; // Инициатор сотрудничества (блок/ССП)
+  initiatorName?: string; // Инициатор сотрудничества (ФИО)
+  branchCurators?: BranchCurator[]; // Кураторы от филиалов
+  contracts?: Contract[]; // Договоры
+  careerDays?: boolean; // Дни карьеры
+  expertParticipation?: boolean; // Экспертное участие
+  caseChampionships?: boolean; // Кейс-чемпионаты
+  allEmployees?: number; // Все сотрудники
+  internHiring?: boolean; // Найм стажеров
+  averageInternsPerYear?: number; // Среднее количество стажеров в год
+  interns?: number; // Практиканты
+  region?: string;
   description?: string;
-  partnerships: Partnership[];
 }
 
-// Тип для партнерства
-interface Partnership {
-  id: string;
-  name: string;
-  universityId: string;
-  universityName: string;
-  type: "internship" | "recruitment" | "research" | "education" | "joint_program";
-  description?: string;
-  startDate: Date;
-  endDate?: Date;
-  status: "planned" | "active" | "completed" | "cancelled";
-  link?: string;
-  students?: Student[];
-}
+// Тип для партнерства - удален
 
 // Тип для студента
 interface Student {
@@ -95,6 +113,14 @@ interface Department {
   name: string;
   parentId?: string;
 }
+
+// Шаги для создания университета
+const UNIVERSITY_STEPS = [
+  { id: 1, title: "Общая информация", description: "Основные данные об учебном заведении и сотрудничестве" },
+  { id: 2, title: "Договорная база", description: "Договоры и документы сотрудничества" },
+  { id: 3, title: "Мероприятия", description: "Активности и мероприятия с учебным заведением" },
+  { id: 4, title: "Кадровые показатели", description: "Статистика по сотрудникам и стажерам" },
+];
 
 // Моковые данные подразделений
 const mockDepartments: Department[] = [
@@ -163,12 +189,7 @@ interface EmailTemplate {
   variables: string[];
 }
 
-// Расширенный интерфейс партнерства с архивом и комментариями
-interface PartnershipExtended extends Partnership {
-  comments?: Comment[];
-  isArchived?: boolean;
-  archivedAt?: Date;
-}
+// Расширенный интерфейс партнерства - удален
 
 // Моковые данные для истории уведомлений
 const mockNotifications: Notification[] = [
@@ -190,110 +211,356 @@ const mockUniversities: University[] = [
     name: "Московский государственный университет имени М.В. Ломоносова",
     shortName: "МГУ",
     city: "Москва",
+    branch: "Московский филиал",
+    cooperationStartYear: 2020,
+    targetAudience: "Студенты IT-направлений",
+    initiatorBlock: "Блок развития",
+    initiatorName: "Иванов Иван Иванович",
+    branchCurators: [
+      { id: "cur-1", city: "Москва", branch: "Московский филиал", curatorName: "Петров Петр Петрович" },
+    ],
+    contracts: [
+      { id: "cont-1", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-mgu-2020.pdf" },
+      { id: "cont-2", type: "internship", hasContract: true, bankDepartment: "Кафедра разработки", contractFile: "contract-mgu-internship.pdf" },
+    ],
+    careerDays: true,
+    expertParticipation: true,
+    caseChampionships: true,
+    allEmployees: 150,
+    internHiring: true,
+    averageInternsPerYear: 25,
+    interns: 10,
     region: "Московская область",
     description: "Ведущий университет России",
-    partnerships: [
-      {
-        id: "part-1",
-        name: "Программа стажировок для студентов IT-направлений",
-        universityId: "univ-1",
-        universityName: "МГУ",
-        type: "internship",
-        description: "Программа стажировок для студентов факультета вычислительной математики и кибернетики",
-        startDate: new Date("2024-01-15"),
-        endDate: new Date("2024-06-30"),
-        status: "active",
-        link: "https://partnership.example.com/partnership/1",
-        students: [
-          { id: "student-1", fullName: "Иванов Иван Иванович", email: "student1@university.edu", status: "in-progress" as const, departmentId: "dept-1", uniqueLink: "https://partnership.example.com/partnership/1?student=student-1" },
-          { id: "student-2", fullName: "Петрова Мария Сергеевна", email: "student2@university.edu", status: "completed" as const, departmentId: "dept-2", uniqueLink: "https://partnership.example.com/partnership/1?student=student-2" },
-          { id: "student-3", fullName: "Сидоров Алексей Дмитриевич", email: "student3@university.edu", status: "invited" as const, departmentId: "dept-3", uniqueLink: "https://partnership.example.com/partnership/1?student=student-3" },
-        ],
-      },
-    ],
   },
   {
     id: "univ-2",
     name: "Санкт-Петербургский государственный университет",
     shortName: "СПбГУ",
     city: "Санкт-Петербург",
+    branch: "Санкт-Петербургский филиал",
+    cooperationStartYear: 2019,
+    targetAudience: "Студенты экономических направлений",
+    initiatorBlock: "Блок управления",
+    initiatorName: "Смирнова Анна Владимировна",
+    branchCurators: [
+      { id: "cur-2", city: "Санкт-Петербург", branch: "Санкт-Петербургский филиал", curatorName: "Козлов Дмитрий Сергеевич" },
+      { id: "cur-3", city: "Санкт-Петербург", branch: "Центральный офис", curatorName: "Новикова Елена Петровна" },
+    ],
+    contracts: [
+      { id: "cont-3", type: "cooperation", hasContract: true, bankDepartment: "Кафедра экономики" },
+      { id: "cont-4", type: "scholarship", hasContract: true, bankDepartment: "Кафедра финансов", contractFile: "contract-spbgu-scholarship.pdf" },
+    ],
+    careerDays: true,
+    expertParticipation: false,
+    caseChampionships: true,
+    allEmployees: 120,
+    internHiring: true,
+    averageInternsPerYear: 18,
+    interns: 8,
     region: "Ленинградская область",
     description: "Один из старейших университетов России",
-    partnerships: [
-      {
-        id: "part-2",
-        name: "Совместная образовательная программа",
-        universityId: "univ-2",
-        universityName: "СПбГУ",
-        type: "education",
-        description: "Разработка совместной магистерской программы",
-        startDate: new Date("2024-02-01"),
-        status: "active",
-        link: "https://partnership.example.com/partnership/2",
-      },
-    ],
   },
   {
     id: "univ-3",
     name: "Московский физико-технический институт",
     shortName: "МФТИ",
     city: "Долгопрудный",
+    branch: "Московский филиал",
+    cooperationStartYear: 2021,
+    targetAudience: "Студенты технических направлений",
+    initiatorBlock: "Блок технологий",
+    initiatorName: "Соколов Алексей Николаевич",
+    branchCurators: [
+      { id: "cur-4", city: "Долгопрудный", branch: "Московский филиал", curatorName: "Волков Михаил Игоревич" },
+    ],
+    contracts: [
+      { id: "cont-5", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки" },
+      { id: "cont-6", type: "internship", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-mfti-internship.pdf" },
+    ],
+    careerDays: false,
+    expertParticipation: true,
+    caseChampionships: true,
+    allEmployees: 95,
+    internHiring: true,
+    averageInternsPerYear: 30,
+    interns: 15,
     region: "Московская область",
     description: "Ведущий технический университет",
-    partnerships: [
-      {
-        id: "part-3",
-        name: "Программа рекрутинга выпускников",
-        universityId: "univ-3",
-        universityName: "МФТИ",
-        type: "recruitment",
-        description: "Привлечение талантливых выпускников",
-        startDate: new Date("2024-03-01"),
-        status: "planned",
-        link: "https://partnership.example.com/partnership/3",
-      },
+  },
+  {
+    id: "univ-4",
+    name: "Национальный исследовательский университет «Высшая школа экономики»",
+    shortName: "НИУ ВШЭ",
+    city: "Москва",
+    branch: "Московский филиал",
+    cooperationStartYear: 2018,
+    targetAudience: "Студенты экономики, менеджмента и IT",
+    initiatorBlock: "Блок стратегии",
+    initiatorName: "Морозова Ольга Александровна",
+    branchCurators: [
+      { id: "cur-5", city: "Москва", branch: "Московский филиал", curatorName: "Лебедев Сергей Викторович" },
+      { id: "cur-6", city: "Москва", branch: "Центральный офис", curatorName: "Федорова Мария Дмитриевна" },
     ],
+    contracts: [
+      { id: "cont-7", type: "cooperation", hasContract: true, bankDepartment: "Кафедра экономики", contractFile: "contract-hse-2018.pdf" },
+      { id: "cont-8", type: "scholarship", hasContract: true, bankDepartment: "Кафедра финансов" },
+      { id: "cont-9", type: "internship", hasContract: true, bankDepartment: "Кафедра IT" },
+    ],
+    careerDays: true,
+    expertParticipation: true,
+    caseChampionships: true,
+    allEmployees: 200,
+    internHiring: true,
+    averageInternsPerYear: 35,
+    interns: 20,
+    region: "Московская область",
+    description: "Ведущий экономический и IT-университет",
+  },
+  {
+    id: "univ-5",
+    name: "Уральский федеральный университет имени первого Президента России Б.Н. Ельцина",
+    shortName: "УрФУ",
+    city: "Екатеринбург",
+    branch: "Уральский филиал",
+    cooperationStartYear: 2022,
+    targetAudience: "Студенты IT и инженерии",
+    initiatorBlock: "Блок развития",
+    initiatorName: "Тихонов Андрей Борисович",
+    branchCurators: [
+      { id: "cur-7", city: "Екатеринбург", branch: "Уральский филиал", curatorName: "Семенова Ирина Алексеевна" },
+    ],
+    contracts: [
+      { id: "cont-10", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки", contractFile: "contract-urfu-2022.pdf" },
+    ],
+    careerDays: true,
+    expertParticipation: false,
+    caseChampionships: false,
+    allEmployees: 80,
+    internHiring: true,
+    averageInternsPerYear: 15,
+    interns: 5,
+    region: "Свердловская область",
+    description: "Крупнейший университет Урала",
+  },
+  {
+    id: "univ-6",
+    name: "Новосибирский государственный университет",
+    shortName: "НГУ",
+    city: "Новосибирск",
+    branch: "Сибирский филиал",
+    cooperationStartYear: 2021,
+    targetAudience: "Студенты математики и IT",
+    initiatorBlock: "Блок технологий",
+    initiatorName: "Павлов Денис Олегович",
+    branchCurators: [
+      { id: "cur-8", city: "Новосибирск", branch: "Сибирский филиал", curatorName: "Орлова Татьяна Сергеевна" },
+    ],
+    contracts: [
+      { id: "cont-11", type: "cooperation", hasContract: true, bankDepartment: "Кафедра математики" },
+      { id: "cont-12", type: "internship", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-ngu-internship.pdf" },
+    ],
+    careerDays: false,
+    expertParticipation: true,
+    caseChampionships: true,
+    allEmployees: 70,
+    internHiring: true,
+    averageInternsPerYear: 12,
+    interns: 6,
+    region: "Новосибирская область",
+    description: "Ведущий научный университет Сибири",
+  },
+  {
+    id: "univ-7",
+    name: "Казанский (Приволжский) федеральный университет",
+    shortName: "КФУ",
+    city: "Казань",
+    branch: "Приволжский филиал",
+    cooperationStartYear: 2020,
+    targetAudience: "Студенты IT и экономики",
+    initiatorBlock: "Блок развития",
+    initiatorName: "Гарифуллин Рамиль Фаритович",
+    branchCurators: [
+      { id: "cur-9", city: "Казань", branch: "Приволжский филиал", curatorName: "Хабибуллина Алина Рашидовна" },
+    ],
+    contracts: [
+      { id: "cont-13", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-kfu-2020.pdf" },
+      { id: "cont-14", type: "scholarship", hasContract: true, bankDepartment: "Кафедра экономики" },
+    ],
+    careerDays: true,
+    expertParticipation: true,
+    caseChampionships: false,
+    allEmployees: 110,
+    internHiring: true,
+    averageInternsPerYear: 20,
+    interns: 9,
+    region: "Республика Татарстан",
+    description: "Крупнейший университет Приволжья",
+  },
+  {
+    id: "univ-8",
+    name: "Томский государственный университет",
+    shortName: "ТГУ",
+    city: "Томск",
+    branch: "Сибирский филиал",
+    cooperationStartYear: 2019,
+    targetAudience: "Студенты IT и математики",
+    initiatorBlock: "Блок технологий",
+    initiatorName: "Кузнецов Владимир Петрович",
+    branchCurators: [
+      { id: "cur-10", city: "Томск", branch: "Сибирский филиал", curatorName: "Иванова Светлана Николаевна" },
+    ],
+    contracts: [
+      { id: "cont-15", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки" },
+    ],
+    careerDays: true,
+    expertParticipation: false,
+    caseChampionships: true,
+    allEmployees: 90,
+    internHiring: true,
+    averageInternsPerYear: 16,
+    interns: 7,
+    region: "Томская область",
+    description: "Старейший университет Сибири",
+  },
+  {
+    id: "univ-9",
+    name: "Санкт-Петербургский политехнический университет Петра Великого",
+    shortName: "СПбПУ",
+    city: "Санкт-Петербург",
+    branch: "Санкт-Петербургский филиал",
+    cooperationStartYear: 2021,
+    targetAudience: "Студенты инженерии и IT",
+    initiatorBlock: "Блок технологий",
+    initiatorName: "Романов Павел Андреевич",
+    branchCurators: [
+      { id: "cur-11", city: "Санкт-Петербург", branch: "Санкт-Петербургский филиал", curatorName: "Соколова Екатерина Викторовна" },
+      { id: "cur-12", city: "Санкт-Петербург", branch: "Центральный офис", curatorName: "Медведев Игорь Сергеевич" },
+    ],
+    contracts: [
+      { id: "cont-16", type: "cooperation", hasContract: true, bankDepartment: "Кафедра инженерии", contractFile: "contract-spbpu-2021.pdf" },
+      { id: "cont-17", type: "internship", hasContract: true, bankDepartment: "Кафедра IT" },
+    ],
+    careerDays: true,
+    expertParticipation: true,
+    caseChampionships: true,
+    allEmployees: 130,
+    internHiring: true,
+    averageInternsPerYear: 28,
+    interns: 12,
+    region: "Ленинградская область",
+    description: "Ведущий технический университет Северо-Запада",
+  },
+  {
+    id: "univ-10",
+    name: "Российский университет дружбы народов",
+    shortName: "РУДН",
+    city: "Москва",
+    branch: "Московский филиал",
+    cooperationStartYear: 2020,
+    targetAudience: "Студенты IT, экономики и менеджмента",
+    initiatorBlock: "Блок стратегии",
+    initiatorName: "Алиева Зарина Магомедовна",
+    branchCurators: [
+      { id: "cur-13", city: "Москва", branch: "Московский филиал", curatorName: "Ким Дмитрий Владимирович" },
+    ],
+    contracts: [
+      { id: "cont-18", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-rudn-2020.pdf" },
+      { id: "cont-19", type: "scholarship", hasContract: true, bankDepartment: "Кафедра экономики" },
+      { id: "cont-20", type: "internship", hasContract: true, bankDepartment: "Кафедра разработки" },
+    ],
+    careerDays: true,
+    expertParticipation: true,
+    caseChampionships: true,
+    allEmployees: 140,
+    internHiring: true,
+    averageInternsPerYear: 22,
+    interns: 11,
+    region: "Московская область",
+    description: "Международный университет с широкой сетью партнерств",
+  },
+  {
+    id: "univ-11",
+    name: "Южный федеральный университет",
+    shortName: "ЮФУ",
+    city: "Ростов-на-Дону",
+    branch: "Южный филиал",
+    cooperationStartYear: 2022,
+    targetAudience: "Студенты IT и экономики",
+    initiatorBlock: "Блок развития",
+    initiatorName: "Петренко Виктор Иванович",
+    branchCurators: [
+      { id: "cur-14", city: "Ростов-на-Дону", branch: "Южный филиал", curatorName: "Мельникова Оксана Анатольевна" },
+    ],
+    contracts: [
+      { id: "cont-21", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT" },
+    ],
+    careerDays: true,
+    expertParticipation: false,
+    caseChampionships: false,
+    allEmployees: 75,
+    internHiring: true,
+    averageInternsPerYear: 14,
+    interns: 6,
+    region: "Ростовская область",
+    description: "Крупнейший университет Юга России",
+  },
+  {
+    id: "univ-12",
+    name: "Дальневосточный федеральный университет",
+    shortName: "ДВФУ",
+    city: "Владивосток",
+    branch: "Дальневосточный филиал",
+    cooperationStartYear: 2023,
+    targetAudience: "Студенты IT и инженерии",
+    initiatorBlock: "Блок технологий",
+    initiatorName: "Ким Александр Сергеевич",
+    branchCurators: [
+      { id: "cur-15", city: "Владивосток", branch: "Дальневосточный филиал", curatorName: "Ли Елена Викторовна" },
+    ],
+    contracts: [
+      { id: "cont-22", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки", contractFile: "contract-dvfu-2023.pdf" },
+    ],
+    careerDays: false,
+    expertParticipation: true,
+    caseChampionships: false,
+    allEmployees: 60,
+    internHiring: false,
+    averageInternsPerYear: 8,
+    interns: 3,
+    region: "Приморский край",
+    description: "Ведущий университет Дальнего Востока",
+  },
+  {
+    id: "univ-13",
+    name: "Белгородский государственный национальный исследовательский университет",
+    shortName: "БелГУ",
+    city: "Белгород",
+    branch: "Центральный филиал",
+    cooperationStartYear: 2021,
+    targetAudience: "Студенты IT и экономики",
+    initiatorBlock: "Блок развития",
+    initiatorName: "Степанова Наталья Михайловна",
+    branchCurators: [
+      { id: "cur-16", city: "Белгород", branch: "Центральный филиал", curatorName: "Григорьев Андрей Валерьевич" },
+    ],
+    contracts: [
+      { id: "cont-23", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT" },
+      { id: "cont-24", type: "internship", hasContract: true, bankDepartment: "Кафедра разработки" },
+    ],
+    careerDays: true,
+    expertParticipation: false,
+    caseChampionships: true,
+    allEmployees: 85,
+    internHiring: true,
+    averageInternsPerYear: 17,
+    interns: 8,
+    region: "Белгородская область",
+    description: "Крупный региональный университет",
   },
 ];
 
-// Функция для получения цвета статуса (использует централизованные цвета)
-const getStatusColor = (status: Partnership["status"]) => {
-  return getStatusBadgeColor(status);
-};
-
-// Функция для получения текста статуса
-const getStatusText = (status: Partnership["status"]) => {
-  switch (status) {
-    case "planned":
-      return "Запланировано";
-    case "active":
-      return "Активно";
-    case "completed":
-      return "Завершено";
-    case "cancelled":
-      return "Отменено";
-    default:
-      return status;
-  }
-};
-
-// Функция для получения текста типа партнерства
-const getPartnershipTypeText = (type: Partnership["type"]) => {
-  switch (type) {
-    case "internship":
-      return "Стажировка";
-    case "recruitment":
-      return "Рекрутинг";
-    case "research":
-      return "Исследования";
-    case "education":
-      return "Образование";
-    case "joint_program":
-      return "Совместная программа";
-    default:
-      return type;
-  }
-};
+// Функции для партнерств - удалены
 
 // Форматирование даты
 const formatDate = (date: Date) => {
@@ -410,11 +677,12 @@ export default function UniversitiesPage() {
   // Состояние для администрирования
   const [universities, setUniversities] = useState<University[]>(mockUniversities);
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
-  const [selectedPartnership, setSelectedPartnership] = useState<Partnership | null>(null);
+  const [universityDetailTab, setUniversityDetailTab] = useState<"general" | "contracts" | "events" | "staff">("general");
   const [expandedUniversities, setExpandedUniversities] = useState<Set<string>>(new Set());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [createType, setCreateType] = useState<"university" | "partnership" | null>(null);
-  const [editingPartnership, setEditingPartnership] = useState<Partnership | null>(null);
+  const [createType, setCreateType] = useState<"university" | null>(null);
+  const [universityWizardStep, setUniversityWizardStep] = useState(1);
+  const [editingUniversity, setEditingUniversity] = useState<University | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   
   // Состояние для пагинации таблицы студентов
@@ -423,24 +691,47 @@ export default function UniversitiesPage() {
   
   // Состояние для формы создания университета
   const [universityFormData, setUniversityFormData] = useState({
+    // Шаг 1: Общая информация
     name: "",
     shortName: "",
     city: "",
+    branch: "",
+    cooperationStartYear: new Date().getFullYear(),
+    targetAudience: "",
+    initiatorBlock: "",
+    initiatorName: "",
+    branchCurators: [] as BranchCurator[],
+    // Шаг 2: Договорная база
+    contracts: [] as Contract[],
+    // Шаг 3: Мероприятия
+    careerDays: false,
+    expertParticipation: false,
+    caseChampionships: false,
+    // Шаг 4: Кадровые показатели
+    allEmployees: 0,
+    internHiring: false,
+    averageInternsPerYear: 0,
+    interns: 0,
+    // Дополнительные поля
     region: "",
     description: "",
   });
   
-  // Состояние для формы создания партнерства
-  const [partnershipFormData, setPartnershipFormData] = useState({
-    name: "",
-    universityId: "",
-    description: "",
-    type: "internship" as Partnership["type"],
-    startDate: "",
-    endDate: "",
-    link: "",
-    status: "planned" as Partnership["status"],
+  // Состояние для добавления куратора
+  const [newCurator, setNewCurator] = useState({
+    city: "",
+    branch: "",
+    curatorName: "",
   });
+  
+  // Состояние для добавления договора
+  const [newContract, setNewContract] = useState({
+    type: "cooperation" as Contract["type"],
+    hasContract: false,
+    contractFile: "",
+    bankDepartment: "",
+  });
+  
   
   // Состояние для модального окна добавления студентов
   const [isAddStudentsDialogOpen, setIsAddStudentsDialogOpen] = useState(false);
@@ -459,12 +750,10 @@ export default function UniversitiesPage() {
   
   // Новое состояние для улучшений
   const [deleteUniversityId, setDeleteUniversityId] = useState<string | null>(null);
-  const [deletePartnershipId, setDeletePartnershipId] = useState<{ universityId: string; partnershipId: string } | null>(null);
-  const [deleteStudentId, setDeleteStudentId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"name" | "city" | "partnerships" | "date">("name");
+  const [sortBy, setSortBy] = useState<"name" | "city">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showArchived, setShowArchived] = useState(false);
   const [editingStudent, setEditingStudent] = useState<{ partnershipId: string; student: Student } | null>(null);
@@ -481,16 +770,14 @@ export default function UniversitiesPage() {
   // Состояние для стажировок
   // Проверяем query параметр для определения активной вкладки
   const tabFromQuery = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<"partnerships" | "internships">(
-    tabFromQuery === "internships" ? "internships" : "partnerships"
-  );
+  const [activeTab, setActiveTab] = useState<"internships" | "universities">("universities");
   
   // Обновляем активную вкладку при изменении query параметра
   useEffect(() => {
     if (tabFromQuery === "internships") {
       setActiveTab("internships");
-    } else if (tabFromQuery === "partnerships") {
-      setActiveTab("partnerships");
+    } else if (tabFromQuery === "universities") {
+      setActiveTab("universities");
     }
   }, [tabFromQuery]);
   const [internships, setInternships] = useState<Internship[]>(mockInternships);
@@ -548,172 +835,189 @@ export default function UniversitiesPage() {
   };
   
   // Выбор партнерства
-  const handleSelectPartnership = (partnership: Partnership) => {
-    setSelectedPartnership(partnership);
-    setStudentsCurrentPage(1);
-  };
   
   // Сбрасываем пагинацию при изменении количества элементов на странице
   useEffect(() => {
     setStudentsCurrentPage(1);
   }, [studentsItemsPerPage]);
   
-  // Открытие диалога создания
+  // Открытие диалога создания университета
   const handleCreate = () => {
     setIsCreateDialogOpen(true);
-    setCreateType(null);
-    setEditingPartnership(null);
-    setUniversityFormData({ name: "", shortName: "", city: "", region: "", description: "" });
-    setPartnershipFormData({
+    setCreateType("university");
+    setUniversityWizardStep(1);
+    setEditingUniversity(null);
+    setUniversityFormData({
       name: "",
-      universityId: "",
+      shortName: "",
+      city: "",
+      branch: "",
+      cooperationStartYear: new Date().getFullYear(),
+      targetAudience: "",
+      initiatorBlock: "",
+      initiatorName: "",
+      branchCurators: [],
+      contracts: [],
+      careerDays: false,
+      expertParticipation: false,
+      caseChampionships: false,
+      allEmployees: 0,
+      internHiring: false,
+      averageInternsPerYear: 0,
+      interns: 0,
+      region: "",
       description: "",
-      type: "internship",
-      startDate: "",
-      endDate: "",
-      link: "",
-      status: "planned",
     });
+    setNewCurator({ city: "", branch: "", curatorName: "" });
+    setNewContract({ type: "cooperation", hasContract: false, contractFile: "", bankDepartment: "" });
   };
   
-  // Создание университета
+  // Создание или обновление университета
   const handleCreateUniversity = () => {
-    if (!universityFormData.name.trim() || !universityFormData.city.trim() || !universityFormData.region.trim()) {
+    if (!universityFormData.name.trim() || !universityFormData.city.trim()) {
       return;
     }
     
+    if (editingUniversity) {
+      // Редактирование существующего университета
+      const updatedUniversity: University = {
+        ...editingUniversity,
+        name: universityFormData.name.trim(),
+        shortName: universityFormData.shortName.trim() || undefined,
+        city: universityFormData.city.trim(),
+        branch: universityFormData.branch.trim() || undefined,
+        cooperationStartYear: universityFormData.cooperationStartYear || undefined,
+        targetAudience: universityFormData.targetAudience.trim() || undefined,
+        initiatorBlock: universityFormData.initiatorBlock.trim() || undefined,
+        initiatorName: universityFormData.initiatorName.trim() || undefined,
+        branchCurators: universityFormData.branchCurators.length > 0 ? universityFormData.branchCurators : undefined,
+        contracts: universityFormData.contracts.length > 0 ? universityFormData.contracts : undefined,
+        careerDays: universityFormData.careerDays || undefined,
+        expertParticipation: universityFormData.expertParticipation || undefined,
+        caseChampionships: universityFormData.caseChampionships || undefined,
+        allEmployees: universityFormData.allEmployees || undefined,
+        internHiring: universityFormData.internHiring || undefined,
+        averageInternsPerYear: universityFormData.averageInternsPerYear || undefined,
+        interns: universityFormData.interns || undefined,
+        region: universityFormData.region.trim() || undefined,
+        description: universityFormData.description.trim() || undefined,
+      };
+      
+      setUniversities(universities.map(u => u.id === editingUniversity.id ? updatedUniversity : u));
+      if (selectedUniversity === editingUniversity.id) {
+        setSelectedUniversity(editingUniversity.id);
+      }
+    } else {
+      // Создание нового университета
     const newUniversity: University = {
       id: `univ-${Date.now()}`,
       name: universityFormData.name.trim(),
       shortName: universityFormData.shortName.trim() || undefined,
       city: universityFormData.city.trim(),
-      region: universityFormData.region.trim(),
+        branch: universityFormData.branch.trim() || undefined,
+        cooperationStartYear: universityFormData.cooperationStartYear || undefined,
+        targetAudience: universityFormData.targetAudience.trim() || undefined,
+        initiatorBlock: universityFormData.initiatorBlock.trim() || undefined,
+        initiatorName: universityFormData.initiatorName.trim() || undefined,
+        branchCurators: universityFormData.branchCurators.length > 0 ? universityFormData.branchCurators : undefined,
+        contracts: universityFormData.contracts.length > 0 ? universityFormData.contracts : undefined,
+        careerDays: universityFormData.careerDays || undefined,
+        expertParticipation: universityFormData.expertParticipation || undefined,
+        caseChampionships: universityFormData.caseChampionships || undefined,
+        allEmployees: universityFormData.allEmployees || undefined,
+        internHiring: universityFormData.internHiring || undefined,
+        averageInternsPerYear: universityFormData.averageInternsPerYear || undefined,
+        interns: universityFormData.interns || undefined,
+        region: universityFormData.region.trim() || undefined,
       description: universityFormData.description.trim() || undefined,
-      partnerships: [],
     };
     
     setUniversities([...universities, newUniversity]);
+      setSelectedUniversity(newUniversity.id);
+    }
+    
     setIsCreateDialogOpen(false);
     setCreateType(null);
-    setUniversityFormData({ name: "", shortName: "", city: "", region: "", description: "" });
+    setUniversityWizardStep(1);
+    setEditingUniversity(null);
+    setUniversityFormData({
+      name: "",
+      shortName: "",
+      city: "",
+      branch: "",
+      cooperationStartYear: new Date().getFullYear(),
+      targetAudience: "",
+      initiatorBlock: "",
+      initiatorName: "",
+      branchCurators: [],
+      contracts: [],
+      careerDays: false,
+      expertParticipation: false,
+      caseChampionships: false,
+      allEmployees: 0,
+      internHiring: false,
+      averageInternsPerYear: 0,
+      interns: 0,
+      region: "",
+      description: "",
+    });
+    setNewCurator({ city: "", branch: "", curatorName: "" });
+    setNewContract({ type: "cooperation", hasContract: false, contractFile: "", bankDepartment: "" });
   };
   
-  // Создание или обновление партнерства
-  const handleCreatePartnership = () => {
-    if (!partnershipFormData.name.trim() || !partnershipFormData.universityId || !partnershipFormData.startDate) {
+  // Добавление куратора
+  const handleAddCurator = () => {
+    if (!newCurator.city.trim() || !newCurator.branch.trim() || !newCurator.curatorName.trim()) {
       return;
     }
-    
-    // Валидация
-    const dateError = validateDates(partnershipFormData.startDate, partnershipFormData.endDate);
-    if (dateError) {
-      return;
-    }
-    
-    if (partnershipFormData.link && !validateURL(partnershipFormData.link)) {
-      return;
-    }
-    
-    const university = universities.find(u => u.id === partnershipFormData.universityId);
-    if (!university) return;
-    
-    if (editingPartnership) {
-      // Редактирование существующего партнерства
-      const updatedPartnership: Partnership = {
-        ...editingPartnership,
-        name: partnershipFormData.name.trim(),
-        universityId: partnershipFormData.universityId,
-        universityName: university.name,
-        description: partnershipFormData.description.trim() || undefined,
-        type: partnershipFormData.type,
-        startDate: new Date(partnershipFormData.startDate),
-        endDate: partnershipFormData.endDate ? new Date(partnershipFormData.endDate) : undefined,
-        link: partnershipFormData.link.trim() || undefined,
-        status: partnershipFormData.status,
-        // Сохраняем существующих студентов
-        students: editingPartnership.students,
-      };
-      
-      const universityChanged = editingPartnership.universityId !== partnershipFormData.universityId;
-      
-      const finalUniversities = universities.map(u => {
-        if (universityChanged) {
-          // Если университет изменился, удаляем из старого и добавляем в новый
-          if (u.id === editingPartnership.universityId) {
-            return {
-              ...u,
-              partnerships: u.partnerships.filter(p => p.id !== editingPartnership.id),
-            };
-          }
-          if (u.id === partnershipFormData.universityId) {
-            return {
-              ...u,
-              partnerships: [...u.partnerships, updatedPartnership],
-            };
-          }
-        } else {
-          // Если университет не изменился, просто обновляем партнерство
-          if (u.id === partnershipFormData.universityId) {
-            return {
-              ...u,
-              partnerships: u.partnerships.map(p => 
-                p.id === editingPartnership.id ? updatedPartnership : p
-              ),
-            };
-          }
-        }
-        return u;
-      });
-      
-      setUniversities(finalUniversities);
-      
-      // Обновляем выбранное партнерство, если оно было отредактировано
-      if (selectedPartnership?.id === editingPartnership.id) {
-        setSelectedPartnership(updatedPartnership);
-      }
-    } else {
-      // Создание нового партнерства
-      const newPartnership: Partnership = {
-        id: `part-${Date.now()}`,
-        name: partnershipFormData.name.trim(),
-        universityId: partnershipFormData.universityId,
-        universityName: university.name,
-        description: partnershipFormData.description.trim() || undefined,
-        type: partnershipFormData.type,
-        startDate: new Date(partnershipFormData.startDate),
-        endDate: partnershipFormData.endDate ? new Date(partnershipFormData.endDate) : undefined,
-        link: partnershipFormData.link.trim() || undefined,
-        status: partnershipFormData.status,
-        students: [],
-      };
-      
-      const updatedUniversities = universities.map(u => {
-        if (u.id === partnershipFormData.universityId) {
-          return {
-            ...u,
-            partnerships: [...u.partnerships, newPartnership],
-          };
-        }
-        return u;
-      });
-      
-      setUniversities(updatedUniversities);
-    }
-    
-    setIsCreateDialogOpen(false);
-    setCreateType(null);
-    setEditingPartnership(null);
-    setPartnershipFormData({
-      name: "",
-      universityId: "",
-      description: "",
-      type: "internship",
-      startDate: "",
-      endDate: "",
-      link: "",
-      status: "planned",
+    const curator: BranchCurator = {
+      id: `curator-${Date.now()}`,
+      city: newCurator.city.trim(),
+      branch: newCurator.branch.trim(),
+      curatorName: newCurator.curatorName.trim(),
+    };
+    setUniversityFormData({
+      ...universityFormData,
+      branchCurators: [...universityFormData.branchCurators, curator],
+    });
+    setNewCurator({ city: "", branch: "", curatorName: "" });
+  };
+  
+  // Удаление куратора
+  const handleRemoveCurator = (id: string) => {
+    setUniversityFormData({
+      ...universityFormData,
+      branchCurators: universityFormData.branchCurators.filter(c => c.id !== id),
     });
   };
+  
+  // Добавление договора
+  const handleAddContract = () => {
+    if (!newContract.hasContract) {
+      return;
+    }
+    const contract: Contract = {
+      id: `contract-${Date.now()}`,
+      type: newContract.type,
+      hasContract: newContract.hasContract,
+      contractFile: newContract.contractFile.trim() || undefined,
+      bankDepartment: newContract.bankDepartment.trim() || undefined,
+    };
+    setUniversityFormData({
+      ...universityFormData,
+      contracts: [...universityFormData.contracts, contract],
+    });
+    setNewContract({ type: "cooperation", hasContract: false, contractFile: "", bankDepartment: "" });
+  };
+  
+  // Удаление договора
+  const handleRemoveContract = (id: string) => {
+    setUniversityFormData({
+      ...universityFormData,
+      contracts: universityFormData.contracts.filter(c => c.id !== id),
+    });
+  };
+  
   
 
   // Фильтрация и сортировка данных
@@ -724,31 +1028,13 @@ export default function UniversitiesPage() {
         university.name.toLowerCase().includes(query) ||
         university.shortName?.toLowerCase().includes(query) ||
         university.city.toLowerCase().includes(query) ||
-        university.region.toLowerCase().includes(query) ||
+        university.region?.toLowerCase().includes(query) ||
         university.description?.toLowerCase().includes(query);
       
-      let filteredPartnerships = university.partnerships.filter(partnership => {
-        const extended = partnership as PartnershipExtended;
-        if (showArchived && !extended.isArchived) return false;
-        if (!showArchived && extended.isArchived) return false;
-        
-        if (searchQuery.trim()) {
-          const matchesSearch = 
-            partnership.name.toLowerCase().includes(query) ||
-            partnership.description?.toLowerCase().includes(query);
-          if (!matchesSearch && !universityMatches) return false;
-        }
-        
-        if (statusFilter !== "all" && partnership.status !== statusFilter) return false;
-        if (typeFilter !== "all" && partnership.type !== typeFilter) return false;
-        
-        return true;
-      });
-      
-      return { ...university, partnerships: universityMatches ? filteredPartnerships : filteredPartnerships };
+      return university;
     }).filter(u => {
       if (cityFilter !== "all" && u.city !== cityFilter) return false;
-      return u.partnerships.length > 0 || !searchQuery.trim();
+      return !searchQuery.trim();
     });
     
     // Сортировка
@@ -760,18 +1046,6 @@ export default function UniversitiesPage() {
           break;
         case "city":
           comparison = a.city.localeCompare(b.city);
-          break;
-        case "partnerships":
-          comparison = a.partnerships.length - b.partnerships.length;
-          break;
-        case "date":
-          const aLatest = a.partnerships.length > 0 
-            ? Math.max(...a.partnerships.map(p => p.startDate.getTime()))
-            : 0;
-          const bLatest = b.partnerships.length > 0
-            ? Math.max(...b.partnerships.map(p => p.startDate.getTime()))
-            : 0;
-          comparison = aLatest - bLatest;
           break;
       }
       return sortOrder === "asc" ? comparison : -comparison;
@@ -790,157 +1064,23 @@ export default function UniversitiesPage() {
   const handleDeleteUniversity = useCallback(() => {
     if (!deleteUniversityId) return;
     const university = universities.find(u => u.id === deleteUniversityId);
-    if (university && university.partnerships.length > 0) {
-      // Предупреждение если есть партнерства
-      return;
-    }
     setUniversities(universities.filter(u => u.id !== deleteUniversityId));
-    if (selectedPartnership && selectedPartnership.universityId === deleteUniversityId) {
-      setSelectedPartnership(null);
+    if (selectedUniversity === deleteUniversityId) {
+      setSelectedUniversity(null);
     }
     setDeleteUniversityId(null);
-  }, [deleteUniversityId, universities, selectedPartnership]);
-
-  const handleDeletePartnership = useCallback(() => {
-    if (!deletePartnershipId) return;
-    const { universityId, partnershipId } = deletePartnershipId;
-    const university = universities.find(u => u.id === universityId);
-    const partnership = university?.partnerships.find(p => p.id === partnershipId);
-    
-    if (partnership && partnership.students && partnership.students.length > 0) {
-      // Предупреждение
-      return;
-    }
-    
-    setUniversities(universities.map(u => {
-      if (u.id === universityId) {
-        return {
-          ...u,
-          partnerships: u.partnerships.filter(p => p.id !== partnershipId),
-        };
-      }
-      return u;
-    }));
-    
-    if (selectedPartnership?.id === partnershipId) {
-      setSelectedPartnership(null);
-    }
-    setDeletePartnershipId(null);
-  }, [deletePartnershipId, universities, selectedPartnership]);
-
-  const handleDeleteStudent = useCallback(() => {
-    if (!deleteStudentId || !selectedPartnership) return;
-    
-    setUniversities(universities.map(u => {
-      if (u.id === selectedPartnership.universityId) {
-        return {
-          ...u,
-          partnerships: u.partnerships.map(p => {
-            if (p.id === selectedPartnership.id) {
-              return {
-                ...p,
-                students: (p.students || []).filter(s => s.id !== deleteStudentId),
-              };
-            }
-            return p;
-          }),
-        };
-      }
-      return u;
-    }));
-    
-    const updatedPartnership = universities
-      .find(u => u.id === selectedPartnership.universityId)
-      ?.partnerships.find(p => p.id === selectedPartnership.id);
-    if (updatedPartnership) {
-      setSelectedPartnership({
-        ...updatedPartnership,
-        students: (updatedPartnership.students || []).filter(s => s.id !== deleteStudentId),
-      });
-    }
-    setDeleteStudentId(null);
-  }, [deleteStudentId, selectedPartnership, universities]);
-
-  // Изменение статуса студента
-  const handleChangeStudentStatus = useCallback((studentId: string, newStatus: Student["status"]) => {
-    if (!selectedPartnership) return;
-    
-    setUniversities(universities.map(u => {
-      if (u.id === selectedPartnership.universityId) {
-        return {
-          ...u,
-          partnerships: u.partnerships.map(p => {
-            if (p.id === selectedPartnership.id) {
-              return {
-                ...p,
-                students: (p.students || []).map(s =>
-                  s.id === studentId ? { ...s, status: newStatus } : s
-                ),
-              };
-            }
-            return p;
-          }),
-        };
-      }
-      return u;
-    }));
-    
-    const updatedPartnership = universities
-      .find(u => u.id === selectedPartnership.universityId)
-      ?.partnerships.find(p => p.id === selectedPartnership.id);
-    if (updatedPartnership) {
-      const updatedStudents = (updatedPartnership.students || []).map(s =>
-        s.id === studentId ? { ...s, status: newStatus } : s
-      );
-      setSelectedPartnership({ ...updatedPartnership, students: updatedStudents });
-    }
-  }, [selectedPartnership, universities]);
-
-  // Работа с комментариями
-  const handleAddComment = useCallback(() => {
-    if (!newComment.trim() || !selectedPartnership) return;
-    
-    const comment: Comment = {
-      id: `comment-${Date.now()}`,
-      partnershipId: selectedPartnership.id,
-      author: "Текущий пользователь", // В реальном приложении брать из контекста
-      text: newComment.trim(),
-      createdAt: new Date(),
-    };
-    
-    setComments([...comments, comment]);
-    setNewComment("");
-  }, [newComment, selectedPartnership, comments]);
+  }, [deleteUniversityId, universities]);
 
 
-  // Фильтрация студентов
+
+
+
+
+  // Фильтрация студентов (удалено - больше не используется)
   const filteredStudents = useMemo(() => {
-    if (!selectedPartnership?.students) return [];
-    if (studentStatusFilter === "all") return selectedPartnership.students;
-    return selectedPartnership.students.filter(s => s.status === studentStatusFilter);
-  }, [selectedPartnership, studentStatusFilter]);
+    return [];
+  }, []);
 
-  // Применение шаблона email
-  const handleApplyTemplate = useCallback((template: EmailTemplate) => {
-    if (!selectedPartnership) return;
-    
-    const variables: Record<string, string> = {
-      partnershipName: selectedPartnership.name,
-      startDate: formatDate(selectedPartnership.startDate),
-      status: getStatusText(selectedPartnership.status),
-    };
-    
-    let subject = replaceTemplateVariables(template.subject, variables);
-    let message = replaceTemplateVariables(template.body, variables);
-    
-    setNotificationFormData(prev => ({
-      ...prev,
-      subject,
-      message,
-    }));
-    setSelectedTemplate(template);
-    setIsTemplateDialogOpen(false);
-  }, [selectedPartnership]);
 
   // Дебаунсированный поиск
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
@@ -1042,7 +1182,7 @@ export default function UniversitiesPage() {
     
     const conversion = calculateConversionRate(apps);
     
-    return {
+        return {
       internshipId: selectedInternship.id,
       totalApplications: total,
       pendingApplications: pending,
@@ -1305,22 +1445,22 @@ export default function UniversitiesPage() {
           <p className="text-muted-foreground">
             Управление партнерствами с образовательными учреждениями
           </p>
-        </div>
+      </div>
 
         {/* Вкладки */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "partnerships" | "internships")} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "universities" | "internships")} className="w-full">
           <TabsList variant="grid2">
-            <TabsTrigger value="partnerships">Партнерства</TabsTrigger>
+            <TabsTrigger value="universities">ВУЗы</TabsTrigger>
             <TabsTrigger value="internships">Стажировки</TabsTrigger>
-          </TabsList>
+        </TabsList>
 
-          <TabsContent value="partnerships" className="mt-4 space-y-4">
-            {/* Поиск и фильтры для партнерств */}
+          <TabsContent value="universities" className="mt-4 space-y-4">
+            {/* Поиск и фильтры для университетов */}
             <div className="flex items-center gap-4">
-              <div className="relative flex-1">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Поиск по университетам и партнерствам..."
+                placeholder="Поиск по университетам..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -1335,35 +1475,35 @@ export default function UniversitiesPage() {
                   <X className="h-4 w-4" />
                 </Button>
               )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsFiltersDialogOpen(true)}
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Фильтры
-                {(statusFilter !== "all" || typeFilter !== "all" || cityFilter !== "all" || showArchived) && (
-                  <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                    {[
-                      statusFilter !== "all" ? 1 : 0,
-                      typeFilter !== "all" ? 1 : 0,
-                      cityFilter !== "all" ? 1 : 0,
-                      showArchived ? 1 : 0,
-                    ].reduce((a, b) => a + b, 0)}
-                  </Badge>
-                )}
-              </Button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsFiltersDialogOpen(true)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Фильтры
+              {(statusFilter !== "all" || typeFilter !== "all" || cityFilter !== "all" || showArchived) && (
+                <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                  {[
+                    statusFilter !== "all" ? 1 : 0,
+                    typeFilter !== "all" ? 1 : 0,
+                    cityFilter !== "all" ? 1 : 0,
+                    showArchived ? 1 : 0,
+                  ].reduce((a, b) => a + b, 0)}
+                </Badge>
+              )}
+            </Button>
               <Button onClick={handleCreate} size="lg">
                 <Plus className="mr-2 h-4 w-4" />
-                Добавить партнерство
-              </Button>
-            </div>
-            {/* Двухколоночная структура */}
-            {filteredData.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-12">
+                Добавить университет
+                    </Button>
+                  </div>
+          {/* Двухколоночная структура */}
+          {filteredData.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-12">
                   <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">
                     {searchQuery ? "Университеты не найдены" : "Нет университетов"}
@@ -1373,21 +1513,21 @@ export default function UniversitiesPage() {
                       ? "Попробуйте изменить поисковый запрос"
                       : "Создайте первый университет, чтобы начать работу"}
                   </p>
-                    {!searchQuery && (
+                  {!searchQuery && (
                       <Button onClick={handleCreate} size="lg">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Добавить университет
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
-              {/* Левая колонка - иерархия университетов и партнерств */}
+                      <Plus className="mr-2 h-4 w-4" />
+                      Добавить университет
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
+              {/* Левая колонка - список университетов */}
               <div className="w-[20rem] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
                 <div className="p-2 border-b bg-muted/30">
-                  <h3 className="font-semibold text-sm">Университеты и партнерства</h3>
+                  <h3 className="font-semibold text-sm">Университеты</h3>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                   <div className="space-y-1 p-2">
@@ -1395,501 +1535,300 @@ export default function UniversitiesPage() {
                       <div key={university.id} className="space-y-1">
                         {/* Университет */}
                         <div
-                          className="p-2 rounded-md cursor-pointer transition-colors hover:bg-muted"
-                          onClick={() => toggleUniversity(university.id)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 flex-shrink-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleUniversity(university.id);
-                              }}
-                            >
-                              {expandedUniversities.has(university.id) ? (
-                                <ChevronDown className="h-3.5 w-3.5" />
-                              ) : (
-                                <ChevronRight className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm break-words">{university.name}</div>
-                              {university.description && (
-                                <div className="text-xs break-words mt-0.5 text-muted-foreground">
-                                  {university.description.length > 50
-                                    ? university.description.substring(0, 50) + "..."
-                                    : university.description}
-                                </div>
-                              )}
-                            </div>
-                            <Badge variant="outline" className="text-xs flex-shrink-0">
-                              {university.partnerships.length}
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 flex-shrink-0 text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteUniversityId(university.id);
-                              }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        {/* Партнерства университета */}
-                        {expandedUniversities.has(university.id) && (
-                          <div className="ml-6 space-y-1">
-                            {university.partnerships.map((partnership) => {
-                              return (
-                                <div
-                                  key={partnership.id}
-                                  onClick={(e) => {
-                                    if ((e.target as HTMLElement).closest('button, input')) return;
-                                    e.stopPropagation();
-                                    handleSelectPartnership(partnership);
-                                  }}
                                   className={cn(
-                                    "p-2 rounded-md cursor-pointer transition-colors text-sm flex items-center gap-2",
-                                    selectedPartnership?.id === partnership.id
+                            "p-2 rounded-md cursor-pointer transition-colors",
+                            selectedUniversity === university.id
                                       ? "bg-accent text-accent-foreground"
-                                      : "hover:bg-muted/50"
-                                  )}
-                                >
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm break-words">{partnership.name}</div>
-                                    <Badge
-                                      variant="outline"
-                                      className={cn("text-xs mt-0.5", getStatusColor(partnership.status))}
-                                    >
-                                      {getStatusText(partnership.status)}
-                                    </Badge>
+                              : "hover:bg-muted"
+                          )}
+                          onClick={() => setSelectedUniversity(university.id)}
+                        >
+                                    <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm break-words">{university.name}</div>
+                            {university.shortName && (
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {university.shortName}
+                                    </div>
+                            )}
                                   </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 flex-shrink-0 text-destructive"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeletePartnershipId({ universityId: university.id, partnershipId: partnership.id });
-                                    }}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Правая колонка - детальная информация о партнерстве */}
+              {/* Правая колонка - детальная информация об университете */}
               <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-280px)]">
-                {selectedPartnership ? (
+                {selectedUniversity ? (() => {
+                  const university = universities.find(u => u.id === selectedUniversity);
+                  if (!university) return null;
+                  return (
                   <Card className="w-full max-w-full overflow-hidden">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="text-xl mb-1 break-words">{selectedPartnership.name}</CardTitle>
+                          <CardTitle className="text-xl mb-1 break-words">{university.name}</CardTitle>
+                          {university.shortName && (
                           <CardDescription className="text-base break-words">
-                            {selectedPartnership.description || "Описание отсутствует"}
+                              {university.shortName}
                           </CardDescription>
+                          )}
+                          {university.description && (
+                            <CardDescription className="text-base break-words mt-1">
+                              {university.description}
+                            </CardDescription>
+                          )}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1 flex-shrink-0">
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="icon"
-                            onClick={() => setIsCommentsDialogOpen(true)}
-                            title="Комментарии"
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setIsHistoryDialogOpen(true)}
-                            title="История изменений"
-                          >
-                            <History className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => {
-                              setEditingPartnership(selectedPartnership);
-                              setPartnershipFormData({
-                                name: selectedPartnership.name,
-                                universityId: selectedPartnership.universityId,
-                                description: selectedPartnership.description || "",
-                                type: selectedPartnership.type,
-                                startDate: selectedPartnership.startDate.toISOString().split('T')[0],
-                                endDate: selectedPartnership.endDate ? selectedPartnership.endDate.toISOString().split('T')[0] : "",
-                                link: selectedPartnership.link || "",
-                                status: selectedPartnership.status,
+                              setEditingUniversity(university);
+                              setUniversityFormData({
+                                name: university.name,
+                                shortName: university.shortName || "",
+                                city: university.city,
+                                branch: university.branch || "",
+                                cooperationStartYear: university.cooperationStartYear || new Date().getFullYear(),
+                                targetAudience: university.targetAudience || "",
+                                initiatorBlock: university.initiatorBlock || "",
+                                initiatorName: university.initiatorName || "",
+                                branchCurators: university.branchCurators || [],
+                                contracts: university.contracts || [],
+                                careerDays: university.careerDays || false,
+                                expertParticipation: university.expertParticipation || false,
+                                caseChampionships: university.caseChampionships || false,
+                                allEmployees: university.allEmployees || 0,
+                                internHiring: university.internHiring || false,
+                                averageInternsPerYear: university.averageInternsPerYear || 0,
+                                interns: university.interns || 0,
+                                region: university.region || "",
+                                description: university.description || "",
                               });
-                              setCreateType("partnership");
+                              setUniversityWizardStep(1);
+                              setCreateType("university");
                               setIsCreateDialogOpen(true);
                             }}
                             title="Редактировать"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => setDeleteUniversityId(university.id)}
+                            title="Удалить"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0 overflow-x-hidden">
-                      <div className="space-y-4 max-w-full">
-                        {/* Университет */}
+                      <Tabs value={universityDetailTab} onValueChange={(v) => setUniversityDetailTab(v as typeof universityDetailTab)} className="w-full">
+                        <TabsList className="grid w-full grid-cols-4">
+                          <TabsTrigger value="general">Общая информация</TabsTrigger>
+                          <TabsTrigger value="contracts">Договорная база</TabsTrigger>
+                          <TabsTrigger value="events">Мероприятия</TabsTrigger>
+                          <TabsTrigger value="staff">Кадровые показатели</TabsTrigger>
+                        </TabsList>
+                        
+                        {/* Таб 1: Общая информация */}
+                        <TabsContent value="general" className="space-y-4 mt-4">
+                          <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-sm font-semibold">Университет</Label>
+                              <Label className="text-sm font-semibold">Город</Label>
                           <div className="flex items-center gap-2">
-                            <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{selectedPartnership.universityName}</span>
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">{university.city || "Не указано"}</span>
                           </div>
                         </div>
-
-                        <Separator />
-
-                        {/* Статус */}
                         <div className="space-y-2">
-                          <Label className="text-sm font-semibold">Статус</Label>
-                          <Badge
-                            variant="outline"
-                            className={cn("text-sm px-3 py-1", getStatusColor(selectedPartnership.status))}
-                          >
-                            {getStatusText(selectedPartnership.status)}
-                          </Badge>
+                              <Label className="text-sm font-semibold">Филиал в ГПБ</Label>
+                              <span className="text-sm">{university.branch || "Не указано"}</span>
                         </div>
-
-                        <Separator />
-
-                        {/* Тип партнерства */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-semibold">Тип партнерства</Label>
-                          <Badge variant="outline" className="text-sm px-3 py-1">
-                            {getPartnershipTypeText(selectedPartnership.type)}
-                          </Badge>
-                        </div>
-
-                        <Separator />
-
-                        {/* Даты */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-semibold">Период проведения</Label>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>
-                              {formatDate(selectedPartnership.startDate)}
-                              {selectedPartnership.endDate && ` - ${formatDate(selectedPartnership.endDate)}`}
-                            </span>
                           </div>
+                          {university.cooperationStartYear && (
+                        <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Год начала сотрудничества</Label>
+                              <span className="text-sm">{university.cooperationStartYear}</span>
                         </div>
-
-                        <Separator />
-
-                        {/* Ссылка */}
-                        {selectedPartnership.link && (
-                          <>
+                          )}
+                          {university.targetAudience && (
+                        <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Целевая аудитория</Label>
+                              <span className="text-sm">{university.targetAudience}</span>
+                          </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-4">
+                            {university.initiatorBlock && (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-semibold">Инициатор сотрудничества (блок/ССП)</Label>
+                                <span className="text-sm">{university.initiatorBlock}</span>
+                        </div>
+                            )}
+                            {university.initiatorName && (
                             <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Ссылка на партнерство</Label>
-                              <div className="flex items-center gap-2">
-                                <a
-                                  href={selectedPartnership.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-primary hover:underline font-mono break-all flex items-center gap-1"
-                                >
-                                  {selectedPartnership.link}
-                                  <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
-                                </a>
+                                <Label className="text-sm font-semibold">Инициатор сотрудничества (ФИО)</Label>
+                                <span className="text-sm">{university.initiatorName}</span>
+                              </div>
+                            )}
+                          </div>
+                          {university.branchCurators && university.branchCurators.length > 0 && (
+                            <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Кураторы от филиалов</Label>
+                              <div className="space-y-2">
+                                {university.branchCurators.map((curator) => (
+                                  <Card key={curator.id} className="p-3">
+                                    <div className="space-y-1">
+                                      <p className="text-sm font-medium">{curator.city} - {curator.branch}</p>
+                                      <p className="text-xs text-muted-foreground">{curator.curatorName}</p>
+                                    </div>
+                                  </Card>
+                                ))}
                               </div>
                             </div>
-                            <Separator />
-                          </>
+                          )}
+                          {university.region && (
+                            <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Регион</Label>
+                              <div className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">{university.region}</span>
+                              </div>
+                            </div>
                         )}
+                        </TabsContent>
 
-                        {/* Студенты */}
+                        {/* Таб 2: Договорная база */}
+                        <TabsContent value="contracts" className="space-y-4 mt-4">
+                          {university.contracts && university.contracts.length > 0 ? (
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between flex-wrap gap-2">
-                            <Label className="text-sm font-semibold flex items-center gap-2">
-                              <Users className="h-4 w-4" />
-                              Студенты ({filteredStudents.length})
-                            </Label>
-                            <div className="flex gap-2 flex-wrap">
-                              <Select value={studentStatusFilter} onValueChange={setStudentStatusFilter}>
-                                <SelectTrigger className="w-[150px]">
-                                  <SelectValue placeholder="Фильтр по статусу" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">Все статусы</SelectItem>
-                                  <SelectItem value="not-started">Не начато</SelectItem>
-                                  <SelectItem value="invited">Приглашен</SelectItem>
-                                  <SelectItem value="in-progress">В процессе</SelectItem>
-                                  <SelectItem value="completed">Завершено</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setIsNotificationsDialogOpen(true)}
-                              >
-                                <Mail className="h-4 w-4 mr-2" />
-                                Уведомления
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const existingStudentIds = selectedPartnership.students?.map(s => {
-                                    const employee = mockEmployees.find(emp => 
-                                      emp.email === s.email || emp.fullName === s.fullName
-                                    );
-                                    return employee?.id;
-                                  }).filter(Boolean) as string[] || [];
-                                  setSelectedStudentIds(existingStudentIds);
-                                  setIsAddStudentsDialogOpen(true);
-                                }}
-                              >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Добавить
-                              </Button>
+                              {university.contracts.map((contract) => (
+                                <Card key={contract.id} className="p-4">
+                                  <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <Badge variant="outline" className="text-sm">
+                                        {contract.type === "cooperation" ? "О сотрудничестве" :
+                                         contract.type === "scholarship" ? "Об именных стипендиях" :
+                                         "О практике"}
+                                      </Badge>
+                            </div>
+                                    {contract.bankDepartment && (
+                                      <div className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground">Кафедра Банка</Label>
+                                        <p className="text-sm">{contract.bankDepartment}</p>
+                          </div>
+                                    )}
+                                    {contract.contractFile && (
+                                      <div className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground">Договор</Label>
+                                        <div className="flex items-center gap-2">
+                                          <FileText className="h-4 w-4 text-muted-foreground" />
+                                          <a href={contract.contractFile} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                                            {contract.contractFile}
+                                          </a>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </Card>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-muted-foreground">
+                              <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">Договоры не добавлены</p>
+                            </div>
+                          )}
+                        </TabsContent>
+                        
+                        {/* Таб 3: Мероприятия */}
+                        <TabsContent value="events" className="space-y-4 mt-4">
+                              <div className="space-y-3">
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <Label className="text-sm font-semibold">Дни карьеры</Label>
+                                <p className="text-xs text-muted-foreground">Участие в днях карьеры</p>
+                              </div>
+                              <Badge variant={university.careerDays ? "default" : "outline"}>
+                                {university.careerDays ? "Да" : "Нет"}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <Label className="text-sm font-semibold">Экспертное участие</Label>
+                                <p className="text-xs text-muted-foreground">Участие в качестве эксперта</p>
+                              </div>
+                              <Badge variant={university.expertParticipation ? "default" : "outline"}>
+                                {university.expertParticipation ? "Да" : "Нет"}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <Label className="text-sm font-semibold">Кейс-чемпионаты</Label>
+                                <p className="text-xs text-muted-foreground">Участие в кейс-чемпионатах</p>
+                              </div>
+                              <Badge variant={university.caseChampionships ? "default" : "outline"}>
+                                {university.caseChampionships ? "Да" : "Нет"}
+                              </Badge>
                             </div>
                           </div>
-                          {filteredStudents.length > 0 ? (
-                              <div className="space-y-3">
-                                <div className="rounded-md border bg-card overflow-hidden">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow className="bg-muted/50">
-                                      <TableHead className="w-[250px] font-bold text-base text-foreground">Студент</TableHead>
-                                      <TableHead className="w-[200px] font-bold text-base text-foreground">Должность / Подразделение</TableHead>
-                                      <TableHead className="w-[300px] font-bold text-base text-foreground">Уникальная ссылка на партнерство</TableHead>
-                                        <TableHead className="w-[150px] font-bold text-base text-foreground">Статус</TableHead>
-                                        <TableHead className="w-[120px] font-bold text-base text-foreground">Действия</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {(() => {
-                                        const totalPages = Math.ceil(filteredStudents.length / studentsItemsPerPage);
-                                        const startIndex = (studentsCurrentPage - 1) * studentsItemsPerPage;
-                                        const endIndex = startIndex + studentsItemsPerPage;
-                                        const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
-                                        
-                                        return paginatedStudents.length === 0 ? (
-                                          <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                                              Нет студентов
-                                            </TableCell>
-                                          </TableRow>
-                                        ) : (
-                                          paginatedStudents.map((student) => (
-                                            <TableRow key={student.id}>
-                                              <TableCell className="px-4 whitespace-normal">
-                                                <div className="flex items-center gap-3">
-                                                  <Avatar className="h-10 w-10 shrink-0">
-                                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                                      {getInitials(student.fullName)}
-                                                    </AvatarFallback>
-                                                  </Avatar>
-                                                  <div className="flex flex-col min-w-0">
-                                                    <span className="font-medium">{student.fullName}</span>
+                        </TabsContent>
+                        
+                        {/* Таб 4: Кадровые показатели */}
+                        <TabsContent value="staff" className="space-y-4 mt-4">
+                          <div className="space-y-4">
+                            {university.allEmployees !== undefined && (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-semibold">Все сотрудники</Label>
+                                <p className="text-2xl font-bold">{university.allEmployees}</p>
                                                   </div>
+                            )}
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <Label className="text-sm font-semibold">Найм стажеров</Label>
+                                <p className="text-xs text-muted-foreground">Наличие найма стажеров</p>
                                                 </div>
-                                              </TableCell>
-                                              <TableCell className="px-4 whitespace-normal">
-                                                {(() => {
-                                                  const department = student.departmentId 
-                                                    ? mockDepartments.find((d) => d.id === student.departmentId)
-                                                    : null;
-                                                  return (
-                                                    <div className="flex flex-col gap-1">
-                                                      {student.position && (
-                                                        <span className="font-medium">{student.position}</span>
-                                                      )}
-                                                      {department && (
-                                                        <div className="text-sm text-muted-foreground">
-                                                          {department.name}
+                              <Badge variant={university.internHiring ? "default" : "outline"}>
+                                {university.internHiring ? "Да" : "Нет"}
+                              </Badge>
+                            </div>
+                            {university.averageInternsPerYear !== undefined && (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-semibold">Среднее количество стажеров в год</Label>
+                                <p className="text-2xl font-bold">{university.averageInternsPerYear}</p>
+                              </div>
+                            )}
+                            {university.interns !== undefined && (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-semibold">Практиканты</Label>
+                                <p className="text-2xl font-bold">{university.interns}</p>
                                                         </div>
                                                       )}
                                                     </div>
-                                                  );
-                                                })()}
-                                              </TableCell>
-                                              <TableCell className="px-4 whitespace-normal">
-                                                {student.uniqueLink ? (
-                                                  <a
-                                                    href={student.uniqueLink}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-sm text-primary hover:underline font-mono break-all flex items-center gap-1"
-                                                  >
-                                                    {student.uniqueLink}
-                                                    <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
-                                                  </a>
-                                                ) : (
-                                                  <span className="text-sm text-muted-foreground">—</span>
-                                                )}
-                                              </TableCell>
-                                              <TableCell className="break-words whitespace-normal">
-                                                <Select
-                                                  value={student.status}
-                                                  onValueChange={(value) => handleChangeStudentStatus(student.id, value as Student["status"])}
-                                                >
-                                                  <SelectTrigger className="h-8 w-[120px]">
-                                                    <SelectValue />
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    <SelectItem value="not-started">Не начато</SelectItem>
-                                                    <SelectItem value="invited">Приглашен</SelectItem>
-                                                    <SelectItem value="in-progress">В процессе</SelectItem>
-                                                    <SelectItem value="completed">Завершено</SelectItem>
-                                                  </SelectContent>
-                                                </Select>
-                                              </TableCell>
-                                              <TableCell className="break-words whitespace-normal">
-                                                <div className="flex gap-1">
-                                                  <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-7 w-7 text-destructive"
-                                                    onClick={() => setDeleteStudentId(student.id)}
-                                                  >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                  </Button>
-                                                </div>
-                                              </TableCell>
-                                            </TableRow>
-                                          ))
-                                        );
-                                      })()}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                                
-                                {/* Пагинация */}
-                                {filteredStudents.length > 0 && (() => {
-                                  const totalPages = Math.ceil(filteredStudents.length / studentsItemsPerPage);
-                                  
-                                  return (
-                                    <div className="flex items-center justify-between px-2">
-                                      <div className="flex items-center gap-2">
-                                        <Label htmlFor="students-items-per-page" className="text-sm text-muted-foreground">
-                                          Показать:
-                                        </Label>
-                                        <Select
-                                          value={studentsItemsPerPage.toString()}
-                                          onValueChange={(value) => {
-                                            setStudentsItemsPerPage(Number(value));
-                                            setStudentsCurrentPage(1);
-                                          }}
-                                        >
-                                          <SelectTrigger id="students-items-per-page" className="w-[80px]">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="10">10</SelectItem>
-                                            <SelectItem value="25">25</SelectItem>
-                                            <SelectItem value="50">50</SelectItem>
-                                            <SelectItem value="100">100</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                        <span className="text-sm text-muted-foreground">
-                                          из {filteredStudents.length}
-                                        </span>
-                                      </div>
-
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm text-muted-foreground">
-                                          Страница {studentsCurrentPage} из {totalPages}
-                                        </span>
-                                        <div className="flex items-center gap-1">
-                                          <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-8 w-8"
-                                            onClick={() => setStudentsCurrentPage(1)}
-                                            disabled={studentsCurrentPage === 1}
-                                          >
-                                            <ChevronsLeft className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-8 w-8"
-                                            onClick={() => setStudentsCurrentPage(studentsCurrentPage - 1)}
-                                            disabled={studentsCurrentPage === 1}
-                                          >
-                                            <ChevronLeft className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-8 w-8"
-                                            onClick={() => setStudentsCurrentPage(studentsCurrentPage + 1)}
-                                            disabled={studentsCurrentPage === totalPages}
-                                          >
-                                            <ChevronRight className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-8 w-8"
-                                            onClick={() => setStudentsCurrentPage(totalPages)}
-                                            disabled={studentsCurrentPage === totalPages}
-                                          >
-                                            <ChevronsRight className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            ) : (
-                              <div className="border rounded-lg p-8 text-center">
-                                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                <p className="text-sm text-muted-foreground mb-4">
-                                  Студенты не добавлены
-                                </p>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedStudentIds([]);
-                                    setIsAddStudentsDialogOpen(true);
-                                  }}
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Добавить студентов
-                                </Button>
-                              </div>
-                            )}
-                        </div>
-
-                      </div>
+                        </TabsContent>
+                      </Tabs>
                     </CardContent>
                   </Card>
-                ) : (
+                );
+                })() : (
                   <Card className="h-full flex items-center justify-center">
                     <CardContent className="text-center py-12">
-                      <Link2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">Выберите партнерство</h3>
+                      <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">Выберите университет</h3>
                       <p className="text-muted-foreground">
-                        Выберите партнерство из списка слева, чтобы просмотреть подробную информацию
+                        Выберите университет из списка слева, чтобы просмотреть подробную информацию
                       </p>
                     </CardContent>
                   </Card>
                 )}
-              </div>
-              </div>
+                              </div>
+                            </div>
             )}
           </TabsContent>
 
@@ -1905,16 +1844,16 @@ export default function UniversitiesPage() {
                   className="pl-10"
                 />
                 {internshipSearchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
                     className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
                     onClick={() => setInternshipSearchQuery("")}
-                  >
+                                                  >
                     <X className="h-4 w-4" />
-                  </Button>
+                                                  </Button>
                 )}
-              </div>
+                                                </div>
               <Dialog open={isInternshipFiltersDialogOpen} onOpenChange={setIsInternshipFiltersDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -1925,7 +1864,7 @@ export default function UniversitiesPage() {
                         {internshipFilters.statuses.length + internshipFilters.universities.length}
                       </Badge>
                     )}
-                  </Button>
+                                                  </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader className="pb-3">
@@ -1959,10 +1898,10 @@ export default function UniversitiesPage() {
                               className="text-sm font-normal cursor-pointer"
                             >
                               {getInternshipStatusText(status)}
-                            </Label>
-                          </div>
+                                        </Label>
+                                                </div>
                         ))}
-                      </div>
+                                </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">ВУЗ</Label>
@@ -1992,31 +1931,31 @@ export default function UniversitiesPage() {
                             >
                               {university.name}
                             </Label>
-                          </div>
+                                      </div>
                         ))}
                       </div>
                     </div>
                   </div>
                   <DialogFooter className="pt-2">
-                    <Button
-                      variant="outline"
+                                          <Button
+                                            variant="outline"
                       size="sm"
                       onClick={() => {
                         setInternshipFilters({ statuses: [], universities: [] });
                       }}
                     >
                       Сбросить
-                    </Button>
+                                          </Button>
                     <Button size="sm" onClick={() => setIsInternshipFiltersDialogOpen(false)}>
                       Применить
-                    </Button>
+                                          </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
               <Button onClick={handleCreateInternship} size="lg">
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить стажировку
-              </Button>
+                                          </Button>
             </div>
 
             {/* Список стажировок */}
@@ -2035,9 +1974,9 @@ export default function UniversitiesPage() {
                       <Button onClick={handleCreateInternship} size="lg">
                         <Plus className="mr-2 h-4 w-4" />
                         Добавить стажировку
-                      </Button>
+                                          </Button>
                     )}
-                  </div>
+                                        </div>
                 </CardContent>
               </Card>
             ) : (
@@ -2063,11 +2002,11 @@ export default function UniversitiesPage() {
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <Building2 className="h-4 w-4 flex-shrink-0" />
                                     <span className="truncate">{internship.universityName}</span>
-                                  </div>
+                                      </div>
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <Calendar className="h-4 w-4 flex-shrink-0" />
                                     <span className="truncate">{internship.startDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} - {internship.endDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}</span>
-                                  </div>
+                                    </div>
                                 </CardDescription>
                               </div>
                               <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
@@ -2111,9 +2050,9 @@ export default function UniversitiesPage() {
                                 value={(internship.currentParticipants / internship.maxParticipants) * 100} 
                                 className="h-1.5 w-full"
                               />
-                              <Button
-                                variant="outline"
-                                size="sm"
+                                <Button
+                                  variant="outline"
+                                  size="sm"
                                 className="w-full mt-2"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -2122,104 +2061,162 @@ export default function UniversitiesPage() {
                               >
                                 Подробнее
                                 <ArrowRight className="h-3.5 w-3.5 ml-2" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
+                                </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                   ))}
-              </div>
-            )}
+            </div>
+          )}
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Модальное окно создания университета или партнерства */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
-        setIsCreateDialogOpen(open);
-        if (!open) {
-          setCreateType(null);
-          setEditingPartnership(null);
-          setUniversityFormData({ name: "", shortName: "", city: "", region: "", description: "" });
-          setPartnershipFormData({
-            name: "",
-            universityId: "",
-            description: "",
-            type: "internship",
-            startDate: "",
-            endDate: "",
-            link: "",
-            status: "planned",
-          });
-        }
-      }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {!createType 
-                ? "Добавить" 
-                : createType === "university" 
-                ? "Добавить университет" 
-                : editingPartnership 
-                ? "Редактировать партнерство" 
-                : "Добавить партнерство"}
-            </DialogTitle>
-            <DialogDescription>
-              {!createType 
-                ? "Выберите, что вы хотите добавить"
-                : createType === "university"
-                ? "Заполните информацию об университете"
-                : editingPartnership
-                ? "Внесите изменения в партнерство"
-                : "Заполните информацию о партнерстве"}
-            </DialogDescription>
-          </DialogHeader>
-          {!createType ? (
-            <div className="space-y-3 py-4">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-auto p-4"
-                    onClick={() => setCreateType("university")}
-                  >
-                    <div className="flex items-center gap-3">
-                      <GraduationCap className="h-5 w-5" />
-                      <div className="text-left">
-                        <div className="font-semibold">Университет</div>
-                        <div className="text-sm text-muted-foreground">
-                          Добавить новый университет
+          {/* Модальное окно создания университета или партнерства */}
+          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              setCreateType(null);
+          setUniversityWizardStep(1);
+          setEditingUniversity(null);
+          setUniversityFormData({
+                name: "",
+            shortName: "",
+            city: "",
+            branch: "",
+            cooperationStartYear: new Date().getFullYear(),
+            targetAudience: "",
+            initiatorBlock: "",
+            initiatorName: "",
+            branchCurators: [],
+            contracts: [],
+            careerDays: false,
+            expertParticipation: false,
+            caseChampionships: false,
+            allEmployees: 0,
+            internHiring: false,
+            averageInternsPerYear: 0,
+            interns: 0,
+            region: "",
+                description: "",
+              });
+          setNewCurator({ city: "", branch: "", curatorName: "" });
+          setNewContract({ type: "cooperation", hasContract: false, contractFile: "", bankDepartment: "" });
+            }
+          }}>
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+              {editingUniversity
+                ? "Редактировать университет"
+                : "Добавить университет"}
+                </DialogTitle>
+                <DialogDescription>
+              {editingUniversity
+                ? "Внесите изменения в университет"
+                : "Заполните информацию об университете"}
+                </DialogDescription>
+              </DialogHeader>
+          {createType === "university" ? (
+                <div className="space-y-6 py-4">
+                  {/* Список шагов */}
+                  <div className="flex items-center gap-2 w-full">
+                    {UNIVERSITY_STEPS.map((step, index) => {
+                      const stepNumber = index + 1;
+                      const isCompleted = stepNumber < universityWizardStep;
+                      const isCurrent = stepNumber === universityWizardStep;
+                      
+                      return (
+                        <div key={step.id} className="flex items-center gap-2 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (stepNumber <= universityWizardStep) {
+                                setUniversityWizardStep(stepNumber);
+                              }
+                            }}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-2 rounded-lg transition-all w-full justify-center",
+                              "hover:bg-muted/50",
+                              isCurrent && "bg-primary/10 ring-2 ring-primary shadow-sm",
+                              isCompleted && "bg-green-50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-950/30",
+                              !isCurrent && !isCompleted && "hover:bg-muted"
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold transition-colors flex-shrink-0",
+                                isCompleted
+                                  ? "bg-green-500 text-white"
+                                  : isCurrent
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground"
+                              )}
+                            >
+                              {isCompleted ? (
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                              ) : (
+                                stepNumber
+                              )}
                         </div>
+                            <div className="flex-1 text-left min-w-0">
+                              <div
+                                className={cn(
+                                  "text-base font-medium truncate",
+                                  isCurrent && "text-primary font-semibold",
+                                  isCompleted && "text-green-700 dark:text-green-300",
+                                  !isCurrent && !isCompleted && "text-muted-foreground"
+                                )}
+                                title={step.title}
+                              >
+                                {step.title}
                       </div>
                     </div>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start h-auto p-4"
-                    onClick={() => setCreateType("partnership")}
-                    disabled={universities.length === 0}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Link2 className="h-5 w-5" />
-                      <div className="text-left">
-                        <div className="font-semibold">Партнерство</div>
-                        <div className="text-sm text-muted-foreground">
-                          Добавить новое партнерство
+                          </button>
+                          {index < UNIVERSITY_STEPS.length - 1 && (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          )}
                         </div>
+                      );
+                    })}
                       </div>
+
+                  {/* Заголовок шага */}
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-bold">{UNIVERSITY_STEPS[universityWizardStep - 1].title}</h3>
+                    <p className="text-muted-foreground">{UNIVERSITY_STEPS[universityWizardStep - 1].description}</p>
                     </div>
-                  </Button>
-                  {universities.length === 0 && (
-                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-muted">
-                      <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <p className="text-xs text-muted-foreground">
-                        Сначала добавьте университет
-                      </p>
+
+                  {/* Содержимое шагов */}
+                  <div className="min-h-[400px]">
+                    {/* Шаг 1: Общая информация */}
+                    {universityWizardStep === 1 && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="university-city">
+                              Город <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="university-city"
+                              value={universityFormData.city}
+                              onChange={(e) => setUniversityFormData({ ...universityFormData, city: e.target.value })}
+                              placeholder="Москва"
+                            />
                     </div>
-                  )}
+                          <div className="space-y-2">
+                            <Label htmlFor="university-branch">Филиал в ГПБ</Label>
+                            <Input
+                              id="university-branch"
+                              value={universityFormData.branch}
+                              onChange={(e) => setUniversityFormData({ ...universityFormData, branch: e.target.value })}
+                              placeholder="Московский филиал"
+                            />
                 </div>
-              ) : createType === "university" ? (
-                <div className="space-y-4 py-4">
+                        </div>
                   <div className="space-y-2">
                     <Label htmlFor="university-name">
-                      Название университета <span className="text-destructive">*</span>
+                            Наименование учебного заведения <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="university-name"
@@ -2229,7 +2226,7 @@ export default function UniversitiesPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="university-short-name">Краткое название</Label>
+                          <Label htmlFor="university-short-name">Сокращенное наименование</Label>
                     <Input
                       id="university-short-name"
                       value={universityFormData.shortName}
@@ -2239,259 +2236,357 @@ export default function UniversitiesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="university-city">
-                        Город <span className="text-destructive">*</span>
-                      </Label>
+                            <Label htmlFor="cooperation-start-year">Год начала сотрудничества</Label>
                       <Input
-                        id="university-city"
-                        value={universityFormData.city}
-                        onChange={(e) => setUniversityFormData({ ...universityFormData, city: e.target.value })}
-                        placeholder="Москва"
+                              id="cooperation-start-year"
+                              type="number"
+                              value={universityFormData.cooperationStartYear}
+                              onChange={(e) => setUniversityFormData({ ...universityFormData, cooperationStartYear: parseInt(e.target.value) || new Date().getFullYear() })}
+                              placeholder="2024"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="university-region">
-                        Регион <span className="text-destructive">*</span>
-                      </Label>
+                            <Label htmlFor="target-audience">Целевая аудитория</Label>
                       <Input
-                        id="university-region"
-                        value={universityFormData.region}
-                        onChange={(e) => setUniversityFormData({ ...universityFormData, region: e.target.value })}
-                        placeholder="Московская область"
+                              id="target-audience"
+                              value={universityFormData.targetAudience}
+                              onChange={(e) => setUniversityFormData({ ...universityFormData, targetAudience: e.target.value })}
+                              placeholder="Студенты IT-направлений"
                       />
                     </div>
                   </div>
+                        <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="university-description">Описание</Label>
-                    <Textarea
-                      id="university-description"
-                      value={universityFormData.description}
-                      onChange={(e) => setUniversityFormData({ ...universityFormData, description: e.target.value })}
-                      placeholder="Описание университета..."
-                      rows={4}
+                            <Label htmlFor="initiator-block">Инициатор сотрудничества (блок/ССП)</Label>
+                            <Input
+                              id="initiator-block"
+                              value={universityFormData.initiatorBlock}
+                              onChange={(e) => setUniversityFormData({ ...universityFormData, initiatorBlock: e.target.value })}
+                              placeholder="Блок развития"
                     />
                   </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => {
-                      setCreateType(null);
-                      setEditingPartnership(null);
-                      setPartnershipFormData({
-                        name: "",
-                        universityId: "",
-                        description: "",
-                        type: "internship",
-                        startDate: "",
-                        endDate: "",
-                        link: "",
-                        status: "planned",
-                      });
-                    }}>
-                      Назад
-                    </Button>
+                          <div className="space-y-2">
+                            <Label htmlFor="initiator-name">Инициатор сотрудничества (ФИО)</Label>
+                            <Input
+                              id="initiator-name"
+                              value={universityFormData.initiatorName}
+                              onChange={(e) => setUniversityFormData({ ...universityFormData, initiatorName: e.target.value })}
+                              placeholder="Иванов Иван Иванович"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Кураторы от филиалов</Label>
+                          <div className="space-y-2">
+                            {universityFormData.branchCurators.map((curator) => (
+                              <Card key={curator.id} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium">{curator.city} - {curator.branch}</p>
+                                    <p className="text-xs text-muted-foreground">{curator.curatorName}</p>
+                                  </div>
                     <Button 
-                      onClick={handleCreateUniversity}
-                      disabled={!universityFormData.name.trim() || !universityFormData.city.trim() || !universityFormData.region.trim()}
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveCurator(curator.id)}
                     >
-                      Добавить университет
+                                    <Trash2 className="h-4 w-4" />
                     </Button>
-                  </DialogFooter>
                 </div>
-              ) : (
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="partnership-name">
-                      Название партнерства <span className="text-destructive">*</span>
-                    </Label>
+                              </Card>
+                            ))}
+                            <div className="grid grid-cols-3 gap-2">
                     <Input
-                      id="partnership-name"
-                      value={partnershipFormData.name}
-                      onChange={(e) => setPartnershipFormData({ ...partnershipFormData, name: e.target.value })}
-                      placeholder="Программа стажировок"
-                    />
+                                placeholder="Город"
+                                value={newCurator.city}
+                                onChange={(e) => setNewCurator({ ...newCurator, city: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Филиал"
+                                value={newCurator.branch}
+                                onChange={(e) => setNewCurator({ ...newCurator, branch: e.target.value })}
+                              />
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="Куратор"
+                                  value={newCurator.curatorName}
+                                  onChange={(e) => setNewCurator({ ...newCurator, curatorName: e.target.value })}
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleAddCurator}
+                                  disabled={!newCurator.city.trim() || !newCurator.branch.trim() || !newCurator.curatorName.trim()}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="partnership-university">
-                      Университет <span className="text-destructive">*</span>
-                    </Label>
-                    <Select
-                      value={partnershipFormData.universityId}
-                      onValueChange={(value) => setPartnershipFormData({ ...partnershipFormData, universityId: value })}
-                    >
-                      <SelectTrigger id="partnership-university">
-                        <SelectValue placeholder="Выберите университет" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {universities.map((university) => (
-                          <SelectItem key={university.id} value={university.id}>
-                            {university.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="partnership-description">Описание</Label>
-                    <Textarea
-                      id="partnership-description"
-                      value={partnershipFormData.description}
-                      onChange={(e) => setPartnershipFormData({ ...partnershipFormData, description: e.target.value })}
-                      placeholder="Описание партнерства"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="partnership-type">
-                        Тип партнерства <span className="text-destructive">*</span>
-                      </Label>
-                      <Select
-                        value={partnershipFormData.type}
-                        onValueChange={(value) => setPartnershipFormData({ ...partnershipFormData, type: value as Partnership["type"] })}
-                      >
-                        <SelectTrigger id="partnership-type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="internship">Стажировка</SelectItem>
-                          <SelectItem value="recruitment">Рекрутинг</SelectItem>
-                          <SelectItem value="research">Исследования</SelectItem>
-                          <SelectItem value="education">Образование</SelectItem>
-                          <SelectItem value="joint_program">Совместная программа</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="partnership-status">
-                        Статус <span className="text-destructive">*</span>
-                      </Label>
-                      <Select
-                        value={partnershipFormData.status}
-                        onValueChange={(value: "planned" | "active" | "completed" | "cancelled") => 
-                          setPartnershipFormData({ ...partnershipFormData, status: value })
-                        }
-                      >
-                        <SelectTrigger id="partnership-status">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="planned">Запланировано</SelectItem>
-                          <SelectItem value="active">Активно</SelectItem>
-                          <SelectItem value="completed">Завершено</SelectItem>
-                          <SelectItem value="cancelled">Отменено</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="partnership-start-date">
-                        Дата начала <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="partnership-start-date"
-                        type="date"
-                        value={partnershipFormData.startDate}
-                        onChange={(e) => setPartnershipFormData({ ...partnershipFormData, startDate: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="partnership-end-date">Дата окончания</Label>
-                      <Input
-                        id="partnership-end-date"
-                        type="date"
-                        value={partnershipFormData.endDate}
-                        onChange={(e) => setPartnershipFormData({ ...partnershipFormData, endDate: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="partnership-link">Ссылка</Label>
-                      <Input
-                        id="partnership-link"
-                        type="url"
-                        value={partnershipFormData.link}
-                        onChange={(e) => setPartnershipFormData({ ...partnershipFormData, link: e.target.value })}
-                        placeholder="https://partnership.example.com/partnership/1"
-                      />
-                      {partnershipFormData.link && !validateURL(partnershipFormData.link) && (
-                        <p className="text-xs text-destructive">Некорректный URL</p>
-                      )}
-                    </div>
-                    {validateDates(partnershipFormData.startDate, partnershipFormData.endDate) && (
-                      <div className="text-sm text-destructive">
-                        {validateDates(partnershipFormData.startDate, partnershipFormData.endDate)}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => {
-                      setCreateType(null);
-                      setEditingPartnership(null);
-                      setPartnershipFormData({
-                        name: "",
-                        universityId: "",
-                        description: "",
-                        type: "internship",
-                        startDate: "",
-                        endDate: "",
-                        link: "",
-                        status: "planned",
-                      });
-                    }}>
+
+                    {/* Шаг 2: Договорная база */}
+                    {universityWizardStep === 2 && (
+                      <div className="space-y-4">
+                  <div className="space-y-2">
+                          <Label>Договоры с учебным заведением</Label>
+                          <div className="space-y-2">
+                            {universityFormData.contracts.map((contract) => (
+                              <Card key={contract.id} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium">
+                                      {contract.type === "cooperation" ? "О сотрудничестве" :
+                                       contract.type === "scholarship" ? "Об именных стипендиях" :
+                                       "О практике"}
+                                    </p>
+                                    {contract.bankDepartment && (
+                                      <p className="text-xs text-muted-foreground">Кафедра: {contract.bankDepartment}</p>
+                                    )}
+                                    {contract.contractFile && (
+                                      <p className="text-xs text-muted-foreground">Файл: {contract.contractFile}</p>
+                                    )}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveContract(contract.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                  </div>
+                              </Card>
+                            ))}
+                            <Card className="p-4 border-dashed">
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    checked={newContract.hasContract}
+                                    onCheckedChange={(checked) => setNewContract({ ...newContract, hasContract: checked as boolean })}
+                                  />
+                                  <Label>Наличие договора</Label>
+                  </div>
+                                {newContract.hasContract && (
+                                  <>
+                      <Select
+                                      value={newContract.type}
+                                      onValueChange={(value) => setNewContract({ ...newContract, type: value as Contract["type"] })}
+                      >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Тип договора" />
+                        </SelectTrigger>
+                        <SelectContent>
+                                        <SelectItem value="cooperation">О сотрудничестве</SelectItem>
+                                        <SelectItem value="scholarship">Об именных стипендиях</SelectItem>
+                                        <SelectItem value="internship">О практике</SelectItem>
+                        </SelectContent>
+                      </Select>
+                                    <Input
+                                      type="file"
+                                      accept=".pdf"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          setNewContract({ ...newContract, contractFile: file.name });
+                                        }
+                                      }}
+                                      placeholder="Загрузить PDF"
+                                    />
+                                    <Input
+                                      placeholder="Кафедра Банка"
+                                      value={newContract.bankDepartment}
+                                      onChange={(e) => setNewContract({ ...newContract, bankDepartment: e.target.value })}
+                                    />
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={handleAddContract}
+                                      disabled={!newContract.hasContract}
+                                    >
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      Добавить договор
+                                    </Button>
+                                  </>
+                                )}
+                    </div>
+                            </Card>
+                  </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Шаг 3: Мероприятия */}
+                    {universityWizardStep === 3 && (
+                      <div className="space-y-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <Label className="text-base font-medium">Дни карьеры</Label>
+                              <p className="text-sm text-muted-foreground">Участие в днях карьеры</p>
+                            </div>
+                            <Switch
+                              checked={universityFormData.careerDays}
+                              onCheckedChange={(checked) => setUniversityFormData({ ...universityFormData, careerDays: checked })}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <Label className="text-base font-medium">Экспертное участие</Label>
+                              <p className="text-sm text-muted-foreground">Участие в качестве эксперта</p>
+                            </div>
+                            <Switch
+                              checked={universityFormData.expertParticipation}
+                              onCheckedChange={(checked) => setUniversityFormData({ ...universityFormData, expertParticipation: checked })}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <Label className="text-base font-medium">Кейс-чемпионаты</Label>
+                              <p className="text-sm text-muted-foreground">Участие в кейс-чемпионатах</p>
+                            </div>
+                            <Switch
+                              checked={universityFormData.caseChampionships}
+                              onCheckedChange={(checked) => setUniversityFormData({ ...universityFormData, caseChampionships: checked })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Шаг 4: Кадровые показатели */}
+                    {universityWizardStep === 4 && (
+                      <div className="space-y-4">
+                    <div className="space-y-2">
+                          <Label htmlFor="all-employees">Все сотрудники</Label>
+                      <Input
+                            id="all-employees"
+                            type="number"
+                            min="0"
+                            value={universityFormData.allEmployees || ""}
+                            onChange={(e) => setUniversityFormData({ ...universityFormData, allEmployees: parseInt(e.target.value) || 0 })}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div>
+                            <Label className="text-base font-medium">Найм стажеров</Label>
+                            <p className="text-sm text-muted-foreground">Наличие найма стажеров</p>
+                          </div>
+                          <Switch
+                            checked={universityFormData.internHiring}
+                            onCheckedChange={(checked) => setUniversityFormData({ ...universityFormData, internHiring: checked })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                          <Label htmlFor="average-interns">Среднее количество стажеров в год</Label>
+                      <Input
+                            id="average-interns"
+                            type="number"
+                            min="0"
+                            value={universityFormData.averageInternsPerYear || ""}
+                            onChange={(e) => setUniversityFormData({ ...universityFormData, averageInternsPerYear: parseInt(e.target.value) || 0 })}
+                            placeholder="0"
+                          />
+                  </div>
+                    <div className="space-y-2">
+                          <Label htmlFor="interns">Практиканты</Label>
+                      <Input
+                            id="interns"
+                            type="number"
+                            min="0"
+                            value={universityFormData.interns || ""}
+                            onChange={(e) => setUniversityFormData({ ...universityFormData, interns: parseInt(e.target.value) || 0 })}
+                            placeholder="0"
+                          />
+                    </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Навигация */}
+                  <div className="flex items-center justify-between gap-4 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      {universityWizardStep > 1 && (
+                        <Button variant="outline" onClick={() => setUniversityWizardStep(universityWizardStep - 1)} size="sm">
+                          <ChevronLeft className="h-4 w-4 mr-1" />
                       Назад
                     </Button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {universityWizardStep < UNIVERSITY_STEPS.length ? (
                     <Button 
-                      onClick={handleCreatePartnership}
-                      disabled={
-                        !partnershipFormData.name.trim() ||
-                        !partnershipFormData.universityId ||
-                        !partnershipFormData.startDate
-                      }
-                    >
-                      {editingPartnership ? "Сохранить изменения" : "Добавить партнерство"}
+                          onClick={() => {
+                            if (universityWizardStep === 1) {
+                              // Для шага 1 требуем только название и город
+                              if (universityFormData.name.trim() && universityFormData.city.trim()) {
+                                setUniversityWizardStep(universityWizardStep + 1);
+                              }
+                            } else {
+                              // Для остальных шагов просто переходим дальше
+                              setUniversityWizardStep(universityWizardStep + 1);
+                            }
+                          }}
+                          disabled={universityWizardStep === 1 && (!universityFormData.name.trim() || !universityFormData.city.trim())}
+                          size="sm"
+                        >
+                          Далее
+                          <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
-                  </DialogFooter>
+                      ) : (
+                        <>
+                          <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} size="sm">
+                            Отмена
+                          </Button>
+                          <Button 
+                            onClick={handleCreateUniversity}
+                            disabled={!universityFormData.name.trim() || !universityFormData.city.trim()}
+                            size="sm"
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            {editingUniversity ? "Сохранить изменения" : "Добавить университет"}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              )}
-        </DialogContent>
-      </Dialog>
+              ) : null}
+            </DialogContent>
+          </Dialog>
 
-      {/* Диалог удаления университета */}
-      <AlertDialog open={deleteUniversityId !== null} onOpenChange={(open) => !open && setDeleteUniversityId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
-            <AlertDialogDescription>
+          {/* Диалог удаления университета */}
+          <AlertDialog open={deleteUniversityId !== null} onOpenChange={(open) => !open && setDeleteUniversityId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+                <AlertDialogDescription>
                   {(() => {
                     const university = universities.find(u => u.id === deleteUniversityId);
-                    if (university?.partnerships.length) {
-                      return `Университет "${university.name}" содержит ${university.partnerships.length} партнерств. Удаление невозможно. Сначала удалите все партнерства.`;
-                    }
                     return `Вы уверены, что хотите удалить университет "${university?.name}"? Это действие нельзя отменить.`;
                   })()}
                 </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteUniversity}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={(() => {
-                const university = universities.find(u => u.id === deleteUniversityId);
-                return university?.partnerships.length ? true : false;
-              })()}
-            >
-              Удалить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteUniversity}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-      {/* Диалог удаления партнерства */}
-      <AlertDialog open={deletePartnershipId !== null} onOpenChange={(open) => !open && setDeletePartnershipId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
-            <AlertDialogDescription>
+          {/* Диалог удаления партнерства - удален */}
+          {/* <AlertDialog open={deletePartnershipId !== null} onOpenChange={(open) => !open && setDeletePartnershipId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+                <AlertDialogDescription>
                   {(() => {
                     if (!deletePartnershipId) return "";
                     const university = universities.find(u => u.id === deletePartnershipId.universityId);
@@ -2502,213 +2597,36 @@ export default function UniversitiesPage() {
                     return `Вы уверены, что хотите удалить партнерство "${partnership?.name}"? Это действие нельзя отменить.`;
                   })()}
                 </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeletePartnership}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={(() => {
-                if (!deletePartnershipId) return false;
-                const university = universities.find(u => u.id === deletePartnershipId.universityId);
-                const partnership = university?.partnerships.find(p => p.id === deletePartnershipId.partnershipId);
-                return partnership?.students && partnership.students.length > 0 ? true : false;
-              })()}
-            >
-              Удалить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeletePartnership}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={(() => {
+                    if (!deletePartnershipId) return false;
+                    const university = universities.find(u => u.id === deletePartnershipId.universityId);
+                    const partnership = university?.partnerships.find(p => p.id === deletePartnershipId.partnershipId);
+                    return partnership?.students && partnership.students.length > 0 ? true : false;
+                  })()}
+                >
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-      {/* Диалог удаления студента */}
-      <AlertDialog open={deleteStudentId !== null} onOpenChange={(open) => !open && setDeleteStudentId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
-            <AlertDialogDescription>
-                  Вы уверены, что хотите удалить этого студента из партнерства? Это действие нельзя отменить.
-                </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteStudent}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Удалить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
-      {/* Диалог комментариев */}
-      <Dialog open={isCommentsDialogOpen} onOpenChange={setIsCommentsDialogOpen}>
+          {/* Диалог фильтров */}
+          <Dialog open={isFiltersDialogOpen} onOpenChange={setIsFiltersDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Комментарии</DialogTitle>
-            <DialogDescription>
-                  Комментарии к партнерству "{selectedPartnership?.name}"
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 max-h-[400px] overflow-y-auto">
-            {comments.filter(c => c.partnershipId === selectedPartnership?.id).length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Нет комментариев
-              </p>
-            ) : (
-              comments
-                .filter(c => c.partnershipId === selectedPartnership?.id)
-                .map(comment => (
-                  <Card key={comment.id}>
-                    <CardContent className="pt-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{comment.author}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(comment.createdAt)}
-                          </span>
-                        </div>
-                        <p className="text-sm">{comment.text}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-            )}
-          </div>
-          <div className="space-y-2">
-            <Textarea
-              placeholder="Добавить комментарий..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              rows={3}
-            />
-            <Button onClick={handleAddComment} disabled={!newComment.trim()}>
-              Добавить комментарий
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Диалог истории изменений */}
-      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>История изменений</DialogTitle>
-            <DialogDescription>
-              История изменений партнерства "{selectedPartnership?.name}"
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            {changeHistory.filter(h => h.partnershipId === selectedPartnership?.id).length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Нет истории изменений
-              </p>
-            ) : (
-              changeHistory
-                .filter(h => h.partnershipId === selectedPartnership?.id)
-                .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-                .map(change => (
-                  <Card key={change.id}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">{change.action}</Badge>
-                            <span className="text-sm font-medium">{change.user}</span>
-                          </div>
-                          {change.field && (
-                            <div className="text-sm text-muted-foreground">
-                              {change.field}: {change.oldValue} → {change.newValue}
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(change.timestamp)} {change.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Диалог шаблонов email */}
-      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Выберите шаблон</DialogTitle>
-            <DialogDescription>
-              Выберите шаблон для заполнения уведомления
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {emailTemplates.map(template => (
-              <Card
-                key={template.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleApplyTemplate(template)}
-              >
-                <CardContent className="pt-4">
-                  <div className="space-y-2">
-                    <div className="font-medium">{template.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {template.subject.substring(0, 80)}...
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Диалоги для партнерств */}
-      {/* Диалог фильтров */}
-      <Dialog open={isFiltersDialogOpen} onOpenChange={setIsFiltersDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Фильтры и сортировка</DialogTitle>
-            <DialogDescription>
-              Настройте фильтры для поиска университетов и партнерств
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="space-y-2">
-                  <Label>Статус партнерства</Label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите статус" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Все статусы</SelectItem>
-                      <SelectItem value="planned">Запланировано</SelectItem>
-                      <SelectItem value="active">Активно</SelectItem>
-                      <SelectItem value="completed">Завершено</SelectItem>
-                      <SelectItem value="cancelled">Отменено</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Тип партнерства</Label>
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите тип" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Все типы</SelectItem>
-                      <SelectItem value="internship">Стажировка</SelectItem>
-                      <SelectItem value="recruitment">Рекрутинг</SelectItem>
-                      <SelectItem value="research">Исследования</SelectItem>
-                      <SelectItem value="education">Образование</SelectItem>
-                      <SelectItem value="joint_program">Совместная программа</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
+              <DialogHeader>
+                <DialogTitle>Фильтры и сортировка</DialogTitle>
+                <DialogDescription>
+                  Настройте фильтры для поиска университетов и партнерств
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-6 py-4">
                 <div className="space-y-2">
                   <Label>Город</Label>
                   <Select value={cityFilter} onValueChange={setCityFilter}>
@@ -2736,8 +2654,6 @@ export default function UniversitiesPage() {
                       <SelectContent>
                         <SelectItem value="name">По названию</SelectItem>
                         <SelectItem value="city">По городу</SelectItem>
-                        <SelectItem value="partnerships">По количеству партнерств</SelectItem>
-                        <SelectItem value="date">По дате</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button
@@ -2750,403 +2666,25 @@ export default function UniversitiesPage() {
                     </Button>
                   </div>
                 </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Архив</Label>
-                    <Button
-                      variant={showArchived ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setShowArchived(!showArchived)}
-                    >
-                      {showArchived ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
-                      {showArchived ? "Показать активные" : "Показать архив"}
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {showArchived 
-                      ? "Отображаются только архивированные партнерства" 
-                      : "Отображаются только активные партнерства"}
-                  </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setStatusFilter("all");
-                setTypeFilter("all");
-                setCityFilter("all");
-                setSortBy("name");
-                setSortOrder("asc");
-                setShowArchived(false);
-              }}
-            >
-              Сбросить фильтры
-            </Button>
-            <Button onClick={() => setIsFiltersDialogOpen(false)}>
-              Применить
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Диалог добавления студентов */}
-      <Dialog open={isAddStudentsDialogOpen} onOpenChange={setIsAddStudentsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Добавить студентов</DialogTitle>
-            <DialogDescription>
-              Выберите студентов для партнерства "{selectedPartnership?.name}"
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Поиск студентов..."
-                value={studentSearchQuery}
-                onChange={(e) => setStudentSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {mockEmployees.map((employee) => (
-                <div key={employee.id} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg">
-                  <Checkbox
-                    checked={selectedStudentIds.includes(employee.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedStudentIds([...selectedStudentIds, employee.id]);
-                      } else {
-                        setSelectedStudentIds(selectedStudentIds.filter(id => id !== employee.id));
-                      }
-                    }}
-                  />
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-xs">
-                      {getInitials(employee.fullName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{employee.fullName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{employee.position}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsAddStudentsDialogOpen(false);
-              setSelectedStudentIds([]);
-            }}>
-              Отмена
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedPartnership) {
-                  const newStudents: Student[] = selectedStudentIds.map(id => {
-                    const employee = mockEmployees.find(e => e.id === id);
-                    return {
-                      id: `student-${id}`,
-                      fullName: employee?.fullName || "",
-                      email: employee?.email || "",
-                      status: "invited" as const,
-                      departmentId: employee?.departmentId,
-                      uniqueLink: `https://partnership.example.com/partnership/${selectedPartnership.id}?student=student-${id}`,
-                    };
-                  });
-                  
-                  const updatedUniversities = universities.map(u => {
-                    if (u.id === selectedPartnership.universityId) {
-                      return {
-                        ...u,
-                        partnerships: u.partnerships.map(p => {
-                          if (p.id === selectedPartnership.id) {
-                            return {
-                              ...p,
-                              students: [...(p.students || []), ...newStudents],
-                            };
-                          }
-                          return p;
-                        }),
-                      };
-                    }
-                    return u;
-                  });
-                  setUniversities(updatedUniversities);
-                  
-                  // Обновляем выбранное партнерство
-                  const updatedPartnership = updatedUniversities
-                    .find(u => u.id === selectedPartnership.universityId)
-                    ?.partnerships.find(p => p.id === selectedPartnership.id);
-                  if (updatedPartnership) {
-                    setSelectedPartnership(updatedPartnership);
-                  }
-                }
-                setIsAddStudentsDialogOpen(false);
-                setSelectedStudentIds([]);
-              }}
-              disabled={selectedStudentIds.length === 0}
-            >
-              Добавить
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Модальное окно управления нотификациями */}
-      <Dialog open={isNotificationsDialogOpen} onOpenChange={setIsNotificationsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Управление нотификациями
-            </DialogTitle>
-            <DialogDescription>
-              Выберите студентов и отправьте им уведомления на почту
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Tabs defaultValue="send" className="w-full">
-            <TabsList variant="grid2">
-              <TabsTrigger value="send">Отправить уведомление</TabsTrigger>
-              <TabsTrigger value="history">История отправленных</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="send" className="mt-4 space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Шаблоны</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsTemplateDialogOpen(true)}
-                  >
-                    <FileTextIcon className="h-4 w-4 mr-2" />
-                    Выбрать шаблон
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notification-subject">
-                    Тема письма <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="notification-subject"
-                    value={notificationFormData.subject}
-                    onChange={(e) => setNotificationFormData({ ...notificationFormData, subject: e.target.value })}
-                    placeholder="Например, Приглашение на стажировку"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="notification-message">
-                    Текст сообщения <span className="text-destructive">*</span>
-                  </Label>
-                  <Textarea
-                    id="notification-message"
-                    value={notificationFormData.message}
-                    onChange={(e) => setNotificationFormData({ ...notificationFormData, message: e.target.value })}
-                    placeholder="Введите текст уведомления..."
-                    rows={6}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>
-                    Получатели <span className="text-destructive">*</span>
-                  </Label>
-                  <MultiSelect
-                    options={selectedPartnership?.students?.map(s => ({
-                      value: s.id,
-                      label: `${s.fullName} (${s.email})`,
-                    })) || []}
-                    selected={notificationFormData.recipientIds}
-                    onChange={(selected) => setNotificationFormData({ ...notificationFormData, recipientIds: selected })}
-                    placeholder="Выберите студентов..."
-                  />
-                  {notificationFormData.recipientIds.length > 0 && (
-                    <div className="text-sm text-muted-foreground mt-2">
-                      Выбрано студентов: {notificationFormData.recipientIds.length}
-                    </div>
-                  )}
-                </div>
-                
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setNotificationFormData({
-                        subject: "",
-                        message: "",
-                        recipientIds: [],
-                      });
-                    }}
-                  >
-                    Очистить
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      if (!notificationFormData.subject.trim() || !notificationFormData.message.trim() || notificationFormData.recipientIds.length === 0) {
-                        return;
-                      }
-                      
-                      const selectedStudents = selectedPartnership?.students?.filter(s => 
-                        notificationFormData.recipientIds.includes(s.id)
-                      ) || [];
-                      
-                      const newNotification: Notification = {
-                        id: `notif-${Date.now()}`,
-                        subject: notificationFormData.subject.trim(),
-                        message: notificationFormData.message.trim(),
-                        recipientIds: notificationFormData.recipientIds,
-                        recipientEmails: selectedStudents.map(s => s.email),
-                        sentAt: new Date(),
-                        status: "sent",
-                      };
-                      
-                      setNotifications([newNotification, ...notifications]);
-                      setNotificationFormData({
-                        subject: "",
-                        message: "",
-                        recipientIds: [],
-                      });
-                    }}
-                    disabled={
-                      !notificationFormData.subject.trim() ||
-                      !notificationFormData.message.trim() ||
-                      notificationFormData.recipientIds.length === 0
-                    }
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Отправить уведомления
-                  </Button>
-                </DialogFooter>
               </div>
-            </TabsContent>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCityFilter("all");
+                    setSortBy("name");
+                    setSortOrder("asc");
+                  }}
+                >
+                  Сбросить фильтры
+                </Button>
+                <Button onClick={() => setIsFiltersDialogOpen(false)}>
+                  Применить
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-            <TabsContent value="history" className="mt-4 space-y-4">
-              <div className="space-y-4">
-                {/* Поиск по истории */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Поиск по теме или получателям..."
-                    value={notificationSearchQuery}
-                    onChange={(e) => setNotificationSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                  {notificationSearchQuery && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
-                      onClick={() => setNotificationSearchQuery("")}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                
-                {/* Список уведомлений */}
-                <div className="space-y-3">
-                  {(() => {
-                    const filteredNotifications = notifications.filter(notif => {
-                      if (!notificationSearchQuery.trim()) return true;
-                      const query = notificationSearchQuery.toLowerCase();
-                      return (
-                        notif.subject.toLowerCase().includes(query) ||
-                        notif.message.toLowerCase().includes(query) ||
-                        notif.recipientEmails.some(email => email.toLowerCase().includes(query))
-                      );
-                    });
-                    
-                    if (filteredNotifications.length === 0) {
-                      return (
-                        <div className="text-center py-12">
-                          <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <p className="text-sm text-muted-foreground">
-                            {notificationSearchQuery ? "Уведомления не найдены" : "Нет отправленных уведомлений"}
-                          </p>
-                        </div>
-                      );
-                    }
-                    
-                    return filteredNotifications.map((notification) => {
-                      const recipients = selectedPartnership?.students?.filter(s => 
-                        notification.recipientIds.includes(s.id)
-                      ) || [];
-                      
-                      return (
-                        <Card key={notification.id}>
-                          <CardContent className="pt-4">
-                            <div className="space-y-3">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h4 className="font-semibold text-sm">{notification.subject}</h4>
-                                    <Badge
-                                      variant="outline"
-                                      className={cn(
-                                        "text-xs",
-                                        notification.status === "sent" && "bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700",
-                                        notification.status === "pending" && "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700",
-                                        notification.status === "failed" && "bg-red-100 text-red-700 border-red-300 dark:bg-red-900 dark:text-red-200 dark:border-red-700"
-                                      )}
-                                    >
-                                      {notification.status === "sent" && (
-                                        <>
-                                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                                          Отправлено
-                                        </>
-                                      )}
-                                      {notification.status === "pending" && (
-                                        <>
-                                          <Clock className="h-3 w-3 mr-1" />
-                                          В очереди
-                                        </>
-                                      )}
-                                      {notification.status === "failed" && "Ошибка"}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground line-clamp-2">
-                                    {notification.message}
-                                  </p>
-                                </div>
-                                <div className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {formatDate(notification.sentAt)} {notification.sentAt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-                                </div>
-                              </div>
-                              
-                              <Separator />
-                              
-                              <div className="space-y-2">
-                                <div className="text-xs font-medium text-muted-foreground">
-                                  Получатели ({recipients.length}):
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  {recipients.map((recipient) => (
-                                    <Badge key={recipient.id} variant="secondary" className="text-xs">
-                                      {recipient.fullName}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
 
       {/* Диалоги для стажировок */}
       {/* Диалог создания/редактирования стажировки */}
@@ -3164,13 +2702,13 @@ export default function UniversitiesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="internship-title">Название стажировки *</Label>
-                <Input
+              <Input
                   id="internship-title"
                   value={internshipFormData.title}
                   onChange={(e) => setInternshipFormData(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Например: Frontend разработка на React"
-                />
-              </div>
+              />
+            </div>
               <div className="space-y-2">
                 <Label htmlFor="internship-university">ВУЗ *</Label>
                 <Select 
@@ -3197,7 +2735,7 @@ export default function UniversitiesPage() {
                 placeholder="Подробное описание стажировки..."
                 rows={4}
               />
-            </div>
+                  </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="internship-startDate">Дата начала *</Label>
@@ -3207,7 +2745,7 @@ export default function UniversitiesPage() {
                   value={internshipFormData.startDate}
                   onChange={(e) => setInternshipFormData(prev => ({ ...prev, startDate: e.target.value }))}
                 />
-              </div>
+                </div>
               <div className="space-y-2">
                 <Label htmlFor="internship-endDate">Дата окончания *</Label>
                 <Input
@@ -3356,8 +2894,8 @@ export default function UniversitiesPage() {
                   Студенты ({currentInternshipApplications.filter(a => ['confirmed', 'active', 'completed'].includes(a.status)).length})
                 </TabsTrigger>
                 <TabsTrigger value="details">Детали</TabsTrigger>
-              </TabsList>
-              
+            </TabsList>
+            
               <TabsContent value="applications" className="mt-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -3370,7 +2908,7 @@ export default function UniversitiesPage() {
                     <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
                       Подтверждено: {currentInternshipApplications.filter(a => a.status === 'confirmed').length}
                     </Badge>
-                  </div>
+                </div>
                 </div>
                 
                 <div className="rounded-md border bg-card">
@@ -3403,8 +2941,8 @@ export default function UniversitiesPage() {
                                   <div className="min-w-0">
                                     <div className="font-medium break-words">{application.studentName}</div>
                                     <div className="text-xs text-muted-foreground break-words">{application.studentEmail}</div>
-                                  </div>
-                                </div>
+                </div>
+                    </div>
                               </TableCell>
                               <TableCell className="break-words whitespace-normal">{application.universityName}</TableCell>
                               <TableCell className="break-words whitespace-normal">{application.course} курс</TableCell>
@@ -3412,7 +2950,7 @@ export default function UniversitiesPage() {
                                 <div className="flex items-center gap-2">
                                   <Progress value={application.matchScore || 0} className="w-20 h-2" />
                                   <span className="text-sm font-medium">{application.matchScore || 0}%</span>
-                                </div>
+                </div>
                               </TableCell>
                               <TableCell className="break-words whitespace-normal">
                                 <Badge variant="outline" className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
@@ -3424,19 +2962,19 @@ export default function UniversitiesPage() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <Button
+                  <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => {
+                    onClick={() => {
                                       setSelectedInternshipApplication(application);
                                       setIsInternshipApplicationDialogOpen(true);
                                     }}
                                   >
                                     <Eye className="h-4 w-4" />
-                                  </Button>
+                  </Button>
                                   {application.status === 'pending' && (
                                     <>
-                                      <Button
+                  <Button
                                         variant="ghost"
                                         size="sm"
                                         className="text-green-600 hover:text-green-700"
@@ -3448,7 +2986,7 @@ export default function UniversitiesPage() {
                                         variant="ghost"
                                         size="sm"
                                         className="text-red-600 hover:text-red-700"
-                                        onClick={() => {
+                    onClick={() => {
                                           const reason = prompt('Причина отклонения:');
                                           if (reason) {
                                             handleRejectInternshipApplication(application.id, reason);
@@ -3456,7 +2994,7 @@ export default function UniversitiesPage() {
                                         }}
                                       >
                                         <X className="h-4 w-4" />
-                                      </Button>
+                  </Button>
                                     </>
                                   )}
                                   {application.status === 'approved' && (
@@ -3488,9 +3026,9 @@ export default function UniversitiesPage() {
                         })}
                     </TableBody>
                   </Table>
-                </div>
-              </TabsContent>
-              
+              </div>
+            </TabsContent>
+            
               <TabsContent value="students" className="mt-4 space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -3571,8 +3109,8 @@ export default function UniversitiesPage() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
+                    <Button
+                      variant="ghost"
                                     size="sm"
                                     onClick={() => {
                                       setSelectedInternshipApplication(application);
@@ -3592,9 +3130,9 @@ export default function UniversitiesPage() {
                                       title="Оценить студента"
                                     >
                                       <Star className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </div>
+                    </Button>
+                  )}
+                </div>
                               </TableCell>
                             </TableRow>
                           );
@@ -3627,8 +3165,8 @@ export default function UniversitiesPage() {
                         <p className="text-sm">
                           {selectedInternship.location === 'remote' ? 'Удаленно' : 
                            selectedInternship.location === 'office' ? 'Офис' : 'Гибридно'}
-                        </p>
-                      </div>
+                          </p>
+                        </div>
                       {selectedInternship.city && (
                         <div>
                           <Label className="text-xs text-muted-foreground">Город</Label>
@@ -3681,7 +3219,7 @@ export default function UniversitiesPage() {
                 <div>
                   <Label className="text-xs text-muted-foreground">Курс</Label>
                   <p className="text-sm font-medium">{selectedInternshipApplication.course} курс</p>
-                </div>
+                                  </div>
                 {selectedInternshipApplication.gpa && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Средний балл</Label>
@@ -3703,8 +3241,8 @@ export default function UniversitiesPage() {
                   <Label className="text-xs text-muted-foreground">Мотивационное письмо</Label>
                   <p className="text-sm mt-1 p-3 bg-muted rounded-md">
                     {selectedInternshipApplication.motivationLetter}
-                  </p>
-                </div>
+                                  </p>
+                                </div>
               )}
               {selectedInternshipApplication.rejectionReason && (
                 <div>
@@ -3712,9 +3250,9 @@ export default function UniversitiesPage() {
                   <p className="text-sm mt-1 p-3 bg-red-50 dark:bg-red-900/20 rounded-md text-red-700 dark:text-red-300">
                     {selectedInternshipApplication.rejectionReason}
                   </p>
-                </div>
+                                </div>
               )}
-            </div>
+                              </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsInternshipApplicationDialogOpen(false)}>
@@ -3770,7 +3308,7 @@ export default function UniversitiesPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Заявки → Одобрено</span>
                     <span className="font-medium">{internshipStatistics.conversionRate.applicationsToApproved}%</span>
-                  </div>
+                                </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Одобрено → Подтверждено</span>
                     <span className="font-medium">{internshipStatistics.conversionRate.approvedToConfirmed}%</span>
@@ -3798,15 +3336,15 @@ export default function UniversitiesPage() {
                             <Badge variant="outline">{univ.applicationsCount} заявок</Badge>
                             <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700">
                               {univ.approvedCount} одобрено
-                            </Badge>
-                          </div>
-                        </div>
+                                    </Badge>
+                                </div>
+                              </div>
                       ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                            </div>
+                          </CardContent>
+                        </Card>
               )}
-            </div>
+                </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsInternshipStatisticsDialogOpen(false)}>
