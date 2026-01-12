@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,11 +14,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, ArrowRight } from "lucide-react";
+import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, User, ArrowRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -76,7 +76,7 @@ interface University {
   name: string;
   shortName?: string;
   city: string;
-  branch?: string; // Филиал в ГПБ
+  branch?: string[]; // Филиалы в ГПБ
   cooperationStartYear?: number;
   targetAudience?: string;
   initiatorBlock?: string; // Инициатор сотрудничества (блок/ССП)
@@ -92,6 +92,7 @@ interface University {
   interns?: number; // Практиканты
   region?: string;
   description?: string;
+  image?: string; // Фото/логотип ВУЗа
 }
 
 // Тип для партнерства - удален
@@ -232,13 +233,14 @@ const mockUniversities: University[] = [
     interns: 10,
     region: "Московская область",
     description: "Ведущий университет России",
+    image: "https://via.placeholder.com/100?text=МГУ",
   },
   {
     id: "univ-2",
     name: "Санкт-Петербургский государственный университет",
     shortName: "СПбГУ",
     city: "Санкт-Петербург",
-    branch: "Санкт-Петербургский филиал",
+    branch: ["Санкт-Петербургский филиал"],
     cooperationStartYear: 2019,
     targetAudience: "Студенты экономических направлений",
     initiatorBlock: "Блок управления",
@@ -260,13 +262,14 @@ const mockUniversities: University[] = [
     interns: 8,
     region: "Ленинградская область",
     description: "Один из старейших университетов России",
+    image: "https://via.placeholder.com/100?text=СПбГУ",
   },
   {
     id: "univ-3",
     name: "Московский физико-технический институт",
     shortName: "МФТИ",
     city: "Долгопрудный",
-    branch: "Московский филиал",
+    branch: ["Московский филиал"],
     cooperationStartYear: 2021,
     targetAudience: "Студенты технических направлений",
     initiatorBlock: "Блок технологий",
@@ -287,13 +290,14 @@ const mockUniversities: University[] = [
     interns: 15,
     region: "Московская область",
     description: "Ведущий технический университет",
+    image: "https://via.placeholder.com/100?text=МФТИ",
   },
   {
     id: "univ-4",
     name: "Национальный исследовательский университет «Высшая школа экономики»",
     shortName: "НИУ ВШЭ",
     city: "Москва",
-    branch: "Московский филиал",
+    branch: ["Московский филиал", "Центральный офис"],
     cooperationStartYear: 2018,
     targetAudience: "Студенты экономики, менеджмента и IT",
     initiatorBlock: "Блок стратегии",
@@ -316,13 +320,14 @@ const mockUniversities: University[] = [
     interns: 20,
     region: "Московская область",
     description: "Ведущий экономический и IT-университет",
+    image: "https://via.placeholder.com/100?text=ВШЭ",
   },
   {
     id: "univ-5",
     name: "Уральский федеральный университет имени первого Президента России Б.Н. Ельцина",
     shortName: "УрФУ",
     city: "Екатеринбург",
-    branch: "Уральский филиал",
+    branch: ["Уральский филиал"],
     cooperationStartYear: 2022,
     targetAudience: "Студенты IT и инженерии",
     initiatorBlock: "Блок развития",
@@ -342,13 +347,14 @@ const mockUniversities: University[] = [
     interns: 5,
     region: "Свердловская область",
     description: "Крупнейший университет Урала",
+    image: "https://via.placeholder.com/100?text=УрФУ",
   },
   {
     id: "univ-6",
     name: "Новосибирский государственный университет",
     shortName: "НГУ",
     city: "Новосибирск",
-    branch: "Сибирский филиал",
+    branch: ["Сибирский филиал"],
     cooperationStartYear: 2021,
     targetAudience: "Студенты математики и IT",
     initiatorBlock: "Блок технологий",
@@ -369,13 +375,14 @@ const mockUniversities: University[] = [
     interns: 6,
     region: "Новосибирская область",
     description: "Ведущий научный университет Сибири",
+    image: "https://via.placeholder.com/100?text=НГУ",
   },
   {
     id: "univ-7",
     name: "Казанский (Приволжский) федеральный университет",
     shortName: "КФУ",
     city: "Казань",
-    branch: "Приволжский филиал",
+    branch: ["Приволжский филиал"],
     cooperationStartYear: 2020,
     targetAudience: "Студенты IT и экономики",
     initiatorBlock: "Блок развития",
@@ -396,13 +403,14 @@ const mockUniversities: University[] = [
     interns: 9,
     region: "Республика Татарстан",
     description: "Крупнейший университет Приволжья",
+    image: "https://via.placeholder.com/100?text=КФУ",
   },
   {
     id: "univ-8",
     name: "Томский государственный университет",
     shortName: "ТГУ",
     city: "Томск",
-    branch: "Сибирский филиал",
+    branch: ["Сибирский филиал"],
     cooperationStartYear: 2019,
     targetAudience: "Студенты IT и математики",
     initiatorBlock: "Блок технологий",
@@ -422,13 +430,14 @@ const mockUniversities: University[] = [
     interns: 7,
     region: "Томская область",
     description: "Старейший университет Сибири",
+    image: "https://via.placeholder.com/100?text=ТГУ",
   },
   {
     id: "univ-9",
     name: "Санкт-Петербургский политехнический университет Петра Великого",
     shortName: "СПбПУ",
     city: "Санкт-Петербург",
-    branch: "Санкт-Петербургский филиал",
+    branch: ["Санкт-Петербургский филиал", "Центральный офис"],
     cooperationStartYear: 2021,
     targetAudience: "Студенты инженерии и IT",
     initiatorBlock: "Блок технологий",
@@ -450,13 +459,14 @@ const mockUniversities: University[] = [
     interns: 12,
     region: "Ленинградская область",
     description: "Ведущий технический университет Северо-Запада",
+    image: "https://via.placeholder.com/100?text=СПбПУ",
   },
   {
     id: "univ-10",
     name: "Российский университет дружбы народов",
     shortName: "РУДН",
     city: "Москва",
-    branch: "Московский филиал",
+    branch: ["Московский филиал"],
     cooperationStartYear: 2020,
     targetAudience: "Студенты IT, экономики и менеджмента",
     initiatorBlock: "Блок стратегии",
@@ -478,13 +488,14 @@ const mockUniversities: University[] = [
     interns: 11,
     region: "Московская область",
     description: "Международный университет с широкой сетью партнерств",
+    image: "https://via.placeholder.com/100?text=МИФИ",
   },
   {
     id: "univ-11",
     name: "Южный федеральный университет",
     shortName: "ЮФУ",
     city: "Ростов-на-Дону",
-    branch: "Южный филиал",
+    branch: ["Южный филиал"],
     cooperationStartYear: 2022,
     targetAudience: "Студенты IT и экономики",
     initiatorBlock: "Блок развития",
@@ -504,13 +515,14 @@ const mockUniversities: University[] = [
     interns: 6,
     region: "Ростовская область",
     description: "Крупнейший университет Юга России",
+    image: "https://via.placeholder.com/100?text=КубГУ",
   },
   {
     id: "univ-12",
     name: "Дальневосточный федеральный университет",
     shortName: "ДВФУ",
     city: "Владивосток",
-    branch: "Дальневосточный филиал",
+    branch: ["Дальневосточный филиал"],
     cooperationStartYear: 2023,
     targetAudience: "Студенты IT и инженерии",
     initiatorBlock: "Блок технологий",
@@ -530,13 +542,14 @@ const mockUniversities: University[] = [
     interns: 3,
     region: "Приморский край",
     description: "Ведущий университет Дальнего Востока",
+    image: "https://via.placeholder.com/100?text=ДВФУ",
   },
   {
     id: "univ-13",
     name: "Белгородский государственный национальный исследовательский университет",
     shortName: "БелГУ",
     city: "Белгород",
-    branch: "Центральный филиал",
+    branch: ["Центральный филиал"],
     cooperationStartYear: 2021,
     targetAudience: "Студенты IT и экономики",
     initiatorBlock: "Блок развития",
@@ -557,6 +570,7 @@ const mockUniversities: University[] = [
     interns: 8,
     region: "Белгородская область",
     description: "Крупный региональный университет",
+    image: "https://via.placeholder.com/100?text=БелГУ",
   },
 ];
 
@@ -678,7 +692,22 @@ export default function UniversitiesPage() {
   const [universities, setUniversities] = useState<University[]>(mockUniversities);
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
   const [universityDetailTab, setUniversityDetailTab] = useState<"general" | "contracts" | "events" | "staff">("general");
+  const [universitiesSortOrder, setUniversitiesSortOrder] = useState<"asc" | "desc">("asc");
   const [expandedUniversities, setExpandedUniversities] = useState<Set<string>>(new Set());
+  
+  // Список доступных филиалов ГПБ
+  const availableBranches = [
+    { value: "Московский филиал", label: "Московский филиал" },
+    { value: "Санкт-Петербургский филиал", label: "Санкт-Петербургский филиал" },
+    { value: "Уральский филиал", label: "Уральский филиал" },
+    { value: "Сибирский филиал", label: "Сибирский филиал" },
+    { value: "Приволжский филиал", label: "Приволжский филиал" },
+    { value: "Дальневосточный филиал", label: "Дальневосточный филиал" },
+    { value: "Южный филиал", label: "Южный филиал" },
+    { value: "Центральный филиал", label: "Центральный филиал" },
+    { value: "Центральный офис", label: "Центральный офис" },
+  ];
+  
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createType, setCreateType] = useState<"university" | null>(null);
   const [universityWizardStep, setUniversityWizardStep] = useState(1);
@@ -695,7 +724,7 @@ export default function UniversitiesPage() {
     name: "",
     shortName: "",
     city: "",
-    branch: "",
+    branch: [] as string[],
     cooperationStartYear: new Date().getFullYear(),
     targetAudience: "",
     initiatorBlock: "",
@@ -720,7 +749,7 @@ export default function UniversitiesPage() {
   // Состояние для добавления куратора
   const [newCurator, setNewCurator] = useState({
     city: "",
-    branch: "",
+    branch: [] as string[],
     curatorName: "",
   });
   
@@ -841,7 +870,7 @@ export default function UniversitiesPage() {
     setStudentsCurrentPage(1);
   }, [studentsItemsPerPage]);
   
-  // Открытие диалога создания университета
+  // Открытие диалога создания ВУЗа
   const handleCreate = () => {
     setIsCreateDialogOpen(true);
     setCreateType("university");
@@ -851,7 +880,7 @@ export default function UniversitiesPage() {
       name: "",
       shortName: "",
       city: "",
-      branch: "",
+      branch: [] as string[],
       cooperationStartYear: new Date().getFullYear(),
       targetAudience: "",
       initiatorBlock: "",
@@ -872,20 +901,20 @@ export default function UniversitiesPage() {
     setNewContract({ type: "cooperation", hasContract: false, contractFile: "", bankDepartment: "" });
   };
   
-  // Создание или обновление университета
+  // Создание или обновление ВУЗа
   const handleCreateUniversity = () => {
     if (!universityFormData.name.trim() || !universityFormData.city.trim()) {
       return;
     }
     
     if (editingUniversity) {
-      // Редактирование существующего университета
+      // Редактирование существующего ВУЗа
       const updatedUniversity: University = {
         ...editingUniversity,
         name: universityFormData.name.trim(),
         shortName: universityFormData.shortName.trim() || undefined,
         city: universityFormData.city.trim(),
-        branch: universityFormData.branch.trim() || undefined,
+        branch: universityFormData.branch.length > 0 ? universityFormData.branch : undefined,
         cooperationStartYear: universityFormData.cooperationStartYear || undefined,
         targetAudience: universityFormData.targetAudience.trim() || undefined,
         initiatorBlock: universityFormData.initiatorBlock.trim() || undefined,
@@ -908,13 +937,13 @@ export default function UniversitiesPage() {
         setSelectedUniversity(editingUniversity.id);
       }
     } else {
-      // Создание нового университета
+      // Создание нового ВУЗа
     const newUniversity: University = {
       id: `univ-${Date.now()}`,
       name: universityFormData.name.trim(),
       shortName: universityFormData.shortName.trim() || undefined,
       city: universityFormData.city.trim(),
-        branch: universityFormData.branch.trim() || undefined,
+        branch: universityFormData.branch.length > 0 ? universityFormData.branch : undefined,
         cooperationStartYear: universityFormData.cooperationStartYear || undefined,
         targetAudience: universityFormData.targetAudience.trim() || undefined,
         initiatorBlock: universityFormData.initiatorBlock.trim() || undefined,
@@ -944,7 +973,7 @@ export default function UniversitiesPage() {
       name: "",
       shortName: "",
       city: "",
-      branch: "",
+      branch: [] as string[],
       cooperationStartYear: new Date().getFullYear(),
       targetAudience: "",
       initiatorBlock: "",
@@ -1053,6 +1082,16 @@ export default function UniversitiesPage() {
     
     return result;
   }, [universities, searchQuery, statusFilter, typeFilter, cityFilter, sortBy, sortOrder, showArchived]);
+  
+  // Сортированный список ВУЗов для левой колонки
+  const sortedUniversitiesList = useMemo(() => {
+    const sorted = [...filteredData];
+    sorted.sort((a, b) => {
+      const comparison = a.name.localeCompare(b.name, 'ru');
+      return universitiesSortOrder === "asc" ? comparison : -comparison;
+    });
+    return sorted;
+  }, [filteredData, universitiesSortOrder]);
 
   // Получение уникальных городов для фильтра
   const uniqueCities = useMemo(() => {
@@ -1455,12 +1494,12 @@ export default function UniversitiesPage() {
         </TabsList>
 
           <TabsContent value="universities" className="mt-4 space-y-4">
-            {/* Поиск и фильтры для университетов */}
+            {/* Поиск и фильтры для ВУЗов */}
             <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Поиск по университетам..."
+                placeholder="Поиск по ВУЗам..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -1496,7 +1535,7 @@ export default function UniversitiesPage() {
             </Button>
               <Button onClick={handleCreate} size="lg">
                 <Plus className="mr-2 h-4 w-4" />
-                Добавить университет
+                Добавить ВУЗ
                     </Button>
                   </div>
           {/* Двухколоночная структура */}
@@ -1506,17 +1545,17 @@ export default function UniversitiesPage() {
                 <div className="text-center py-12">
                   <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">
-                    {searchQuery ? "Университеты не найдены" : "Нет университетов"}
+                    {searchQuery ? "ВУЗы не найдены" : "Нет ВУЗов"}
                   </h3>
                   <p className="text-muted-foreground mb-4">
                     {searchQuery
                       ? "Попробуйте изменить поисковый запрос"
-                      : "Создайте первый университет, чтобы начать работу"}
+                      : "Создайте первый ВУЗ, чтобы начать работу"}
                   </p>
                   {!searchQuery && (
                       <Button onClick={handleCreate} size="lg">
                       <Plus className="mr-2 h-4 w-4" />
-                      Добавить университет
+                      Добавить ВУЗ
                     </Button>
                   )}
                 </div>
@@ -1524,16 +1563,36 @@ export default function UniversitiesPage() {
             </Card>
           ) : (
             <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
-              {/* Левая колонка - список университетов */}
+              {/* Левая колонка - список ВУЗов */}
               <div className="w-[20rem] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
                 <div className="p-2 border-b bg-muted/30">
-                  <h3 className="font-semibold text-sm">Университеты</h3>
-                </div>
+                  <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-sm">ВУЗы</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {sortedUniversitiesList.length}
+                      </Badge>
+                    </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                      className="h-6 w-6"
+                      onClick={() => setUniversitiesSortOrder(universitiesSortOrder === "asc" ? "desc" : "asc")}
+                      title={universitiesSortOrder === "asc" ? "Сортировать по убыванию" : "Сортировать по возрастанию"}
+                    >
+                      {universitiesSortOrder === "asc" ? (
+                        <SortAsc className="h-4 w-4" />
+                      ) : (
+                        <SortDesc className="h-4 w-4" />
+                              )}
+                            </Button>
+                                </div>
+                            </div>
                 <div className="flex-1 overflow-y-auto">
                   <div className="space-y-1 p-2">
-                    {filteredData.map((university) => (
+                    {sortedUniversitiesList.map((university) => (
                       <div key={university.id} className="space-y-1">
-                        {/* Университет */}
+                        {/* ВУЗ */}
                         <div
                                   className={cn(
                             "p-2 rounded-md cursor-pointer transition-colors",
@@ -1558,27 +1617,32 @@ export default function UniversitiesPage() {
                 </div>
               </div>
 
-              {/* Правая колонка - детальная информация об университете */}
+              {/* Правая колонка - детальная информация о ВУЗе */}
               <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-280px)]">
                 {selectedUniversity ? (() => {
                   const university = universities.find(u => u.id === selectedUniversity);
                   if (!university) return null;
                   return (
                   <Card className="w-full max-w-full overflow-hidden">
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-2">
                       <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          {university.image && (
+                            <Avatar className="h-16 w-16 flex-shrink-0">
+                              <AvatarImage src={university.image} alt={university.name} />
+                              <AvatarFallback>
+                                {university.shortName?.slice(0, 2).toUpperCase() || university.name.slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="text-xl mb-1 break-words">{university.name}</CardTitle>
-                          {university.shortName && (
+                            <CardTitle className="text-xl mb-1 break-words">{university.name}</CardTitle>
+                            {university.shortName && (
                           <CardDescription className="text-base break-words">
-                              {university.shortName}
+                                {university.shortName}
                           </CardDescription>
-                          )}
-                          {university.description && (
-                            <CardDescription className="text-base break-words mt-1">
-                              {university.description}
-                            </CardDescription>
-                          )}
+                            )}
+                        </div>
                         </div>
                         <div className="flex gap-1 flex-shrink-0">
                           <Button
@@ -1591,7 +1655,7 @@ export default function UniversitiesPage() {
                                 name: university.name,
                                 shortName: university.shortName || "",
                                 city: university.city,
-                                branch: university.branch || "",
+                                branch: university.branch || [],
                                 cooperationStartYear: university.cooperationStartYear || new Date().getFullYear(),
                                 targetAudience: university.targetAudience || "",
                                 initiatorBlock: university.initiatorBlock || "",
@@ -1628,6 +1692,7 @@ export default function UniversitiesPage() {
                         </div>
                       </div>
                     </CardHeader>
+                    <Separator />
                     <CardContent className="pt-0 overflow-x-hidden">
                       <Tabs value={universityDetailTab} onValueChange={(v) => setUniversityDetailTab(v as typeof universityDetailTab)} className="w-full">
                         <TabsList className="grid w-full grid-cols-4">
@@ -1639,69 +1704,107 @@ export default function UniversitiesPage() {
                         
                         {/* Таб 1: Общая информация */}
                         <TabsContent value="general" className="space-y-4 mt-4">
-                          <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Город</Label>
-                          <div className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">{university.city || "Не указано"}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Филиал в ГПБ</Label>
-                              <span className="text-sm">{university.branch || "Не указано"}</span>
-                        </div>
-                          </div>
-                          {university.cooperationStartYear && (
-                        <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Год начала сотрудничества</Label>
-                              <span className="text-sm">{university.cooperationStartYear}</span>
-                        </div>
-                          )}
-                          {university.targetAudience && (
-                        <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Целевая аудитория</Label>
-                              <span className="text-sm">{university.targetAudience}</span>
-                          </div>
-                          )}
-                          <div className="grid grid-cols-2 gap-4">
-                            {university.initiatorBlock && (
-                              <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Инициатор сотрудничества (блок/ССП)</Label>
-                                <span className="text-sm">{university.initiatorBlock}</span>
-                        </div>
-                            )}
-                            {university.initiatorName && (
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Инициатор сотрудничества (ФИО)</Label>
-                                <span className="text-sm">{university.initiatorName}</span>
-                              </div>
-                            )}
-                          </div>
-                          {university.branchCurators && university.branchCurators.length > 0 && (
-                            <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Кураторы от филиалов</Label>
-                              <div className="space-y-2">
-                                {university.branchCurators.map((curator) => (
-                                  <Card key={curator.id} className="p-3">
-                                    <div className="space-y-1">
-                                      <p className="text-sm font-medium">{curator.city} - {curator.branch}</p>
-                                      <p className="text-xs text-muted-foreground">{curator.curatorName}</p>
-                                    </div>
-                                  </Card>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {university.region && (
-                            <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Регион</Label>
-                              <div className="flex items-center gap-2">
+                          {/* Основная информация */}
+                          <Card className="p-4">
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-2 pb-2 border-b">
                                 <Building2 className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">{university.region}</span>
+                                <Label className="text-base font-semibold">Основная информация</Label>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground">Город</Label>
+                          <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium">{university.city || "Не указано"}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                                  <Label className="text-xs text-muted-foreground">Филиалы в ГПБ</Label>
+                                  {university.branch && university.branch.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {university.branch.map((branch, index) => (
+                                        <Badge key={index} variant="outline" className="text-sm">
+                                          {branch}
+                          </Badge>
+                                      ))}
+                        </div>
+                                  ) : (
+                                    <span className="text-sm font-medium text-muted-foreground">Не указано</span>
+                                  )}
+                                </div>
+                                {university.cooperationStartYear && (
+                        <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Год начала сотрудничества</Label>
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm font-medium">{university.cooperationStartYear}</span>
+                        </div>
+                                  </div>
+                                )}
+                                {university.targetAudience && (
+                                  <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Целевая аудитория</Label>
+                                    <span className="text-sm font-medium">{university.targetAudience}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                        )}
+                          </Card>
+
+                          {/* Инициаторы сотрудничества */}
+                          {(university.initiatorBlock || university.initiatorName) && (
+                            <Card className="p-4">
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2 pb-2 border-b">
+                                  <UserCheck className="h-4 w-4 text-muted-foreground" />
+                                  <Label className="text-base font-semibold">Инициаторы сотрудничества</Label>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  {university.initiatorBlock && (
+                        <div className="space-y-2">
+                                      <Label className="text-xs text-muted-foreground">Блок/ССП</Label>
+                                      <span className="text-sm font-medium">{university.initiatorBlock}</span>
+                          </div>
+                                  )}
+                                  {university.initiatorName && (
+                                    <div className="space-y-2">
+                                      <Label className="text-xs text-muted-foreground">ФИО</Label>
+                                      <span className="text-sm font-medium">{university.initiatorName}</span>
+                        </div>
+                                  )}
+                                </div>
+                              </div>
+                            </Card>
+                          )}
+
+                          {/* Кураторы от филиалов */}
+                          {university.branchCurators && university.branchCurators.length > 0 && (
+                            <Card className="p-4">
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2 pb-2 border-b">
+                                  <Users className="h-4 w-4 text-muted-foreground" />
+                                  <Label className="text-base font-semibold">Кураторы от филиалов</Label>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {university.branchCurators.map((curator) => (
+                                    <Card key={curator.id} className="p-3 bg-muted/30">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                                          <p className="text-sm font-medium">{curator.city} - {curator.branch}</p>
+                              </div>
+                                        <div className="flex items-center gap-2">
+                                          <User className="h-3.5 w-3.5 text-muted-foreground" />
+                                          <p className="text-xs text-muted-foreground">{curator.curatorName}</p>
+                            </div>
+                                      </div>
+                                    </Card>
+                                  ))}
+                                </div>
+                              </div>
+                            </Card>
+                          )}
                         </TabsContent>
 
                         {/* Таб 2: Договорная база */}
@@ -1727,13 +1830,13 @@ export default function UniversitiesPage() {
                                     {contract.contractFile && (
                                       <div className="space-y-1">
                                         <Label className="text-xs text-muted-foreground">Договор</Label>
-                                        <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2">
                                           <FileText className="h-4 w-4 text-muted-foreground" />
                                           <a href={contract.contractFile} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
                                             {contract.contractFile}
-                                          </a>
-                                        </div>
-                                      </div>
+                                </a>
+                              </div>
+                            </div>
                                     )}
                                   </div>
                                 </Card>
@@ -1754,11 +1857,11 @@ export default function UniversitiesPage() {
                               <div>
                                 <Label className="text-sm font-semibold">Дни карьеры</Label>
                                 <p className="text-xs text-muted-foreground">Участие в днях карьеры</p>
-                              </div>
+                            </div>
                               <Badge variant={university.careerDays ? "default" : "outline"}>
                                 {university.careerDays ? "Да" : "Нет"}
                               </Badge>
-                            </div>
+                          </div>
                             <div className="flex items-center justify-between p-3 border rounded-lg">
                               <div>
                                 <Label className="text-sm font-semibold">Экспертное участие</Label>
@@ -1820,9 +1923,9 @@ export default function UniversitiesPage() {
                   <Card className="h-full flex items-center justify-center">
                     <CardContent className="text-center py-12">
                       <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">Выберите университет</h3>
+                      <h3 className="text-lg font-semibold mb-2">Выберите ВУЗ</h3>
                       <p className="text-muted-foreground">
-                        Выберите университет из списка слева, чтобы просмотреть подробную информацию
+                        Выберите ВУЗ из списка слева, чтобы просмотреть подробную информацию
                       </p>
                     </CardContent>
                   </Card>
@@ -2072,7 +2175,7 @@ export default function UniversitiesPage() {
         </Tabs>
       </div>
 
-          {/* Модальное окно создания университета или партнерства */}
+          {/* Модальное окно создания ВУЗа */}
           <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
             setIsCreateDialogOpen(open);
             if (!open) {
@@ -2083,7 +2186,7 @@ export default function UniversitiesPage() {
                 name: "",
             shortName: "",
             city: "",
-            branch: "",
+            branch: [] as string[],
             cooperationStartYear: new Date().getFullYear(),
             targetAudience: "",
             initiatorBlock: "",
@@ -2108,13 +2211,13 @@ export default function UniversitiesPage() {
               <DialogHeader>
                 <DialogTitle>
               {editingUniversity
-                ? "Редактировать университет"
-                : "Добавить университет"}
+                ? "Редактировать ВУЗ"
+                : "Добавить ВУЗ"}
                 </DialogTitle>
                 <DialogDescription>
               {editingUniversity
-                ? "Внесите изменения в университет"
-                : "Заполните информацию об университете"}
+                ? "Внесите изменения в ВУЗ"
+                : "Заполните информацию о ВУЗе"}
                 </DialogDescription>
               </DialogHeader>
           {createType === "university" ? (
@@ -2170,29 +2273,54 @@ export default function UniversitiesPage() {
                                 title={step.title}
                               >
                                 {step.title}
+                        </div>
                       </div>
-                    </div>
                           </button>
                           {index < UNIVERSITY_STEPS.length - 1 && (
                             <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           )}
-                        </div>
+                    </div>
                       );
                     })}
-                      </div>
+                    </div>
 
                   {/* Заголовок шага */}
                   <div className="space-y-2">
                     <h3 className="text-2xl font-bold">{UNIVERSITY_STEPS[universityWizardStep - 1].title}</h3>
                     <p className="text-muted-foreground">{UNIVERSITY_STEPS[universityWizardStep - 1].description}</p>
-                    </div>
+                </div>
 
                   {/* Содержимое шагов */}
                   <div className="min-h-[400px]">
                     {/* Шаг 1: Общая информация */}
                     {universityWizardStep === 1 && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-6">
+                        {/* Основная информация */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <Label className="text-base font-semibold">Основная информация</Label>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="university-name">
+                              Наименование учебного заведения <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="university-name"
+                              value={universityFormData.name}
+                              onChange={(e) => setUniversityFormData({ ...universityFormData, name: e.target.value })}
+                              placeholder="Московский государственный университет"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="university-short-name">Сокращенное наименование</Label>
+                            <Input
+                              id="university-short-name"
+                              value={universityFormData.shortName}
+                              onChange={(e) => setUniversityFormData({ ...universityFormData, shortName: e.target.value })}
+                              placeholder="МГУ"
+                            />
+                          </div>
                           <div className="space-y-2">
                             <Label htmlFor="university-city">
                               Город <span className="text-destructive">*</span>
@@ -2203,81 +2331,68 @@ export default function UniversitiesPage() {
                               onChange={(e) => setUniversityFormData({ ...universityFormData, city: e.target.value })}
                               placeholder="Москва"
                             />
-                    </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="university-branch">Филиал в ГПБ</Label>
-                            <Input
-                              id="university-branch"
-                              value={universityFormData.branch}
-                              onChange={(e) => setUniversityFormData({ ...universityFormData, branch: e.target.value })}
-                              placeholder="Московский филиал"
-                            />
-                </div>
-                        </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="university-name">
-                            Наименование учебного заведения <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="university-name"
-                      value={universityFormData.name}
-                      onChange={(e) => setUniversityFormData({ ...universityFormData, name: e.target.value })}
-                      placeholder="Московский государственный университет"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                          <Label htmlFor="university-short-name">Сокращенное наименование</Label>
-                    <Input
-                      id="university-short-name"
-                      value={universityFormData.shortName}
-                      onChange={(e) => setUniversityFormData({ ...universityFormData, shortName: e.target.value })}
-                      placeholder="МГУ"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                            <Label htmlFor="cooperation-start-year">Год начала сотрудничества</Label>
-                      <Input
-                              id="cooperation-start-year"
-                              type="number"
-                              value={universityFormData.cooperationStartYear}
-                              onChange={(e) => setUniversityFormData({ ...universityFormData, cooperationStartYear: parseInt(e.target.value) || new Date().getFullYear() })}
-                              placeholder="2024"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                            <Label htmlFor="target-audience">Целевая аудитория</Label>
-                      <Input
-                              id="target-audience"
-                              value={universityFormData.targetAudience}
-                              onChange={(e) => setUniversityFormData({ ...universityFormData, targetAudience: e.target.value })}
-                              placeholder="Студенты IT-направлений"
-                      />
-                    </div>
-                  </div>
-                        <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                            <Label htmlFor="initiator-block">Инициатор сотрудничества (блок/ССП)</Label>
-                            <Input
-                              id="initiator-block"
-                              value={universityFormData.initiatorBlock}
-                              onChange={(e) => setUniversityFormData({ ...universityFormData, initiatorBlock: e.target.value })}
-                              placeholder="Блок развития"
-                    />
-                  </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="initiator-name">Инициатор сотрудничества (ФИО)</Label>
-                            <Input
-                              id="initiator-name"
-                              value={universityFormData.initiatorName}
-                              onChange={(e) => setUniversityFormData({ ...universityFormData, initiatorName: e.target.value })}
-                              placeholder="Иванов Иван Иванович"
-                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="cooperation-start-year">Год начала сотрудничества</Label>
+                              <Input
+                                id="cooperation-start-year"
+                                type="number"
+                                value={universityFormData.cooperationStartYear}
+                                onChange={(e) => setUniversityFormData({ ...universityFormData, cooperationStartYear: parseInt(e.target.value) || new Date().getFullYear() })}
+                                placeholder="2024"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="target-audience">Целевая аудитория</Label>
+                              <Input
+                                id="target-audience"
+                                value={universityFormData.targetAudience}
+                                onChange={(e) => setUniversityFormData({ ...universityFormData, targetAudience: e.target.value })}
+                                placeholder="Студенты IT-направлений"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="initiator-block">Инициатор сотрудничества (блок/ССП)</Label>
+                              <Input
+                                id="initiator-block"
+                                value={universityFormData.initiatorBlock}
+                                onChange={(e) => setUniversityFormData({ ...universityFormData, initiatorBlock: e.target.value })}
+                                placeholder="Блок развития"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="initiator-name">Инициатор сотрудничества (ФИО)</Label>
+                              <Input
+                                id="initiator-name"
+                                value={universityFormData.initiatorName}
+                                onChange={(e) => setUniversityFormData({ ...universityFormData, initiatorName: e.target.value })}
+                                placeholder="Иванов Иван Иванович"
+                              />
+                            </div>
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Кураторы от филиалов</Label>
+
+                        {/* Филиалы */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <Label className="text-base font-semibold">Филиалы</Label>
+                          </div>
                           <div className="space-y-2">
+                            <Label htmlFor="university-branch">Филиалы в ГПБ</Label>
+                            <MultiSelect
+                              options={availableBranches}
+                              selected={universityFormData.branch}
+                              onChange={(selected) => setUniversityFormData({ ...universityFormData, branch: selected })}
+                              placeholder="Выберите филиалы..."
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Кураторы от филиалов</Label>
+                            <div className="space-y-2">
                             {universityFormData.branchCurators.map((curator) => (
                               <Card key={curator.id} className="p-3">
                                 <div className="flex items-center justify-between">
@@ -2285,18 +2400,18 @@ export default function UniversitiesPage() {
                                     <p className="text-sm font-medium">{curator.city} - {curator.branch}</p>
                                     <p className="text-xs text-muted-foreground">{curator.curatorName}</p>
                                   </div>
-                    <Button 
+                                  <Button 
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleRemoveCurator(curator.id)}
-                    >
+                                  >
                                     <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
+                                  </Button>
+                                </div>
                               </Card>
                             ))}
                             <div className="grid grid-cols-3 gap-2">
-                    <Input
+                              <Input
                                 placeholder="Город"
                                 value={newCurator.city}
                                 onChange={(e) => setNewCurator({ ...newCurator, city: e.target.value })}
@@ -2320,9 +2435,10 @@ export default function UniversitiesPage() {
                                 >
                                   <Plus className="h-4 w-4" />
                                 </Button>
-                  </div>
+                              </div>
                             </div>
                           </div>
+                        </div>
                         </div>
                       </div>
                     )}
@@ -2546,7 +2662,7 @@ export default function UniversitiesPage() {
                             size="sm"
                           >
                             <CheckCircle2 className="h-4 w-4 mr-1" />
-                            {editingUniversity ? "Сохранить изменения" : "Добавить университет"}
+                            {editingUniversity ? "Сохранить изменения" : "Добавить ВУЗ"}
                           </Button>
                         </>
                       )}
@@ -2557,7 +2673,7 @@ export default function UniversitiesPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Диалог удаления университета */}
+          {/* Диалог удаления ВУЗа */}
           <AlertDialog open={deleteUniversityId !== null} onOpenChange={(open) => !open && setDeleteUniversityId(null)}>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -2565,7 +2681,7 @@ export default function UniversitiesPage() {
                 <AlertDialogDescription>
                   {(() => {
                     const university = universities.find(u => u.id === deleteUniversityId);
-                    return `Вы уверены, что хотите удалить университет "${university?.name}"? Это действие нельзя отменить.`;
+                    return `Вы уверены, что хотите удалить ВУЗ "${university?.name}"? Это действие нельзя отменить.`;
                   })()}
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -2623,7 +2739,7 @@ export default function UniversitiesPage() {
               <DialogHeader>
                 <DialogTitle>Фильтры и сортировка</DialogTitle>
                 <DialogDescription>
-                  Настройте фильтры для поиска университетов и партнерств
+                  Настройте фильтры для поиска ВУЗов
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-6 py-4">
