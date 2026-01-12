@@ -59,6 +59,7 @@ interface BranchCurator {
   city: string;
   branch: string;
   curatorName: string;
+  image?: string;
 }
 
 // Тип для договора
@@ -81,6 +82,7 @@ interface University {
   targetAudience?: string;
   initiatorBlock?: string; // Инициатор сотрудничества (блок/ССП)
   initiatorName?: string; // Инициатор сотрудничества (ФИО)
+  initiatorImage?: string; // Фото инициатора
   branchCurators?: BranchCurator[]; // Кураторы от филиалов
   contracts?: Contract[]; // Договоры
   careerDays?: boolean; // Дни карьеры
@@ -217,6 +219,7 @@ const mockUniversities: University[] = [
     targetAudience: "Студенты IT-направлений",
     initiatorBlock: "Блок развития",
     initiatorName: "Иванов Иван Иванович",
+    initiatorImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     branchCurators: [
       { id: "cur-1", city: "Москва", branch: "Московский филиал", curatorName: "Петров Петр Петрович" },
     ],
@@ -245,6 +248,7 @@ const mockUniversities: University[] = [
     targetAudience: "Студенты экономических направлений",
     initiatorBlock: "Блок управления",
     initiatorName: "Смирнова Анна Владимировна",
+    initiatorImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
     branchCurators: [
       { id: "cur-2", city: "Санкт-Петербург", branch: "Санкт-Петербургский филиал", curatorName: "Козлов Дмитрий Сергеевич" },
       { id: "cur-3", city: "Санкт-Петербург", branch: "Центральный офис", curatorName: "Новикова Елена Петровна" },
@@ -388,7 +392,7 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок развития",
     initiatorName: "Гарифуллин Рамиль Фаритович",
     branchCurators: [
-      { id: "cur-9", city: "Казань", branch: "Приволжский филиал", curatorName: "Хабибуллина Алина Рашидовна" },
+      { id: "cur-9", city: "Казань", branch: "Приволжский филиал", curatorName: "Хабибуллина Алина Рашидовна", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face" },
     ],
     contracts: [
       { id: "cont-13", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-kfu-2020.pdf" },
@@ -554,6 +558,7 @@ const mockUniversities: University[] = [
     targetAudience: "Студенты IT и экономики",
     initiatorBlock: "Блок развития",
     initiatorName: "Степанова Наталья Михайловна",
+    initiatorImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
     branchCurators: [
       { id: "cur-16", city: "Белгород", branch: "Центральный филиал", curatorName: "Григорьев Андрей Валерьевич" },
     ],
@@ -1713,14 +1718,14 @@ export default function UniversitiesPage() {
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground">Город</Label>
+                                  <Label className="text-sm font-semibold">Город</Label>
                           <div className="flex items-center gap-2">
                                     <MapPin className="h-4 w-4 text-muted-foreground" />
                                     <span className="text-sm font-medium">{university.city || "Не указано"}</span>
                           </div>
                         </div>
                         <div className="space-y-2">
-                                  <Label className="text-xs text-muted-foreground">Филиалы в ГПБ</Label>
+                                  <Label className="text-sm font-semibold">Филиалы в ГПБ</Label>
                                   {university.branch && university.branch.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                       {university.branch.map((branch, index) => (
@@ -1735,7 +1740,7 @@ export default function UniversitiesPage() {
                                 </div>
                                 {university.cooperationStartYear && (
                         <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">Год начала сотрудничества</Label>
+                                    <Label className="text-sm font-semibold">Год начала сотрудничества</Label>
                                     <div className="flex items-center gap-2">
                                       <Calendar className="h-4 w-4 text-muted-foreground" />
                                       <span className="text-sm font-medium">{university.cooperationStartYear}</span>
@@ -1744,7 +1749,7 @@ export default function UniversitiesPage() {
                                 )}
                                 {university.targetAudience && (
                                   <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">Целевая аудитория</Label>
+                                    <Label className="text-sm font-semibold">Целевая аудитория</Label>
                                     <span className="text-sm font-medium">{university.targetAudience}</span>
                                   </div>
                                 )}
@@ -1752,25 +1757,33 @@ export default function UniversitiesPage() {
                             </div>
                           </Card>
 
-                          {/* Инициаторы сотрудничества */}
+                          {/* Инициаторы сотрудничества Банк */}
                           {(university.initiatorBlock || university.initiatorName) && (
                             <Card className="p-4">
                               <div className="space-y-4">
                                 <div className="flex items-center gap-2 pb-2 border-b">
                                   <UserCheck className="h-4 w-4 text-muted-foreground" />
-                                  <Label className="text-base font-semibold">Инициаторы сотрудничества</Label>
+                                  <Label className="text-base font-semibold">Инициаторы сотрудничества Банк</Label>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                   {university.initiatorBlock && (
                         <div className="space-y-2">
-                                      <Label className="text-xs text-muted-foreground">Блок/ССП</Label>
+                                      <Label className="text-sm font-semibold">Блок/ССП</Label>
                                       <span className="text-sm font-medium">{university.initiatorBlock}</span>
                           </div>
                                   )}
                                   {university.initiatorName && (
                                     <div className="space-y-2">
-                                      <Label className="text-xs text-muted-foreground">ФИО</Label>
-                                      <span className="text-sm font-medium">{university.initiatorName}</span>
+                                      <Label className="text-sm font-semibold">ФИО</Label>
+                                      <div className="flex items-center gap-3">
+                                        <Avatar className="h-10 w-10 shrink-0">
+                                          <AvatarImage src={university.initiatorImage} alt={university.initiatorName} />
+                                          <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                            {university.initiatorName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-sm font-medium">{university.initiatorName}</span>
+                                      </div>
                         </div>
                                   )}
                                 </div>
@@ -1778,26 +1791,37 @@ export default function UniversitiesPage() {
                             </Card>
                           )}
 
-                          {/* Кураторы от филиалов */}
+                          {/* Филиалы ВУЗа */}
                           {university.branchCurators && university.branchCurators.length > 0 && (
                             <Card className="p-4">
                               <div className="space-y-4">
                                 <div className="flex items-center gap-2 pb-2 border-b">
-                                  <Users className="h-4 w-4 text-muted-foreground" />
-                                  <Label className="text-base font-semibold">Кураторы от филиалов</Label>
+                                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                                  <Label className="text-base font-semibold">Филиалы ВУЗа</Label>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="space-y-3">
                                   {university.branchCurators.map((curator) => (
                                     <Card key={curator.id} className="p-3 bg-muted/30">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                                          <p className="text-sm font-medium">{curator.city} - {curator.branch}</p>
-                              </div>
-                                        <div className="flex items-center gap-2">
-                                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                                          <p className="text-xs text-muted-foreground">{curator.curatorName}</p>
-                            </div>
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label className="text-sm font-semibold">Город - Филиал</Label>
+                                          <div className="flex items-center gap-2">
+                                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm font-medium">{curator.city} - {curator.branch}</span>
+                                          </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label className="text-sm font-semibold">Куратор</Label>
+                                          <div className="flex items-center gap-3">
+                                            <Avatar className="h-10 w-10 shrink-0">
+                                              <AvatarImage src={curator.image} alt={curator.curatorName} />
+                                              <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                {curator.curatorName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-sm font-medium">{curator.curatorName}</span>
+                                          </div>
+                                        </div>
                                       </div>
                                     </Card>
                                   ))}
@@ -2379,16 +2403,7 @@ export default function UniversitiesPage() {
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 pb-2 border-b">
                             <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <Label className="text-base font-semibold">Филиалы</Label>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="university-branch">Филиалы в ГПБ</Label>
-                            <MultiSelect
-                              options={availableBranches}
-                              selected={universityFormData.branch}
-                              onChange={(selected) => setUniversityFormData({ ...universityFormData, branch: selected })}
-                              placeholder="Выберите филиалы..."
-                            />
+                            <Label className="text-base font-semibold">Филиалы ВУЗа</Label>
                           </div>
                           <div className="space-y-2">
                             <Label>Кураторы от филиалов</Label>
