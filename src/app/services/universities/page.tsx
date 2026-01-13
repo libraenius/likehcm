@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, User, ArrowRight } from "lucide-react";
+import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, User, ArrowRight, HelpCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -71,6 +71,17 @@ interface Contract {
   bankDepartment?: string;
 }
 
+// Тип для мероприятия
+interface Event {
+  id: string;
+  type: "careerDays" | "expertParticipation" | "caseChampionships"; // Тип мероприятия
+  date: string; // Дата проведения
+  status: "planned" | "completed"; // Статус мероприятия
+  comments?: string; // Комментарии
+  responsiblePerson: string; // Ответственное лицо Банк
+  responsiblePersonImage?: string; // Фото ответственного лица
+}
+
 // Тип для университета
 interface University {
   id: string;
@@ -85,6 +96,7 @@ interface University {
   initiatorImage?: string; // Фото инициатора
   branchCurators?: BranchCurator[]; // Кураторы от филиалов
   contracts?: Contract[]; // Договоры
+  events?: Event[]; // Мероприятия
   careerDays?: boolean; // Дни карьеры
   expertParticipation?: boolean; // Экспертное участие
   caseChampionships?: boolean; // Кейс-чемпионаты
@@ -121,8 +133,7 @@ interface Department {
 const UNIVERSITY_STEPS = [
   { id: 1, title: "Общая информация", description: "Основные данные об учебном заведении и сотрудничестве" },
   { id: 2, title: "Договорная база", description: "Договоры и документы сотрудничества" },
-  { id: 3, title: "Мероприятия", description: "Активности и мероприятия с учебным заведением" },
-  { id: 4, title: "Кадровые показатели", description: "Статистика по сотрудникам и стажерам" },
+  { id: 3, title: "Кадровые показатели", description: "Статистика по сотрудникам и стажерам" },
 ];
 
 // Моковые данные подразделений
@@ -315,6 +326,71 @@ const mockUniversities: University[] = [
       { id: "cont-8", type: "scholarship", hasContract: true, bankDepartment: "Кафедра финансов" },
       { id: "cont-9", type: "internship", hasContract: true, bankDepartment: "Кафедра IT" },
     ],
+    events: [
+      {
+        id: "event-hse-1",
+        type: "careerDays",
+        date: "2024-03-15",
+        status: "completed",
+        responsiblePerson: "Иванов Иван Иванович",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+        comments: "Проведены дни карьеры для студентов экономического факультета. Участвовало более 150 студентов.",
+      },
+      {
+        id: "event-hse-2",
+        type: "expertParticipation",
+        date: "2024-04-20",
+        status: "completed",
+        responsiblePerson: "Петрова Мария Сергеевна",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
+        comments: "Участие в качестве эксперта на защите дипломных работ по направлению 'Финансы и кредит'.",
+      },
+      {
+        id: "event-hse-3",
+        type: "caseChampionships",
+        date: "2024-05-10",
+        status: "completed",
+        responsiblePerson: "Сидоров Алексей Дмитриевич",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+        comments: "Кейс-чемпионат по банковскому делу. Победила команда студентов 3 курса.",
+      },
+      {
+        id: "event-hse-4",
+        type: "careerDays",
+        date: "2024-09-25",
+        status: "planned",
+        responsiblePerson: "Козлова Елена Владимировна",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+        comments: "Запланированы дни карьеры для студентов IT-направления. Ожидается участие 200+ студентов.",
+      },
+      {
+        id: "event-hse-5",
+        type: "expertParticipation",
+        date: "2024-10-15",
+        status: "planned",
+        responsiblePerson: "Волков Дмитрий Николаевич",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+        comments: "Планируется участие в качестве эксперта на конференции по финансовым технологиям.",
+      },
+      {
+        id: "event-hse-6",
+        type: "caseChampionships",
+        date: "2024-11-20",
+        status: "planned",
+        responsiblePerson: "Новикова Анна Петровна",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
+        comments: "Организация кейс-чемпионата по управлению рисками в банковской сфере.",
+      },
+      {
+        id: "event-hse-7",
+        type: "careerDays",
+        date: "2024-12-05",
+        status: "planned",
+        responsiblePerson: "Морозов Сергей Александрович",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face",
+        comments: "Дни карьеры для выпускников магистратуры. Фокус на карьерные возможности в банковском секторе.",
+      },
+    ],
     careerDays: true,
     expertParticipation: true,
     caseChampionships: true,
@@ -324,7 +400,7 @@ const mockUniversities: University[] = [
     interns: 20,
     region: "Московская область",
     description: "Ведущий экономический и IT-университет",
-    image: "https://via.placeholder.com/100?text=ВШЭ",
+    image: "https://www.hse.ru//images/main/main_logo_ru_full.svg",
   },
   {
     id: "univ-5",
@@ -737,11 +813,7 @@ export default function UniversitiesPage() {
     branchCurators: [] as BranchCurator[],
     // Шаг 2: Договорная база
     contracts: [] as Contract[],
-    // Шаг 3: Мероприятия
-    careerDays: false,
-    expertParticipation: false,
-    caseChampionships: false,
-    // Шаг 4: Кадровые показатели
+    // Шаг 3: Кадровые показатели
     allEmployees: 0,
     internHiring: false,
     averageInternsPerYear: 0,
@@ -766,6 +838,29 @@ export default function UniversitiesPage() {
     bankDepartment: "",
   });
   
+  // Состояние для управления мероприятиями
+  const [editingEvent, setEditingEvent] = useState<{ universityId: string; event: Event } | null>(null);
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const [eventFilters, setEventFilters] = useState<{
+    type: Event["type"] | null;
+    status: Event["status"] | null;
+  }>({
+    type: null,
+    status: null,
+  });
+  const [newEvent, setNewEvent] = useState<{
+    type: "careerDays" | "expertParticipation" | "caseChampionships" | "";
+    date: string;
+    status: "planned" | "completed";
+    comments: string;
+    responsiblePerson: string;
+  }>({
+    type: "",
+    date: "",
+    status: "planned",
+    comments: "",
+    responsiblePerson: "",
+  });
   
   // Состояние для модального окна добавления студентов
   const [isAddStudentsDialogOpen, setIsAddStudentsDialogOpen] = useState(false);
@@ -814,6 +909,11 @@ export default function UniversitiesPage() {
       setActiveTab("universities");
     }
   }, [tabFromQuery]);
+  
+  // Сброс фильтров мероприятий при смене университета
+  useEffect(() => {
+    setEventFilters({ type: null, status: null });
+  }, [selectedUniversity]);
   const [internships, setInternships] = useState<Internship[]>(mockInternships);
   const [internshipApplications, setInternshipApplications] = useState<InternshipApplication[]>(mockApplications);
   const [internshipStudents] = useState<InternshipStudent[]>(mockStudents);
@@ -892,9 +992,6 @@ export default function UniversitiesPage() {
       initiatorName: "",
       branchCurators: [],
       contracts: [],
-      careerDays: false,
-      expertParticipation: false,
-      caseChampionships: false,
       allEmployees: 0,
       internHiring: false,
       averageInternsPerYear: 0,
@@ -926,9 +1023,6 @@ export default function UniversitiesPage() {
         initiatorName: universityFormData.initiatorName.trim() || undefined,
         branchCurators: universityFormData.branchCurators.length > 0 ? universityFormData.branchCurators : undefined,
         contracts: universityFormData.contracts.length > 0 ? universityFormData.contracts : undefined,
-        careerDays: universityFormData.careerDays || undefined,
-        expertParticipation: universityFormData.expertParticipation || undefined,
-        caseChampionships: universityFormData.caseChampionships || undefined,
         allEmployees: universityFormData.allEmployees || undefined,
         internHiring: universityFormData.internHiring || undefined,
         averageInternsPerYear: universityFormData.averageInternsPerYear || undefined,
@@ -955,9 +1049,6 @@ export default function UniversitiesPage() {
         initiatorName: universityFormData.initiatorName.trim() || undefined,
         branchCurators: universityFormData.branchCurators.length > 0 ? universityFormData.branchCurators : undefined,
         contracts: universityFormData.contracts.length > 0 ? universityFormData.contracts : undefined,
-        careerDays: universityFormData.careerDays || undefined,
-        expertParticipation: universityFormData.expertParticipation || undefined,
-        caseChampionships: universityFormData.caseChampionships || undefined,
         allEmployees: universityFormData.allEmployees || undefined,
         internHiring: universityFormData.internHiring || undefined,
         averageInternsPerYear: universityFormData.averageInternsPerYear || undefined,
@@ -985,9 +1076,6 @@ export default function UniversitiesPage() {
       initiatorName: "",
       branchCurators: [],
       contracts: [],
-      careerDays: false,
-      expertParticipation: false,
-      caseChampionships: false,
       allEmployees: 0,
       internHiring: false,
       averageInternsPerYear: 0,
@@ -1052,7 +1140,103 @@ export default function UniversitiesPage() {
     });
   };
   
+  // Добавление мероприятия
+  const handleAddEvent = (universityId: string) => {
+    if (!newEvent.type || !newEvent.date.trim() || !newEvent.responsiblePerson.trim()) {
+      return;
+    }
+    const event: Event = {
+      id: `event-${Date.now()}`,
+      type: newEvent.type as "careerDays" | "expertParticipation" | "caseChampionships",
+      date: newEvent.date,
+      status: newEvent.status,
+      comments: newEvent.comments.trim() || undefined,
+      responsiblePerson: newEvent.responsiblePerson.trim(),
+    };
+    const university = universities.find(u => u.id === universityId);
+    if (university) {
+      const updatedEvents = [...(university.events || []), event];
+      setUniversities(universities.map(u => 
+        u.id === universityId ? { ...u, events: updatedEvents } : u
+      ));
+      setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+      setIsEventDialogOpen(false);
+    }
+  };
   
+  // Редактирование мероприятия
+  const handleEditEvent = (universityId: string, eventId: string) => {
+    const university = universities.find(u => u.id === universityId);
+    const event = university?.events?.find(e => e.id === eventId);
+    if (event) {
+      setEditingEvent({ universityId, event });
+      setNewEvent({
+        type: event.type,
+        date: event.date,
+        status: event.status,
+        comments: event.comments || "",
+        responsiblePerson: event.responsiblePerson,
+      });
+      setIsEventDialogOpen(true);
+    }
+  };
+  
+  // Сохранение изменений мероприятия
+  const handleSaveEvent = () => {
+    if (!editingEvent || !newEvent.type || !newEvent.date.trim() || !newEvent.responsiblePerson.trim()) {
+      return;
+    }
+    const updatedEvents = universities
+      .find(u => u.id === editingEvent.universityId)
+      ?.events?.map(e => 
+        e.id === editingEvent.event.id 
+          ? { ...e, type: newEvent.type as "careerDays" | "expertParticipation" | "caseChampionships", date: newEvent.date, status: newEvent.status, comments: newEvent.comments.trim() || undefined, responsiblePerson: newEvent.responsiblePerson.trim() }
+          : e
+      ) || [];
+    setUniversities(universities.map(u => 
+      u.id === editingEvent.universityId ? { ...u, events: updatedEvents } : u
+    ));
+    setEditingEvent(null);
+    setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+    setIsEventDialogOpen(false);
+  };
+  
+  // Подсчет статистики мероприятий
+  const getEventStatistics = (universityId: string) => {
+    const university = universities.find(u => u.id === universityId);
+    if (!university || !university.events) {
+          return {
+        byType: { careerDays: 0, expertParticipation: 0, caseChampionships: 0 },
+        byStatus: { planned: 0, completed: 0 },
+        total: 0,
+      };
+    }
+    const byType = {
+      careerDays: university.events.filter(e => e.type === "careerDays").length,
+      expertParticipation: university.events.filter(e => e.type === "expertParticipation").length,
+      caseChampionships: university.events.filter(e => e.type === "caseChampionships").length,
+    };
+    const byStatus = {
+      planned: university.events.filter(e => e.status === "planned").length,
+      completed: university.events.filter(e => e.status === "completed").length,
+    };
+    return {
+      byType,
+      byStatus,
+      total: university.events.length,
+    };
+  };
+  
+  // Удаление мероприятия
+  const handleRemoveEvent = (universityId: string, eventId: string) => {
+    const university = universities.find(u => u.id === universityId);
+    if (university) {
+      const updatedEvents = (university.events || []).filter(e => e.id !== eventId);
+      setUniversities(universities.map(u => 
+        u.id === universityId ? { ...u, events: updatedEvents } : u
+      ));
+    }
+  };
 
   // Фильтрация и сортировка данных
   const filteredData = useMemo(() => {
@@ -1667,9 +1851,6 @@ export default function UniversitiesPage() {
                                 initiatorName: university.initiatorName || "",
                                 branchCurators: university.branchCurators || [],
                                 contracts: university.contracts || [],
-                                careerDays: university.careerDays || false,
-                                expertParticipation: university.expertParticipation || false,
-                                caseChampionships: university.caseChampionships || false,
                                 allEmployees: university.allEmployees || 0,
                                 internHiring: university.internHiring || false,
                                 averageInternsPerYear: university.averageInternsPerYear || 0,
@@ -1783,7 +1964,7 @@ export default function UniversitiesPage() {
                                           </AvatarFallback>
                                         </Avatar>
                                         <span className="text-sm font-medium">{university.initiatorName}</span>
-                                      </div>
+                        </div>
                         </div>
                                   )}
                                 </div>
@@ -1803,13 +1984,13 @@ export default function UniversitiesPage() {
                                   {university.branchCurators.map((curator) => (
                                     <Card key={curator.id} className="p-3 bg-muted/30">
                                       <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
+                            <div className="space-y-2">
                                           <Label className="text-sm font-semibold">Город - Филиал</Label>
-                                          <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2">
                                             <MapPin className="h-4 w-4 text-muted-foreground" />
                                             <span className="text-sm font-medium">{curator.city} - {curator.branch}</span>
-                                          </div>
-                                        </div>
+                              </div>
+                            </div>
                                         <div className="space-y-2">
                                           <Label className="text-sm font-semibold">Куратор</Label>
                                           <div className="flex items-center gap-3">
@@ -1876,34 +2057,232 @@ export default function UniversitiesPage() {
                         
                         {/* Таб 3: Мероприятия */}
                         <TabsContent value="events" className="space-y-4 mt-4">
-                              <div className="space-y-3">
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                              <div>
-                                <Label className="text-sm font-semibold">Дни карьеры</Label>
-                                <p className="text-xs text-muted-foreground">Участие в днях карьеры</p>
+                          <div className="space-y-4">
+                            {/* Виджет статистики и кнопка добавления */}
+                            <div className="flex items-center gap-4 w-full">
+                              {selectedUniversity && (() => {
+                                const stats = getEventStatistics(selectedUniversity);
+                                return (
+                                  <>
+                                    <Card className="p-3 flex-1">
+                                      <div className="space-y-2">
+                                        <Label className="text-base font-semibold">Типы мероприятий</Label>
+                                        <div className="flex items-center gap-3">
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Дни карьеры: </span>
+                                            <Badge 
+                                variant="outline"
+                                              className={`!bg-blue-500 !text-white !border-blue-500 hover:!bg-blue-600 cursor-pointer ${eventFilters.type === "careerDays" ? "ring-2 ring-blue-600" : ""}`}
+                                              onClick={() => {
+                                                setEventFilters(prev => ({
+                                                  ...prev,
+                                                  type: prev.type === "careerDays" ? null : "careerDays"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byType.careerDays}
+                                            </Badge>
+                                          </div>
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Экспертное участие: </span>
+                                            <Badge 
+                                variant="outline"
+                                              className={`!bg-purple-500 !text-white !border-purple-500 hover:!bg-purple-600 cursor-pointer ${eventFilters.type === "expertParticipation" ? "ring-2 ring-purple-600" : ""}`}
+                                onClick={() => {
+                                                setEventFilters(prev => ({
+                                                  ...prev,
+                                                  type: prev.type === "expertParticipation" ? null : "expertParticipation"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byType.expertParticipation}
+                                            </Badge>
                             </div>
-                              <Badge variant={university.careerDays ? "default" : "outline"}>
-                                {university.careerDays ? "Да" : "Нет"}
-                              </Badge>
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Кейс-чемпионат: </span>
+                                            <Badge 
+                                              variant="outline" 
+                                              className={`!bg-green-500 !text-white !border-green-500 hover:!bg-green-600 cursor-pointer ${eventFilters.type === "caseChampionships" ? "ring-2 ring-green-600" : ""}`}
+                                              onClick={() => {
+                                                setEventFilters(prev => ({
+                                                  ...prev,
+                                                  type: prev.type === "caseChampionships" ? null : "caseChampionships"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byType.caseChampionships}
+                                            </Badge>
                           </div>
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                              <div>
-                                <Label className="text-sm font-semibold">Экспертное участие</Label>
-                                <p className="text-xs text-muted-foreground">Участие в качестве эксперта</p>
+                                        </div>
+                                      </div>
+                                    </Card>
+                                    <Card className="p-3 flex-1">
+                                      <div className="space-y-2">
+                                        <Label className="text-base font-semibold">Статусы</Label>
+                                                <div className="flex items-center gap-3">
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Запланировано: </span>
+                                            <Badge 
+                                              variant="outline" 
+                                              className={`cursor-pointer ${eventFilters.status === "planned" ? "ring-2 ring-primary" : ""}`}
+                                              onClick={() => {
+                                                setEventFilters(prev => ({
+                                                  ...prev,
+                                                  status: prev.status === "planned" ? null : "planned"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byStatus.planned}
+                                            </Badge>
+                                                  </div>
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Проведено: </span>
+                                            <Badge 
+                                              variant="default" 
+                                              className={`cursor-pointer ${eventFilters.status === "completed" ? "ring-2 ring-primary" : ""}`}
+                                              onClick={() => {
+                                                setEventFilters(prev => ({
+                                                  ...prev,
+                                                  status: prev.status === "completed" ? null : "completed"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byStatus.completed}
+                                            </Badge>
+                                                </div>
+                                                        </div>
+                                                    </div>
+                                    </Card>
+                                  </>
+                                                  );
+                                                })()}
+                                                  <Button
+                                onClick={() => {
+                                  setEditingEvent(null);
+                                  setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+                                  setIsEventDialogOpen(true);
+                                }}
+                                disabled={!selectedUniversity}
+                                size="sm"
+                              >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Добавить мероприятие
+                                                  </Button>
+                                </div>
+                                
+                            {/* Список мероприятий */}
+                            {university.events && university.events.length > 0 ? (() => {
+                              const filteredEvents = university.events.filter(event => {
+                                if (eventFilters.type && event.type !== eventFilters.type) return false;
+                                if (eventFilters.status && event.status !== eventFilters.status) return false;
+                                return true;
+                              });
+                              return filteredEvents.length > 0 ? (
+                                <div className="space-y-3">
+                                  {filteredEvents.map((event) => {
+                                  const eventTypeLabels: Record<Event["type"], string> = {
+                                    careerDays: "Дни карьеры",
+                                    expertParticipation: "Экспертное участие",
+                                    caseChampionships: "Кейс-чемпионат",
+                                  };
+                                  const eventStatusLabels: Record<Event["status"], string> = {
+                                    planned: "Запланировано",
+                                    completed: "Проведено",
+                                  };
+                                  const getEventTypeBadgeVariant = (type: Event["type"]) => {
+                                    return "outline"; // Используем outline для всех, чтобы кастомные цвета работали
+                                  };
+                                  const getEventTypeBadgeClassName = (type: Event["type"]) => {
+                                    switch (type) {
+                                      case "careerDays":
+                                        return "!bg-blue-500 !text-white !border-blue-500 hover:!bg-blue-600";
+                                      case "expertParticipation":
+                                        return "!bg-purple-500 !text-white !border-purple-500 hover:!bg-purple-600";
+                                      case "caseChampionships":
+                                        return "!bg-green-500 !text-white !border-green-500 hover:!bg-green-600";
+                                      default:
+                                        return "";
+                                    }
+                                  };
+                                  return (
+                                    <Card key={event.id} className="p-3">
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1 space-y-1.5">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <Badge 
+                                              variant={getEventTypeBadgeVariant(event.type)}
+                                              className={getEventTypeBadgeClassName(event.type)}
+                                            >
+                                              {eventTypeLabels[event.type]}
+                                            </Badge>
+                                            <Badge variant={event.status === "completed" ? "default" : "outline"}>
+                                              {eventStatusLabels[event.status]}
+                                            </Badge>
+                                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm font-semibold">
+                                              {new Date(event.date).toLocaleDateString('ru-RU', { 
+                                                year: 'numeric', 
+                                                month: 'long', 
+                                                day: 'numeric' 
+                                              })}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                            <Label className="text-sm font-semibold">Ответственное лицо Банк:</Label>
+                                            <div className="flex items-center gap-2">
+                                              <Avatar className="h-10 w-10 shrink-0">
+                                                <AvatarImage src={event.responsiblePersonImage} alt={event.responsiblePerson} />
+                                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                  {event.responsiblePerson.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <span className="text-sm font-medium">{event.responsiblePerson}</span>
+                                            </div>
+                                          </div>
+                                          {event.comments && (
+                                            <div className="flex items-center gap-2">
+                                              <Label className="text-sm font-semibold">Комментарий:</Label>
+                                              <span className="text-sm text-muted-foreground">{event.comments}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex gap-1">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => {
+                                              handleEditEvent(selectedUniversity!, event.id);
+                                            }}
+                                          >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => handleRemoveEvent(selectedUniversity!, event.id)}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </Card>
+                                  );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                  <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                  <p className="text-base">Мероприятия не найдены по выбранным фильтрам</p>
+                                </div>
+                              );
+                            })() : (
+                              <div className="text-center py-8 text-muted-foreground">
+                                <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-base">Мероприятия не добавлены</p>
                               </div>
-                              <Badge variant={university.expertParticipation ? "default" : "outline"}>
-                                {university.expertParticipation ? "Да" : "Нет"}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                              <div>
-                                <Label className="text-sm font-semibold">Кейс-чемпионаты</Label>
-                                <p className="text-xs text-muted-foreground">Участие в кейс-чемпионатах</p>
-                              </div>
-                              <Badge variant={university.caseChampionships ? "default" : "outline"}>
-                                {university.caseChampionships ? "Да" : "Нет"}
-                              </Badge>
-                            </div>
+                            )}
                           </div>
                         </TabsContent>
                         
@@ -1971,14 +2350,14 @@ export default function UniversitiesPage() {
                   className="pl-10"
                 />
                 {internshipSearchQuery && (
-                                                  <Button
+                                          <Button
                                                     variant="ghost"
-                                                    size="icon"
+                                            size="icon"
                     className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
                     onClick={() => setInternshipSearchQuery("")}
-                                                  >
+                                          >
                     <X className="h-4 w-4" />
-                                                  </Button>
+                                          </Button>
                 )}
                                                 </div>
               <Dialog open={isInternshipFiltersDialogOpen} onOpenChange={setIsInternshipFiltersDialogOpen}>
@@ -1991,7 +2370,7 @@ export default function UniversitiesPage() {
                         {internshipFilters.statuses.length + internshipFilters.universities.length}
                       </Badge>
                     )}
-                                                  </Button>
+                                          </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader className="pb-3">
@@ -2026,10 +2405,10 @@ export default function UniversitiesPage() {
                             >
                               {getInternshipStatusText(status)}
                                         </Label>
-                                                </div>
+                                        </div>
                         ))}
-                                </div>
-                    </div>
+                                      </div>
+                                    </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">ВУЗ</Label>
                       <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
@@ -2058,16 +2437,16 @@ export default function UniversitiesPage() {
                             >
                               {university.name}
                             </Label>
-                                      </div>
+                              </div>
                         ))}
                       </div>
                     </div>
                   </div>
                   <DialogFooter className="pt-2">
-                                          <Button
-                                            variant="outline"
-                      size="sm"
-                      onClick={() => {
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
                         setInternshipFilters({ statuses: [], universities: [] });
                       }}
                     >
@@ -2082,8 +2461,8 @@ export default function UniversitiesPage() {
               <Button onClick={handleCreateInternship} size="lg">
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить стажировку
-                                          </Button>
-            </div>
+                                </Button>
+                              </div>
 
             {/* Список стажировок */}
             {filteredInternshipsForTab.length === 0 ? (
@@ -2103,10 +2482,10 @@ export default function UniversitiesPage() {
                         Добавить стажировку
                                           </Button>
                     )}
-                                        </div>
-                </CardContent>
-              </Card>
-            ) : (
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 w-full">
                 {filteredInternshipsForTab
                   .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
@@ -2158,8 +2537,8 @@ export default function UniversitiesPage() {
                                     <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
                                     <span className="truncate max-w-[80px]">{internship.city}</span>
                                   </Badge>
-                                )}
-                              </div>
+                )}
+              </div>
                               {internship.salary && (
                                 <Badge variant="outline" className="text-xs px-2 py-0.5 mt-2 whitespace-nowrap">
                                   {internship.salary.toLocaleString('ru-RU')} ₽
@@ -2217,9 +2596,6 @@ export default function UniversitiesPage() {
             initiatorName: "",
             branchCurators: [],
             contracts: [],
-            careerDays: false,
-            expertParticipation: false,
-            caseChampionships: false,
             allEmployees: 0,
             internHiring: false,
             averageInternsPerYear: 0,
@@ -2325,48 +2701,48 @@ export default function UniversitiesPage() {
                             <Building2 className="h-4 w-4 text-muted-foreground" />
                             <Label className="text-base font-semibold">Основная информация</Label>
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="university-name">
+                  <div className="space-y-2">
+                    <Label htmlFor="university-name">
                               Наименование учебного заведения <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                              id="university-name"
-                              value={universityFormData.name}
-                              onChange={(e) => setUniversityFormData({ ...universityFormData, name: e.target.value })}
-                              placeholder="Московский государственный университет"
-                            />
-                          </div>
-                          <div className="space-y-2">
+                    </Label>
+                    <Input
+                      id="university-name"
+                      value={universityFormData.name}
+                      onChange={(e) => setUniversityFormData({ ...universityFormData, name: e.target.value })}
+                      placeholder="Московский государственный университет"
+                    />
+                  </div>
+                  <div className="space-y-2">
                             <Label htmlFor="university-short-name">Сокращенное наименование</Label>
-                            <Input
-                              id="university-short-name"
-                              value={universityFormData.shortName}
-                              onChange={(e) => setUniversityFormData({ ...universityFormData, shortName: e.target.value })}
-                              placeholder="МГУ"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="university-city">
-                              Город <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                              id="university-city"
-                              value={universityFormData.city}
-                              onChange={(e) => setUniversityFormData({ ...universityFormData, city: e.target.value })}
-                              placeholder="Москва"
-                            />
-                          </div>
+                    <Input
+                      id="university-short-name"
+                      value={universityFormData.shortName}
+                      onChange={(e) => setUniversityFormData({ ...universityFormData, shortName: e.target.value })}
+                      placeholder="МГУ"
+                    />
+                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="university-city">
+                        Город <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="university-city"
+                        value={universityFormData.city}
+                        onChange={(e) => setUniversityFormData({ ...universityFormData, city: e.target.value })}
+                        placeholder="Москва"
+                      />
+                    </div>
                           <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
+                    <div className="space-y-2">
                               <Label htmlFor="cooperation-start-year">Год начала сотрудничества</Label>
-                              <Input
+                      <Input
                                 id="cooperation-start-year"
                                 type="number"
                                 value={universityFormData.cooperationStartYear}
                                 onChange={(e) => setUniversityFormData({ ...universityFormData, cooperationStartYear: parseInt(e.target.value) || new Date().getFullYear() })}
                                 placeholder="2024"
-                              />
-                            </div>
+                      />
+                    </div>
                             <div className="space-y-2">
                               <Label htmlFor="target-audience">Целевая аудитория</Label>
                               <Input
@@ -2375,18 +2751,18 @@ export default function UniversitiesPage() {
                                 onChange={(e) => setUniversityFormData({ ...universityFormData, targetAudience: e.target.value })}
                                 placeholder="Студенты IT-направлений"
                               />
-                            </div>
+                  </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
+                  <div className="space-y-2">
                               <Label htmlFor="initiator-block">Инициатор сотрудничества (блок/ССП)</Label>
                               <Input
                                 id="initiator-block"
                                 value={universityFormData.initiatorBlock}
                                 onChange={(e) => setUniversityFormData({ ...universityFormData, initiatorBlock: e.target.value })}
                                 placeholder="Блок развития"
-                              />
-                            </div>
+                    />
+                  </div>
                             <div className="space-y-2">
                               <Label htmlFor="initiator-name">Инициатор сотрудничества (ФИО)</Label>
                               <Input
@@ -2415,18 +2791,18 @@ export default function UniversitiesPage() {
                                     <p className="text-sm font-medium">{curator.city} - {curator.branch}</p>
                                     <p className="text-xs text-muted-foreground">{curator.curatorName}</p>
                                   </div>
-                                  <Button 
+                    <Button 
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleRemoveCurator(curator.id)}
-                                  >
+                    >
                                     <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                    </Button>
+                </div>
                               </Card>
                             ))}
                             <div className="grid grid-cols-3 gap-2">
-                              <Input
+                    <Input
                                 placeholder="Город"
                                 value={newCurator.city}
                                 onChange={(e) => setNewCurator({ ...newCurator, city: e.target.value })}
@@ -2450,7 +2826,7 @@ export default function UniversitiesPage() {
                                 >
                                   <Plus className="h-4 w-4" />
                                 </Button>
-                              </div>
+                  </div>
                             </div>
                           </div>
                         </div>
@@ -2501,19 +2877,19 @@ export default function UniversitiesPage() {
                   </div>
                                 {newContract.hasContract && (
                                   <>
-                      <Select
+                    <Select
                                       value={newContract.type}
                                       onValueChange={(value) => setNewContract({ ...newContract, type: value as Contract["type"] })}
-                      >
+                    >
                                       <SelectTrigger>
                                         <SelectValue placeholder="Тип договора" />
-                        </SelectTrigger>
-                        <SelectContent>
+                      </SelectTrigger>
+                      <SelectContent>
                                         <SelectItem value="cooperation">О сотрудничестве</SelectItem>
                                         <SelectItem value="scholarship">Об именных стипендиях</SelectItem>
                                         <SelectItem value="internship">О практике</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      </SelectContent>
+                    </Select>
                                     <Input
                                       type="file"
                                       accept=".pdf"
@@ -2541,55 +2917,17 @@ export default function UniversitiesPage() {
                                     </Button>
                                   </>
                                 )}
-                    </div>
+                  </div>
                             </Card>
                   </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Шаг 3: Мероприятия */}
+                    {/* Шаг 3: Кадровые показатели */}
                     {universityWizardStep === 3 && (
                       <div className="space-y-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
-                            <div>
-                              <Label className="text-base font-medium">Дни карьеры</Label>
-                              <p className="text-sm text-muted-foreground">Участие в днях карьеры</p>
-                            </div>
-                            <Switch
-                              checked={universityFormData.careerDays}
-                              onCheckedChange={(checked) => setUniversityFormData({ ...universityFormData, careerDays: checked })}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
-                            <div>
-                              <Label className="text-base font-medium">Экспертное участие</Label>
-                              <p className="text-sm text-muted-foreground">Участие в качестве эксперта</p>
-                            </div>
-                            <Switch
-                              checked={universityFormData.expertParticipation}
-                              onCheckedChange={(checked) => setUniversityFormData({ ...universityFormData, expertParticipation: checked })}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
-                            <div>
-                              <Label className="text-base font-medium">Кейс-чемпионаты</Label>
-                              <p className="text-sm text-muted-foreground">Участие в кейс-чемпионатах</p>
-                            </div>
-                            <Switch
-                              checked={universityFormData.caseChampionships}
-                              onCheckedChange={(checked) => setUniversityFormData({ ...universityFormData, caseChampionships: checked })}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Шаг 4: Кадровые показатели */}
-                    {universityWizardStep === 4 && (
-                      <div className="space-y-4">
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                           <Label htmlFor="all-employees">Все сотрудники</Label>
                       <Input
                             id="all-employees"
@@ -2598,8 +2936,8 @@ export default function UniversitiesPage() {
                             value={universityFormData.allEmployees || ""}
                             onChange={(e) => setUniversityFormData({ ...universityFormData, allEmployees: parseInt(e.target.value) || 0 })}
                             placeholder="0"
-                          />
-                        </div>
+                    />
+                  </div>
                         <div className="flex items-center justify-between p-3 border rounded-lg">
                           <div>
                             <Label className="text-base font-medium">Найм стажеров</Label>
@@ -2685,6 +3023,176 @@ export default function UniversitiesPage() {
                   </div>
                 </div>
               ) : null}
+            </DialogContent>
+          </Dialog>
+
+          {/* Модальное окно добавления/редактирования мероприятия */}
+          <Dialog open={isEventDialogOpen} onOpenChange={(open) => {
+            setIsEventDialogOpen(open);
+            if (!open) {
+              setEditingEvent(null);
+              setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+            }
+          }}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingEvent && editingEvent.universityId === selectedUniversity ? "Редактировать мероприятие" : "Добавить мероприятие"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingEvent && editingEvent.universityId === selectedUniversity 
+                    ? "Внесите изменения в мероприятие" 
+                    : "Заполните информацию о мероприятии"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Label htmlFor="event-type-dialog">Тип мероприятия</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Выберите тип мероприятия: дни карьеры, экспертное участие или кейс-чемпионат</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                      <Select
+                      value={newEvent.type}
+                      onValueChange={(value) => setNewEvent({ ...newEvent, type: value as "careerDays" | "expertParticipation" | "caseChampionships" })}
+                      >
+                      <SelectTrigger id="event-type-dialog" className="w-full">
+                        <SelectValue placeholder="Выберите тип" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="careerDays">Дни карьеры</SelectItem>
+                        <SelectItem value="expertParticipation">Экспертное участие</SelectItem>
+                        <SelectItem value="caseChampionships">Кейс-чемпионат</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Label htmlFor="event-date-dialog">Дата проведения</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Укажите дату проведения мероприятия</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Input
+                      id="event-date-dialog"
+                      type="date"
+                      value={newEvent.date}
+                      onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Label htmlFor="event-status-dialog">Статус</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Выберите статус мероприятия: запланировано или проведено</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                      <Select
+                      value={newEvent.status}
+                      onValueChange={(value) => setNewEvent({ ...newEvent, status: value as "planned" | "completed" })}
+                    >
+                      <SelectTrigger id="event-status-dialog" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="planned">Запланировано</SelectItem>
+                        <SelectItem value="completed">Проведено</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Label htmlFor="event-responsible-dialog">Ответственное лицо Банк</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Укажите ФИО сотрудника Банка, ответственного за проведение мероприятия</p>
+                        </TooltipContent>
+                      </Tooltip>
+                  </div>
+                      <Input
+                      id="event-responsible-dialog"
+                      value={newEvent.responsiblePerson}
+                      onChange={(e) => setNewEvent({ ...newEvent, responsiblePerson: e.target.value })}
+                      placeholder="ФИО ответственного лица"
+                      className="w-full"
+                      />
+                    </div>
+                  </div>
+                    <div className="space-y-2">
+                  <div className="flex items-center gap-1">
+                    <Label htmlFor="event-comments-dialog">Комментарий</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Дополнительная информация о мероприятии (необязательное поле)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                      <Input
+                    id="event-comments-dialog"
+                    value={newEvent.comments}
+                    onChange={(e) => setNewEvent({ ...newEvent, comments: e.target.value })}
+                    placeholder="Комментарий"
+                  />
+                    </div>
+                      </div>
+                  <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEventDialogOpen(false);
+                    setEditingEvent(null);
+                    setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+                  }}
+                >
+                  Отмена
+                    </Button>
+                {editingEvent && editingEvent.universityId === selectedUniversity ? (
+                    <Button 
+                    onClick={() => {
+                      handleSaveEvent();
+                    }}
+                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.responsiblePerson.trim()}
+                  >
+                    Сохранить
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      if (selectedUniversity) {
+                        handleAddEvent(selectedUniversity);
+                      }
+                    }}
+                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.responsiblePerson.trim() || !selectedUniversity}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Добавить
+                    </Button>
+              )}
+              </DialogFooter>
             </DialogContent>
           </Dialog>
 
