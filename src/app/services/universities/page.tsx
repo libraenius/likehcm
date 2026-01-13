@@ -533,54 +533,115 @@ const mockUniversities: University[] = [
     allEmployees: 200,
     internHiring: true,
     averageInternsPerYear: 35,
-    interns: 20,
-    internList: [
-      {
-        id: "intern-hse-1",
-        employeeName: "Козлова Елена Владимировна",
-        age: 25,
-        position: "Стажер-экономист",
-        department: "Департамент информационной безопасности",
-        hireDate: "2024-01-20",
-        status: "active",
-        internshipInBank: true,
-        internshipStartDate: "2023-05-10",
-        internshipEndDate: "2023-07-31",
-      },
-      {
-        id: "intern-hse-2",
-        employeeName: "Волков Дмитрий Николаевич",
-        age: 23,
-        position: "Стажер-финансист",
-        department: "Управление разработки банковских продуктов",
-        hireDate: "2024-02-15",
-        status: "active",
-        internshipInBank: true,
-        internshipStartDate: "2023-08-01",
-        internshipEndDate: "2023-10-31",
-      },
-      {
-        id: "intern-hse-3",
-        employeeName: "Новикова Анна Петровна",
-        age: 24,
-        position: "Стажер-разработчик",
-        department: "Департамент автоматизации внутренних сервисов",
-        hireDate: "2024-03-05",
-        status: "active",
-        internshipInBank: false,
-      },
-      {
-        id: "intern-hse-4",
-        employeeName: "Морозов Сергей Александрович",
-        age: 26,
-        position: "Стажер-аналитик",
-        department: "Управление качества и тестирования",
-        hireDate: "2024-04-01",
-        status: "dismissed",
-        dismissalDate: "2024-07-20",
-        internshipInBank: false,
-      },
-    ],
+    interns: 100,
+    internList: (() => {
+      const departments = [
+        "Департамент автоматизации внутренних сервисов",
+        "Управление развития общекорпоративных систем",
+        "Управление разработки банковских продуктов",
+        "Департамент информационной безопасности",
+        "Управление качества и тестирования",
+      ];
+      const positions = [
+        "Стажер-экономист",
+        "Стажер-финансист",
+        "Стажер-разработчик",
+        "Стажер-аналитик",
+        "Стажер-тестировщик",
+        "Стажер-менеджер",
+        "Стажер-дизайнер",
+        "Стажер-маркетолог",
+      ];
+      const firstNames = [
+        "Александр", "Алексей", "Андрей", "Антон", "Артем", "Борис", "Вадим", "Василий",
+        "Виктор", "Владимир", "Дмитрий", "Евгений", "Иван", "Игорь", "Константин", "Максим",
+        "Михаил", "Николай", "Олег", "Павел", "Роман", "Сергей", "Станислав", "Юрий",
+        "Анна", "Валентина", "Валерия", "Вера", "Галина", "Дарья", "Елена", "Ирина",
+        "Ксения", "Лариса", "Мария", "Наталья", "Ольга", "Светлана", "Татьяна", "Юлия",
+      ];
+      const lastNames = [
+        "Иванов", "Петров", "Сидоров", "Смирнов", "Кузнецов", "Попов", "Соколов", "Лебедев",
+        "Козлов", "Новиков", "Морозов", "Петров", "Волков", "Соловьев", "Васильев", "Зайцев",
+        "Павлов", "Семенов", "Голубев", "Виноградов", "Богданов", "Воробьев", "Федоров", "Михайлов",
+        "Белов", "Тарасов", "Беляев", "Комаров", "Орлов", "Киселев", "Макаров", "Андреев",
+        "Ковалев", "Ильин", "Гусев", "Титов", "Кузьмин", "Кудрявцев", "Баранов", "Куликов",
+      ];
+      const middleNames = [
+        "Александрович", "Алексеевич", "Андреевич", "Антонович", "Артемович", "Борисович",
+        "Вадимович", "Васильевич", "Викторович", "Владимирович", "Дмитриевич", "Евгеньевич",
+        "Иванович", "Игоревич", "Константинович", "Максимович", "Михайлович", "Николаевич",
+        "Олегович", "Павлович", "Романович", "Сергеевич", "Станиславович", "Юрьевич",
+        "Александровна", "Алексеевна", "Андреевна", "Антоновна", "Артемовна", "Борисовна",
+        "Вадимовна", "Васильевна", "Викторовна", "Владимировна", "Дмитриевна", "Евгеньевна",
+        "Ивановна", "Игоревна", "Константиновна", "Максимовна", "Михайловна", "Николаевна",
+        "Олеговна", "Павловна", "Романовна", "Сергеевна", "Станиславовна", "Юрьевна",
+      ];
+      
+      const interns: Intern[] = [];
+      const startDate = new Date("2022-01-01");
+      const endDate = new Date("2024-12-31");
+      
+      for (let i = 1; i <= 100; i++) {
+        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+        const middleName = middleNames[Math.floor(Math.random() * middleNames.length)];
+        const fullName = `${lastName} ${firstName} ${middleName}`;
+        
+        const age = 20 + Math.floor(Math.random() * 11); // 20-30 лет
+        const position = positions[Math.floor(Math.random() * positions.length)];
+        const department = departments[Math.floor(Math.random() * departments.length)];
+        
+        // Случайная дата приема между 2022 и 2024
+        const hireDateObj = new Date(
+          startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime())
+        );
+        const hireDate = hireDateObj.toISOString().split('T')[0];
+        
+        // 85% активных, 15% уволенных
+        const status: "active" | "dismissed" = Math.random() < 0.15 ? "dismissed" : "active";
+        
+        let dismissalDate: string | undefined;
+        if (status === "dismissed") {
+          const dismissalDateObj = new Date(hireDateObj);
+          dismissalDateObj.setMonth(dismissalDateObj.getMonth() + Math.floor(Math.random() * 12) + 1);
+          if (dismissalDateObj > new Date()) {
+            dismissalDateObj.setMonth(dismissalDateObj.getMonth() - 6);
+          }
+          dismissalDate = dismissalDateObj.toISOString().split('T')[0];
+        }
+        
+        // 60% имеют стажировку в банке
+        const internshipInBank = Math.random() < 0.6;
+        let internshipStartDate: string | undefined;
+        let internshipEndDate: string | undefined;
+        
+        if (internshipInBank) {
+          const internshipStart = new Date(hireDateObj);
+          internshipStart.setMonth(internshipStart.getMonth() - Math.floor(Math.random() * 6) - 1);
+          internshipStartDate = internshipStart.toISOString().split('T')[0];
+          
+          const internshipEnd = new Date(internshipStart);
+          internshipEnd.setMonth(internshipEnd.getMonth() + Math.floor(Math.random() * 3) + 2);
+          internshipEndDate = internshipEnd.toISOString().split('T')[0];
+        }
+        
+        interns.push({
+          id: `intern-hse-${i}`,
+          employeeName: fullName,
+          age,
+          position,
+          department,
+          hireDate,
+          status,
+          dismissalDate,
+          internshipInBank,
+          internshipStartDate,
+          internshipEndDate,
+        });
+      }
+      
+      return interns;
+    })(),
     region: "Московская область",
     description: "Ведущий экономический и IT-университет",
     image: "https://www.hse.ru//images/main/main_logo_ru_full.svg",
@@ -983,6 +1044,34 @@ export default function UniversitiesPage() {
   const [studentsCurrentPage, setStudentsCurrentPage] = useState(1);
   const [studentsItemsPerPage, setStudentsItemsPerPage] = useState(10);
   
+  // Состояние для пагинации стажеров
+  const [internsCurrentPage, setInternsCurrentPage] = useState(1);
+  const [internsItemsPerPage, setInternsItemsPerPage] = useState(10);
+  
+  // Состояние для фильтров стажеров
+  const [internsFilterDialogOpen, setInternsFilterDialogOpen] = useState(false);
+  const [internsFilters, setInternsFilters] = useState<{
+    employeeName: string;
+    ageMin: string;
+    ageMax: string;
+    positions: string[];
+    departments: string[];
+    hireDateFrom: string;
+    hireDateTo: string;
+    statuses: ("active" | "dismissed")[];
+    internshipInBank: "yes" | "no" | "all";
+  }>({
+    employeeName: "",
+    ageMin: "",
+    ageMax: "",
+    positions: [],
+    departments: [],
+    hireDateFrom: "",
+    hireDateTo: "",
+    statuses: [],
+    internshipInBank: "all",
+  });
+  
   // Состояние для формы создания университета
   const [universityFormData, setUniversityFormData] = useState({
     // Шаг 1: Общая информация
@@ -1160,6 +1249,11 @@ export default function UniversitiesPage() {
   useEffect(() => {
     setStudentsCurrentPage(1);
   }, [studentsItemsPerPage]);
+  
+  // Сброс страницы при изменении фильтров стажеров
+  useEffect(() => {
+    setInternsCurrentPage(1);
+  }, [internsFilters]);
   
   // Открытие диалога создания ВУЗа
   const handleCreate = () => {
@@ -2485,31 +2579,450 @@ export default function UniversitiesPage() {
                         <TabsContent value="staff" className="space-y-4 mt-4">
                           <Tabs value={staffSubTab} onValueChange={(v) => setStaffSubTab(v as typeof staffSubTab)} className="w-full">
                             <TabsList className="grid w-full grid-cols-2">
-                              <TabsTrigger value="interns">Стажеры</TabsTrigger>
+                              <TabsTrigger value="interns">Сотрудники</TabsTrigger>
                               <TabsTrigger value="practitioners">Практиканты</TabsTrigger>
                             </TabsList>
                             
-                            {/* Подтаб: Стажеры */}
+                            {/* Подтаб: Сотрудники */}
                             <TabsContent value="interns" className="space-y-4 mt-4">
-                              {university.internList && university.internList.length > 0 ? (
-                                <div className="border rounded-lg overflow-hidden">
-                                  <Table>
+                              {(() => {
+                                // Вычисляем отфильтрованные данные один раз
+                                const filteredInterns = (university.internList || []).filter((intern) => {
+                                  // Фильтр по имени сотрудника
+                                  if (internsFilters.employeeName) {
+                                    const searchName = internsFilters.employeeName.toLowerCase();
+                                    if (!intern.employeeName.toLowerCase().includes(searchName)) {
+                                      return false;
+                                    }
+                                  }
+                                  
+                                  // Фильтр по возрасту
+                                  if (internsFilters.ageMin && intern.age < Number(internsFilters.ageMin)) {
+                                    return false;
+                                  }
+                                  if (internsFilters.ageMax && intern.age > Number(internsFilters.ageMax)) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по должности
+                                  if (internsFilters.positions.length > 0 && !internsFilters.positions.includes(intern.position)) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по подразделению
+                                  if (internsFilters.departments.length > 0 && !internsFilters.departments.includes(intern.department)) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по дате приема на работу
+                                  if (internsFilters.hireDateFrom && intern.hireDate < internsFilters.hireDateFrom) {
+                                    return false;
+                                  }
+                                  if (internsFilters.hireDateTo && intern.hireDate > internsFilters.hireDateTo) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по статусу
+                                  if (internsFilters.statuses.length > 0 && !internsFilters.statuses.includes(intern.status)) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по стажировке в банке
+                                  if (internsFilters.internshipInBank !== "all") {
+                                    const hasInternship = intern.internshipInBank;
+                                    if (internsFilters.internshipInBank === "yes" && !hasInternship) {
+                                      return false;
+                                    }
+                                    if (internsFilters.internshipInBank === "no" && hasInternship) {
+                                      return false;
+                                    }
+                                  }
+                                  
+                                  return true;
+                                });
+                                
+                                return university.internList && university.internList.length > 0 ? (
+                                  <>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="text-sm text-muted-foreground">
+                                        Найдено: <span className="font-semibold text-foreground">{filteredInterns.length}</span> {filteredInterns.length === 1 ? 'сотрудник' : filteredInterns.length > 1 && filteredInterns.length < 5 ? 'сотрудника' : 'сотрудников'}
+                                        {filteredInterns.length !== university.internList.length && (
+                                          <span className="ml-1">из {university.internList.length}</span>
+                                        )}
+                                      </div>
+                                      <Dialog open={internsFilterDialogOpen} onOpenChange={setInternsFilterDialogOpen}>
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline">
+                                          <Filter className="mr-2 h-4 w-4" />
+                                          Фильтры
+                                          {(() => {
+                                            const activeFiltersCount = 
+                                              (internsFilters.employeeName ? 1 : 0) +
+                                              (internsFilters.ageMin || internsFilters.ageMax ? 1 : 0) +
+                                              internsFilters.positions.length +
+                                              internsFilters.departments.length +
+                                              (internsFilters.hireDateFrom || internsFilters.hireDateTo ? 1 : 0) +
+                                              internsFilters.statuses.length +
+                                              (internsFilters.internshipInBank !== "all" ? 1 : 0);
+                                            return activeFiltersCount > 0 ? (
+                                              <Badge variant="secondary" className="ml-2">
+                                                {activeFiltersCount}
+                                              </Badge>
+                                            ) : null;
+                                          })()}
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                        <DialogHeader className="pb-3">
+                                          <DialogTitle className="text-lg">Фильтры сотрудников</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-2">
+                                          {/* Фильтр по имени сотрудника */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Сотрудник</Label>
+                                            <Input
+                                              placeholder="Поиск по ФИО..."
+                                              value={internsFilters.employeeName}
+                                              onChange={(e) => setInternsFilters({ ...internsFilters, employeeName: e.target.value })}
+                                            />
+                                          </div>
+                                          
+                                          {/* Фильтр по возрасту */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Возраст</Label>
+                                            <div className="flex items-center gap-2">
+                                              <Input
+                                                type="number"
+                                                placeholder="От"
+                                                value={internsFilters.ageMin}
+                                                onChange={(e) => setInternsFilters({ ...internsFilters, ageMin: e.target.value })}
+                                                className="w-full"
+                                              />
+                                              <span className="text-sm text-muted-foreground">—</span>
+                                              <Input
+                                                type="number"
+                                                placeholder="До"
+                                                value={internsFilters.ageMax}
+                                                onChange={(e) => setInternsFilters({ ...internsFilters, ageMax: e.target.value })}
+                                                className="w-full"
+                                              />
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по должности */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Должность</Label>
+                                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                              {(() => {
+                                                const uniquePositions = Array.from(new Set(university.internList?.map(i => i.position) || []));
+                                                return uniquePositions.map((position) => (
+                                                  <div key={position} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`filter-position-${position}`}
+                                                      checked={internsFilters.positions.includes(position)}
+                                                      onCheckedChange={(checked) => {
+                                                        if (checked) {
+                                                          setInternsFilters({
+                                                            ...internsFilters,
+                                                            positions: [...internsFilters.positions, position],
+                                                          });
+                                                        } else {
+                                                          setInternsFilters({
+                                                            ...internsFilters,
+                                                            positions: internsFilters.positions.filter((p) => p !== position),
+                                                          });
+                                                        }
+                                                      }}
+                                                    />
+                                                    <Label
+                                                      htmlFor={`filter-position-${position}`}
+                                                      className="text-sm font-normal cursor-pointer"
+                                                    >
+                                                      {position}
+                                                    </Label>
+                                                  </div>
+                                                ));
+                                              })()}
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по подразделению */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Подразделение</Label>
+                                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                              {(() => {
+                                                const uniqueDepartments = Array.from(new Set(university.internList?.map(i => i.department) || []));
+                                                return uniqueDepartments.map((department) => (
+                                                  <div key={department} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`filter-department-${department}`}
+                                                      checked={internsFilters.departments.includes(department)}
+                                                      onCheckedChange={(checked) => {
+                                                        if (checked) {
+                                                          setInternsFilters({
+                                                            ...internsFilters,
+                                                            departments: [...internsFilters.departments, department],
+                                                          });
+                                                        } else {
+                                                          setInternsFilters({
+                                                            ...internsFilters,
+                                                            departments: internsFilters.departments.filter((d) => d !== department),
+                                                          });
+                                                        }
+                                                      }}
+                                                    />
+                                                    <Label
+                                                      htmlFor={`filter-department-${department}`}
+                                                      className="text-sm font-normal cursor-pointer"
+                                                    >
+                                                      {department}
+                                                    </Label>
+                                                  </div>
+                                                ));
+                                              })()}
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по дате приема на работу */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Дата приема на работу</Label>
+                                            <div className="flex items-center gap-2">
+                                              <Input
+                                                type="date"
+                                                placeholder="От"
+                                                value={internsFilters.hireDateFrom}
+                                                onChange={(e) => setInternsFilters({ ...internsFilters, hireDateFrom: e.target.value })}
+                                                className="w-full"
+                                              />
+                                              <span className="text-sm text-muted-foreground">—</span>
+                                              <Input
+                                                type="date"
+                                                placeholder="До"
+                                                value={internsFilters.hireDateTo}
+                                                onChange={(e) => setInternsFilters({ ...internsFilters, hireDateTo: e.target.value })}
+                                                className="w-full"
+                                              />
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по статусу */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Статус</Label>
+                                            <div className="space-y-1.5">
+                                              {(["active", "dismissed"] as const).map((status) => (
+                                                <div key={status} className="flex items-center space-x-2">
+                                                  <Checkbox
+                                                    id={`filter-status-${status}`}
+                                                    checked={internsFilters.statuses.includes(status)}
+                                                    onCheckedChange={(checked) => {
+                                                      if (checked) {
+                                                        setInternsFilters({
+                                                          ...internsFilters,
+                                                          statuses: [...internsFilters.statuses, status],
+                                                        });
+                                                      } else {
+                                                        setInternsFilters({
+                                                          ...internsFilters,
+                                                          statuses: internsFilters.statuses.filter((s) => s !== status),
+                                                        });
+                                                      }
+                                                    }}
+                                                  />
+                                                  <Label
+                                                    htmlFor={`filter-status-${status}`}
+                                                    className="text-sm font-normal cursor-pointer"
+                                                  >
+                                                    {status === "active" ? "Работает" : "Уволен"}
+                                                  </Label>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по стажировке в банке */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Стажировка в банке</Label>
+                                            <Select
+                                              value={internsFilters.internshipInBank}
+                                              onValueChange={(value) => setInternsFilters({ ...internsFilters, internshipInBank: value as typeof internsFilters.internshipInBank })}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="all">Все</SelectItem>
+                                                <SelectItem value="yes">Да</SelectItem>
+                                                <SelectItem value="no">Нет</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+                                        <DialogFooter className="pt-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                              setInternsFilters({
+                                                employeeName: "",
+                                                ageMin: "",
+                                                ageMax: "",
+                                                positions: [],
+                                                departments: [],
+                                                hireDateFrom: "",
+                                                hireDateTo: "",
+                                                statuses: [],
+                                                internshipInBank: "all",
+                                              });
+                                              setInternsCurrentPage(1);
+                                            }}
+                                          >
+                                            Сбросить
+                                          </Button>
+                                          <Button size="sm" onClick={() => {
+                                            setInternsFilterDialogOpen(false);
+                                            setInternsCurrentPage(1);
+                                          }}>
+                                            Применить
+                                          </Button>
+                                        </DialogFooter>
+                                      </DialogContent>
+                                    </Dialog>
+                                  </div>
+                                  
+                                  {/* Активные фильтры */}
+                                  {(() => {
+                                    const activeFilters: Array<{ label: string; onRemove: () => void }> = [];
+                                    
+                                    // Фильтр по имени
+                                    if (internsFilters.employeeName) {
+                                      activeFilters.push({
+                                        label: `Сотрудник: ${internsFilters.employeeName}`,
+                                        onRemove: () => setInternsFilters({ ...internsFilters, employeeName: "" }),
+                                      });
+                                    }
+                                    
+                                    // Фильтр по возрасту
+                                    if (internsFilters.ageMin || internsFilters.ageMax) {
+                                      const ageLabel = internsFilters.ageMin && internsFilters.ageMax
+                                        ? `Возраст: ${internsFilters.ageMin} - ${internsFilters.ageMax}`
+                                        : internsFilters.ageMin
+                                        ? `Возраст: от ${internsFilters.ageMin}`
+                                        : `Возраст: до ${internsFilters.ageMax}`;
+                                      activeFilters.push({
+                                        label: ageLabel,
+                                        onRemove: () => setInternsFilters({ ...internsFilters, ageMin: "", ageMax: "" }),
+                                      });
+                                    }
+                                    
+                                    // Фильтр по должностям
+                                    internsFilters.positions.forEach((position) => {
+                                      activeFilters.push({
+                                        label: `Должность: ${position}`,
+                                        onRemove: () => setInternsFilters({
+                                          ...internsFilters,
+                                          positions: internsFilters.positions.filter((p) => p !== position),
+                                        }),
+                                      });
+                                    });
+                                    
+                                    // Фильтр по подразделениям
+                                    internsFilters.departments.forEach((department) => {
+                                      activeFilters.push({
+                                        label: `Подразделение: ${department}`,
+                                        onRemove: () => setInternsFilters({
+                                          ...internsFilters,
+                                          departments: internsFilters.departments.filter((d) => d !== department),
+                                        }),
+                                      });
+                                    });
+                                    
+                                    // Фильтр по дате приема
+                                    if (internsFilters.hireDateFrom || internsFilters.hireDateTo) {
+                                      const formatDate = (dateString: string) => {
+                                        if (!dateString) return "";
+                                        const [year, month, day] = dateString.split('-').map(Number);
+                                        return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                      };
+                                      const dateLabel = internsFilters.hireDateFrom && internsFilters.hireDateTo
+                                        ? `Дата приема: ${formatDate(internsFilters.hireDateFrom)} - ${formatDate(internsFilters.hireDateTo)}`
+                                        : internsFilters.hireDateFrom
+                                        ? `Дата приема: с ${formatDate(internsFilters.hireDateFrom)}`
+                                        : `Дата приема: до ${formatDate(internsFilters.hireDateTo)}`;
+                                      activeFilters.push({
+                                        label: dateLabel,
+                                        onRemove: () => setInternsFilters({ ...internsFilters, hireDateFrom: "", hireDateTo: "" }),
+                                      });
+                                    }
+                                    
+                                    // Фильтр по статусам
+                                    internsFilters.statuses.forEach((status) => {
+                                      activeFilters.push({
+                                        label: `Статус: ${status === "active" ? "Работает" : "Уволен"}`,
+                                        onRemove: () => setInternsFilters({
+                                          ...internsFilters,
+                                          statuses: internsFilters.statuses.filter((s) => s !== status),
+                                        }),
+                                      });
+                                    });
+                                    
+                                    // Фильтр по стажировке в банке
+                                    if (internsFilters.internshipInBank !== "all") {
+                                      activeFilters.push({
+                                        label: `Стажировка в банке: ${internsFilters.internshipInBank === "yes" ? "Да" : "Нет"}`,
+                                        onRemove: () => setInternsFilters({ ...internsFilters, internshipInBank: "all" }),
+                                      });
+                                    }
+                                    
+                                    if (activeFilters.length === 0) return null;
+                                    
+                                    return (
+                                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                                        {activeFilters.map((filter, index) => (
+                                          <Badge
+                                            key={index}
+                                            variant="secondary"
+                                            className="flex items-center gap-1 px-2 py-1"
+                                          >
+                                            <span className="text-sm">{filter.label}</span>
+                                            <button
+                                              type="button"
+                                              onClick={filter.onRemove}
+                                              className="ml-1 rounded-full hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                              aria-label="Удалить фильтр"
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    );
+                                  })()}
+                                  
+                                  <div className="border rounded-lg overflow-hidden">
+                                    <Table>
                                     <TableHeader>
                                       <TableRow>
-                                        <TableHead className="w-[250px]">Сотрудник</TableHead>
-                                        <TableHead className="w-[100px]">Возраст</TableHead>
-                                      <TableHead className="w-[200px]">Должность / Подразделение</TableHead>
-                                        <TableHead className="w-[150px]">Дата приема на работу</TableHead>
-                                        <TableHead className="w-[150px]">Статус</TableHead>
-                                        <TableHead className="w-[150px]">Стажировка в банке</TableHead>
+                                        <TableHead className="w-[240px]">Сотрудник</TableHead>
+                                        <TableHead className="w-[80px]">Возраст</TableHead>
+                                      <TableHead className="w-[290px]">Должность / Подразделение</TableHead>
+                                        <TableHead className="w-[120px]">Дата приема на работу</TableHead>
+                                        <TableHead className="w-[120px]">Статус</TableHead>
+                                        <TableHead className="w-[120px]">Стажировка в банке</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                      {university.internList.map((intern) => {
-                                        const getInitials = (name: string) => {
-                                          return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                                        };
-                                        return (
+                                      {(() => {
+                                        // Логика пагинации
+                                        const totalPages = Math.ceil(filteredInterns.length / internsItemsPerPage);
+                                        const startIndex = (internsCurrentPage - 1) * internsItemsPerPage;
+                                        const endIndex = startIndex + internsItemsPerPage;
+                                        const paginatedInterns = filteredInterns.slice(startIndex, endIndex);
+                                        
+                                        return paginatedInterns.map((intern) => {
+                                          const getInitials = (name: string) => {
+                                            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                                          };
+                                          return (
                                           <TableRow key={intern.id}>
                                               <TableCell className="px-4 whitespace-normal">
                                                 <div className="flex items-center gap-3">
@@ -2614,11 +3127,92 @@ export default function UniversitiesPage() {
                                                 )}
                                               </TableCell>
                                             </TableRow>
-                                        );
-                                      })}
+                                          );
+                                        });
+                                      })()}
                                     </TableBody>
                                   </Table>
                                 </div>
+                                
+                                    {/* Пагинация для сотрудников */}
+                                    {(() => {
+                                      const totalPages = Math.ceil(filteredInterns.length / internsItemsPerPage);
+                                      
+                                      return (
+                                        <div className="flex items-center justify-between px-2">
+                                          <div className="flex items-center gap-2">
+                                            <Label htmlFor="interns-items-per-page" className="text-sm text-muted-foreground">
+                                              Показать:
+                                            </Label>
+                                            <Select
+                                              value={internsItemsPerPage.toString()}
+                                              onValueChange={(value) => {
+                                                setInternsItemsPerPage(Number(value));
+                                                setInternsCurrentPage(1);
+                                              }}
+                                            >
+                                              <SelectTrigger id="interns-items-per-page" className="w-[80px]">
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="10">10</SelectItem>
+                                                <SelectItem value="25">25</SelectItem>
+                                                <SelectItem value="50">50</SelectItem>
+                                                <SelectItem value="100">100</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                            <span className="text-sm text-muted-foreground">
+                                              из {filteredInterns.length}
+                                            </span>
+                                          </div>
+
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm text-muted-foreground">
+                                          Страница {internsCurrentPage} из {totalPages}
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={() => setInternsCurrentPage(1)}
+                                            disabled={internsCurrentPage === 1}
+                                          >
+                                            <ChevronsLeft className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={() => setInternsCurrentPage(internsCurrentPage - 1)}
+                                            disabled={internsCurrentPage === 1}
+                                          >
+                                            <ChevronLeft className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={() => setInternsCurrentPage(internsCurrentPage + 1)}
+                                            disabled={internsCurrentPage === totalPages}
+                                          >
+                                            <ChevronRight className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={() => setInternsCurrentPage(totalPages)}
+                                            disabled={internsCurrentPage === totalPages}
+                                          >
+                                            <ChevronsRight className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                                </>
                               ) : (
                                 <div className="border rounded-lg overflow-hidden">
                                   <Table>
@@ -2626,22 +3220,23 @@ export default function UniversitiesPage() {
                                       <TableRow>
                                         <TableHead className="w-[250px]">Сотрудник</TableHead>
                                         <TableHead className="w-[100px]">Возраст</TableHead>
-                                        <TableHead className="w-[200px]">Должность / Подразделение</TableHead>
-                                        <TableHead className="w-[150px]">Дата приема на работу</TableHead>
-                                        <TableHead className="w-[150px]">Статус</TableHead>
-                                        <TableHead className="w-[150px]">Стажировка в банке</TableHead>
+                                        <TableHead className="w-[260px]">Должность / Подразделение</TableHead>
+                                        <TableHead className="w-[120px]">Дата приема на работу</TableHead>
+                                        <TableHead className="w-[120px]">Статус</TableHead>
+                                        <TableHead className="w-[120px]">Стажировка в банке</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                       <TableRow>
                                         <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                          Стажеры не добавлены
+                                          Сотрудники не добавлены
                                         </TableCell>
                                       </TableRow>
                                     </TableBody>
                                   </Table>
                                 </div>
-                              )}
+                              );
+                              })()}
                             </TabsContent>
                             
                             {/* Подтаб: Практиканты */}
