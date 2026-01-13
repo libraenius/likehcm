@@ -75,7 +75,8 @@ interface Contract {
 interface Event {
   id: string;
   type: "careerDays" | "expertParticipation" | "caseChampionships"; // Тип мероприятия
-  date: string; // Дата проведения
+  date: string; // Дата начала проведения
+  endDate: string; // Дата окончания проведения
   status: "planned" | "completed"; // Статус мероприятия
   comments?: string; // Комментарии
   responsiblePerson: string; // Ответственное лицо Банк
@@ -238,6 +239,28 @@ const mockUniversities: University[] = [
       { id: "cont-1", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-mgu-2020.pdf" },
       { id: "cont-2", type: "internship", hasContract: true, bankDepartment: "Кафедра разработки", contractFile: "contract-mgu-internship.pdf" },
     ],
+    events: [
+      {
+        id: "event-mgu-1",
+        type: "careerDays",
+        date: "2024-02-10",
+        endDate: "2024-02-12",
+        status: "completed",
+        responsiblePerson: "Смирнов Андрей Викторович",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+        comments: "Дни карьеры для студентов факультета вычислительной математики и кибернетики.",
+      },
+      {
+        id: "event-mgu-2",
+        type: "expertParticipation",
+        date: "2024-06-15",
+        endDate: "2024-06-15",
+        status: "completed",
+        responsiblePerson: "Кузнецова Елена Сергеевна",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
+        comments: "Участие в качестве эксперта на защите магистерских диссертаций.",
+      },
+    ],
     careerDays: true,
     expertParticipation: true,
     caseChampionships: true,
@@ -268,6 +291,28 @@ const mockUniversities: University[] = [
       { id: "cont-3", type: "cooperation", hasContract: true, bankDepartment: "Кафедра экономики" },
       { id: "cont-4", type: "scholarship", hasContract: true, bankDepartment: "Кафедра финансов", contractFile: "contract-spbgu-scholarship.pdf" },
     ],
+    events: [
+      {
+        id: "event-spbgu-1",
+        type: "careerDays",
+        date: "2024-03-20",
+        endDate: "2024-03-22",
+        status: "completed",
+        responsiblePerson: "Орлов Дмитрий Александрович",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+        comments: "Дни карьеры для студентов экономического факультета СПбГУ.",
+      },
+      {
+        id: "event-spbgu-2",
+        type: "caseChampionships",
+        date: "2024-05-25",
+        endDate: "2024-05-27",
+        status: "completed",
+        responsiblePerson: "Белова Мария Игоревна",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
+        comments: "Кейс-чемпионат по финансовому моделированию.",
+      },
+    ],
     careerDays: true,
     expertParticipation: false,
     caseChampionships: true,
@@ -295,6 +340,38 @@ const mockUniversities: University[] = [
     contracts: [
       { id: "cont-5", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки" },
       { id: "cont-6", type: "internship", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-mfti-internship.pdf" },
+    ],
+    events: [
+      {
+        id: "event-mfti-1",
+        type: "expertParticipation",
+        date: "2024-04-05",
+        endDate: "2024-04-05",
+        status: "completed",
+        responsiblePerson: "Григорьев Павел Сергеевич",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+        comments: "Участие в качестве эксперта на конференции по машинному обучению.",
+      },
+      {
+        id: "event-mfti-2",
+        type: "caseChampionships",
+        date: "2024-06-01",
+        endDate: "2024-06-03",
+        status: "completed",
+        responsiblePerson: "Тихонов Игорь Владимирович",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face",
+        comments: "Кейс-чемпионат по разработке финансовых алгоритмов.",
+      },
+      {
+        id: "event-mfti-3",
+        type: "expertParticipation",
+        date: "2024-11-10",
+        endDate: "2024-11-10",
+        status: "planned",
+        responsiblePerson: "Соколова Анна Дмитриевна",
+        responsiblePersonImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+        comments: "Планируется участие в качестве эксперта на защите дипломных проектов.",
+      },
     ],
     careerDays: false,
     expertParticipation: true,
@@ -331,6 +408,7 @@ const mockUniversities: University[] = [
         id: "event-hse-1",
         type: "careerDays",
         date: "2024-03-15",
+        endDate: "2024-03-17",
         status: "completed",
         responsiblePerson: "Иванов Иван Иванович",
         responsiblePersonImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
@@ -340,6 +418,7 @@ const mockUniversities: University[] = [
         id: "event-hse-2",
         type: "expertParticipation",
         date: "2024-04-20",
+        endDate: "2024-04-20",
         status: "completed",
         responsiblePerson: "Петрова Мария Сергеевна",
         responsiblePersonImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
@@ -349,6 +428,7 @@ const mockUniversities: University[] = [
         id: "event-hse-3",
         type: "caseChampionships",
         date: "2024-05-10",
+        endDate: "2024-05-12",
         status: "completed",
         responsiblePerson: "Сидоров Алексей Дмитриевич",
         responsiblePersonImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
@@ -358,6 +438,7 @@ const mockUniversities: University[] = [
         id: "event-hse-4",
         type: "careerDays",
         date: "2024-09-25",
+        endDate: "2024-09-27",
         status: "planned",
         responsiblePerson: "Козлова Елена Владимировна",
         responsiblePersonImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
@@ -367,6 +448,7 @@ const mockUniversities: University[] = [
         id: "event-hse-5",
         type: "expertParticipation",
         date: "2024-10-15",
+        endDate: "2024-10-15",
         status: "planned",
         responsiblePerson: "Волков Дмитрий Николаевич",
         responsiblePersonImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
@@ -376,6 +458,7 @@ const mockUniversities: University[] = [
         id: "event-hse-6",
         type: "caseChampionships",
         date: "2024-11-20",
+        endDate: "2024-11-22",
         status: "planned",
         responsiblePerson: "Новикова Анна Петровна",
         responsiblePersonImage: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
@@ -385,6 +468,7 @@ const mockUniversities: University[] = [
         id: "event-hse-7",
         type: "careerDays",
         date: "2024-12-05",
+        endDate: "2024-12-07",
         status: "planned",
         responsiblePerson: "Морозов Сергей Александрович",
         responsiblePersonImage: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face",
@@ -851,12 +935,14 @@ export default function UniversitiesPage() {
   const [newEvent, setNewEvent] = useState<{
     type: "careerDays" | "expertParticipation" | "caseChampionships" | "";
     date: string;
+    endDate: string;
     status: "planned" | "completed";
     comments: string;
     responsiblePerson: string;
   }>({
     type: "",
     date: "",
+    endDate: "",
     status: "planned",
     comments: "",
     responsiblePerson: "",
@@ -1142,13 +1228,14 @@ export default function UniversitiesPage() {
   
   // Добавление мероприятия
   const handleAddEvent = (universityId: string) => {
-    if (!newEvent.type || !newEvent.date.trim() || !newEvent.responsiblePerson.trim()) {
+    if (!newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || !newEvent.responsiblePerson.trim()) {
       return;
     }
     const event: Event = {
       id: `event-${Date.now()}`,
       type: newEvent.type as "careerDays" | "expertParticipation" | "caseChampionships",
       date: newEvent.date,
+      endDate: newEvent.endDate,
       status: newEvent.status,
       comments: newEvent.comments.trim() || undefined,
       responsiblePerson: newEvent.responsiblePerson.trim(),
@@ -1159,7 +1246,7 @@ export default function UniversitiesPage() {
       setUniversities(universities.map(u => 
         u.id === universityId ? { ...u, events: updatedEvents } : u
       ));
-      setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+      setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
       setIsEventDialogOpen(false);
     }
   };
@@ -1173,6 +1260,7 @@ export default function UniversitiesPage() {
       setNewEvent({
         type: event.type,
         date: event.date,
+        endDate: event.endDate,
         status: event.status,
         comments: event.comments || "",
         responsiblePerson: event.responsiblePerson,
@@ -1183,21 +1271,21 @@ export default function UniversitiesPage() {
   
   // Сохранение изменений мероприятия
   const handleSaveEvent = () => {
-    if (!editingEvent || !newEvent.type || !newEvent.date.trim() || !newEvent.responsiblePerson.trim()) {
+    if (!editingEvent || !newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || !newEvent.responsiblePerson.trim()) {
       return;
     }
     const updatedEvents = universities
       .find(u => u.id === editingEvent.universityId)
       ?.events?.map(e => 
         e.id === editingEvent.event.id 
-          ? { ...e, type: newEvent.type as "careerDays" | "expertParticipation" | "caseChampionships", date: newEvent.date, status: newEvent.status, comments: newEvent.comments.trim() || undefined, responsiblePerson: newEvent.responsiblePerson.trim() }
+          ? { ...e, type: newEvent.type as "careerDays" | "expertParticipation" | "caseChampionships", date: newEvent.date, endDate: newEvent.endDate, status: newEvent.status, comments: newEvent.comments.trim() || undefined, responsiblePerson: newEvent.responsiblePerson.trim() }
           : e
       ) || [];
     setUniversities(universities.map(u => 
       u.id === editingEvent.universityId ? { ...u, events: updatedEvents } : u
     ));
     setEditingEvent(null);
-    setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+    setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
     setIsEventDialogOpen(false);
   };
   
@@ -2159,7 +2247,7 @@ export default function UniversitiesPage() {
                                                   <Button
                                 onClick={() => {
                                   setEditingEvent(null);
-                                  setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+                                  setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
                                   setIsEventDialogOpen(true);
                                 }}
                                 disabled={!selectedUniversity}
@@ -2167,8 +2255,8 @@ export default function UniversitiesPage() {
                               >
                                 <Plus className="h-4 w-4 mr-1" />
                                 Добавить мероприятие
-                                                  </Button>
-                                </div>
+                              </Button>
+                            </div>
                                 
                             {/* Список мероприятий */}
                             {university.events && university.events.length > 0 ? (() => {
@@ -2178,7 +2266,7 @@ export default function UniversitiesPage() {
                                 return true;
                               });
                               return filteredEvents.length > 0 ? (
-                                <div className="space-y-3">
+                              <div className="space-y-3">
                                   {filteredEvents.map((event) => {
                                   const eventTypeLabels: Record<Event["type"], string> = {
                                     careerDays: "Дни карьеры",
@@ -2220,35 +2308,42 @@ export default function UniversitiesPage() {
                                             </Badge>
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
                                             <span className="text-sm font-semibold">
-                                              {new Date(event.date).toLocaleDateString('ru-RU', { 
-                                                year: 'numeric', 
-                                                month: 'long', 
-                                                day: 'numeric' 
-                                              })}
+                                      {(() => {
+                                                const formatDate = (dateString: string) => {
+                                                  if (!dateString) return "Не указано";
+                                                  // Парсим дату в формате YYYY-MM-DD
+                                                  const [year, month, day] = dateString.split('-').map(Number);
+                                                  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+                                                    return "Неверный формат";
+                                                  }
+                                                  return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                                };
+                                                return `${formatDate(event.date)} - ${formatDate(event.endDate)}`;
+                                              })()}
                                         </span>
                                       </div>
                                       <div className="flex items-center gap-2">
                                             <Label className="text-sm font-semibold">Ответственное лицо Банк:</Label>
                                             <div className="flex items-center gap-2">
-                                              <Avatar className="h-10 w-10 shrink-0">
+                                                  <Avatar className="h-10 w-10 shrink-0">
                                                 <AvatarImage src={event.responsiblePersonImage} alt={event.responsiblePerson} />
-                                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
                                                   {event.responsiblePerson.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-                                                </AvatarFallback>
-                                              </Avatar>
+                                                    </AvatarFallback>
+                                                  </Avatar>
                                               <span className="text-sm font-medium">{event.responsiblePerson}</span>
-                                            </div>
-                                          </div>
+                                                  </div>
+                                                </div>
                                           {event.comments && (
                                             <div className="flex items-center gap-2">
                                               <Label className="text-sm font-semibold">Комментарий:</Label>
                                               <span className="text-sm text-muted-foreground">{event.comments}</span>
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex gap-1">
-                                          <Button
-                                            variant="ghost"
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                <div className="flex gap-1">
+                                                  <Button
+                                                    variant="ghost"
                                             size="sm"
                                             className="h-8 w-8 p-0"
                                             onClick={() => {
@@ -2264,11 +2359,11 @@ export default function UniversitiesPage() {
                                             onClick={() => handleRemoveEvent(selectedUniversity!, event.id)}
                                           >
                                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                          </Button>
-                                        </div>
+                                                  </Button>
+                                                </div>
                                       </div>
                                     </Card>
-                                  );
+                                        );
                                   })}
                                 </div>
                               ) : (
@@ -2293,7 +2388,7 @@ export default function UniversitiesPage() {
                               <div className="space-y-2">
                                 <Label className="text-sm font-semibold">Все сотрудники</Label>
                                 <p className="text-2xl font-bold">{university.allEmployees}</p>
-                                                  </div>
+                                      </div>
                             )}
                             <div className="flex items-center justify-between p-3 border rounded-lg">
                               <div>
@@ -2437,11 +2532,11 @@ export default function UniversitiesPage() {
                             >
                               {university.name}
                             </Label>
-                              </div>
+                                        </div>
                         ))}
-                      </div>
-                    </div>
-                  </div>
+                                      </div>
+                                    </div>
+                              </div>
                   <DialogFooter className="pt-2">
                                 <Button
                                   variant="outline"
@@ -3031,7 +3126,7 @@ export default function UniversitiesPage() {
             setIsEventDialogOpen(open);
             if (!open) {
               setEditingEvent(null);
-              setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+              setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
             }
           }}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -3075,13 +3170,13 @@ export default function UniversitiesPage() {
                     </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-1">
-                      <Label htmlFor="event-date-dialog">Дата проведения</Label>
+                      <Label htmlFor="event-date-dialog">Дата начала</Label>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Укажите дату проведения мероприятия</p>
+                          <p>Укажите дату начала проведения мероприятия</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -3090,6 +3185,26 @@ export default function UniversitiesPage() {
                       type="date"
                       value={newEvent.date}
                       onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Label htmlFor="event-end-date-dialog">Дата окончания</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Укажите дату окончания проведения мероприятия</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Input
+                      id="event-end-date-dialog"
+                      type="date"
+                      value={newEvent.endDate}
+                      onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
                       className="w-full"
                     />
                   </div>
@@ -3165,7 +3280,7 @@ export default function UniversitiesPage() {
                   onClick={() => {
                     setIsEventDialogOpen(false);
                     setEditingEvent(null);
-                    setNewEvent({ type: "", date: "", status: "planned", comments: "", responsiblePerson: "" });
+                    setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
                   }}
                 >
                   Отмена
@@ -3175,7 +3290,7 @@ export default function UniversitiesPage() {
                     onClick={() => {
                       handleSaveEvent();
                     }}
-                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.responsiblePerson.trim()}
+                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || !newEvent.responsiblePerson.trim()}
                   >
                     Сохранить
                   </Button>
@@ -3186,7 +3301,7 @@ export default function UniversitiesPage() {
                         handleAddEvent(selectedUniversity);
                       }
                     }}
-                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.responsiblePerson.trim() || !selectedUniversity}
+                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || !newEvent.responsiblePerson.trim() || !selectedUniversity}
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Добавить
