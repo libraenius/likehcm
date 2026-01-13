@@ -68,7 +68,12 @@ interface Contract {
   type: "cooperation" | "scholarship" | "internship";
   hasContract: boolean;
   contractFile?: string; // URL или путь к файлу
-  bankDepartment?: string;
+}
+
+// Тип для кафедры банка
+interface BankDepartment {
+  id: string;
+  name: string; // Название кафедры
 }
 
 // Тип для мероприятия
@@ -98,6 +103,25 @@ interface Intern {
   internshipEndDate?: string; // Дата окончания стажировки в банке (формат YYYY-MM-DD)
 }
 
+// Тип для практиканта (аналогичен стажеру)
+interface Practitioner {
+  id: string;
+  employeeName: string; // ФИО сотрудника
+  age: number; // Возраст
+  position: string; // Должность
+  department: string; // Подразделение
+  hireDate: string; // Дата приема на работу (формат YYYY-MM-DD)
+  status: "active" | "dismissed"; // Статус: работает или уволен
+  dismissalDate?: string; // Дата увольнения (формат YYYY-MM-DD)
+  internshipInBank: boolean; // Стажировка в банке: да/нет
+  internshipStartDate?: string; // Дата начала стажировки в банке (формат YYYY-MM-DD)
+  internshipEndDate?: string; // Дата окончания стажировки в банке (формат YYYY-MM-DD)
+  practiceStartDate: string; // Дата начала практики (формат YYYY-MM-DD)
+  practiceEndDate: string; // Дата окончания практики (формат YYYY-MM-DD)
+  addedBy: string; // Сотрудник, добавивший запись
+  comment?: string; // Комментарий
+}
+
 // Тип для университета
 interface University {
   id: string;
@@ -112,6 +136,7 @@ interface University {
   initiatorImage?: string; // Фото инициатора
   branchCurators?: BranchCurator[]; // Кураторы от филиалов
   contracts?: Contract[]; // Договоры
+  bankDepartments?: BankDepartment[]; // Кафедры банка
   events?: Event[]; // Мероприятия
   careerDays?: boolean; // Дни карьеры
   expertParticipation?: boolean; // Экспертное участие
@@ -121,9 +146,30 @@ interface University {
   averageInternsPerYear?: number; // Среднее количество стажеров в год
   interns?: number; // Практиканты
   internList?: Intern[]; // Список стажеров
+  practitionerList?: Practitioner[]; // Список практикантов
   region?: string;
   description?: string;
   image?: string; // Фото/логотип ВУЗа
+  bkoData?: {
+    // Блок Зарплатный проект
+    salaryProject?: {
+      students?: boolean; // Студенты
+      employees?: boolean; // Сотрудники
+    };
+    // Блок Транзакционные продукты
+    transactionalProducts?: {
+      ie?: boolean; // ИЭ
+      te?: boolean; // ТЭ
+      sbp?: boolean; // СБП
+      adm?: boolean; // АДМ
+    };
+    // Блок Лимит
+    limit?: boolean;
+    // Блок УК ГПБ фондами ЦК
+    ukGpbFundsCk?: boolean;
+    // Комментарий
+    comment?: string;
+  };
 }
 
 // Тип для партнерства - удален
@@ -149,7 +195,6 @@ interface Department {
 // Шаги для создания университета
 const UNIVERSITY_STEPS = [
   { id: 1, title: "Общая информация", description: "Основные данные об учебном заведении и сотрудничестве" },
-  { id: 2, title: "Договорная база", description: "Договоры и документы сотрудничества" },
 ];
 
 // Моковые данные подразделений
@@ -642,6 +687,181 @@ const mockUniversities: University[] = [
       
       return interns;
     })(),
+    practitionerList: (() => {
+      const departments = [
+        "Департамент автоматизации внутренних сервисов",
+        "Управление развития общекорпоративных систем",
+        "Управление разработки банковских продуктов",
+        "Департамент информационной безопасности",
+        "Управление качества и тестирования",
+      ];
+      const positions = [
+        "Практикант-экономист",
+        "Практикант-финансист",
+        "Практикант-разработчик",
+        "Практикант-аналитик",
+        "Практикант-тестировщик",
+      ];
+      const practitioners: Practitioner[] = [
+        {
+          id: "pract-hse-1",
+          employeeName: "Соколова Анастасия Дмитриевна",
+          age: 22,
+          position: "Практикант-экономист",
+          department: "Департамент информационной безопасности",
+          hireDate: "2024-01-15",
+          status: "active",
+          internshipInBank: true,
+          internshipStartDate: "2023-06-01",
+          internshipEndDate: "2023-08-31",
+          practiceStartDate: "2024-01-15",
+          practiceEndDate: "2024-05-31",
+          addedBy: "Иванов Иван Иванович",
+          comment: "Отличные результаты в работе с финансовыми данными",
+        },
+        {
+          id: "pract-hse-2",
+          employeeName: "Тихонов Артем Викторович",
+          age: 23,
+          position: "Практикант-разработчик",
+          department: "Управление разработки банковских продуктов",
+          hireDate: "2024-02-20",
+          status: "active",
+          internshipInBank: true,
+          internshipStartDate: "2023-09-01",
+          internshipEndDate: "2023-11-30",
+          practiceStartDate: "2024-02-20",
+          practiceEndDate: "2024-06-20",
+          addedBy: "Петрова Мария Сергеевна",
+          comment: "Активно участвует в разработке новых функций",
+        },
+        {
+          id: "pract-hse-3",
+          employeeName: "Романова Екатерина Сергеевна",
+          age: 21,
+          position: "Практикант-аналитик",
+          department: "Департамент автоматизации внутренних сервисов",
+          hireDate: "2024-03-10",
+          status: "active",
+          internshipInBank: false,
+          practiceStartDate: "2024-03-10",
+          practiceEndDate: "2024-07-10",
+          addedBy: "Сидоров Алексей Дмитриевич",
+          comment: "Показывает хорошие аналитические способности",
+        },
+        {
+          id: "pract-hse-4",
+          employeeName: "Григорьев Максим Александрович",
+          age: 24,
+          position: "Практикант-финансист",
+          department: "Управление развития общекорпоративных систем",
+          hireDate: "2024-04-05",
+          status: "active",
+          internshipInBank: true,
+          internshipStartDate: "2023-12-01",
+          internshipEndDate: "2024-02-29",
+          practiceStartDate: "2024-04-05",
+          practiceEndDate: "2024-08-05",
+          addedBy: "Козлова Елена Владимировна",
+          comment: "Ответственный подход к работе",
+        },
+        {
+          id: "pract-hse-5",
+          employeeName: "Федорова Виктория Игоревна",
+          age: 22,
+          position: "Практикант-тестировщик",
+          department: "Управление качества и тестирования",
+          hireDate: "2024-05-12",
+          status: "active",
+          internshipInBank: false,
+          practiceStartDate: "2024-05-12",
+          practiceEndDate: "2024-09-12",
+          addedBy: "Волков Дмитрий Николаевич",
+          comment: "Внимательность к деталям при тестировании",
+        },
+        {
+          id: "pract-hse-6",
+          employeeName: "Кузнецов Денис Олегович",
+          age: 25,
+          position: "Практикант-экономист",
+          department: "Департамент информационной безопасности",
+          hireDate: "2023-11-20",
+          status: "dismissed",
+          dismissalDate: "2024-06-15",
+          internshipInBank: true,
+          internshipStartDate: "2023-05-01",
+          internshipEndDate: "2023-07-31",
+          practiceStartDate: "2023-11-20",
+          practiceEndDate: "2024-03-20",
+          addedBy: "Новикова Анна Петровна",
+          comment: "Практика завершена досрочно",
+        },
+        {
+          id: "pract-hse-7",
+          employeeName: "Орлова Мария Павловна",
+          age: 23,
+          position: "Практикант-разработчик",
+          department: "Управление разработки банковских продуктов",
+          hireDate: "2024-06-01",
+          status: "active",
+          internshipInBank: true,
+          internshipStartDate: "2024-01-15",
+          internshipEndDate: "2024-03-31",
+          practiceStartDate: "2024-06-01",
+          practiceEndDate: "2024-10-01",
+          addedBy: "Морозов Сергей Александрович",
+          comment: "Быстро осваивает новые технологии",
+        },
+        {
+          id: "pract-hse-8",
+          employeeName: "Семенов Игорь Борисович",
+          age: 24,
+          position: "Практикант-аналитик",
+          department: "Департамент автоматизации внутренних сервисов",
+          hireDate: "2024-07-10",
+          status: "active",
+          internshipInBank: false,
+          practiceStartDate: "2024-07-10",
+          practiceEndDate: "2024-11-10",
+          addedBy: "Лебедев Сергей Викторович",
+          comment: "Хорошо работает с большими объемами данных",
+        },
+        {
+          id: "pract-hse-9",
+          employeeName: "Виноградова Ольга Николаевна",
+          age: 22,
+          position: "Практикант-финансист",
+          department: "Управление развития общекорпоративных систем",
+          hireDate: "2024-08-20",
+          status: "active",
+          internshipInBank: true,
+          internshipStartDate: "2024-02-01",
+          internshipEndDate: "2024-04-30",
+          practiceStartDate: "2024-08-20",
+          practiceEndDate: "2024-12-20",
+          addedBy: "Федорова Мария Дмитриевна",
+          comment: "Проявляет инициативу в решении задач",
+        },
+        {
+          id: "pract-hse-10",
+          employeeName: "Богданов Андрей Владимирович",
+          age: 23,
+          position: "Практикант-тестировщик",
+          department: "Управление качества и тестирования",
+          hireDate: "2024-09-05",
+          status: "active",
+          internshipInBank: true,
+          internshipStartDate: "2024-03-01",
+          internshipEndDate: "2024-05-31",
+          practiceStartDate: "2024-09-05",
+          practiceEndDate: "2025-01-05",
+          addedBy: "Иванов Иван Иванович",
+          comment: "Качественное тестирование продуктов",
+        },
+      ];
+      
+      return practitioners;
+    })(),
     region: "Московская область",
     description: "Ведущий экономический и IT-университет",
     image: "https://www.hse.ru//images/main/main_logo_ru_full.svg",
@@ -957,6 +1177,45 @@ const validateURL = (url: string): boolean => {
   }
 };
 
+// Функция для получения истории изменений университета
+const getUniversityChangeHistory = (universityId: string): ChangeHistory[] => {
+  const histories: ChangeHistory[] = [];
+  
+  // История создания
+  histories.push({
+    id: `history-${universityId}-1`,
+    universityId,
+    action: "created",
+    user: "Иванов Иван Иванович",
+    timestamp: new Date("2020-01-15T10:30:00"),
+  });
+  
+  // История редактирования полей
+  const fieldChanges = [
+    { field: "name", oldValue: "МГУ", newValue: "Московский государственный университет имени М.В. Ломоносова", date: "2020-02-20T14:15:00", user: "Петрова Мария Сергеевна" },
+    { field: "cooperationStartYear", oldValue: "2019", newValue: "2020", date: "2020-03-10T09:00:00", user: "Сидоров Алексей Дмитриевич" },
+    { field: "city", oldValue: "Москва (старое)", newValue: "Москва", date: "2020-04-05T11:20:00", user: "Козлова Елена Владимировна" },
+    { field: "targetAudience", oldValue: "Студенты", newValue: "Студенты IT-направлений", date: "2020-05-12T16:45:00", user: "Волков Дмитрий Николаевич" },
+    { field: "description", oldValue: "", newValue: "Ведущий университет России", date: "2020-06-18T13:30:00", user: "Новикова Анна Петровна" },
+  ];
+  
+  fieldChanges.forEach((change, index) => {
+    histories.push({
+      id: `history-${universityId}-${index + 2}`,
+      universityId,
+      action: "updated",
+      field: change.field,
+      oldValue: change.oldValue,
+      newValue: change.newValue,
+      user: change.user,
+      timestamp: new Date(change.date),
+    });
+  });
+  
+  // Сортировка по дате (от новых к старым)
+  return histories.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+};
+
 const validateDates = (startDate: string, endDate?: string): string | null => {
   if (!startDate) return "Дата начала обязательна";
   const start = new Date(startDate);
@@ -1016,7 +1275,7 @@ export default function UniversitiesPage() {
   // Состояние для администрирования
   const [universities, setUniversities] = useState<University[]>(mockUniversities);
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
-  const [universityDetailTab, setUniversityDetailTab] = useState<"general" | "contracts" | "events" | "staff">("general");
+  const [universityDetailTab, setUniversityDetailTab] = useState<"general" | "contracts" | "events" | "staff" | "bko" | "cntr">("general");
   const [staffSubTab, setStaffSubTab] = useState<"interns" | "practitioners">("interns");
   const [universitiesSortOrder, setUniversitiesSortOrder] = useState<"asc" | "desc">("asc");
   const [expandedUniversities, setExpandedUniversities] = useState<Set<string>>(new Set());
@@ -1072,6 +1331,32 @@ export default function UniversitiesPage() {
     internshipInBank: "all",
   });
   
+  // Состояние для пагинации практикантов
+  const [practitionersCurrentPage, setPractitionersCurrentPage] = useState(1);
+  const [practitionersItemsPerPage, setPractitionersItemsPerPage] = useState(10);
+  
+  // Состояние для фильтров практикантов
+  const [practitionersFilterDialogOpen, setPractitionersFilterDialogOpen] = useState(false);
+  const [practitionersFilters, setPractitionersFilters] = useState<{
+    employeeName: string;
+    departments: string[];
+    practiceStartDate: string;
+    practiceEndDate: string;
+    addedBy: string[];
+    comment: string;
+  }>({
+    employeeName: "",
+    departments: [],
+    practiceStartDate: "",
+    practiceEndDate: "",
+    addedBy: [],
+    comment: "",
+  });
+  
+  // Состояние для редактирования комментария практиканта
+  const [editingPractitionerComment, setEditingPractitionerComment] = useState<string | null>(null);
+  const [practitionerCommentValue, setPractitionerCommentValue] = useState<string>("");
+  
   // Состояние для формы создания университета
   const [universityFormData, setUniversityFormData] = useState({
     // Шаг 1: Общая информация
@@ -1108,7 +1393,6 @@ export default function UniversitiesPage() {
     type: "cooperation" as Contract["type"],
     hasContract: false,
     contractFile: "",
-    bankDepartment: "",
   });
   
   // Состояние для управления мероприятиями
@@ -1120,6 +1404,19 @@ export default function UniversitiesPage() {
   }>({
     type: null,
     status: null,
+  });
+
+  // Состояния для работы с договорами в табе
+  const [editingContract, setEditingContract] = useState<{ universityId: string; contract: Contract } | null>(null);
+  const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
+  const [newContractForTab, setNewContractForTab] = useState<{
+    type: Contract["type"];
+    hasContract: boolean;
+    contractFile: string;
+  }>({
+    type: "cooperation",
+    hasContract: true,
+    contractFile: "",
   });
   const [newEvent, setNewEvent] = useState<{
     type: "careerDays" | "expertParticipation" | "caseChampionships" | "";
@@ -1154,6 +1451,8 @@ export default function UniversitiesPage() {
   
   // Новое состояние для улучшений
   const [deleteUniversityId, setDeleteUniversityId] = useState<string | null>(null);
+  const [universityHistoryDialogOpen, setUniversityHistoryDialogOpen] = useState(false);
+  const [selectedUniversityForHistory, setSelectedUniversityForHistory] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
@@ -1174,7 +1473,7 @@ export default function UniversitiesPage() {
   // Состояние для стажировок
   // Проверяем query параметр для определения активной вкладки
   const tabFromQuery = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<"internships" | "universities">("universities");
+  const [activeTab, setActiveTab] = useState<"internships" | "universities" | "reporting" | "dashboard">("universities");
   
   // Обновляем активную вкладку при изменении query параметра
   useEffect(() => {
@@ -1255,6 +1554,11 @@ export default function UniversitiesPage() {
     setInternsCurrentPage(1);
   }, [internsFilters]);
   
+  // Сброс страницы при изменении фильтров практикантов
+  useEffect(() => {
+    setPractitionersCurrentPage(1);
+  }, [practitionersFilters]);
+  
   // Открытие диалога создания ВУЗа
   const handleCreate = () => {
     setIsCreateDialogOpen(true);
@@ -1280,7 +1584,7 @@ export default function UniversitiesPage() {
       description: "",
     });
     setNewCurator({ city: "", branch: "", curatorName: "" });
-    setNewContract({ type: "cooperation", hasContract: false, contractFile: "", bankDepartment: "" });
+    setNewContract({ type: "cooperation", hasContract: false, contractFile: "" });
   };
   
   // Создание или обновление ВУЗа
@@ -1364,7 +1668,7 @@ export default function UniversitiesPage() {
       description: "",
     });
     setNewCurator({ city: "", branch: "", curatorName: "" });
-    setNewContract({ type: "cooperation", hasContract: false, contractFile: "", bankDepartment: "" });
+    setNewContract({ type: "cooperation", hasContract: false, contractFile: "" });
   };
   
   // Добавление куратора
@@ -1403,13 +1707,12 @@ export default function UniversitiesPage() {
       type: newContract.type,
       hasContract: newContract.hasContract,
       contractFile: newContract.contractFile.trim() || undefined,
-      bankDepartment: newContract.bankDepartment.trim() || undefined,
     };
     setUniversityFormData({
       ...universityFormData,
       contracts: [...universityFormData.contracts, contract],
     });
-    setNewContract({ type: "cooperation", hasContract: false, contractFile: "", bankDepartment: "" });
+    setNewContract({ type: "cooperation", hasContract: false, contractFile: "" });
   };
   
   // Удаление договора
@@ -1482,12 +1785,112 @@ export default function UniversitiesPage() {
     setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
     setIsEventDialogOpen(false);
   };
+
+  // Добавление договора в табе
+  const handleAddContractForTab = (universityId: string) => {
+    if (!newContractForTab.hasContract) {
+      return;
+    }
+    const contract: Contract = {
+      id: `contract-${Date.now()}`,
+      type: newContractForTab.type,
+      hasContract: true,
+      contractFile: newContractForTab.contractFile.trim() || undefined,
+    };
+    const university = universities.find(u => u.id === universityId);
+    if (university) {
+      const updatedContracts = [...(university.contracts || []), contract];
+      setUniversities(universities.map(u => 
+        u.id === universityId ? { ...u, contracts: updatedContracts } : u
+      ));
+      setNewContractForTab({ type: "cooperation", hasContract: true, contractFile: "" });
+      setIsContractDialogOpen(false);
+    }
+  };
+
+  // Редактирование договора в табе
+  const handleEditContractForTab = (universityId: string, contractId: string) => {
+    const university = universities.find(u => u.id === universityId);
+    const contract = university?.contracts?.find(c => c.id === contractId);
+    if (contract) {
+      setEditingContract({ universityId, contract });
+      setNewContractForTab({
+        type: contract.type,
+        hasContract: contract.hasContract,
+        contractFile: contract.contractFile || "",
+      });
+      setIsContractDialogOpen(true);
+    }
+  };
+
+  // Сохранение изменений договора в табе
+  const handleSaveContractForTab = () => {
+    if (!editingContract) {
+      return;
+    }
+    const updatedContracts = universities
+      .find(u => u.id === editingContract.universityId)
+      ?.contracts?.map(c => 
+        c.id === editingContract.contract.id 
+          ? { 
+              ...c, 
+              type: newContractForTab.type, 
+              hasContract: true,
+              contractFile: newContractForTab.contractFile.trim() || undefined,
+            }
+          : c
+      ) || [];
+    setUniversities(universities.map(u => 
+      u.id === editingContract.universityId ? { ...u, contracts: updatedContracts } : u
+    ));
+    setEditingContract(null);
+    setNewContractForTab({ type: "cooperation", hasContract: true, contractFile: "" });
+    setIsContractDialogOpen(false);
+  };
+
+  // Удаление договора в табе
+  const handleRemoveContractForTab = (universityId: string, contractId: string) => {
+    const university = universities.find(u => u.id === universityId);
+    if (university) {
+      const updatedContracts = (university.contracts || []).filter(c => c.id !== contractId);
+      setUniversities(universities.map(u => 
+        u.id === universityId ? { ...u, contracts: updatedContracts } : u
+      ));
+    }
+  };
   
+  // Обновление комментария практиканта
+  const handleUpdatePractitionerComment = (universityId: string, practitionerId: string, comment: string) => {
+    setUniversities(universities.map(u => {
+      if (u.id === universityId && u.practitionerList) {
+          return {
+            ...u,
+          practitionerList: u.practitionerList.map(p => 
+            p.id === practitionerId ? { ...p, comment: comment.trim() || undefined } : p
+          )
+          };
+        }
+        return u;
+    }));
+    setEditingPractitionerComment(null);
+    setPractitionerCommentValue("");
+  };
+  
+  // Получение цвета бейджа по типу договора
+  const getContractTypeBadgeColor = (type: Contract["type"]): string => {
+    const colorMap: Record<Contract["type"], string> = {
+      cooperation: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700",
+      scholarship: "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700",
+      internship: "bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700",
+    };
+    return colorMap[type] || "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+  };
+
   // Подсчет статистики мероприятий
   const getEventStatistics = (universityId: string) => {
     const university = universities.find(u => u.id === universityId);
     if (!university || !university.events) {
-          return {
+    return {
         byType: { careerDays: 0, expertParticipation: 0, caseChampionships: 0 },
         byStatus: { planned: 0, completed: 0 },
         total: 0,
@@ -1958,10 +2361,12 @@ export default function UniversitiesPage() {
       </div>
 
         {/* Вкладки */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "universities" | "internships")} className="w-full">
-          <TabsList variant="grid2">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "universities" | "internships" | "reporting" | "dashboard")} className="w-full">
+          <TabsList variant="grid4">
             <TabsTrigger value="universities">ВУЗы</TabsTrigger>
             <TabsTrigger value="internships">Стажировки</TabsTrigger>
+            <TabsTrigger value="reporting">Отчетность</TabsTrigger>
+            <TabsTrigger value="dashboard">Дэшборд</TabsTrigger>
         </TabsList>
 
           <TabsContent value="universities" className="mt-4 space-y-4">
@@ -2151,6 +2556,18 @@ export default function UniversitiesPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setSelectedUniversityForHistory(university.id);
+                              setUniversityHistoryDialogOpen(true);
+                            }}
+                            title="История изменений"
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => setDeleteUniversityId(university.id)}
                             title="Удалить"
@@ -2163,11 +2580,13 @@ export default function UniversitiesPage() {
                     <Separator />
                     <CardContent className="pt-0 overflow-x-hidden">
                       <Tabs value={universityDetailTab} onValueChange={(v) => setUniversityDetailTab(v as typeof universityDetailTab)} className="w-full">
-                        <TabsList className="grid w-full grid-cols-4">
+                        <TabsList className="grid w-full grid-cols-6">
                           <TabsTrigger value="general">Общая информация</TabsTrigger>
                           <TabsTrigger value="contracts">Договорная база</TabsTrigger>
                           <TabsTrigger value="events">Мероприятия</TabsTrigger>
                           <TabsTrigger value="staff">Кадровые показатели</TabsTrigger>
+                          <TabsTrigger value="bko">Договорная база БКО</TabsTrigger>
+                          <TabsTrigger value="cntr">ЦНТР</TabsTrigger>
                         </TabsList>
                         
                         {/* Таб 1: Общая информация */}
@@ -2296,45 +2715,163 @@ export default function UniversitiesPage() {
 
                         {/* Таб 2: Договорная база */}
                         <TabsContent value="contracts" className="space-y-4 mt-4">
-                          {university.contracts && university.contracts.length > 0 ? (
-                        <div className="space-y-3">
-                              {university.contracts.map((contract) => (
-                                <Card key={contract.id} className="p-4">
-                                  <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                      <Badge variant="outline" className="text-sm">
-                                        {contract.type === "cooperation" ? "О сотрудничестве" :
-                                         contract.type === "scholarship" ? "Об именных стипендиях" :
-                                         "О практике"}
-                                      </Badge>
-                            </div>
-                                    {contract.bankDepartment && (
-                                      <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground">Кафедра Банка</Label>
-                                        <p className="text-sm">{contract.bankDepartment}</p>
-                          </div>
-                                    )}
-                                    {contract.contractFile && (
-                                      <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground">Договор</Label>
-                              <div className="flex items-center gap-2">
-                                          <FileText className="h-4 w-4 text-muted-foreground" />
-                                          <a href={contract.contractFile} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                                            {contract.contractFile}
-                                </a>
-                              </div>
-                            </div>
-                                    )}
+                          <div className="space-y-4">
+                            {/* Блок кафедр банка */}
+                            <Card>
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="text-lg">Кафедры Банка</CardTitle>
+                                  <Button
+                                    onClick={() => {
+                                      const newDepartment: BankDepartment = {
+                                        id: `dept-${Date.now()}`,
+                                        name: "",
+                                      };
+                                      const updatedUniversities = universities.map((u) =>
+                                        u.id === university.id
+                                          ? {
+                                              ...u,
+                                              bankDepartments: [...(u.bankDepartments || []), newDepartment],
+                                            }
+                                          : u
+                                      );
+                                      setUniversities(updatedUniversities);
+                                    }}
+                                    size="sm"
+                            variant="outline"
+                          >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Добавить кафедру
+                                  </Button>
+                        </div>
+                              </CardHeader>
+                              <CardContent>
+                                {university.bankDepartments && university.bankDepartments.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {university.bankDepartments.map((dept) => (
+                                      <div key={dept.id} className="flex items-center gap-2 p-2 border rounded-lg">
+                                        <Input
+                                          value={dept.name}
+                                          onChange={(e) => {
+                                            const updatedUniversities = universities.map((u) =>
+                                              u.id === university.id
+                                                ? {
+                                                    ...u,
+                                                    bankDepartments: (u.bankDepartments || []).map((d) =>
+                                                      d.id === dept.id ? { ...d, name: e.target.value } : d
+                                                    ),
+                                                  }
+                                                : u
+                                            );
+                                            setUniversities(updatedUniversities);
+                                          }}
+                                          placeholder="Название кафедры"
+                                          className="flex-1"
+                                        />
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 w-8 p-0"
+                                          onClick={() => {
+                                            const updatedUniversities = universities.map((u) =>
+                                              u.id === university.id
+                                                ? {
+                                                    ...u,
+                                                    bankDepartments: (u.bankDepartments || []).filter((d) => d.id !== dept.id),
+                                                  }
+                                                : u
+                                            );
+                                            setUniversities(updatedUniversities);
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                      </div>
+                                    ))}
                                   </div>
-                                </Card>
-                              ))}
+                                ) : (
+                                  <div className="text-center py-4 text-muted-foreground">
+                                    <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                    <p className="text-sm">Кафедры не добавлены</p>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+
+                            {/* Кнопка добавления договора */}
+                            <div className="flex items-center justify-end w-full">
+                              <Button
+                                onClick={() => {
+                                  setEditingContract(null);
+                                  setNewContractForTab({ type: "cooperation", hasContract: true, contractFile: "" });
+                                  setIsContractDialogOpen(true);
+                                }}
+                                size="sm"
+                              >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Добавить договор
+                              </Button>
                             </div>
-                          ) : (
-                            <div className="text-center py-8 text-muted-foreground">
-                              <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p className="text-sm">Договоры не добавлены</p>
-                            </div>
-                          )}
+
+                            {/* Список договоров */}
+                            {university.contracts && university.contracts.length > 0 ? (
+                              <div className="space-y-3">
+                                {university.contracts.map((contract) => {
+                                  const contractTypeLabels: Record<Contract["type"], string> = {
+                                    cooperation: "О сотрудничестве",
+                                    scholarship: "Об именных стипендиях",
+                                    internship: "О практике",
+                                  };
+                                  return (
+                                    <Card key={contract.id} className="p-3">
+                                      <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1 space-y-1.5">
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className={`text-xs ${getContractTypeBadgeColor(contract.type)}`}>
+                                              {contractTypeLabels[contract.type]}
+                          </Badge>
+                        </div>
+                                          {contract.contractFile && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                              <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                              <a href={contract.contractFile} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">
+                                                {contract.contractFile}
+                                              </a>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => {
+                                              handleEditContractForTab(university.id, contract.id);
+                                            }}
+                                          >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => handleRemoveContractForTab(university.id, contract.id)}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </Card>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="text-center py-8 text-muted-foreground">
+                                <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-base">Договоры не добавлены</p>
+                              </div>
+                            )}
+                          </div>
                         </TabsContent>
                         
                         {/* Таб 3: Мероприятия */}
@@ -2347,13 +2884,13 @@ export default function UniversitiesPage() {
                                 return (
                                   <>
                                     <Card className="p-3 flex-1">
-                            <div className="space-y-2">
+                        <div className="space-y-2">
                                         <Label className="text-base font-semibold">Типы мероприятий</Label>
                                         <div className="flex items-center gap-3">
                                           <div className="text-base">
                                             <span className="text-muted-foreground">Дни карьеры: </span>
-                                            <Badge 
-                                variant="outline"
+                          <Badge
+                            variant="outline"
                                               className={`!bg-blue-500 !text-white !border-blue-500 hover:!bg-blue-600 cursor-pointer ${eventFilters.type === "careerDays" ? "ring-2 ring-blue-600" : ""}`}
                                               onClick={() => {
                                                 setEventFilters(prev => ({
@@ -2363,8 +2900,8 @@ export default function UniversitiesPage() {
                                               }}
                                             >
                                               {stats.byType.careerDays}
-                                            </Badge>
-                              </div>
+                          </Badge>
+                        </div>
                                           <div className="text-base">
                                             <span className="text-muted-foreground">Экспертное участие: </span>
                                             <Badge 
@@ -2399,7 +2936,7 @@ export default function UniversitiesPage() {
                                       </div>
                                     </Card>
                                     <Card className="p-3 flex-1">
-                                      <div className="space-y-2">
+                        <div className="space-y-2">
                                         <Label className="text-base font-semibold">Статусы</Label>
                                                 <div className="flex items-center gap-3">
                                           <div className="text-base">
@@ -2415,7 +2952,7 @@ export default function UniversitiesPage() {
                                               }}
                                             >
                                               {stats.byStatus.planned}
-                                            </Badge>
+                          </Badge>
                                                   </div>
                                           <div className="text-base">
                                             <span className="text-muted-foreground">Проведено: </span>
@@ -2450,8 +2987,8 @@ export default function UniversitiesPage() {
                                 <Plus className="h-4 w-4 mr-1" />
                                 Добавить мероприятие
                               </Button>
-                            </div>
-                                
+                        </div>
+
                             {/* Список мероприятий */}
                             {university.events && university.events.length > 0 ? (() => {
                               const filteredEvents = university.events.filter(event => {
@@ -2500,7 +3037,7 @@ export default function UniversitiesPage() {
                                             <Badge variant={event.status === "completed" ? "default" : "outline"}>
                                               {eventStatusLabels[event.status]}
                                             </Badge>
-                                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
                                             <span className="text-sm font-semibold">
                                       {(() => {
                                                 const formatDate = (dateString: string) => {
@@ -2514,8 +3051,8 @@ export default function UniversitiesPage() {
                                                 };
                                                 return `${formatDate(event.date)} - ${formatDate(event.endDate)}`;
                                               })()}
-                                        </span>
-                                      </div>
+                            </span>
+                          </div>
                                       <div className="flex items-center gap-2">
                                             <Label className="text-sm font-semibold">Ответственное лицо Банк:</Label>
                                             <div className="flex items-center gap-2">
@@ -2526,7 +3063,7 @@ export default function UniversitiesPage() {
                                                     </AvatarFallback>
                                                   </Avatar>
                                               <span className="text-sm font-medium">{event.responsiblePerson}</span>
-                                                  </div>
+                        </div>
                                                 </div>
                                           {event.comments && (
                                             <div className="flex items-center gap-2">
@@ -2678,7 +3215,7 @@ export default function UniversitiesPage() {
                                         </DialogHeader>
                                         <div className="space-y-4 py-2">
                                           {/* Фильтр по имени сотрудника */}
-                                          <div className="space-y-2">
+                            <div className="space-y-2">
                                             <Label className="text-sm font-medium">Сотрудник</Label>
                                             <Input
                                               placeholder="Поиск по ФИО..."
@@ -2690,7 +3227,7 @@ export default function UniversitiesPage() {
                                           {/* Фильтр по возрасту */}
                                           <div className="space-y-2">
                                             <Label className="text-sm font-medium">Возраст</Label>
-                                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2">
                                               <Input
                                                 type="number"
                                                 placeholder="От"
@@ -2740,10 +3277,10 @@ export default function UniversitiesPage() {
                                                     >
                                                       {position}
                                                     </Label>
-                                                  </div>
+                              </div>
                                                 ));
                                               })()}
-                                            </div>
+                            </div>
                                           </div>
                                           
                                           {/* Фильтр по подразделению */}
@@ -2776,7 +3313,7 @@ export default function UniversitiesPage() {
                                                       className="text-sm font-normal cursor-pointer"
                                                     >
                                                       {department}
-                                                    </Label>
+                            </Label>
                                                   </div>
                                                 ));
                                               })()}
@@ -2848,20 +3385,20 @@ export default function UniversitiesPage() {
                                             >
                                               <SelectTrigger>
                                                 <SelectValue />
-                                              </SelectTrigger>
-                                              <SelectContent>
+                                </SelectTrigger>
+                                <SelectContent>
                                                 <SelectItem value="all">Все</SelectItem>
                                                 <SelectItem value="yes">Да</SelectItem>
                                                 <SelectItem value="no">Нет</SelectItem>
-                                              </SelectContent>
-                                            </Select>
+                                </SelectContent>
+                              </Select>
                                           </div>
                                         </div>
                                         <DialogFooter className="pt-2">
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
                                               setInternsFilters({
                                                 employeeName: "",
                                                 ageMin: "",
@@ -2877,7 +3414,7 @@ export default function UniversitiesPage() {
                                             }}
                                           >
                                             Сбросить
-                                          </Button>
+                              </Button>
                                           <Button size="sm" onClick={() => {
                                             setInternsFilterDialogOpen(false);
                                             setInternsCurrentPage(1);
@@ -2887,7 +3424,7 @@ export default function UniversitiesPage() {
                                         </DialogFooter>
                                       </DialogContent>
                                     </Dialog>
-                                  </div>
+                            </div>
                                   
                                   {/* Активные фильтры */}
                                   {(() => {
@@ -2994,12 +3531,12 @@ export default function UniversitiesPage() {
                                             </button>
                                           </Badge>
                                         ))}
-                                      </div>
+                          </div>
                                     );
                                   })()}
                                   
-                                  <div className="border rounded-lg overflow-hidden">
-                                    <Table>
+                                <div className="border rounded-lg overflow-hidden">
+                                  <Table>
                                     <TableHeader>
                                       <TableRow>
                                         <TableHead className="w-[240px]">Сотрудник</TableHead>
@@ -3144,7 +3681,7 @@ export default function UniversitiesPage() {
                                             <Label htmlFor="interns-items-per-page" className="text-sm text-muted-foreground">
                                               Показать:
                                             </Label>
-                                            <Select
+                                                <Select
                                               value={internsItemsPerPage.toString()}
                                               onValueChange={(value) => {
                                                 setInternsItemsPerPage(Number(value));
@@ -3152,15 +3689,15 @@ export default function UniversitiesPage() {
                                               }}
                                             >
                                               <SelectTrigger id="interns-items-per-page" className="w-[80px]">
-                                                <SelectValue />
-                                              </SelectTrigger>
-                                              <SelectContent>
+                                                    <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
                                                 <SelectItem value="10">10</SelectItem>
                                                 <SelectItem value="25">25</SelectItem>
                                                 <SelectItem value="50">50</SelectItem>
                                                 <SelectItem value="100">100</SelectItem>
-                                              </SelectContent>
-                                            </Select>
+                                                  </SelectContent>
+                                                </Select>
                                             <span className="text-sm text-muted-foreground">
                                               из {filteredInterns.length}
                                             </span>
@@ -3171,9 +3708,9 @@ export default function UniversitiesPage() {
                                           Страница {internsCurrentPage} из {totalPages}
                                         </span>
                                         <div className="flex items-center gap-1">
-                                          <Button
+                                                  <Button
                                             variant="outline"
-                                            size="icon"
+                                                    size="icon"
                                             className="h-8 w-8"
                                             onClick={() => setInternsCurrentPage(1)}
                                             disabled={internsCurrentPage === 1}
@@ -3206,8 +3743,8 @@ export default function UniversitiesPage() {
                                             disabled={internsCurrentPage === totalPages}
                                           >
                                             <ChevronsRight className="h-4 w-4" />
-                                          </Button>
-                                        </div>
+                                                  </Button>
+                                                </div>
                                       </div>
                                     </div>
                                   );
@@ -3230,8 +3767,8 @@ export default function UniversitiesPage() {
                                       <TableRow>
                                         <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                                           Сотрудники не добавлены
-                                        </TableCell>
-                                      </TableRow>
+                                              </TableCell>
+                                            </TableRow>
                                     </TableBody>
                                   </Table>
                                 </div>
@@ -3241,14 +3778,831 @@ export default function UniversitiesPage() {
                             
                             {/* Подтаб: Практиканты */}
                             <TabsContent value="practitioners" className="space-y-4 mt-4">
-                              {university.interns !== undefined && (
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-semibold">Практиканты</Label>
-                                  <p className="text-2xl font-bold">{university.interns}</p>
+                              {(() => {
+                                // Вычисляем отфильтрованные данные один раз
+                                const filteredPractitioners = (university.practitionerList || []).filter((practitioner) => {
+                                  // Фильтр по имени практиканта
+                                  if (practitionersFilters.employeeName) {
+                                    const searchName = practitionersFilters.employeeName.toLowerCase();
+                                    if (!practitioner.employeeName.toLowerCase().includes(searchName)) {
+                                      return false;
+                                    }
+                                  }
+                                  
+                                  // Фильтр по подразделению
+                                  if (practitionersFilters.departments.length > 0 && !practitionersFilters.departments.includes(practitioner.department)) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по периоду прохождения практики
+                                  if (practitionersFilters.practiceStartDate && practitioner.practiceStartDate < practitionersFilters.practiceStartDate) {
+                                    return false;
+                                  }
+                                  if (practitionersFilters.practiceEndDate && practitioner.practiceEndDate > practitionersFilters.practiceEndDate) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по сотруднику, добавившему запись
+                                  if (practitionersFilters.addedBy.length > 0 && !practitionersFilters.addedBy.includes(practitioner.addedBy)) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по комментарию
+                                  if (practitionersFilters.comment) {
+                                    const searchComment = practitionersFilters.comment.toLowerCase();
+                                    if (!practitioner.comment || !practitioner.comment.toLowerCase().includes(searchComment)) {
+                                      return false;
+                                    }
+                                  }
+                                  
+                                  return true;
+                                });
+                                
+                                return university.practitionerList && university.practitionerList.length > 0 ? (
+                                  <>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="text-sm text-muted-foreground">
+                                        Найдено: <span className="font-semibold text-foreground">{filteredPractitioners.length}</span> {filteredPractitioners.length === 1 ? 'практикант' : filteredPractitioners.length > 1 && filteredPractitioners.length < 5 ? 'практиканта' : 'практикантов'}
+                                        {filteredPractitioners.length !== university.practitionerList.length && (
+                                          <span className="ml-1">из {university.practitionerList.length}</span>
+                                        )}
                                       </div>
-                              )}
+                                      <div className="flex items-center gap-2">
+                                        <Button variant="outline">
+                                          <FileText className="mr-2 h-4 w-4" />
+                                          Импорт Excel
+                                        </Button>
+                                        <Dialog open={practitionersFilterDialogOpen} onOpenChange={setPractitionersFilterDialogOpen}>
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline">
+                                          <Filter className="mr-2 h-4 w-4" />
+                                          Фильтры
+                                          {(() => {
+                                            const activeFiltersCount = 
+                                              (practitionersFilters.employeeName ? 1 : 0) +
+                                              practitionersFilters.departments.length +
+                                              (practitionersFilters.practiceStartDate || practitionersFilters.practiceEndDate ? 1 : 0) +
+                                              practitionersFilters.addedBy.length +
+                                              (practitionersFilters.comment ? 1 : 0);
+                                            return activeFiltersCount > 0 ? (
+                                              <Badge variant="secondary" className="ml-2">
+                                                {activeFiltersCount}
+                                              </Badge>
+                                            ) : null;
+                                          })()}
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                        <DialogHeader className="pb-3">
+                                          <DialogTitle className="text-lg">Фильтры практикантов</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-2">
+                                          {/* Фильтр по имени практиканта */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Практикант</Label>
+                                            <Input
+                                              placeholder="Поиск по ФИО..."
+                                              value={practitionersFilters.employeeName}
+                                              onChange={(e) => setPractitionersFilters({ ...practitionersFilters, employeeName: e.target.value })}
+                                            />
+                                          </div>
+                                          
+                                          {/* Фильтр по подразделению */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Подразделение (практика)</Label>
+                                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                              {(() => {
+                                                const uniqueDepartments = Array.from(new Set(university.practitionerList?.map(i => i.department) || []));
+                                                return uniqueDepartments.map((department) => (
+                                                  <div key={department} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`filter-practitioner-department-${department}`}
+                                                      checked={practitionersFilters.departments.includes(department)}
+                                                      onCheckedChange={(checked) => {
+                                                        if (checked) {
+                                                          setPractitionersFilters({
+                                                            ...practitionersFilters,
+                                                            departments: [...practitionersFilters.departments, department],
+                                                          });
+                                                        } else {
+                                                          setPractitionersFilters({
+                                                            ...practitionersFilters,
+                                                            departments: practitionersFilters.departments.filter((d) => d !== department),
+                                                          });
+                                                        }
+                                                      }}
+                                                    />
+                                                    <Label
+                                                      htmlFor={`filter-practitioner-department-${department}`}
+                                                      className="text-sm font-normal cursor-pointer"
+                                                    >
+                                                      {department}
+                                                    </Label>
+                                                  </div>
+                                                ));
+                                              })()}
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по периоду прохождения практики */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Период прохождения практики</Label>
+                                            <div className="flex items-center gap-2">
+                                              <Input
+                                                type="date"
+                                                placeholder="От"
+                                                value={practitionersFilters.practiceStartDate}
+                                                onChange={(e) => setPractitionersFilters({ ...practitionersFilters, practiceStartDate: e.target.value })}
+                                                className="w-full"
+                                              />
+                                              <span className="text-sm text-muted-foreground">—</span>
+                                              <Input
+                                                type="date"
+                                                placeholder="До"
+                                                value={practitionersFilters.practiceEndDate}
+                                                onChange={(e) => setPractitionersFilters({ ...practitionersFilters, practiceEndDate: e.target.value })}
+                                                className="w-full"
+                                              />
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по сотруднику, добавившему запись */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Сотрудник добавивший запись</Label>
+                                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                              {(() => {
+                                                const uniqueAddedBy = Array.from(new Set(university.practitionerList?.map(i => i.addedBy) || []));
+                                                return uniqueAddedBy.map((addedBy) => (
+                                                  <div key={addedBy} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`filter-practitioner-addedBy-${addedBy}`}
+                                                      checked={practitionersFilters.addedBy.includes(addedBy)}
+                                                      onCheckedChange={(checked) => {
+                                                        if (checked) {
+                                                          setPractitionersFilters({
+                                                            ...practitionersFilters,
+                                                            addedBy: [...practitionersFilters.addedBy, addedBy],
+                                                          });
+                                                        } else {
+                                                          setPractitionersFilters({
+                                                            ...practitionersFilters,
+                                                            addedBy: practitionersFilters.addedBy.filter((a) => a !== addedBy),
+                                                          });
+                                                        }
+                                                      }}
+                                                    />
+                                                    <Label
+                                                      htmlFor={`filter-practitioner-addedBy-${addedBy}`}
+                                                      className="text-sm font-normal cursor-pointer"
+                                                    >
+                                                      {addedBy}
+                                                    </Label>
+                                                  </div>
+                                                ));
+                                              })()}
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по комментарию */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Комментарий</Label>
+                                            <Input
+                                              placeholder="Поиск по комментарию..."
+                                              value={practitionersFilters.comment}
+                                              onChange={(e) => setPractitionersFilters({ ...practitionersFilters, comment: e.target.value })}
+                                            />
+                                          </div>
+                                        </div>
+                                        <DialogFooter className="pt-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                              setPractitionersFilters({
+                                                employeeName: "",
+                                                departments: [],
+                                                practiceStartDate: "",
+                                                practiceEndDate: "",
+                                                addedBy: [],
+                                                comment: "",
+                                              });
+                                              setPractitionersCurrentPage(1);
+                                            }}
+                                          >
+                                            Сбросить
+                                          </Button>
+                                          <Button size="sm" onClick={() => {
+                                            setPractitionersFilterDialogOpen(false);
+                                            setPractitionersCurrentPage(1);
+                                          }}>
+                                            Применить
+                                          </Button>
+                                        </DialogFooter>
+                                      </DialogContent>
+                                    </Dialog>
+                                      </div>
+                                    </div>
+                                  
+                                  {/* Активные фильтры */}
+                                  {(() => {
+                                    const activeFilters: Array<{ label: string; onRemove: () => void }> = [];
+                                    
+                                    // Фильтр по имени практиканта
+                                    if (practitionersFilters.employeeName) {
+                                      activeFilters.push({
+                                        label: `Практикант: ${practitionersFilters.employeeName}`,
+                                        onRemove: () => setPractitionersFilters({ ...practitionersFilters, employeeName: "" }),
+                                      });
+                                    }
+                                    
+                                    // Фильтр по подразделениям
+                                    practitionersFilters.departments.forEach((department) => {
+                                      activeFilters.push({
+                                        label: `Подразделение: ${department}`,
+                                        onRemove: () => setPractitionersFilters({
+                                          ...practitionersFilters,
+                                          departments: practitionersFilters.departments.filter((d) => d !== department),
+                                        }),
+                                      });
+                                    });
+                                    
+                                    // Фильтр по периоду прохождения практики
+                                    if (practitionersFilters.practiceStartDate || practitionersFilters.practiceEndDate) {
+                                      const formatDate = (dateString: string) => {
+                                        if (!dateString) return "";
+                                        const [year, month, day] = dateString.split('-').map(Number);
+                                        return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                      };
+                                      const dateLabel = practitionersFilters.practiceStartDate && practitionersFilters.practiceEndDate
+                                        ? `Период практики: ${formatDate(practitionersFilters.practiceStartDate)} - ${formatDate(practitionersFilters.practiceEndDate)}`
+                                        : practitionersFilters.practiceStartDate
+                                        ? `Период практики: с ${formatDate(practitionersFilters.practiceStartDate)}`
+                                        : `Период практики: до ${formatDate(practitionersFilters.practiceEndDate)}`;
+                                      activeFilters.push({
+                                        label: dateLabel,
+                                        onRemove: () => setPractitionersFilters({ ...practitionersFilters, practiceStartDate: "", practiceEndDate: "" }),
+                                      });
+                                    }
+                                    
+                                    // Фильтр по сотрудникам, добавившим запись
+                                    practitionersFilters.addedBy.forEach((addedBy) => {
+                                      activeFilters.push({
+                                        label: `Добавил: ${addedBy}`,
+                                        onRemove: () => setPractitionersFilters({
+                                          ...practitionersFilters,
+                                          addedBy: practitionersFilters.addedBy.filter((a) => a !== addedBy),
+                                        }),
+                                      });
+                                    });
+                                    
+                                    // Фильтр по комментарию
+                                    if (practitionersFilters.comment) {
+                                      activeFilters.push({
+                                        label: `Комментарий: ${practitionersFilters.comment}`,
+                                        onRemove: () => setPractitionersFilters({ ...practitionersFilters, comment: "" }),
+                                      });
+                                    }
+                                    
+                                    if (activeFilters.length === 0) return null;
+                                    
+                                    return (
+                                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                                        {activeFilters.map((filter, index) => (
+                                          <Badge
+                                            key={index}
+                                            variant="secondary"
+                                            className="flex items-center gap-1 px-2 py-1"
+                                          >
+                                            <span className="text-sm">{filter.label}</span>
+                                            <button
+                                              type="button"
+                                              onClick={filter.onRemove}
+                                              className="ml-1 rounded-full hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                              aria-label="Удалить фильтр"
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    );
+                                  })()}
+                                  
+                                  <div className="border rounded-lg overflow-hidden">
+                                    <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-[240px]">Практикант</TableHead>
+                                      <TableHead className="w-[290px]">Подразделение (практика)</TableHead>
+                                        <TableHead className="w-[200px]">Период прохождения практики</TableHead>
+                                        <TableHead className="w-[200px]">Сотрудник добавивший запись</TableHead>
+                                        <TableHead className="w-[250px]">Комментарий</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {(() => {
+                                        // Логика пагинации
+                                        const totalPages = Math.ceil(filteredPractitioners.length / practitionersItemsPerPage);
+                                        const startIndex = (practitionersCurrentPage - 1) * practitionersItemsPerPage;
+                                        const endIndex = startIndex + practitionersItemsPerPage;
+                                        const paginatedPractitioners = filteredPractitioners.slice(startIndex, endIndex);
+                                        
+                                        return paginatedPractitioners.map((practitioner) => {
+                                          const getInitials = (name: string) => {
+                                            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                                          };
+                                          const formatDate = (dateString: string) => {
+                                            const [year, month, day] = dateString.split('-').map(Number);
+                                            return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                          };
+                                          return (
+                                          <TableRow key={practitioner.id}>
+                                              <TableCell className="px-4 whitespace-normal">
+                                                <div className="flex items-center gap-3">
+                                                  <Avatar className="h-10 w-10 shrink-0">
+                                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                    {getInitials(practitioner.employeeName)}
+                                                    </AvatarFallback>
+                                                  </Avatar>
+                                                  <div className="flex flex-col min-w-0">
+                                                  <span className="font-medium">{practitioner.employeeName}</span>
+                                                  </div>
+                                                </div>
+                                              </TableCell>
+                                              <TableCell className="px-4 whitespace-normal">
+                                                <span className="font-medium">{practitioner.department}</span>
+                                              </TableCell>
+                                              <TableCell className="px-4 whitespace-normal">
+                                                {formatDate(practitioner.practiceStartDate)}-{formatDate(practitioner.practiceEndDate)}
+                                              </TableCell>
+                                              <TableCell className="px-4 whitespace-normal">
+                                                <span className="font-medium">{practitioner.addedBy}</span>
+                                              </TableCell>
+                                              <TableCell className="px-4 whitespace-normal">
+                                                {editingPractitionerComment === practitioner.id ? (
+                                                  <div className="flex items-center gap-2">
+                                                    <Input
+                                                      value={practitionerCommentValue}
+                                                      onChange={(e) => setPractitionerCommentValue(e.target.value)}
+                                                      onBlur={() => {
+                                                        handleUpdatePractitionerComment(university.id, practitioner.id, practitionerCommentValue);
+                                                      }}
+                                                      onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                          e.currentTarget.blur();
+                                                        }
+                                                        if (e.key === "Escape") {
+                                                          setEditingPractitionerComment(null);
+                                                          setPractitionerCommentValue("");
+                                                        }
+                                                      }}
+                                                      className="h-8 text-sm"
+                                                      autoFocus
+                                                    />
+                                                  </div>
+                                                ) : (
+                                                  <span 
+                                                    className="text-sm cursor-pointer hover:text-primary hover:underline"
+                                                    onClick={() => {
+                                                      setEditingPractitionerComment(practitioner.id);
+                                                      setPractitionerCommentValue(practitioner.comment || "");
+                                                    }}
+                                                  >
+                                                    {practitioner.comment || "—"}
+                                                  </span>
+                                                )}
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        });
+                                      })()}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                                
+                                    {/* Пагинация для практикантов */}
+                                    {(() => {
+                                      const totalPages = Math.ceil(filteredPractitioners.length / practitionersItemsPerPage);
+                                  
+                                  return (
+                                    <div className="flex items-center justify-between px-2">
+                                      <div className="flex items-center gap-2">
+                                            <Label htmlFor="practitioners-items-per-page" className="text-sm text-muted-foreground">
+                                          Показать:
+                                        </Label>
+                                        <Select
+                                              value={practitionersItemsPerPage.toString()}
+                                          onValueChange={(value) => {
+                                                setPractitionersItemsPerPage(Number(value));
+                                                setPractitionersCurrentPage(1);
+                                          }}
+                                        >
+                                              <SelectTrigger id="practitioners-items-per-page" className="w-[80px]">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="10">10</SelectItem>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                            <SelectItem value="100">100</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                        <span className="text-sm text-muted-foreground">
+                                              из {filteredPractitioners.length}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm text-muted-foreground">
+                                          Страница {practitionersCurrentPage} из {totalPages}
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={() => setPractitionersCurrentPage(1)}
+                                            disabled={practitionersCurrentPage === 1}
+                                          >
+                                            <ChevronsLeft className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={() => setPractitionersCurrentPage(practitionersCurrentPage - 1)}
+                                            disabled={practitionersCurrentPage === 1}
+                                          >
+                                            <ChevronLeft className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={() => setPractitionersCurrentPage(practitionersCurrentPage + 1)}
+                                            disabled={practitionersCurrentPage === totalPages}
+                                          >
+                                            <ChevronRight className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={() => setPractitionersCurrentPage(totalPages)}
+                                            disabled={practitionersCurrentPage === totalPages}
+                                          >
+                                            <ChevronsRight className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                                </>
+                              ) : (
+                                <div className="border rounded-lg overflow-hidden">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-[240px]">Практикант</TableHead>
+                                        <TableHead className="w-[290px]">Подразделение (практика)</TableHead>
+                                        <TableHead className="w-[200px]">Период прохождения практики</TableHead>
+                                        <TableHead className="w-[200px]">Сотрудник добавивший запись</TableHead>
+                                        <TableHead className="w-[250px]">Комментарий</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      <TableRow>
+                                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                          Практиканты не добавлены
+                                        </TableCell>
+                                      </TableRow>
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              );
+                              })()}
                             </TabsContent>
                           </Tabs>
+                        </TabsContent>
+
+                        {/* Таб 5: Договорная база БКО */}
+                        <TabsContent value="bko" className="space-y-4 mt-4">
+                          {/* Блок Зарплатный проект */}
+                          <Card>
+                            <CardContent className="space-y-6">
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-semibold">Зарплатный проект</h3>
+                                    <p className="text-sm text-muted-foreground">Наличие зарплатного проекта</p>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4">
+                                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                      <Label htmlFor="bko-students" className="text-base font-medium">Студенты</Label>
+                                      <p className="text-sm text-muted-foreground">Зарплатный проект для студентов</p>
+                                    </div>
+                                    <Switch
+                                      id="bko-students"
+                                      checked={university.bkoData?.salaryProject?.students || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                bkoData: {
+                                                  ...u.bkoData,
+                                                  salaryProject: {
+                                                    ...u.bkoData?.salaryProject,
+                                                    students: checked,
+                                                  },
+                                                },
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                      <Label htmlFor="bko-employees" className="text-base font-medium">Сотрудники</Label>
+                                      <p className="text-sm text-muted-foreground">Зарплатный проект для сотрудников</p>
+                                    </div>
+                                    <Switch
+                                      id="bko-employees"
+                                      checked={university.bkoData?.salaryProject?.employees || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                bkoData: {
+                                                  ...u.bkoData,
+                                                  salaryProject: {
+                                                    ...u.bkoData?.salaryProject,
+                                                    employees: checked,
+                                                  },
+                                                },
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardContent className="space-y-6">
+                              {/* Блок Транзакционные продукты */}
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-semibold">Транзакционные продукты</h3>
+                                    <p className="text-sm text-muted-foreground">Наличие транзакционных продуктов</p>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4">
+                                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                      <Label htmlFor="bko-ie" className="text-base font-medium">ИЭ</Label>
+                                      <p className="text-sm text-muted-foreground">Интернет-эквайринг</p>
+                                    </div>
+                                    <Switch
+                                      id="bko-ie"
+                                      checked={university.bkoData?.transactionalProducts?.ie || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                bkoData: {
+                                                  ...u.bkoData,
+                                                  transactionalProducts: {
+                                                    ...u.bkoData?.transactionalProducts,
+                                                    ie: checked,
+                                                  },
+                                                },
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                      <Label htmlFor="bko-te" className="text-base font-medium">ТЭ</Label>
+                                      <p className="text-sm text-muted-foreground">Торговый эквайринг</p>
+                                    </div>
+                                    <Switch
+                                      id="bko-te"
+                                      checked={university.bkoData?.transactionalProducts?.te || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                bkoData: {
+                                                  ...u.bkoData,
+                                                  transactionalProducts: {
+                                                    ...u.bkoData?.transactionalProducts,
+                                                    te: checked,
+                                                  },
+                                                },
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                      <Label htmlFor="bko-sbp" className="text-base font-medium">СБП</Label>
+                                      <p className="text-sm text-muted-foreground">Система быстрых платежей</p>
+                                    </div>
+                                    <Switch
+                                      id="bko-sbp"
+                                      checked={university.bkoData?.transactionalProducts?.sbp || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                bkoData: {
+                                                  ...u.bkoData,
+                                                  transactionalProducts: {
+                                                    ...u.bkoData?.transactionalProducts,
+                                                    sbp: checked,
+                                                  },
+                                                },
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                      <Label htmlFor="bko-adm" className="text-base font-medium">АДМ</Label>
+                                      <p className="text-sm text-muted-foreground">Административные платежи</p>
+                                    </div>
+                                    <Switch
+                                      id="bko-adm"
+                                      checked={university.bkoData?.transactionalProducts?.adm || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                bkoData: {
+                                                  ...u.bkoData,
+                                                  transactionalProducts: {
+                                                    ...u.bkoData?.transactionalProducts,
+                                                    adm: checked,
+                                                  },
+                                                },
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Блок Лимит */}
+                          <Card>
+                            <CardContent className="space-y-6">
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-semibold">Лимит</h3>
+                                    <p className="text-sm text-muted-foreground">Наличие лимита</p>
+                                  </div>
+                                </div>
+                                <div className="pl-4">
+                                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                      <Label htmlFor="bko-limit" className="text-base font-medium">Лимит</Label>
+                                      <p className="text-sm text-muted-foreground">Установлен лимит</p>
+                                    </div>
+                                    <Switch
+                                      id="bko-limit"
+                                      checked={university.bkoData?.limit || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                bkoData: {
+                                                  ...u.bkoData,
+                                                  limit: checked,
+                                                },
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Блок УК ГПБ фондами ЦК */}
+                          <Card>
+                            <CardContent className="space-y-6">
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-semibold">УК ГПБ фондами ЦК</h3>
+                                    <p className="text-sm text-muted-foreground">Наличие УК ГПБ фондами ЦК</p>
+                                  </div>
+                                </div>
+                                <div className="pl-4">
+                                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                      <Label htmlFor="bko-uk-gpb-funds-ck" className="text-base font-medium">УК ГПБ фондами ЦК</Label>
+                                      <p className="text-sm text-muted-foreground">Управление капиталом ГПБ фондами ЦК</p>
+                                    </div>
+                                    <Switch
+                                      id="bko-uk-gpb-funds-ck"
+                                      checked={university.bkoData?.ukGpbFundsCk || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                bkoData: {
+                                                  ...u.bkoData,
+                                                  ukGpbFundsCk: checked,
+                                                },
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Комментарий */}
+                          <Card>
+                            <CardContent className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="bko-comment" className="text-base font-medium">Комментарий</Label>
+                                <Textarea
+                                  id="bko-comment"
+                                  placeholder="Введите комментарий..."
+                                  value={university.bkoData?.comment || ""}
+                                  onChange={(e) => {
+                                    const updatedUniversities = universities.map((u) =>
+                                      u.id === university.id
+                                        ? {
+                                            ...u,
+                                            bkoData: {
+                                              ...u.bkoData,
+                                              comment: e.target.value,
+                                            },
+                                          }
+                                        : u
+                                    );
+                                    setUniversities(updatedUniversities);
+                                  }}
+                                  className="min-h-[100px]"
+                                />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+
+                        {/* Таб 6: ЦНТР */}
+                        <TabsContent value="cntr" className="space-y-4 mt-4">
+                          <Card>
+                            <CardContent className="space-y-6">
+                              <div className="text-center py-12 text-muted-foreground">
+                                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p className="text-lg font-medium mb-2">ЦНТР</p>
+                                <p className="text-sm">Раздел находится в разработке</p>
+                              </div>
+                            </CardContent>
+                          </Card>
                         </TabsContent>
                       </Tabs>
                     </CardContent>
@@ -3507,6 +4861,42 @@ export default function UniversitiesPage() {
             </div>
           )}
           </TabsContent>
+
+          <TabsContent value="reporting" className="mt-4 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Отчетность</CardTitle>
+                <CardDescription>
+                  Раздел для работы с отчетами по ВУЗам и стажировкам
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">Отчетность</p>
+                  <p className="text-sm">Раздел находится в разработке</p>
+              </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="dashboard" className="mt-4 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Дэшборд</CardTitle>
+                <CardDescription>
+                  Аналитика и статистика по ВУЗам и стажировкам
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12 text-muted-foreground">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">Дэшборд</p>
+                  <p className="text-sm">Раздел находится в разработке</p>
+            </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -3536,7 +4926,7 @@ export default function UniversitiesPage() {
                 description: "",
               });
           setNewCurator({ city: "", branch: "", curatorName: "" });
-          setNewContract({ type: "cooperation", hasContract: false, contractFile: "", bankDepartment: "" });
+          setNewContract({ type: "cooperation", hasContract: false, contractFile: "" });
             }
           }}>
             <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -3766,95 +5156,6 @@ export default function UniversitiesPage() {
                       </div>
                     )}
 
-                    {/* Шаг 2: Договорная база */}
-                    {universityWizardStep === 2 && (
-                      <div className="space-y-4">
-                  <div className="space-y-2">
-                          <Label>Договоры с учебным заведением</Label>
-                          <div className="space-y-2">
-                            {universityFormData.contracts.map((contract) => (
-                              <Card key={contract.id} className="p-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium">
-                                      {contract.type === "cooperation" ? "О сотрудничестве" :
-                                       contract.type === "scholarship" ? "Об именных стипендиях" :
-                                       "О практике"}
-                                    </p>
-                                    {contract.bankDepartment && (
-                                      <p className="text-xs text-muted-foreground">Кафедра: {contract.bankDepartment}</p>
-                                    )}
-                                    {contract.contractFile && (
-                                      <p className="text-xs text-muted-foreground">Файл: {contract.contractFile}</p>
-                                    )}
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveContract(contract.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                  </div>
-                              </Card>
-                            ))}
-                            <Card className="p-4 border-dashed">
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    checked={newContract.hasContract}
-                                    onCheckedChange={(checked) => setNewContract({ ...newContract, hasContract: checked as boolean })}
-                                  />
-                                  <Label>Наличие договора</Label>
-                  </div>
-                                {newContract.hasContract && (
-                                  <>
-                    <Select
-                                      value={newContract.type}
-                                      onValueChange={(value) => setNewContract({ ...newContract, type: value as Contract["type"] })}
-                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Тип договора" />
-                      </SelectTrigger>
-                      <SelectContent>
-                                        <SelectItem value="cooperation">О сотрудничестве</SelectItem>
-                                        <SelectItem value="scholarship">Об именных стипендиях</SelectItem>
-                                        <SelectItem value="internship">О практике</SelectItem>
-                      </SelectContent>
-                    </Select>
-                                    <Input
-                                      type="file"
-                                      accept=".pdf"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          setNewContract({ ...newContract, contractFile: file.name });
-                                        }
-                                      }}
-                                      placeholder="Загрузить PDF"
-                                    />
-                                    <Input
-                                      placeholder="Кафедра Банка"
-                                      value={newContract.bankDepartment}
-                                      onChange={(e) => setNewContract({ ...newContract, bankDepartment: e.target.value })}
-                                    />
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={handleAddContract}
-                                      disabled={!newContract.hasContract}
-                                    >
-                                      <Plus className="h-4 w-4 mr-2" />
-                                      Добавить договор
-                                    </Button>
-                                  </>
-                                )}
-                  </div>
-                            </Card>
-                  </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Навигация */}
@@ -3891,18 +5192,18 @@ export default function UniversitiesPage() {
                         <>
                           <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} size="sm">
                             Отмена
-                          </Button>
-                          <Button 
-                            onClick={handleCreateUniversity}
+                    </Button>
+                    <Button 
+                      onClick={handleCreateUniversity}
                             disabled={!universityFormData.name.trim() || !universityFormData.city.trim()}
                             size="sm"
-                          >
+                    >
                             <CheckCircle2 className="h-4 w-4 mr-1" />
                             {editingUniversity ? "Сохранить изменения" : "Добавить ВУЗ"}
-                          </Button>
+                    </Button>
                         </>
                       )}
-                    </div>
+                </div>
                   </div>
                 </div>
               ) : null}
@@ -3928,7 +5229,7 @@ export default function UniversitiesPage() {
                     : "Заполните информацию о мероприятии"}
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4">
                 <div className="flex items-end gap-2">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-1">
@@ -3941,21 +5242,21 @@ export default function UniversitiesPage() {
                           <p>Выберите тип мероприятия: дни карьеры, экспертное участие или кейс-чемпионат</p>
                         </TooltipContent>
                       </Tooltip>
-                    </div>
-                      <Select
+                  </div>
+                    <Select
                       value={newEvent.type}
                       onValueChange={(value) => setNewEvent({ ...newEvent, type: value as "careerDays" | "expertParticipation" | "caseChampionships" })}
-                      >
+                    >
                       <SelectTrigger id="event-type-dialog" className="w-full">
                         <SelectValue placeholder="Выберите тип" />
-                        </SelectTrigger>
-                        <SelectContent>
+                      </SelectTrigger>
+                      <SelectContent>
                         <SelectItem value="careerDays">Дни карьеры</SelectItem>
                         <SelectItem value="expertParticipation">Экспертное участие</SelectItem>
                         <SelectItem value="caseChampionships">Кейс-чемпионат</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-1">
                       <Label htmlFor="event-date-dialog">Дата начала</Label>
@@ -4011,7 +5312,7 @@ export default function UniversitiesPage() {
                       <Select
                       value={newEvent.status}
                       onValueChange={(value) => setNewEvent({ ...newEvent, status: value as "planned" | "completed" })}
-                    >
+                      >
                       <SelectTrigger id="event-status-dialog" className="w-full">
                           <SelectValue />
                         </SelectTrigger>
@@ -4041,7 +5342,7 @@ export default function UniversitiesPage() {
                       className="w-full"
                       />
                     </div>
-                  </div>
+                    </div>
                     <div className="space-y-2">
                   <div className="flex items-center gap-1">
                     <Label htmlFor="event-comments-dialog">Комментарий</Label>
@@ -4059,9 +5360,9 @@ export default function UniversitiesPage() {
                     value={newEvent.comments}
                     onChange={(e) => setNewEvent({ ...newEvent, comments: e.target.value })}
                     placeholder="Комментарий"
-                  />
+                      />
                     </div>
-                      </div>
+                  </div>
                   <DialogFooter>
                 <Button
                   variant="outline"
@@ -4099,6 +5400,107 @@ export default function UniversitiesPage() {
             </DialogContent>
           </Dialog>
 
+          {/* Модальное окно добавления/редактирования договора */}
+          <Dialog open={isContractDialogOpen} onOpenChange={(open) => {
+            setIsContractDialogOpen(open);
+            if (!open) {
+              setEditingContract(null);
+              setNewContractForTab({ type: "cooperation", hasContract: false, contractFile: "" });
+            }
+          }}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingContract && editingContract.universityId === selectedUniversity ? "Редактировать договор" : "Добавить договор"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingContract && editingContract.universityId === selectedUniversity 
+                    ? "Внесите изменения в договор" 
+                    : "Заполните информацию о договоре"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="contract-type">Тип договора</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Выберите тип договора: о сотрудничестве, об именных стипендиях или о практике</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Select
+                    value={newContractForTab.type}
+                    onValueChange={(value) => setNewContractForTab({ ...newContractForTab, type: value as Contract["type"] })}
+                  >
+                    <SelectTrigger id="contract-type">
+                      <SelectValue placeholder="Выберите тип договора" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cooperation">О сотрудничестве</SelectItem>
+                      <SelectItem value="scholarship">Об именных стипендиях</SelectItem>
+                      <SelectItem value="internship">О практике</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="contract-file">Договор (файл)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Загрузите файл договора в формате PDF</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                      <Input
+                    id="contract-file"
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setNewContractForTab({ ...newContractForTab, contractFile: file.name });
+                      }
+                    }}
+                  />
+                    </div>
+                      </div>
+                  <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsContractDialogOpen(false);
+                    setEditingContract(null);
+                    setNewContractForTab({ type: "cooperation", hasContract: false, contractFile: "" });
+                  }}
+                >
+                  Отмена
+                    </Button>
+                {editingContract && editingContract.universityId === selectedUniversity ? (
+                    <Button 
+                    onClick={handleSaveContractForTab}
+                  >
+                    Сохранить
+                    </Button>
+                ) : (
+                  <Button
+                    onClick={() => selectedUniversity && handleAddContractForTab(selectedUniversity)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Добавить
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {/* Диалог удаления ВУЗа */}
           <AlertDialog open={deleteUniversityId !== null} onOpenChange={(open) => !open && setDeleteUniversityId(null)}>
             <AlertDialogContent>
@@ -4122,6 +5524,119 @@ export default function UniversitiesPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {/* Диалог истории изменений университета */}
+          <Dialog open={universityHistoryDialogOpen} onOpenChange={setUniversityHistoryDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>История изменений</DialogTitle>
+                <DialogDescription>
+                  {(() => {
+                    const university = universities.find(u => u.id === selectedUniversityForHistory);
+                    return `Подробная история изменений для "${university?.name || 'ВУЗа'}"`;
+                  })()}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                {selectedUniversityForHistory && (() => {
+                  const history = getUniversityChangeHistory(selectedUniversityForHistory);
+                  const formatDate = (date: Date) => {
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    return `${day}.${month}.${year} ${hours}:${minutes}`;
+                  };
+                  
+                  const getActionText = (action: ChangeHistory['action']) => {
+                    switch (action) {
+                      case "created":
+                        return "Создан";
+                      case "updated":
+                        return "Изменен";
+                      case "deleted":
+                        return "Удален";
+                      case "status_changed":
+                        return "Изменен статус";
+                      case "student_added":
+                        return "Добавлен студент";
+                      case "student_removed":
+                        return "Удален студент";
+                      default:
+                        return action;
+                    }
+                  };
+                  
+                  const getFieldName = (field?: string) => {
+                    if (!field) return "";
+                    const fieldNames: Record<string, string> = {
+                      name: "Название",
+                      shortName: "Краткое название",
+                      city: "Город",
+                      branch: "Филиал",
+                      cooperationStartYear: "Год начала сотрудничества",
+                      targetAudience: "Целевая аудитория",
+                      initiatorBlock: "Инициатор (блок)",
+                      initiatorName: "Инициатор (ФИО)",
+                      region: "Регион",
+                      description: "Описание",
+                      image: "Логотип",
+                    };
+                    return fieldNames[field] || field;
+                  };
+                  
+                  return history.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      История изменений отсутствует
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {history.map((item) => (
+                        <div key={item.id} className="border rounded-lg p-4 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {getActionText(item.action)}
+                                </Badge>
+                                {item.field && (
+                                  <span className="text-sm text-muted-foreground">
+                                    Поле: {getFieldName(item.field)}
+                                  </span>
+                                )}
+                              </div>
+                              {item.field && item.oldValue !== undefined && item.newValue !== undefined && (
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">Было:</span>
+                                    <span className="line-through text-red-600 dark:text-red-400">{item.oldValue || "(пусто)"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">Стало:</span>
+                                    <span className="text-green-600 dark:text-green-400">{item.newValue || "(пусто)"}</span>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <User className="h-3 w-3" />
+                                <span>{item.user}</span>
+                                <Clock className="h-3 w-3 ml-2" />
+                                <span>{formatDate(item.timestamp)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setUniversityHistoryDialogOpen(false)}>Закрыть</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Диалог удаления партнерства - удален */}
           {/* <AlertDialog open={deletePartnershipId !== null} onOpenChange={(open) => !open && setDeletePartnershipId(null)}>
