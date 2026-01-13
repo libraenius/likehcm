@@ -83,6 +83,21 @@ interface Event {
   responsiblePersonImage?: string; // Фото ответственного лица
 }
 
+// Тип для стажера
+interface Intern {
+  id: string;
+  employeeName: string; // ФИО сотрудника
+  age: number; // Возраст
+  position: string; // Должность
+  department: string; // Подразделение
+  hireDate: string; // Дата приема на работу (формат YYYY-MM-DD)
+  status: "active" | "dismissed"; // Статус: работает или уволен
+  dismissalDate?: string; // Дата увольнения (формат YYYY-MM-DD)
+  internshipInBank: boolean; // Стажировка в банке: да/нет
+  internshipStartDate?: string; // Дата начала стажировки в банке (формат YYYY-MM-DD)
+  internshipEndDate?: string; // Дата окончания стажировки в банке (формат YYYY-MM-DD)
+}
+
 // Тип для университета
 interface University {
   id: string;
@@ -105,6 +120,7 @@ interface University {
   internHiring?: boolean; // Найм стажеров
   averageInternsPerYear?: number; // Среднее количество стажеров в год
   interns?: number; // Практиканты
+  internList?: Intern[]; // Список стажеров
   region?: string;
   description?: string;
   image?: string; // Фото/логотип ВУЗа
@@ -134,7 +150,6 @@ interface Department {
 const UNIVERSITY_STEPS = [
   { id: 1, title: "Общая информация", description: "Основные данные об учебном заведении и сотрудничестве" },
   { id: 2, title: "Договорная база", description: "Договоры и документы сотрудничества" },
-  { id: 3, title: "Кадровые показатели", description: "Статистика по сотрудникам и стажерам" },
 ];
 
 // Моковые данные подразделений
@@ -268,6 +283,43 @@ const mockUniversities: University[] = [
     internHiring: true,
     averageInternsPerYear: 25,
     interns: 10,
+    internList: [
+      {
+        id: "intern-mgu-1",
+        employeeName: "Иванов Иван Иванович",
+        age: 23,
+        position: "Стажер-разработчик",
+        department: "Департамент автоматизации внутренних сервисов",
+        hireDate: "2024-01-15",
+        status: "active",
+        internshipInBank: true,
+        internshipStartDate: "2023-06-01",
+        internshipEndDate: "2023-08-31",
+      },
+      {
+        id: "intern-mgu-2",
+        employeeName: "Петрова Мария Сергеевна",
+        age: 24,
+        position: "Стажер-аналитик",
+        department: "Управление развития общекорпоративных систем",
+        hireDate: "2024-02-01",
+        status: "active",
+        internshipInBank: true,
+        internshipStartDate: "2023-07-15",
+        internshipEndDate: "2023-09-30",
+      },
+      {
+        id: "intern-mgu-3",
+        employeeName: "Сидоров Алексей Дмитриевич",
+        age: 22,
+        position: "Стажер-тестировщик",
+        department: "Управление качества и тестирования",
+        hireDate: "2024-03-10",
+        status: "dismissed",
+        dismissalDate: "2024-06-15",
+        internshipInBank: false,
+      },
+    ],
     region: "Московская область",
     description: "Ведущий университет России",
     image: "https://via.placeholder.com/100?text=МГУ",
@@ -482,6 +534,53 @@ const mockUniversities: University[] = [
     internHiring: true,
     averageInternsPerYear: 35,
     interns: 20,
+    internList: [
+      {
+        id: "intern-hse-1",
+        employeeName: "Козлова Елена Владимировна",
+        age: 25,
+        position: "Стажер-экономист",
+        department: "Департамент информационной безопасности",
+        hireDate: "2024-01-20",
+        status: "active",
+        internshipInBank: true,
+        internshipStartDate: "2023-05-10",
+        internshipEndDate: "2023-07-31",
+      },
+      {
+        id: "intern-hse-2",
+        employeeName: "Волков Дмитрий Николаевич",
+        age: 23,
+        position: "Стажер-финансист",
+        department: "Управление разработки банковских продуктов",
+        hireDate: "2024-02-15",
+        status: "active",
+        internshipInBank: true,
+        internshipStartDate: "2023-08-01",
+        internshipEndDate: "2023-10-31",
+      },
+      {
+        id: "intern-hse-3",
+        employeeName: "Новикова Анна Петровна",
+        age: 24,
+        position: "Стажер-разработчик",
+        department: "Департамент автоматизации внутренних сервисов",
+        hireDate: "2024-03-05",
+        status: "active",
+        internshipInBank: false,
+      },
+      {
+        id: "intern-hse-4",
+        employeeName: "Морозов Сергей Александрович",
+        age: 26,
+        position: "Стажер-аналитик",
+        department: "Управление качества и тестирования",
+        hireDate: "2024-04-01",
+        status: "dismissed",
+        dismissalDate: "2024-07-20",
+        internshipInBank: false,
+      },
+    ],
     region: "Московская область",
     description: "Ведущий экономический и IT-университет",
     image: "https://www.hse.ru//images/main/main_logo_ru_full.svg",
@@ -857,6 +956,7 @@ export default function UniversitiesPage() {
   const [universities, setUniversities] = useState<University[]>(mockUniversities);
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
   const [universityDetailTab, setUniversityDetailTab] = useState<"general" | "contracts" | "events" | "staff">("general");
+  const [staffSubTab, setStaffSubTab] = useState<"interns" | "practitioners">("interns");
   const [universitiesSortOrder, setUniversitiesSortOrder] = useState<"asc" | "desc">("asc");
   const [expandedUniversities, setExpandedUniversities] = useState<Set<string>>(new Set());
   
@@ -2039,7 +2139,7 @@ export default function UniversitiesPage() {
                         <div className="space-y-2">
                                       <Label className="text-sm font-semibold">Блок/ССП</Label>
                                       <span className="text-sm font-medium">{university.initiatorBlock}</span>
-                          </div>
+                        </div>
                                   )}
                                   {university.initiatorName && (
                                     <div className="space-y-2">
@@ -2072,13 +2172,13 @@ export default function UniversitiesPage() {
                                   {university.branchCurators.map((curator) => (
                                     <Card key={curator.id} className="p-3 bg-muted/30">
                                       <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
+                        <div className="space-y-2">
                                           <Label className="text-sm font-semibold">Город - Филиал</Label>
                               <div className="flex items-center gap-2">
                                             <MapPin className="h-4 w-4 text-muted-foreground" />
                                             <span className="text-sm font-medium">{curator.city} - {curator.branch}</span>
-                              </div>
-                            </div>
+                          </div>
+                        </div>
                                         <div className="space-y-2">
                                           <Label className="text-sm font-semibold">Куратор</Label>
                                           <div className="flex items-center gap-3">
@@ -2153,7 +2253,7 @@ export default function UniversitiesPage() {
                                 return (
                                   <>
                                     <Card className="p-3 flex-1">
-                                      <div className="space-y-2">
+                            <div className="space-y-2">
                                         <Label className="text-base font-semibold">Типы мероприятий</Label>
                                         <div className="flex items-center gap-3">
                                           <div className="text-base">
@@ -2170,7 +2270,7 @@ export default function UniversitiesPage() {
                                             >
                                               {stats.byType.careerDays}
                                             </Badge>
-                                          </div>
+                              </div>
                                           <div className="text-base">
                                             <span className="text-muted-foreground">Экспертное участие: </span>
                                             <Badge 
@@ -2244,7 +2344,7 @@ export default function UniversitiesPage() {
                                   </>
                                                   );
                                                 })()}
-                                                  <Button
+                              <Button
                                 onClick={() => {
                                   setEditingEvent(null);
                                   setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
@@ -2342,11 +2442,11 @@ export default function UniversitiesPage() {
                                                       )}
                                                     </div>
                                                 <div className="flex gap-1">
-                                                  <Button
+                              <Button
                                                     variant="ghost"
-                                            size="sm"
+                                size="sm"
                                             className="h-8 w-8 p-0"
-                                            onClick={() => {
+                                onClick={() => {
                                               handleEditEvent(selectedUniversity!, event.id);
                                             }}
                                           >
@@ -2359,9 +2459,9 @@ export default function UniversitiesPage() {
                                             onClick={() => handleRemoveEvent(selectedUniversity!, event.id)}
                                           >
                                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                                  </Button>
-                                                </div>
-                                      </div>
+                              </Button>
+                            </div>
+                          </div>
                                     </Card>
                                         );
                                   })}
@@ -2383,35 +2483,177 @@ export default function UniversitiesPage() {
                         
                         {/* Таб 4: Кадровые показатели */}
                         <TabsContent value="staff" className="space-y-4 mt-4">
-                          <div className="space-y-4">
-                            {university.allEmployees !== undefined && (
-                              <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Все сотрудники</Label>
-                                <p className="text-2xl font-bold">{university.allEmployees}</p>
-                                      </div>
-                            )}
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                              <div>
-                                <Label className="text-sm font-semibold">Найм стажеров</Label>
-                                <p className="text-xs text-muted-foreground">Наличие найма стажеров</p>
+                          <Tabs value={staffSubTab} onValueChange={(v) => setStaffSubTab(v as typeof staffSubTab)} className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                              <TabsTrigger value="interns">Стажеры</TabsTrigger>
+                              <TabsTrigger value="practitioners">Практиканты</TabsTrigger>
+                            </TabsList>
+                            
+                            {/* Подтаб: Стажеры */}
+                            <TabsContent value="interns" className="space-y-4 mt-4">
+                              {university.internList && university.internList.length > 0 ? (
+                                <div className="border rounded-lg overflow-hidden">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-[250px]">Сотрудник</TableHead>
+                                        <TableHead className="w-[100px]">Возраст</TableHead>
+                                      <TableHead className="w-[200px]">Должность / Подразделение</TableHead>
+                                        <TableHead className="w-[150px]">Дата приема на работу</TableHead>
+                                        <TableHead className="w-[150px]">Статус</TableHead>
+                                        <TableHead className="w-[150px]">Стажировка в банке</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {university.internList.map((intern) => {
+                                        const getInitials = (name: string) => {
+                                          return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                                        };
+                                        return (
+                                          <TableRow key={intern.id}>
+                                              <TableCell className="px-4 whitespace-normal">
+                                                <div className="flex items-center gap-3">
+                                                  <Avatar className="h-10 w-10 shrink-0">
+                                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                    {getInitials(intern.employeeName)}
+                                                    </AvatarFallback>
+                                                  </Avatar>
+                                                  <div className="flex flex-col min-w-0">
+                                                  <span className="font-medium">{intern.employeeName}</span>
+                                                  </div>
                                                 </div>
-                              <Badge variant={university.internHiring ? "default" : "outline"}>
-                                {university.internHiring ? "Да" : "Нет"}
-                              </Badge>
-                            </div>
-                            {university.averageInternsPerYear !== undefined && (
-                              <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Среднее количество стажеров в год</Label>
-                                <p className="text-2xl font-bold">{university.averageInternsPerYear}</p>
-                              </div>
-                            )}
-                            {university.interns !== undefined && (
-                              <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Практиканты</Label>
-                                <p className="text-2xl font-bold">{university.interns}</p>
+                                              </TableCell>
+                                              <TableCell className="px-4 whitespace-normal">
+                                                {intern.age} лет
+                                              </TableCell>
+                                              <TableCell className="px-4 whitespace-normal">
+                                                    <div className="flex flex-col gap-1">
+                                                <span className="font-medium">{intern.position}</span>
+                                                        <div className="text-sm text-muted-foreground">
+                                                  {intern.department}
                                                         </div>
-                                                      )}
                                                     </div>
+                                              </TableCell>
+                                              <TableCell className="px-4 whitespace-normal">
+                                              {(() => {
+                                                const [year, month, day] = intern.hireDate.split('-').map(Number);
+                                                return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                              })()}
+                                              </TableCell>
+                                              <TableCell>
+                                                {intern.status === "dismissed" && intern.dismissalDate ? (
+                                                  <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                      <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                          "text-xs px-2 py-0.5 cursor-help",
+                                                          getStatusBadgeColor("cancelled")
+                                                        )}
+                                                      >
+                                                        Уволен
+                                                      </Badge>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                      <p>
+                                                        Дата увольнения: {(() => {
+                                                          const [year, month, day] = intern.dismissalDate!.split('-').map(Number);
+                                                          return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                                        })()}
+                                                      </p>
+                                                    </TooltipContent>
+                                                  </Tooltip>
+                                                ) : (
+                                                  <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                      "text-xs px-2 py-0.5",
+                                                      getStatusBadgeColor("active")
+                                                    )}
+                                                  >
+                                                    Работает
+                                                  </Badge>
+                                                )}
+                                              </TableCell>
+                                              <TableCell>
+                                                {intern.internshipInBank && intern.internshipStartDate && intern.internshipEndDate ? (
+                                                  <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                      <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                          "text-xs px-2 py-0.5 cursor-help",
+                                                          getStatusBadgeColor("approved")
+                                                        )}
+                                                      >
+                                                        Да
+                                                      </Badge>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                      <p>
+                                                        Период стажировки: {(() => {
+                                                          const formatDate = (dateString: string) => {
+                                                            const [year, month, day] = dateString.split('-').map(Number);
+                                                            return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                                          };
+                                                          return `${formatDate(intern.internshipStartDate)} - ${formatDate(intern.internshipEndDate!)}`;
+                                                        })()}
+                                                      </p>
+                                                    </TooltipContent>
+                                                  </Tooltip>
+                                                ) : (
+                                                  <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                      "text-xs px-2 py-0.5",
+                                                      getStatusBadgeColor("notStarted")
+                                                    )}
+                                                  >
+                                                    Нет
+                                                  </Badge>
+                                                )}
+                                              </TableCell>
+                                            </TableRow>
+                                        );
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              ) : (
+                                <div className="border rounded-lg overflow-hidden">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-[250px]">Сотрудник</TableHead>
+                                        <TableHead className="w-[100px]">Возраст</TableHead>
+                                        <TableHead className="w-[200px]">Должность / Подразделение</TableHead>
+                                        <TableHead className="w-[150px]">Дата приема на работу</TableHead>
+                                        <TableHead className="w-[150px]">Статус</TableHead>
+                                        <TableHead className="w-[150px]">Стажировка в банке</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      <TableRow>
+                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                          Стажеры не добавлены
+                                        </TableCell>
+                                      </TableRow>
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              )}
+                            </TabsContent>
+                            
+                            {/* Подтаб: Практиканты */}
+                            <TabsContent value="practitioners" className="space-y-4 mt-4">
+                              {university.interns !== undefined && (
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-semibold">Практиканты</Label>
+                                  <p className="text-2xl font-bold">{university.interns}</p>
+                                      </div>
+                              )}
+                            </TabsContent>
+                          </Tabs>
                         </TabsContent>
                       </Tabs>
                     </CardContent>
@@ -3016,55 +3258,6 @@ export default function UniversitiesPage() {
                             </Card>
                   </div>
                         </div>
-                      </div>
-                    )}
-
-                    {/* Шаг 3: Кадровые показатели */}
-                    {universityWizardStep === 3 && (
-                      <div className="space-y-4">
-                  <div className="space-y-2">
-                          <Label htmlFor="all-employees">Все сотрудники</Label>
-                      <Input
-                            id="all-employees"
-                            type="number"
-                            min="0"
-                            value={universityFormData.allEmployees || ""}
-                            onChange={(e) => setUniversityFormData({ ...universityFormData, allEmployees: parseInt(e.target.value) || 0 })}
-                            placeholder="0"
-                    />
-                  </div>
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <Label className="text-base font-medium">Найм стажеров</Label>
-                            <p className="text-sm text-muted-foreground">Наличие найма стажеров</p>
-                          </div>
-                          <Switch
-                            checked={universityFormData.internHiring}
-                            onCheckedChange={(checked) => setUniversityFormData({ ...universityFormData, internHiring: checked })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                          <Label htmlFor="average-interns">Среднее количество стажеров в год</Label>
-                      <Input
-                            id="average-interns"
-                            type="number"
-                            min="0"
-                            value={universityFormData.averageInternsPerYear || ""}
-                            onChange={(e) => setUniversityFormData({ ...universityFormData, averageInternsPerYear: parseInt(e.target.value) || 0 })}
-                            placeholder="0"
-                          />
-                  </div>
-                    <div className="space-y-2">
-                          <Label htmlFor="interns">Практиканты</Label>
-                      <Input
-                            id="interns"
-                            type="number"
-                            min="0"
-                            value={universityFormData.interns || ""}
-                            onChange={(e) => setUniversityFormData({ ...universityFormData, interns: parseInt(e.target.value) || 0 })}
-                            placeholder="0"
-                          />
-                    </div>
                       </div>
                     )}
                   </div>
