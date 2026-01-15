@@ -1468,10 +1468,6 @@ export default function UniversitiesPage() {
   const [universitiesSortOrder, setUniversitiesSortOrder] = useState<"asc" | "desc">("asc");
   const [expandedUniversities, setExpandedUniversities] = useState<Set<string>>(new Set());
   
-  // Состояние для сворачивания блоков в детальной информации о ВУЗе
-  const [isCooperationLinesExpanded, setIsCooperationLinesExpanded] = useState(true);
-  const [isBranchesExpanded, setIsBranchesExpanded] = useState(true);
-  
   // Список доступных филиалов ГПБ
   const availableBranches = [
     { value: "Московский филиал", label: "Московский филиал" },
@@ -1494,16 +1490,16 @@ export default function UniversitiesPage() {
   
   // Список ответственных лиц по линиям сотрудничества
   const responsiblePersons = [
-    { value: "person-1", label: "Иванов Иван Иванович" },
-    { value: "person-2", label: "Петрова Мария Сергеевна" },
-    { value: "person-3", label: "Сидоров Алексей Дмитриевич" },
-    { value: "person-4", label: "Козлова Анна Владимировна" },
-    { value: "person-5", label: "Волков Дмитрий Петрович" },
-    { value: "person-6", label: "Новикова Елена Александровна" },
-    { value: "person-7", label: "Морозов Сергей Викторович" },
-    { value: "person-8", label: "Павлова Ольга Николаевна" },
-    { value: "person-9", label: "Семенов Андрей Борисович" },
-    { value: "person-10", label: "Лебедева Татьяна Михайловна" },
+    { value: "person-1", label: "Иванов Иван Иванович", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", position: "Руководитель направления" },
+    { value: "person-2", label: "Петрова Мария Сергеевна", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face", position: "Старший специалист" },
+    { value: "person-3", label: "Сидоров Алексей Дмитриевич", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face", position: "Менеджер проектов" },
+    { value: "person-4", label: "Козлова Анна Владимировна", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face", position: "Специалист по работе с ВУЗами" },
+    { value: "person-5", label: "Волков Дмитрий Петрович", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face", position: "Руководитель отдела" },
+    { value: "person-6", label: "Новикова Елена Александровна", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face", position: "Координатор программ" },
+    { value: "person-7", label: "Морозов Сергей Викторович", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face", position: "Ведущий специалист" },
+    { value: "person-8", label: "Павлова Ольга Николаевна", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", position: "Менеджер по развитию" },
+    { value: "person-9", label: "Семенов Андрей Борисович", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face", position: "Руководитель проектов" },
+    { value: "person-10", label: "Лебедева Татьяна Михайловна", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face", position: "Специалист по партнерствам" },
   ];
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -2793,49 +2789,88 @@ export default function UniversitiesPage() {
                           onClick={() => setSelectedUniversity(university.id)}
                         >
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <div className="font-medium text-sm break-words">{university.name}</div>
-                                {/* Теги линий сотрудничества */}
-                                {university.cooperationLines && university.cooperationLines.length > 0 && (
-                                  <div className="flex items-center gap-1 flex-wrap">
-                                    {university.cooperationLines.map((record, idx) => (
-                                      <Badge 
-                                        key={record.id || idx} 
-                                        variant="outline" 
-                                        className={`text-xs ${getCooperationLineBadgeColor(record.line)}`}
-                                      >
-                                        {getCooperationLineLabel(record.line)}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
-                                {/* Старый формат для обратной совместимости */}
-                                {(!university.cooperationLines || university.cooperationLines.length === 0) && university.cooperationLine && (
-                                  <div className="flex items-center gap-1 flex-wrap">
-                                    {Array.isArray(university.cooperationLine) ? (
-                                      university.cooperationLine.map((line, idx) => (
+                              <div className="font-medium text-sm break-words">{university.name}</div>
+                              {university.shortName && (
+                                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                  <div className="text-xs text-muted-foreground">{university.shortName}</div>
+                                  {/* Теги линий сотрудничества */}
+                                  {university.cooperationLines && university.cooperationLines.length > 0 && (
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      {university.cooperationLines.map((record, idx) => (
                                         <Badge 
-                                          key={idx} 
+                                          key={record.id || idx} 
                                           variant="outline" 
-                                          className={`text-xs ${getCooperationLineBadgeColor(line)}`}
+                                          className={`text-xs ${getCooperationLineBadgeColor(record.line)}`}
                                         >
-                                          {getCooperationLineLabel(line)}
+                                          {getCooperationLineLabel(record.line)}
                                         </Badge>
-                                      ))
-                                    ) : (
-                                      <Badge 
-                                        variant="outline" 
-                                        className={`text-xs ${getCooperationLineBadgeColor(university.cooperationLine)}`}
-                                      >
-                                        {getCooperationLineLabel(university.cooperationLine)}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            {university.shortName && (
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                {university.shortName}
+                                      ))}
+                                    </div>
+                                  )}
+                                  {/* Старый формат для обратной совместимости */}
+                                  {(!university.cooperationLines || university.cooperationLines.length === 0) && university.cooperationLine && (
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      {Array.isArray(university.cooperationLine) ? (
+                                        university.cooperationLine.map((line, idx) => (
+                                          <Badge 
+                                            key={idx} 
+                                            variant="outline" 
+                                            className={`text-xs ${getCooperationLineBadgeColor(line)}`}
+                                          >
+                                            {getCooperationLineLabel(line)}
+                                          </Badge>
+                                        ))
+                                      ) : (
+                                        <Badge 
+                                          variant="outline" 
+                                          className={`text-xs ${getCooperationLineBadgeColor(university.cooperationLine)}`}
+                                        >
+                                          {getCooperationLineLabel(university.cooperationLine)}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {!university.shortName && (
+                                <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                                  {/* Теги линий сотрудничества */}
+                                  {university.cooperationLines && university.cooperationLines.length > 0 && (
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      {university.cooperationLines.map((record, idx) => (
+                                        <Badge 
+                                          key={record.id || idx} 
+                                          variant="outline" 
+                                          className={`text-xs ${getCooperationLineBadgeColor(record.line)}`}
+                                        >
+                                          {getCooperationLineLabel(record.line)}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {/* Старый формат для обратной совместимости */}
+                                  {(!university.cooperationLines || university.cooperationLines.length === 0) && university.cooperationLine && (
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      {Array.isArray(university.cooperationLine) ? (
+                                        university.cooperationLine.map((line, idx) => (
+                                          <Badge 
+                                            key={idx} 
+                                            variant="outline" 
+                                            className={`text-xs ${getCooperationLineBadgeColor(line)}`}
+                                          >
+                                            {getCooperationLineLabel(line)}
+                                          </Badge>
+                                        ))
+                                      ) : (
+                                        <Badge 
+                                          variant="outline" 
+                                          className={`text-xs ${getCooperationLineBadgeColor(university.cooperationLine)}`}
+                                        >
+                                          {getCooperationLineLabel(university.cooperationLine)}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -2982,33 +3017,19 @@ export default function UniversitiesPage() {
                           {/* Линии сотрудничества */}
                           {((university.cooperationLines && university.cooperationLines.length > 0) || university.cooperationLine) && (
                             <>
-                              <div className="space-y-4 px-6">
-                                <button
-                                  type="button"
-                                  onClick={() => setIsCooperationLinesExpanded(!isCooperationLinesExpanded)}
-                                  className="w-full flex items-center justify-between text-base font-semibold hover:opacity-80 transition-opacity"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Handshake className="h-4 w-4" />
-                                    Линии сотрудничества
-                                  </div>
-                                  {isCooperationLinesExpanded ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                  )}
-                                </button>
-                                {isCooperationLinesExpanded && (
-                                  <>
-                                    {/* Новый формат: список записей линий сотрудничества */}
-                                    {university.cooperationLines && university.cooperationLines.length > 0 ? (
-                                  <div className="space-y-1.5">
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-base font-semibold">
+                                  <Handshake className="h-4 w-4" />
+                                  Линии сотрудничества
+                                </div>
+                                {/* Новый формат: список записей линий сотрудничества */}
+                                {university.cooperationLines && university.cooperationLines.length > 0 ? (
+                                  <div className="space-y-3">
                                     {university.cooperationLines.map((record, index) => (
-                                      <Card key={record.id || index}>
-                                        <CardContent className="px-4 py-2">
-                                          <div className="space-y-2">
-                                          <div className="flex items-center gap-3 flex-wrap">
-                                            <Badge variant="outline" className={`text-base font-medium ${getCooperationLineBadgeColor(record.line)}`}>
+                                      <Card key={record.id || index} className="p-3">
+                                        <div className="flex-1 space-y-1.5">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <Badge variant="outline" className={`text-xs ${getCooperationLineBadgeColor(record.line)}`}>
                                               {getCooperationLineLabel(record.line)}
                                             </Badge>
                                             <div className="flex items-center gap-2">
@@ -3016,76 +3037,91 @@ export default function UniversitiesPage() {
                                               <span className="text-base font-medium text-foreground">{record.year}</span>
                                             </div>
                                           </div>
-                                            {record.responsible && record.responsible.length > 0 && (
-                                              <div className="pt-1.5 border-t">
-                                                <Label className="text-sm font-semibold text-foreground mb-1 block">Ответственные лица:</Label>
-                                                <div className="flex flex-wrap gap-2">
-                                                  {record.responsible.map((personId, personIndex) => {
-                                                    const person = responsiblePersons.find(p => p.value === personId);
-                                                    return person ? (
-                                                      <Badge key={personIndex} variant="outline" className="text-sm">
-                                                        {person.label}
-                                                      </Badge>
-                                                    ) : null;
-                                                  })}
-                                                </div>
+                                          {record.responsible && record.responsible.length > 0 && (
+                                            <div className="flex items-center gap-2">
+                                              <Label className="text-sm font-semibold">Ответственное лицо:</Label>
+                                              <div className="flex flex-wrap gap-3">
+                                                {record.responsible.map((personId, personIndex) => {
+                                                  const person = responsiblePersons.find(p => p.value === personId);
+                                                  return person ? (
+                                                    <div key={personIndex} className="flex items-center gap-2">
+                                                      <Avatar className="h-10 w-10">
+                                                        <AvatarImage src={person.image} alt={person.label} />
+                                                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                                          {person.label.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
+                                                        </AvatarFallback>
+                                                      </Avatar>
+                                                      <div className="flex flex-col">
+                                                        <span className="text-sm font-medium">{person.label}</span>
+                                                        <span className="text-xs text-muted-foreground">{person.position}</span>
+                                                      </div>
+                                                    </div>
+                                                  ) : null;
+                                                })}
                                               </div>
-                                            )}
-                                          </div>
-                                        </CardContent>
+                                            </div>
+                                          )}
+                                        </div>
                                       </Card>
                                     ))}
                                   </div>
                                   ) : (
                                     /* Старый формат: для обратной совместимости */
-                                    <Card>
-                                      <CardContent className="px-4 py-2">
-                                        <div className="space-y-2">
-                                          {university.cooperationLine && (
-                                            <div className="space-y-2">
-                                              <Label className="text-sm font-semibold text-foreground">
-                                                {Array.isArray(university.cooperationLine) && university.cooperationLine.length > 1 
-                                                  ? "Линии сотрудничества" 
-                                                  : "Линия сотрудничества"}
-                                              </Label>
-                                              <div className="flex flex-wrap gap-2">
-                                                {Array.isArray(university.cooperationLine) ? (
-                                                  university.cooperationLine.map((line, index) => (
-                                                    <Badge key={index} variant="outline" className={`text-sm ${getCooperationLineBadgeColor(line)}`}>
-                                                      {getCooperationLineLabel(line)}
-                                                    </Badge>
-                                                  ))
-                                                ) : (
-                                                  <Badge variant="outline" className={`text-sm ${getCooperationLineBadgeColor(university.cooperationLine)}`}>
-                                                    {getCooperationLineLabel(university.cooperationLine)}
+                                    <Card className="p-3">
+                                      <div className="flex-1 space-y-1.5">
+                                        {university.cooperationLine && (
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <Label className="text-sm font-semibold text-foreground">
+                                              {Array.isArray(university.cooperationLine) && university.cooperationLine.length > 1 
+                                                ? "Линии сотрудничества" 
+                                                : "Линия сотрудничества"}
+                                            </Label>
+                                            <div className="flex flex-wrap gap-2">
+                                              {Array.isArray(university.cooperationLine) ? (
+                                                university.cooperationLine.map((line, index) => (
+                                                  <Badge key={index} variant="outline" className={`text-xs ${getCooperationLineBadgeColor(line)}`}>
+                                                    {getCooperationLineLabel(line)}
                                                   </Badge>
-                                                )}
-                                              </div>
+                                                ))
+                                              ) : (
+                                                <Badge variant="outline" className={`text-xs ${getCooperationLineBadgeColor(university.cooperationLine)}`}>
+                                                  {getCooperationLineLabel(university.cooperationLine)}
+                                                </Badge>
+                                              )}
                                             </div>
-                                          )}
+                                          </div>
+                                        )}
+                                        <div className="flex items-center gap-2 flex-wrap">
                                           {(university.cooperationLineYear || university.cooperationStartYear) && (
-                                            <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
                                               <Label className="text-sm text-muted-foreground">
                                                 {university.cooperationLine ? "Год по линии" : "Год начала сотрудничества"}
                                               </Label>
-                                              <div>
-                                                <span className="text-base font-medium">
-                                                  {university.cooperationLineYear ?? university.cooperationStartYear}
-                                                </span>
-                                              </div>
+                                              <span className="text-base font-medium">
+                                                {university.cooperationLineYear ?? university.cooperationStartYear}
+                                              </span>
                                             </div>
                                           )}
                                           {university.cooperationLineResponsible && (
-                                            <div className="space-y-2 pt-2 border-t">
-                                              <Label className="text-sm font-semibold text-foreground">Ответственное лицо по линии</Label>
-                                              <div className="flex flex-wrap gap-2">
+                                            <div className="flex items-center gap-2">
+                                              <Label className="text-sm font-semibold">Ответственное лицо по линии:</Label>
+                                              <div className="flex flex-wrap gap-3">
                                                 {Array.isArray(university.cooperationLineResponsible) ? (
                                                   university.cooperationLineResponsible.map((personId, index) => {
                                                     const person = responsiblePersons.find(p => p.value === personId);
                                                     return person ? (
-                                                      <Badge key={index} variant="outline" className="text-sm">
-                                                        {person.label}
-                                                      </Badge>
+                                                      <div key={index} className="flex items-center gap-2">
+                                                        <Avatar className="h-10 w-10">
+                                                          <AvatarImage src={person.image} alt={person.label} />
+                                                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                                            {person.label.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
+                                                          </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex flex-col">
+                                                          <span className="text-sm font-medium">{person.label}</span>
+                                                          <span className="text-xs text-muted-foreground">{person.position}</span>
+                                                        </div>
+                                                      </div>
                                                     ) : null;
                                                   })
                                                 ) : (
@@ -3095,49 +3131,37 @@ export default function UniversitiesPage() {
                                             </div>
                                           )}
                                         </div>
-                                      </CardContent>
+                                      </div>
                                     </Card>
                                   )}
-                                  </>
-                                )}
                               </div>
                             </>
                           )}
 
                           {/* Филиалы ВУЗа */}
                           <Separator />
-                          <div className="space-y-2 px-6">
-                            <button
-                              type="button"
-                              onClick={() => setIsBranchesExpanded(!isBranchesExpanded)}
-                              className="w-full flex items-center justify-between text-base font-semibold hover:opacity-80 transition-opacity"
-                            >
-                              <div className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4" />
-                                Филиалы ВУЗа
-                              </div>
-                              {isBranchesExpanded ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </button>
-                            {isBranchesExpanded && (
-                              <div className="space-y-2">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-base font-semibold">
+                              <Building2 className="h-4 w-4" />
+                              Филиалы ВУЗа
+                            </div>
+                            <div className="space-y-3">
                                 {university.branchCurators && university.branchCurators.length > 0 ? (
-                                  <div className="p-4 border rounded-lg bg-muted/30">
-                                    <div className="space-y-3">
-                                      {university.branchCurators.map((curator) => (
-                                        <div key={curator.id} className="flex items-start gap-2">
-                                          <Avatar className="h-10 w-10 flex-shrink-0">
-                                            <AvatarImage src={curator.image} alt={curator.curatorName} />
-                                            <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                              {curator.curatorName.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
-                                            </AvatarFallback>
-                                          </Avatar>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium">{curator.curatorName}</p>
-                                            <p className="text-xs text-muted-foreground">{curator.city} - {curator.branch}</p>
+                                  <>
+                                    {university.branchCurators.map((curator) => (
+                                      <Card key={curator.id} className="p-3">
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                                            <Avatar className="h-10 w-10 flex-shrink-0">
+                                              <AvatarImage src={curator.image} alt={curator.curatorName} />
+                                              <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                {curator.curatorName.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 min-w-0 space-y-1.5">
+                                              <p className="text-sm font-medium">{curator.curatorName}</p>
+                                              <p className="text-xs text-muted-foreground">{curator.city} - {curator.branch}</p>
+                                            </div>
                                           </div>
                                           <Button
                                             variant="ghost"
@@ -3148,63 +3172,64 @@ export default function UniversitiesPage() {
                                             <Trash2 className="h-4 w-4" />
                                           </Button>
                                         </div>
-                                      ))}
-                                    </div>
-                                  </div>
+                                      </Card>
+                                    ))}
+                                  </>
                                 ) : (
-                                  <div className="p-4 border rounded-lg bg-muted/30">
+                                  <Card className="p-3">
                                     <p className="text-sm text-muted-foreground text-center">Кураторы от филиалов не добавлены</p>
-                                  </div>
+                                  </Card>
                                 )}
                                 
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-semibold">Добавить филиал</Label>
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                    <div className="space-y-1">
-                                      <Label htmlFor="curator-city" className="text-xs text-muted-foreground">Город</Label>
-                                      <Input
-                                        id="curator-city"
-                                        placeholder="Москва"
-                                        value={newCuratorForUniversity.city}
-                                        onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, city: e.target.value })}
-                                        className="h-9"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <Label htmlFor="curator-branch" className="text-xs text-muted-foreground">Филиал</Label>
-                                      <Input
-                                        id="curator-branch"
-                                        placeholder="Московский филиал"
-                                        value={newCuratorForUniversity.branch}
-                                        onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, branch: e.target.value })}
-                                        className="h-9"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <Label htmlFor="curator-name" className="text-xs text-muted-foreground">Куратор</Label>
-                                      <div className="flex gap-2">
+                                <Card className="p-3">
+                                  <div className="flex-1 space-y-1.5">
+                                    <Label className="text-sm font-semibold">Добавить филиал</Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                      <div className="space-y-1">
+                                        <Label htmlFor="curator-city" className="text-xs text-muted-foreground">Город</Label>
                                         <Input
-                                          id="curator-name"
-                                          placeholder="Иванов И.И."
-                                          value={newCuratorForUniversity.curatorName}
-                                          onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, curatorName: e.target.value })}
-                                          className="flex-1 h-9"
+                                          id="curator-city"
+                                          placeholder="Москва"
+                                          value={newCuratorForUniversity.city}
+                                          onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, city: e.target.value })}
+                                          className="h-9"
                                         />
-                                        <Button
-                                          variant="default"
-                                          size="icon"
-                                          onClick={() => handleAddCuratorForUniversity(university.id)}
-                                          disabled={!newCuratorForUniversity.city.trim() || !newCuratorForUniversity.branch.trim() || !newCuratorForUniversity.curatorName.trim()}
-                                          className="shrink-0 h-9 w-9"
-                                        >
-                                          <Plus className="h-4 w-4" />
-                                        </Button>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label htmlFor="curator-branch" className="text-xs text-muted-foreground">Филиал</Label>
+                                        <Input
+                                          id="curator-branch"
+                                          placeholder="Московский филиал"
+                                          value={newCuratorForUniversity.branch}
+                                          onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, branch: e.target.value })}
+                                          className="h-9"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label htmlFor="curator-name" className="text-xs text-muted-foreground">Куратор</Label>
+                                        <div className="flex gap-2">
+                                          <Input
+                                            id="curator-name"
+                                            placeholder="Иванов И.И."
+                                            value={newCuratorForUniversity.curatorName}
+                                            onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, curatorName: e.target.value })}
+                                            className="flex-1 h-9"
+                                          />
+                                          <Button
+                                            variant="default"
+                                            size="icon"
+                                            onClick={() => handleAddCuratorForUniversity(university.id)}
+                                            disabled={!newCuratorForUniversity.city.trim() || !newCuratorForUniversity.branch.trim() || !newCuratorForUniversity.curatorName.trim()}
+                                            className="shrink-0 h-9 w-9"
+                                          >
+                                            <Plus className="h-4 w-4" />
+                                          </Button>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              </div>
-                            )}
+                                </Card>
+                            </div>
                           </div>
                         </TabsContent>
 
@@ -6432,7 +6457,7 @@ export default function UniversitiesPage() {
                             <TableRow key={application.id}>
                               <TableCell className="break-words whitespace-normal">
                                 <div className="flex items-center gap-2">
-                                  <Avatar className="h-8 w-8 flex-shrink-0">
+                                  <Avatar className="h-10 w-10 flex-shrink-0">
                                     <AvatarFallback>
                                       {application.studentName.split(' ').map(n => n[0]).join('')}
                                     </AvatarFallback>
@@ -6570,7 +6595,7 @@ export default function UniversitiesPage() {
                             <TableRow key={application.id}>
                               <TableCell className="break-words whitespace-normal">
                                 <div className="flex items-center gap-2">
-                                  <Avatar className="h-8 w-8 flex-shrink-0">
+                                  <Avatar className="h-10 w-10 flex-shrink-0">
                                     <AvatarFallback>
                                       {application.studentName.split(' ').map(n => n[0]).join('')}
                                     </AvatarFallback>
