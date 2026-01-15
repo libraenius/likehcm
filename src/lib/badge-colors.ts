@@ -112,6 +112,16 @@ export const BADGE_COLORS = {
   
   /** На выставлении / В процессе согласования */
   inReview: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700",
+  
+  // ========== Линии сотрудничества ==========
+  /** ДРП - информационный синий */
+  drp: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700",
+  
+  /** БКО - активный фиолетовый */
+  bko: "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700",
+  
+  /** ЦНТР - корпоративный циан */
+  cntr: "bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-900 dark:text-cyan-200 dark:border-cyan-700",
 } as const;
 
 /**
@@ -242,4 +252,11 @@ export function getAgreementBadgeColor(status: string): string {
   }
   
   return BADGE_COLORS.notStarted;
+}
+
+/**
+ * Получает цвет тега для линии сотрудничества
+ */
+export function getCooperationLineBadgeColor(line: "drp" | "bko" | "cntr"): string {
+  return BADGE_COLORS[line];
 }

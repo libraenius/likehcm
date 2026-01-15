@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, User, ArrowRight, HelpCircle } from "lucide-react";
+import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, User, ArrowRight, HelpCircle, Handshake } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -23,7 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { EvaluationDialog } from "@/components/internships/evaluation-dialog";
-import { getStatusBadgeColor } from "@/lib/badge-colors";
+import { getStatusBadgeColor, getCooperationLineBadgeColor } from "@/lib/badge-colors";
 import type { 
   Internship, 
   InternshipApplication, 
@@ -125,6 +125,14 @@ interface Practitioner {
 // Тип для университета
 type CooperationLine = "drp" | "bko" | "cntr";
 
+// Интерфейс для записи линии сотрудничества
+interface CooperationLineRecord {
+  id: string;
+  line: CooperationLine;
+  year: number;
+  responsible: string[]; // Массив ID ответственных лиц
+}
+
 interface University {
   id: string;
   name: string;
@@ -133,9 +141,10 @@ interface University {
   city: string;
   branch?: string[]; // Филиалы в ГПБ
   cooperationStartYear?: number;
-  cooperationLine?: CooperationLine;
+  cooperationLine?: CooperationLine | CooperationLine[]; // Линия сотрудничества (строка для обратной совместимости или массив) - старая версия
   cooperationLineYear?: number;
-  cooperationLineResponsible?: string;
+  cooperationLineResponsible?: string | string[]; // Ответственные лица (строка для обратной совместимости или массив) - старая версия
+  cooperationLines?: CooperationLineRecord[]; // Новый формат: массив записей линий сотрудничества
   targetAudience?: string;
   initiatorBlock?: string; // Инициатор сотрудничества (блок/ССП)
   initiatorName?: string; // Инициатор сотрудничества (ФИО)
@@ -291,6 +300,20 @@ const mockUniversities: University[] = [
     city: "Москва",
     branch: "Московский филиал",
     cooperationStartYear: 2020,
+    cooperationLines: [
+      {
+        id: "clr-mgu-1",
+        line: "drp",
+        year: 2020,
+        responsible: ["person-1", "person-2"],
+      },
+      {
+        id: "clr-mgu-2",
+        line: "bko",
+        year: 2022,
+        responsible: ["person-3"],
+      },
+    ],
     targetAudience: "Студенты IT-направлений",
     initiatorBlock: "Блок развития",
     initiatorName: "Иванов Иван Иванович",
@@ -380,6 +403,20 @@ const mockUniversities: University[] = [
     city: "Санкт-Петербург",
     branch: ["Санкт-Петербургский филиал"],
     cooperationStartYear: 2019,
+    cooperationLines: [
+      {
+        id: "clr-spbgu-1",
+        line: "bko",
+        year: 2019,
+        responsible: ["person-4", "person-5"],
+      },
+      {
+        id: "clr-spbgu-2",
+        line: "cntr",
+        year: 2021,
+        responsible: ["person-6"],
+      },
+    ],
     targetAudience: "Студенты экономических направлений",
     initiatorBlock: "Блок управления",
     initiatorName: "Смирнова Анна Владимировна",
@@ -433,6 +470,26 @@ const mockUniversities: University[] = [
     city: "Долгопрудный",
     branch: ["Московский филиал"],
     cooperationStartYear: 2021,
+    cooperationLines: [
+      {
+        id: "clr-mfti-1",
+        line: "drp",
+        year: 2021,
+        responsible: ["person-7"],
+      },
+      {
+        id: "clr-mfti-2",
+        line: "bko",
+        year: 2021,
+        responsible: ["person-8", "person-9"],
+      },
+      {
+        id: "clr-mfti-3",
+        line: "cntr",
+        year: 2023,
+        responsible: ["person-10"],
+      },
+    ],
     targetAudience: "Студенты технических направлений",
     initiatorBlock: "Блок технологий",
     initiatorName: "Соколов Алексей Николаевич",
@@ -494,6 +551,26 @@ const mockUniversities: University[] = [
     city: "Москва",
     branch: ["Московский филиал", "Центральный офис"],
     cooperationStartYear: 2018,
+    cooperationLines: [
+      {
+        id: "clr-hse-1",
+        line: "drp",
+        year: 2018,
+        responsible: ["person-1", "person-3"],
+      },
+      {
+        id: "clr-hse-2",
+        line: "bko",
+        year: 2019,
+        responsible: ["person-2", "person-4"],
+      },
+      {
+        id: "clr-hse-3",
+        line: "cntr",
+        year: 2020,
+        responsible: ["person-5"],
+      },
+    ],
     targetAudience: "Студенты экономики, менеджмента и IT",
     initiatorBlock: "Блок стратегии",
     initiatorName: "Морозова Ольга Александровна",
@@ -881,6 +958,14 @@ const mockUniversities: University[] = [
     city: "Екатеринбург",
     branch: ["Уральский филиал"],
     cooperationStartYear: 2022,
+    cooperationLines: [
+      {
+        id: "clr-urfu-1",
+        line: "drp",
+        year: 2022,
+        responsible: ["person-7", "person-8"],
+      },
+    ],
     targetAudience: "Студенты IT и инженерии",
     initiatorBlock: "Блок развития",
     initiatorName: "Тихонов Андрей Борисович",
@@ -909,6 +994,14 @@ const mockUniversities: University[] = [
     city: "Новосибирск",
     branch: ["Сибирский филиал"],
     cooperationStartYear: 2021,
+    cooperationLines: [
+      {
+        id: "clr-ngu-1",
+        line: "cntr",
+        year: 2021,
+        responsible: ["person-9"],
+      },
+    ],
     targetAudience: "Студенты математики и IT",
     initiatorBlock: "Блок технологий",
     initiatorName: "Павлов Денис Олегович",
@@ -938,6 +1031,20 @@ const mockUniversities: University[] = [
     city: "Казань",
     branch: ["Приволжский филиал"],
     cooperationStartYear: 2020,
+    cooperationLines: [
+      {
+        id: "clr-kfu-1",
+        line: "drp",
+        year: 2020,
+        responsible: ["person-1", "person-5"],
+      },
+      {
+        id: "clr-kfu-2",
+        line: "bko",
+        year: 2021,
+        responsible: ["person-6"],
+      },
+    ],
     targetAudience: "Студенты IT и экономики",
     initiatorBlock: "Блок развития",
     initiatorName: "Гарифуллин Рамиль Фаритович",
@@ -967,6 +1074,20 @@ const mockUniversities: University[] = [
     city: "Томск",
     branch: ["Сибирский филиал"],
     cooperationStartYear: 2019,
+    cooperationLines: [
+      {
+        id: "clr-tgu-1",
+        line: "drp",
+        year: 2019,
+        responsible: ["person-2"],
+      },
+      {
+        id: "clr-tgu-2",
+        line: "cntr",
+        year: 2020,
+        responsible: ["person-10"],
+      },
+    ],
     targetAudience: "Студенты IT и математики",
     initiatorBlock: "Блок технологий",
     initiatorName: "Кузнецов Владимир Петрович",
@@ -995,6 +1116,20 @@ const mockUniversities: University[] = [
     city: "Санкт-Петербург",
     branch: ["Санкт-Петербургский филиал", "Центральный офис"],
     cooperationStartYear: 2021,
+    cooperationLines: [
+      {
+        id: "clr-spbpu-1",
+        line: "bko",
+        year: 2021,
+        responsible: ["person-3", "person-7"],
+      },
+      {
+        id: "clr-spbpu-2",
+        line: "cntr",
+        year: 2022,
+        responsible: ["person-8"],
+      },
+    ],
     targetAudience: "Студенты инженерии и IT",
     initiatorBlock: "Блок технологий",
     initiatorName: "Романов Павел Андреевич",
@@ -1025,6 +1160,20 @@ const mockUniversities: University[] = [
     city: "Москва",
     branch: ["Московский филиал"],
     cooperationStartYear: 2020,
+    cooperationLines: [
+      {
+        id: "clr-rudn-1",
+        line: "drp",
+        year: 2020,
+        responsible: ["person-4", "person-9"],
+      },
+      {
+        id: "clr-rudn-2",
+        line: "bko",
+        year: 2020,
+        responsible: ["person-1"],
+      },
+    ],
     targetAudience: "Студенты IT, экономики и менеджмента",
     initiatorBlock: "Блок стратегии",
     initiatorName: "Алиева Зарина Магомедовна",
@@ -1055,6 +1204,14 @@ const mockUniversities: University[] = [
     city: "Ростов-на-Дону",
     branch: ["Южный филиал"],
     cooperationStartYear: 2022,
+    cooperationLines: [
+      {
+        id: "clr-yufu-1",
+        line: "drp",
+        year: 2022,
+        responsible: ["person-5"],
+      },
+    ],
     targetAudience: "Студенты IT и экономики",
     initiatorBlock: "Блок развития",
     initiatorName: "Петренко Виктор Иванович",
@@ -1083,6 +1240,14 @@ const mockUniversities: University[] = [
     city: "Владивосток",
     branch: ["Дальневосточный филиал"],
     cooperationStartYear: 2023,
+    cooperationLines: [
+      {
+        id: "clr-dvfu-1",
+        line: "cntr",
+        year: 2023,
+        responsible: ["person-6"],
+      },
+    ],
     targetAudience: "Студенты IT и инженерии",
     initiatorBlock: "Блок технологий",
     initiatorName: "Ким Александр Сергеевич",
@@ -1110,6 +1275,14 @@ const mockUniversities: University[] = [
     city: "Белгород",
     branch: ["Центральный филиал"],
     cooperationStartYear: 2021,
+    cooperationLines: [
+      {
+        id: "clr-belgu-1",
+        line: "drp",
+        year: 2021,
+        responsible: ["person-2", "person-7"],
+      },
+    ],
     targetAudience: "Студенты IT и экономики",
     initiatorBlock: "Блок развития",
     initiatorName: "Степанова Наталья Михайловна",
@@ -1295,6 +1468,10 @@ export default function UniversitiesPage() {
   const [universitiesSortOrder, setUniversitiesSortOrder] = useState<"asc" | "desc">("asc");
   const [expandedUniversities, setExpandedUniversities] = useState<Set<string>>(new Set());
   
+  // Состояние для сворачивания блоков в детальной информации о ВУЗе
+  const [isCooperationLinesExpanded, setIsCooperationLinesExpanded] = useState(true);
+  const [isBranchesExpanded, setIsBranchesExpanded] = useState(true);
+  
   // Список доступных филиалов ГПБ
   const availableBranches = [
     { value: "Московский филиал", label: "Московский филиал" },
@@ -1306,6 +1483,27 @@ export default function UniversitiesPage() {
     { value: "Южный филиал", label: "Южный филиал" },
     { value: "Центральный филиал", label: "Центральный филиал" },
     { value: "Центральный офис", label: "Центральный офис" },
+  ];
+  
+  // Список линий сотрудничества
+  const cooperationLines = [
+    { value: "drp", label: "ДРП" },
+    { value: "bko", label: "БКО" },
+    { value: "cntr", label: "ЦНТР" },
+  ];
+  
+  // Список ответственных лиц по линиям сотрудничества
+  const responsiblePersons = [
+    { value: "person-1", label: "Иванов Иван Иванович" },
+    { value: "person-2", label: "Петрова Мария Сергеевна" },
+    { value: "person-3", label: "Сидоров Алексей Дмитриевич" },
+    { value: "person-4", label: "Козлова Анна Владимировна" },
+    { value: "person-5", label: "Волков Дмитрий Петрович" },
+    { value: "person-6", label: "Новикова Елена Александровна" },
+    { value: "person-7", label: "Морозов Сергей Викторович" },
+    { value: "person-8", label: "Павлова Ольга Николаевна" },
+    { value: "person-9", label: "Семенов Андрей Борисович" },
+    { value: "person-10", label: "Лебедева Татьяна Михайловна" },
   ];
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -1380,9 +1578,10 @@ export default function UniversitiesPage() {
     city: "",
     branch: [] as string[],
     cooperationStartYear: new Date().getFullYear(),
-    cooperationLine: "" as CooperationLine | "",
-    cooperationLineYear: new Date().getFullYear(),
-    cooperationLineResponsible: "",
+    cooperationLine: [] as CooperationLine[], // Старое поле для обратной совместимости
+    cooperationLineYear: new Date().getFullYear(), // Старое поле
+    cooperationLineResponsible: [] as string[], // Старое поле
+    cooperationLines: [] as CooperationLineRecord[], // Новый формат: массив записей
     targetAudience: "",
     initiatorBlock: "",
     initiatorName: "",
@@ -1596,9 +1795,10 @@ export default function UniversitiesPage() {
       city: "",
       branch: [] as string[],
       cooperationStartYear: new Date().getFullYear(),
-      cooperationLine: "" as CooperationLine | "",
+      cooperationLine: [] as CooperationLine[],
       cooperationLineYear: new Date().getFullYear(),
-      cooperationLineResponsible: "",
+      cooperationLineResponsible: [] as string[],
+      cooperationLines: [] as CooperationLineRecord[],
       targetAudience: "",
       initiatorBlock: "",
       initiatorName: "",
@@ -1617,12 +1817,21 @@ export default function UniversitiesPage() {
   
   // Создание или обновление ВУЗа
   const handleCreateUniversity = () => {
-    if (
-      !universityFormData.name.trim() ||
-      !universityFormData.city.trim() ||
-      !universityFormData.cooperationLine ||
-      !universityFormData.cooperationLineResponsible.trim()
-    ) {
+    // Проверка обязательных полей
+    if (!universityFormData.name.trim() || !universityFormData.city.trim()) {
+      return;
+    }
+    
+    // Проверка наличия хотя бы одной линии сотрудничества
+    if (universityFormData.cooperationLines.length === 0) {
+      return;
+    }
+    
+    // Проверка, что у каждой линии заполнены обязательные поля
+    const hasInvalidLines = universityFormData.cooperationLines.some(
+      line => !line.line || !line.year || line.responsible.length === 0
+    );
+    if (hasInvalidLines) {
       return;
     }
     
@@ -1635,10 +1844,18 @@ export default function UniversitiesPage() {
         inn: universityFormData.inn.trim() || undefined,
         city: universityFormData.city.trim(),
         branch: universityFormData.branch.length > 0 ? universityFormData.branch : undefined,
-        cooperationStartYear: universityFormData.cooperationLineYear || universityFormData.cooperationStartYear || undefined,
-        cooperationLine: universityFormData.cooperationLine || undefined,
-        cooperationLineYear: universityFormData.cooperationLineYear || undefined,
-        cooperationLineResponsible: universityFormData.cooperationLineResponsible.trim() || undefined,
+        cooperationStartYear: universityFormData.cooperationLines.length > 0 
+          ? Math.min(...universityFormData.cooperationLines.map(cl => cl.year))
+          : universityFormData.cooperationStartYear || undefined,
+        cooperationLines: universityFormData.cooperationLines.length > 0 ? universityFormData.cooperationLines : undefined,
+        // Старые поля для обратной совместимости (берем из первой записи, если есть)
+        cooperationLine: universityFormData.cooperationLines.length > 0 ? universityFormData.cooperationLines[0].line : undefined,
+        cooperationLineYear: universityFormData.cooperationLines.length > 0 ? universityFormData.cooperationLines[0].year : undefined,
+        cooperationLineResponsible: universityFormData.cooperationLines.length > 0 && universityFormData.cooperationLines[0].responsible.length > 0
+          ? (universityFormData.cooperationLines[0].responsible.length === 1 
+              ? universityFormData.cooperationLines[0].responsible[0] 
+              : universityFormData.cooperationLines[0].responsible)
+          : undefined,
         targetAudience: universityFormData.targetAudience.trim() || undefined,
         initiatorBlock: universityFormData.initiatorBlock.trim() || undefined,
         initiatorName: universityFormData.initiatorName.trim() || undefined,
@@ -1668,7 +1885,7 @@ export default function UniversitiesPage() {
       cooperationStartYear: universityFormData.cooperationLineYear || universityFormData.cooperationStartYear || undefined,
       cooperationLine: universityFormData.cooperationLine || undefined,
       cooperationLineYear: universityFormData.cooperationLineYear || undefined,
-      cooperationLineResponsible: universityFormData.cooperationLineResponsible.trim() || undefined,
+      cooperationLineResponsible: universityFormData.cooperationLineResponsible.length > 0 ? universityFormData.cooperationLineResponsible : undefined,
       targetAudience: universityFormData.targetAudience.trim() || undefined,
       initiatorBlock: universityFormData.initiatorBlock.trim() || undefined,
       initiatorName: universityFormData.initiatorName.trim() || undefined,
@@ -1696,9 +1913,10 @@ export default function UniversitiesPage() {
       city: "",
       branch: [] as string[],
       cooperationStartYear: new Date().getFullYear(),
-      cooperationLine: "" as CooperationLine | "",
+      cooperationLine: [] as CooperationLine[],
       cooperationLineYear: new Date().getFullYear(),
-      cooperationLineResponsible: "",
+      cooperationLineResponsible: [] as string[],
+      cooperationLines: [] as CooperationLineRecord[],
       targetAudience: "",
       initiatorBlock: "",
       initiatorName: "",
@@ -1966,7 +2184,16 @@ export default function UniversitiesPage() {
     return colorMap[type] || "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
   };
 
-  const getCooperationLineLabel = (line?: CooperationLine): string => {
+  const getCooperationLineLabel = (line?: CooperationLine | CooperationLine[]): string => {
+    if (!line) return "";
+    if (Array.isArray(line)) {
+      return line.map(l => {
+        if (l === "drp") return "ДРП";
+        if (l === "bko") return "БКО";
+        if (l === "cntr") return "ЦНТР";
+        return "";
+      }).filter(Boolean).join(", ");
+    }
     if (line === "drp") return "ДРП";
     if (line === "bko") return "БКО";
     if (line === "cntr") return "ЦНТР";
@@ -2566,7 +2793,46 @@ export default function UniversitiesPage() {
                           onClick={() => setSelectedUniversity(university.id)}
                         >
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm break-words">{university.name}</div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="font-medium text-sm break-words">{university.name}</div>
+                                {/* Теги линий сотрудничества */}
+                                {university.cooperationLines && university.cooperationLines.length > 0 && (
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    {university.cooperationLines.map((record, idx) => (
+                                      <Badge 
+                                        key={record.id || idx} 
+                                        variant="outline" 
+                                        className={`text-xs ${getCooperationLineBadgeColor(record.line)}`}
+                                      >
+                                        {getCooperationLineLabel(record.line)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                                {/* Старый формат для обратной совместимости */}
+                                {(!university.cooperationLines || university.cooperationLines.length === 0) && university.cooperationLine && (
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    {Array.isArray(university.cooperationLine) ? (
+                                      university.cooperationLine.map((line, idx) => (
+                                        <Badge 
+                                          key={idx} 
+                                          variant="outline" 
+                                          className={`text-xs ${getCooperationLineBadgeColor(line)}`}
+                                        >
+                                          {getCooperationLineLabel(line)}
+                                        </Badge>
+                                      ))
+                                    ) : (
+                                      <Badge 
+                                        variant="outline" 
+                                        className={`text-xs ${getCooperationLineBadgeColor(university.cooperationLine)}`}
+                                      >
+                                        {getCooperationLineLabel(university.cooperationLine)}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             {university.shortName && (
                               <div className="text-xs text-muted-foreground mt-0.5">
                                 {university.shortName}
@@ -2610,6 +2876,11 @@ export default function UniversitiesPage() {
                                 ИНН: {university.inn}
                               </CardDescription>
                             )}
+                            {university.targetAudience && (
+                              <CardDescription className="text-sm text-muted-foreground mt-0.5">
+                                Целевая аудитория: {university.targetAudience}
+                              </CardDescription>
+                            )}
                                     </div>
                         </div>
                         <div className="flex gap-1 flex-shrink-0">
@@ -2626,9 +2897,30 @@ export default function UniversitiesPage() {
                                 city: university.city,
                                 branch: university.branch || [],
                                 cooperationStartYear: university.cooperationStartYear || new Date().getFullYear(),
-                                cooperationLine: university.cooperationLine || "",
+                                cooperationLine: Array.isArray(university.cooperationLine)
+                                  ? university.cooperationLine
+                                  : university.cooperationLine
+                                    ? [university.cooperationLine]
+                                    : [],
                                 cooperationLineYear: university.cooperationLineYear || university.cooperationStartYear || new Date().getFullYear(),
-                                cooperationLineResponsible: university.cooperationLineResponsible || "",
+                                cooperationLineResponsible: Array.isArray(university.cooperationLineResponsible) 
+                                  ? university.cooperationLineResponsible 
+                                  : university.cooperationLineResponsible 
+                                    ? [university.cooperationLineResponsible] 
+                                    : [],
+                                // Преобразуем старые данные в новый формат, если есть старые данные и нет новых
+                                cooperationLines: university.cooperationLines || (university.cooperationLine 
+                                  ? [{
+                                      id: `clr-${Date.now()}`,
+                                      line: Array.isArray(university.cooperationLine) ? university.cooperationLine[0] : university.cooperationLine,
+                                      year: university.cooperationLineYear || university.cooperationStartYear || new Date().getFullYear(),
+                                      responsible: Array.isArray(university.cooperationLineResponsible)
+                                        ? university.cooperationLineResponsible
+                                        : university.cooperationLineResponsible
+                                          ? [university.cooperationLineResponsible]
+                                          : [],
+                                    }]
+                                  : []),
                                 targetAudience: university.targetAudience || "",
                                 initiatorBlock: university.initiatorBlock || "",
                                 initiatorName: university.initiatorName || "",
@@ -2685,198 +2977,234 @@ export default function UniversitiesPage() {
                         </TabsList>
                         
                         {/* Таб 1: Общая информация */}
-                        <TabsContent value="general" className="mt-4 space-y-4 p-6">
-                          {/* Основная информация */}
-                          <div className="space-y-2">
-                            <div className="p-4 border rounded-lg bg-muted/30">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Левая колонка */}
-                                <div className="space-y-3">
-                                  {university.city && (
-                                    <div className="space-y-1">
-                                      <Label className="text-xs text-muted-foreground">Город</Label>
-                                      <div>
-                                        <span className="text-sm font-medium">{university.city}</span>
-                                      </div>
-                          </div>
-                        )}
-                                  {university.cooperationLine && (
-                                    <div className="space-y-1">
-                                      <Label className="text-xs text-muted-foreground">Линия сотрудничества</Label>
-                                      <div>
-                                        <span className="text-sm font-medium">
-                                          {getCooperationLineLabel(university.cooperationLine)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {(university.cooperationLineYear || university.cooperationStartYear) && (
-                                    <div className="space-y-1">
-                                      <Label className="text-xs text-muted-foreground">
-                                        {university.cooperationLine ? "Год по линии" : "Год начала сотрудничества"}
-                                      </Label>
-                                      <div>
-                                        <span className="text-sm font-medium">
-                                          {university.cooperationLineYear ?? university.cooperationStartYear}
-                                        </span>
-                      </div>
-                  </div>
-                                  )}
-                                  {university.cooperationLineResponsible && (
-                                    <div className="space-y-1">
-                                      <Label className="text-xs text-muted-foreground">Ответственное лицо по линии</Label>
-                                      <div>
-                                        <span className="text-sm font-medium">{university.cooperationLineResponsible}</span>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
+                        <TabsContent value="general" className="mt-2 space-y-2">
 
-                                {/* Правая колонка */}
-                                <div className="space-y-3">
-                                  {university.targetAudience && (
-                                    <div className="space-y-1">
-                                      <Label className="text-xs text-muted-foreground">Целевая аудитория</Label>
-                                      <div>
-                                        <span className="text-sm font-medium">{university.targetAudience}</span>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                </div>
-              </div>
-
-                          {/* Инициаторы сотрудничества */}
-                          {(university.initiatorBlock || university.initiatorName) && (
+                          {/* Линии сотрудничества */}
+                          {((university.cooperationLines && university.cooperationLines.length > 0) || university.cooperationLine) && (
                             <>
-                              <Separator />
-                              <div className="space-y-2">
-                                <Label className="text-sm font-semibold flex items-center gap-2">
-                                  <UserCheck className="h-4 w-4" />
-                                  Инициаторы сотрудничества
-                                </Label>
-                                <div className="p-4 border rounded-lg bg-muted/30">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {university.initiatorBlock && (
-                                      <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground">Блок/ССП</Label>
-                                        <div>
-                                          <span className="text-sm font-medium">{university.initiatorBlock}</span>
-                                        </div>
-                                      </div>
-                                    )}
-                                    {university.initiatorName && (
-                                      <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground">ФИО</Label>
-                                        <div className="flex items-start gap-2">
-                                          <Avatar className="h-10 w-10 flex-shrink-0">
-                                            <AvatarImage src={university.initiatorImage} alt={university.initiatorName} />
-                                            <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                              {university.initiatorName.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
-                                            </AvatarFallback>
-                                          </Avatar>
-                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium">{university.initiatorName}</p>
-                                            {university.initiatorPosition && (
-                                              <p className="text-xs text-muted-foreground">{university.initiatorPosition}</p>
-                                            )}
-                        </div>
-                                        </div>
-                                      </div>
-                                    )}
+                              <div className="space-y-4 px-6">
+                                <button
+                                  type="button"
+                                  onClick={() => setIsCooperationLinesExpanded(!isCooperationLinesExpanded)}
+                                  className="w-full flex items-center justify-between text-base font-semibold hover:opacity-80 transition-opacity"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Handshake className="h-4 w-4" />
+                                    Линии сотрудничества
                                   </div>
-                                </div>
+                                  {isCooperationLinesExpanded ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
+                                </button>
+                                {isCooperationLinesExpanded && (
+                                  <>
+                                    {/* Новый формат: список записей линий сотрудничества */}
+                                    {university.cooperationLines && university.cooperationLines.length > 0 ? (
+                                  <div className="space-y-1.5">
+                                    {university.cooperationLines.map((record, index) => (
+                                      <Card key={record.id || index}>
+                                        <CardContent className="px-4 py-2">
+                                          <div className="space-y-2">
+                                          <div className="flex items-center gap-3 flex-wrap">
+                                            <Badge variant="outline" className={`text-base font-medium ${getCooperationLineBadgeColor(record.line)}`}>
+                                              {getCooperationLineLabel(record.line)}
+                                            </Badge>
+                                            <div className="flex items-center gap-2">
+                                              <Label className="text-sm text-muted-foreground">Год начала сотрудничества:</Label>
+                                              <span className="text-base font-medium text-foreground">{record.year}</span>
+                                            </div>
+                                          </div>
+                                            {record.responsible && record.responsible.length > 0 && (
+                                              <div className="pt-1.5 border-t">
+                                                <Label className="text-sm font-semibold text-foreground mb-1 block">Ответственные лица:</Label>
+                                                <div className="flex flex-wrap gap-2">
+                                                  {record.responsible.map((personId, personIndex) => {
+                                                    const person = responsiblePersons.find(p => p.value === personId);
+                                                    return person ? (
+                                                      <Badge key={personIndex} variant="outline" className="text-sm">
+                                                        {person.label}
+                                                      </Badge>
+                                                    ) : null;
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                  ) : (
+                                    /* Старый формат: для обратной совместимости */
+                                    <Card>
+                                      <CardContent className="px-4 py-2">
+                                        <div className="space-y-2">
+                                          {university.cooperationLine && (
+                                            <div className="space-y-2">
+                                              <Label className="text-sm font-semibold text-foreground">
+                                                {Array.isArray(university.cooperationLine) && university.cooperationLine.length > 1 
+                                                  ? "Линии сотрудничества" 
+                                                  : "Линия сотрудничества"}
+                                              </Label>
+                                              <div className="flex flex-wrap gap-2">
+                                                {Array.isArray(university.cooperationLine) ? (
+                                                  university.cooperationLine.map((line, index) => (
+                                                    <Badge key={index} variant="outline" className={`text-sm ${getCooperationLineBadgeColor(line)}`}>
+                                                      {getCooperationLineLabel(line)}
+                                                    </Badge>
+                                                  ))
+                                                ) : (
+                                                  <Badge variant="outline" className={`text-sm ${getCooperationLineBadgeColor(university.cooperationLine)}`}>
+                                                    {getCooperationLineLabel(university.cooperationLine)}
+                                                  </Badge>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {(university.cooperationLineYear || university.cooperationStartYear) && (
+                                            <div className="space-y-1">
+                                              <Label className="text-sm text-muted-foreground">
+                                                {university.cooperationLine ? "Год по линии" : "Год начала сотрудничества"}
+                                              </Label>
+                                              <div>
+                                                <span className="text-base font-medium">
+                                                  {university.cooperationLineYear ?? university.cooperationStartYear}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          )}
+                                          {university.cooperationLineResponsible && (
+                                            <div className="space-y-2 pt-2 border-t">
+                                              <Label className="text-sm font-semibold text-foreground">Ответственное лицо по линии</Label>
+                                              <div className="flex flex-wrap gap-2">
+                                                {Array.isArray(university.cooperationLineResponsible) ? (
+                                                  university.cooperationLineResponsible.map((personId, index) => {
+                                                    const person = responsiblePersons.find(p => p.value === personId);
+                                                    return person ? (
+                                                      <Badge key={index} variant="outline" className="text-sm">
+                                                        {person.label}
+                                                      </Badge>
+                                                    ) : null;
+                                                  })
+                                                ) : (
+                                                  <span className="text-base font-medium">{university.cooperationLineResponsible}</span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+                                  </>
+                                )}
                               </div>
                             </>
                           )}
 
                           {/* Филиалы ВУЗа */}
                           <Separator />
-                          <div className="space-y-2">
-                            <Label className="text-sm font-semibold flex items-center gap-2">
-                              <Building2 className="h-4 w-4" />
-                              Филиалы ВУЗа
-                            </Label>
-                            {university.branchCurators && university.branchCurators.length > 0 ? (
-                              <div className="p-4 border rounded-lg bg-muted/30">
-                                <div className="space-y-3">
-                                  {university.branchCurators.map((curator) => (
-                                    <div key={curator.id} className="flex items-start gap-2">
-                                      <Avatar className="h-10 w-10 flex-shrink-0">
-                                        <AvatarImage src={curator.image} alt={curator.curatorName} />
-                                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                          {curator.curatorName.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium">{curator.curatorName}</p>
-                                        <p className="text-xs text-muted-foreground">{curator.city} - {curator.branch}</p>
-                                      </div>
-                          <Button
-                                        variant="ghost"
-                            size="icon"
-                                        onClick={() => handleRemoveCuratorForUniversity(university.id, curator.id)}
-                                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                          >
-                                        <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="space-y-2 px-6">
+                            <button
+                              type="button"
+                              onClick={() => setIsBranchesExpanded(!isBranchesExpanded)}
+                              className="w-full flex items-center justify-between text-base font-semibold hover:opacity-80 transition-opacity"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4" />
+                                Филиалы ВУЗа
+                              </div>
+                              {isBranchesExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </button>
+                            {isBranchesExpanded && (
+                              <div className="space-y-2">
+                                {university.branchCurators && university.branchCurators.length > 0 ? (
+                                  <div className="p-4 border rounded-lg bg-muted/30">
+                                    <div className="space-y-3">
+                                      {university.branchCurators.map((curator) => (
+                                        <div key={curator.id} className="flex items-start gap-2">
+                                          <Avatar className="h-10 w-10 flex-shrink-0">
+                                            <AvatarImage src={curator.image} alt={curator.curatorName} />
+                                            <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                              {curator.curatorName.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium">{curator.curatorName}</p>
+                                            <p className="text-xs text-muted-foreground">{curator.city} - {curator.branch}</p>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleRemoveCuratorForUniversity(university.id, curator.id)}
+                                            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      ))}
                                     </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="p-4 border rounded-lg bg-muted/30">
-                                <p className="text-sm text-muted-foreground text-center">Кураторы от филиалов не добавлены</p>
-                              </div>
-                            )}
-                            
-                            <div className="space-y-2">
-                              <Label className="text-sm font-semibold">Добавить филиал</Label>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <div className="space-y-1">
-                                  <Label htmlFor="curator-city" className="text-xs text-muted-foreground">Город</Label>
-                                  <Input
-                                    id="curator-city"
-                                    placeholder="Москва"
-                                    value={newCuratorForUniversity.city}
-                                    onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, city: e.target.value })}
-                                    className="h-9"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label htmlFor="curator-branch" className="text-xs text-muted-foreground">Филиал</Label>
-                                  <Input
-                                    id="curator-branch"
-                                    placeholder="Московский филиал"
-                                    value={newCuratorForUniversity.branch}
-                                    onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, branch: e.target.value })}
-                                    className="h-9"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label htmlFor="curator-name" className="text-xs text-muted-foreground">Куратор</Label>
-                                  <div className="flex gap-2">
-                                    <Input
-                                      id="curator-name"
-                                      placeholder="Иванов И.И."
-                                      value={newCuratorForUniversity.curatorName}
-                                      onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, curatorName: e.target.value })}
-                                      className="flex-1 h-9"
-                                    />
-                          <Button
-                                      variant="default"
-                            size="icon"
-                                      onClick={() => handleAddCuratorForUniversity(university.id)}
-                                      disabled={!newCuratorForUniversity.city.trim() || !newCuratorForUniversity.branch.trim() || !newCuratorForUniversity.curatorName.trim()}
-                                      className="shrink-0 h-9 w-9"
-                          >
-                                      <Plus className="h-4 w-4" />
-                          </Button>
+                                  </div>
+                                ) : (
+                                  <div className="p-4 border rounded-lg bg-muted/30">
+                                    <p className="text-sm text-muted-foreground text-center">Кураторы от филиалов не добавлены</p>
+                                  </div>
+                                )}
+                                
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-semibold">Добавить филиал</Label>
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                    <div className="space-y-1">
+                                      <Label htmlFor="curator-city" className="text-xs text-muted-foreground">Город</Label>
+                                      <Input
+                                        id="curator-city"
+                                        placeholder="Москва"
+                                        value={newCuratorForUniversity.city}
+                                        onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, city: e.target.value })}
+                                        className="h-9"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label htmlFor="curator-branch" className="text-xs text-muted-foreground">Филиал</Label>
+                                      <Input
+                                        id="curator-branch"
+                                        placeholder="Московский филиал"
+                                        value={newCuratorForUniversity.branch}
+                                        onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, branch: e.target.value })}
+                                        className="h-9"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label htmlFor="curator-name" className="text-xs text-muted-foreground">Куратор</Label>
+                                      <div className="flex gap-2">
+                                        <Input
+                                          id="curator-name"
+                                          placeholder="Иванов И.И."
+                                          value={newCuratorForUniversity.curatorName}
+                                          onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, curatorName: e.target.value })}
+                                          className="flex-1 h-9"
+                                        />
+                                        <Button
+                                          variant="default"
+                                          size="icon"
+                                          onClick={() => handleAddCuratorForUniversity(university.id)}
+                                          disabled={!newCuratorForUniversity.city.trim() || !newCuratorForUniversity.branch.trim() || !newCuratorForUniversity.curatorName.trim()}
+                                          className="shrink-0 h-9 w-9"
+                                        >
+                                          <Plus className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
+                            )}
                           </div>
                         </TabsContent>
 
@@ -5075,9 +5403,10 @@ export default function UniversitiesPage() {
             city: "",
             branch: [] as string[],
             cooperationStartYear: new Date().getFullYear(),
-            cooperationLine: "" as CooperationLine | "",
+            cooperationLine: [] as CooperationLine[],
             cooperationLineYear: new Date().getFullYear(),
-            cooperationLineResponsible: "",
+            cooperationLineResponsible: [] as string[],
+            cooperationLines: [] as CooperationLineRecord[],
             targetAudience: "",
             initiatorBlock: "",
             initiatorName: "",
@@ -5129,24 +5458,25 @@ export default function UniversitiesPage() {
                       placeholder="Московский государственный университет"
                     />
                   </div>
-                  <div className="space-y-2">
-                            <Label htmlFor="university-short-name">Сокращенное наименование</Label>
-                    <Input
-                      id="university-short-name"
-                      value={universityFormData.shortName}
-                      onChange={(e) => setUniversityFormData({ ...universityFormData, shortName: e.target.value })}
-                      placeholder="МГУ"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="university-inn">ИНН</Label>
-                    <Input
-                      id="university-inn"
-                      value={universityFormData.inn}
-                      onChange={(e) => setUniversityFormData({ ...universityFormData, inn: e.target.value })}
-                      placeholder="7707083893"
-                    />
-                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="university-short-name">Сокращенное наименование</Label>
+                      <Input
+                        id="university-short-name"
+                        value={universityFormData.shortName}
+                        onChange={(e) => setUniversityFormData({ ...universityFormData, shortName: e.target.value })}
+                        placeholder="МГУ"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="university-inn">ИНН</Label>
+                      <Input
+                        id="university-inn"
+                        value={universityFormData.inn}
+                        onChange={(e) => setUniversityFormData({ ...universityFormData, inn: e.target.value })}
+                        placeholder="7707083893"
+                      />
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="university-city">
                         Город <span className="text-destructive">*</span>
@@ -5158,89 +5488,137 @@ export default function UniversitiesPage() {
                         placeholder="Москва"
                       />
                     </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>Линия сотрудничества <span className="text-destructive">*</span></Label>
-                              <Select
-                                value={universityFormData.cooperationLine}
-                                onValueChange={(value) =>
-                                  setUniversityFormData({
-                                    ...universityFormData,
-                                    cooperationLine: value as CooperationLine,
-                                  })
-                                }
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Выберите линию" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="drp">ДРП</SelectItem>
-                                  <SelectItem value="bko">БКО</SelectItem>
-                                  <SelectItem value="cntr">ЦНТР</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="cooperation-line-year">Год по линии <span className="text-destructive">*</span></Label>
-                              <Input
-                                id="cooperation-line-year"
-                                type="number"
-                                value={universityFormData.cooperationLineYear}
-                                onChange={(e) =>
-                                  setUniversityFormData({
-                                    ...universityFormData,
-                                    cooperationLineYear: parseInt(e.target.value) || new Date().getFullYear(),
-                                  })
-                                }
-                                placeholder="2024"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="cooperation-line-responsible">Ответственное лицо по линии <span className="text-destructive">*</span></Label>
-                              <Input
-                                id="cooperation-line-responsible"
-                                value={universityFormData.cooperationLineResponsible}
-                                onChange={(e) =>
-                                  setUniversityFormData({
-                                    ...universityFormData,
-                                    cooperationLineResponsible: e.target.value,
-                                  })
-                                }
-                                placeholder="ФИО ответственного"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="target-audience">Целевая аудитория</Label>
-                              <Input
-                                id="target-audience"
-                                value={universityFormData.targetAudience}
-                                onChange={(e) => setUniversityFormData({ ...universityFormData, targetAudience: e.target.value })}
-                                placeholder="Студенты IT-направлений"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                              <Label htmlFor="initiator-block">Инициатор сотрудничества (блок/ССП)</Label>
-                              <Input
-                                id="initiator-block"
-                                value={universityFormData.initiatorBlock}
-                                onChange={(e) => setUniversityFormData({ ...universityFormData, initiatorBlock: e.target.value })}
-                                placeholder="Блок развития"
-                    />
                   </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="initiator-name">Инициатор сотрудничества (ФИО)</Label>
-                              <Input
-                                id="initiator-name"
-                                value={universityFormData.initiatorName}
-                                onChange={(e) => setUniversityFormData({ ...universityFormData, initiatorName: e.target.value })}
-                                placeholder="Иванов Иван Иванович"
-                              />
+                    <div className="space-y-2">
+                      <Label htmlFor="target-audience">Целевая аудитория</Label>
+                      <Input
+                        id="target-audience"
+                        value={universityFormData.targetAudience}
+                        onChange={(e) => setUniversityFormData({ ...universityFormData, targetAudience: e.target.value })}
+                        placeholder="Студенты IT-направлений"
+                      />
+                    </div>
+                        </div>
+
+                        {/* Линии сотрудничества */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between pb-2 border-b">
+                            <div className="flex items-center gap-2">
+                              <Handshake className="h-4 w-4 text-muted-foreground" />
+                              <Label className="text-base font-semibold">Линии сотрудничества</Label>
                             </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newRecord: CooperationLineRecord = {
+                                  id: `clr-${Date.now()}`,
+                                  line: "drp",
+                                  year: new Date().getFullYear(),
+                                  responsible: [],
+                                };
+                                setUniversityFormData({
+                                  ...universityFormData,
+                                  cooperationLines: [...universityFormData.cooperationLines, newRecord],
+                                });
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Добавить линию
+                            </Button>
                           </div>
+                          
+                          {universityFormData.cooperationLines.length === 0 ? (
+                            <div className="text-sm text-muted-foreground py-4 text-center">
+                              Нет добавленных линий сотрудничества. Нажмите "Добавить линию" для создания новой записи.
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {universityFormData.cooperationLines.map((record, index) => (
+                                <div key={record.id} className="p-4 border rounded-lg space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-medium">Линия сотрудничества {index + 1}</Label>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setUniversityFormData({
+                                          ...universityFormData,
+                                          cooperationLines: universityFormData.cooperationLines.filter(r => r.id !== record.id),
+                                        });
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label>Линия сотрудничества <span className="text-destructive">*</span></Label>
+                                      <Select
+                                        value={record.line}
+                                        onValueChange={(value) => {
+                                          const updated = universityFormData.cooperationLines.map(r =>
+                                            r.id === record.id ? { ...r, line: value as CooperationLine } : r
+                                          );
+                                          setUniversityFormData({
+                                            ...universityFormData,
+                                            cooperationLines: updated,
+                                          });
+                                        }}
+                                      >
+                                        <SelectTrigger className="w-full">
+                                          <SelectValue placeholder="Выберите линию" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="drp">ДРП</SelectItem>
+                                          <SelectItem value="bko">БКО</SelectItem>
+                                          <SelectItem value="cntr">ЦНТР</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Год начала сотрудничества <span className="text-destructive">*</span></Label>
+                                      <Input
+                                        type="number"
+                                        value={record.year}
+                                        onChange={(e) => {
+                                          const updated = universityFormData.cooperationLines.map(r =>
+                                            r.id === record.id ? { ...r, year: parseInt(e.target.value) || new Date().getFullYear() } : r
+                                          );
+                                          setUniversityFormData({
+                                            ...universityFormData,
+                                            cooperationLines: updated,
+                                          });
+                                        }}
+                                        placeholder="2024"
+                                      />
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label>Ответственное лицо по линии <span className="text-destructive">*</span></Label>
+                                    <MultiSelect
+                                      options={responsiblePersons}
+                                      selected={record.responsible}
+                                      onChange={(selected) => {
+                                        const updated = universityFormData.cooperationLines.map(r =>
+                                          r.id === record.id ? { ...r, responsible: selected } : r
+                                        );
+                                        setUniversityFormData({
+                                          ...universityFormData,
+                                          cooperationLines: updated,
+                                        });
+                                      }}
+                                      placeholder="Выберите ответственных лиц"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                   </div>
@@ -5255,8 +5633,10 @@ export default function UniversitiesPage() {
                       disabled={
                         !universityFormData.name.trim() ||
                         !universityFormData.city.trim() ||
-                        !universityFormData.cooperationLine ||
-                        !universityFormData.cooperationLineResponsible.trim()
+                        universityFormData.cooperationLines.length === 0 ||
+                        universityFormData.cooperationLines.some(
+                          line => !line.line || !line.year || line.responsible.length === 0
+                        )
                       }
                       size="sm"
                     >
