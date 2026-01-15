@@ -123,6 +123,8 @@ interface Practitioner {
 }
 
 // Тип для университета
+type CooperationLine = "drp" | "bko" | "cntr";
+
 interface University {
   id: string;
   name: string;
@@ -131,6 +133,9 @@ interface University {
   city: string;
   branch?: string[]; // Филиалы в ГПБ
   cooperationStartYear?: number;
+  cooperationLine?: CooperationLine;
+  cooperationLineYear?: number;
+  cooperationLineResponsible?: string;
   targetAudience?: string;
   initiatorBlock?: string; // Инициатор сотрудничества (блок/ССП)
   initiatorName?: string; // Инициатор сотрудничества (ФИО)
@@ -1375,6 +1380,9 @@ export default function UniversitiesPage() {
     city: "",
     branch: [] as string[],
     cooperationStartYear: new Date().getFullYear(),
+    cooperationLine: "" as CooperationLine | "",
+    cooperationLineYear: new Date().getFullYear(),
+    cooperationLineResponsible: "",
     targetAudience: "",
     initiatorBlock: "",
     initiatorName: "",
@@ -1588,6 +1596,9 @@ export default function UniversitiesPage() {
       city: "",
       branch: [] as string[],
       cooperationStartYear: new Date().getFullYear(),
+      cooperationLine: "" as CooperationLine | "",
+      cooperationLineYear: new Date().getFullYear(),
+      cooperationLineResponsible: "",
       targetAudience: "",
       initiatorBlock: "",
       initiatorName: "",
@@ -1606,7 +1617,12 @@ export default function UniversitiesPage() {
   
   // Создание или обновление ВУЗа
   const handleCreateUniversity = () => {
-    if (!universityFormData.name.trim() || !universityFormData.city.trim()) {
+    if (
+      !universityFormData.name.trim() ||
+      !universityFormData.city.trim() ||
+      !universityFormData.cooperationLine ||
+      !universityFormData.cooperationLineResponsible.trim()
+    ) {
       return;
     }
     
@@ -1619,7 +1635,10 @@ export default function UniversitiesPage() {
         inn: universityFormData.inn.trim() || undefined,
         city: universityFormData.city.trim(),
         branch: universityFormData.branch.length > 0 ? universityFormData.branch : undefined,
-        cooperationStartYear: universityFormData.cooperationStartYear || undefined,
+        cooperationStartYear: universityFormData.cooperationLineYear || universityFormData.cooperationStartYear || undefined,
+        cooperationLine: universityFormData.cooperationLine || undefined,
+        cooperationLineYear: universityFormData.cooperationLineYear || undefined,
+        cooperationLineResponsible: universityFormData.cooperationLineResponsible.trim() || undefined,
         targetAudience: universityFormData.targetAudience.trim() || undefined,
         initiatorBlock: universityFormData.initiatorBlock.trim() || undefined,
         initiatorName: universityFormData.initiatorName.trim() || undefined,
@@ -1645,18 +1664,21 @@ export default function UniversitiesPage() {
       shortName: universityFormData.shortName.trim() || undefined,
       inn: universityFormData.inn.trim() || undefined,
       city: universityFormData.city.trim(),
-        branch: universityFormData.branch.length > 0 ? universityFormData.branch : undefined,
-        cooperationStartYear: universityFormData.cooperationStartYear || undefined,
-        targetAudience: universityFormData.targetAudience.trim() || undefined,
-        initiatorBlock: universityFormData.initiatorBlock.trim() || undefined,
-        initiatorName: universityFormData.initiatorName.trim() || undefined,
-        branchCurators: universityFormData.branchCurators.length > 0 ? universityFormData.branchCurators : undefined,
-        contracts: universityFormData.contracts.length > 0 ? universityFormData.contracts : undefined,
-        allEmployees: universityFormData.allEmployees || undefined,
-        internHiring: universityFormData.internHiring || undefined,
-        averageInternsPerYear: universityFormData.averageInternsPerYear || undefined,
-        interns: universityFormData.interns || undefined,
-        region: universityFormData.region.trim() || undefined,
+      branch: universityFormData.branch.length > 0 ? universityFormData.branch : undefined,
+      cooperationStartYear: universityFormData.cooperationLineYear || universityFormData.cooperationStartYear || undefined,
+      cooperationLine: universityFormData.cooperationLine || undefined,
+      cooperationLineYear: universityFormData.cooperationLineYear || undefined,
+      cooperationLineResponsible: universityFormData.cooperationLineResponsible.trim() || undefined,
+      targetAudience: universityFormData.targetAudience.trim() || undefined,
+      initiatorBlock: universityFormData.initiatorBlock.trim() || undefined,
+      initiatorName: universityFormData.initiatorName.trim() || undefined,
+      branchCurators: universityFormData.branchCurators.length > 0 ? universityFormData.branchCurators : undefined,
+      contracts: universityFormData.contracts.length > 0 ? universityFormData.contracts : undefined,
+      allEmployees: universityFormData.allEmployees || undefined,
+      internHiring: universityFormData.internHiring || undefined,
+      averageInternsPerYear: universityFormData.averageInternsPerYear || undefined,
+      interns: universityFormData.interns || undefined,
+      region: universityFormData.region.trim() || undefined,
       description: universityFormData.description.trim() || undefined,
     };
     
@@ -1674,6 +1696,9 @@ export default function UniversitiesPage() {
       city: "",
       branch: [] as string[],
       cooperationStartYear: new Date().getFullYear(),
+      cooperationLine: "" as CooperationLine | "",
+      cooperationLineYear: new Date().getFullYear(),
+      cooperationLineResponsible: "",
       targetAudience: "",
       initiatorBlock: "",
       initiatorName: "",
@@ -1939,6 +1964,13 @@ export default function UniversitiesPage() {
       internship: "bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700",
     };
     return colorMap[type] || "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+  };
+
+  const getCooperationLineLabel = (line?: CooperationLine): string => {
+    if (line === "drp") return "ДРП";
+    if (line === "bko") return "БКО";
+    if (line === "cntr") return "ЦНТР";
+    return "";
   };
 
   // Подсчет статистики мероприятий
@@ -2533,27 +2565,27 @@ export default function UniversitiesPage() {
                           )}
                           onClick={() => setSelectedUniversity(university.id)}
                         >
-                                    <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm break-words">{university.name}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm break-words">{university.name}</div>
                             {university.shortName && (
                               <div className="text-xs text-muted-foreground mt-0.5">
                                 {university.shortName}
-                                    </div>
-                            )}
-                                  </div>
+                                </div>
+                              )}
+                            </div>
                                 </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              </div>
-
+                          </div>
+                        </div>
+                        
               {/* Правая колонка - детальная информация о ВУЗе */}
               <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-280px)]">
                 {selectedUniversity ? (() => {
                   const university = universities.find(u => u.id === selectedUniversity);
                   if (!university) return null;
-                  return (
+                              return (
                   <Card className="w-full max-w-full overflow-hidden">
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between gap-2">
@@ -2566,7 +2598,7 @@ export default function UniversitiesPage() {
                               </AvatarFallback>
                             </Avatar>
                           )}
-                        <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0">
                             <CardTitle className="text-xl mb-1 break-words">{university.name}</CardTitle>
                             {university.shortName && (
                           <CardDescription className="text-base break-words">
@@ -2578,12 +2610,12 @@ export default function UniversitiesPage() {
                                 ИНН: {university.inn}
                               </CardDescription>
                             )}
-                        </div>
+                                    </div>
                         </div>
                         <div className="flex gap-1 flex-shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
                             className="h-8 w-8"
                             onClick={() => {
                               setEditingUniversity(university);
@@ -2594,6 +2626,9 @@ export default function UniversitiesPage() {
                                 city: university.city,
                                 branch: university.branch || [],
                                 cooperationStartYear: university.cooperationStartYear || new Date().getFullYear(),
+                                cooperationLine: university.cooperationLine || "",
+                                cooperationLineYear: university.cooperationLineYear || university.cooperationStartYear || new Date().getFullYear(),
+                                cooperationLineResponsible: university.cooperationLineResponsible || "",
                                 targetAudience: university.targetAudience || "",
                                 initiatorBlock: university.initiatorBlock || "",
                                 initiatorName: university.initiatorName || "",
@@ -2633,9 +2668,9 @@ export default function UniversitiesPage() {
                             title="Удалить"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
+                                    </Button>
+                                  </div>
+                                </div>
                     </CardHeader>
                     <Separator />
                     <CardContent className="overflow-x-hidden">
@@ -2663,13 +2698,35 @@ export default function UniversitiesPage() {
                                       <div>
                                         <span className="text-sm font-medium">{university.city}</span>
                                       </div>
+                          </div>
+                        )}
+                                  {university.cooperationLine && (
+                                    <div className="space-y-1">
+                                      <Label className="text-xs text-muted-foreground">Линия сотрудничества</Label>
+                                      <div>
+                                        <span className="text-sm font-medium">
+                                          {getCooperationLineLabel(university.cooperationLine)}
+                                        </span>
+                                      </div>
                                     </div>
                                   )}
-                                  {university.cooperationStartYear && (
+                                  {(university.cooperationLineYear || university.cooperationStartYear) && (
                                     <div className="space-y-1">
-                                      <Label className="text-xs text-muted-foreground">Год начала сотрудничества</Label>
+                                      <Label className="text-xs text-muted-foreground">
+                                        {university.cooperationLine ? "Год по линии" : "Год начала сотрудничества"}
+                                      </Label>
                                       <div>
-                                        <span className="text-sm font-medium">{university.cooperationStartYear}</span>
+                                        <span className="text-sm font-medium">
+                                          {university.cooperationLineYear ?? university.cooperationStartYear}
+                                        </span>
+                      </div>
+                  </div>
+                                  )}
+                                  {university.cooperationLineResponsible && (
+                                    <div className="space-y-1">
+                                      <Label className="text-xs text-muted-foreground">Ответственное лицо по линии</Label>
+                                      <div>
+                                        <span className="text-sm font-medium">{university.cooperationLineResponsible}</span>
                                       </div>
                                     </div>
                                   )}
@@ -2687,8 +2744,8 @@ export default function UniversitiesPage() {
                                   )}
                                 </div>
                               </div>
-                            </div>
-                          </div>
+                </div>
+              </div>
 
                           {/* Инициаторы сотрудничества */}
                           {(university.initiatorBlock || university.initiatorName) && (
@@ -2719,12 +2776,12 @@ export default function UniversitiesPage() {
                                               {university.initiatorName.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
                                             </AvatarFallback>
                                           </Avatar>
-                                          <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium">{university.initiatorName}</p>
                                             {university.initiatorPosition && (
                                               <p className="text-xs text-muted-foreground">{university.initiatorPosition}</p>
                                             )}
-                                          </div>
+                        </div>
                                         </div>
                                       </div>
                                     )}
@@ -2756,14 +2813,14 @@ export default function UniversitiesPage() {
                                         <p className="text-sm font-medium">{curator.curatorName}</p>
                                         <p className="text-xs text-muted-foreground">{curator.city} - {curator.branch}</p>
                                       </div>
-                                      <Button
+                          <Button
                                         variant="ghost"
-                                        size="icon"
+                            size="icon"
                                         onClick={() => handleRemoveCuratorForUniversity(university.id, curator.id)}
                                         className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                                      >
+                          >
                                         <Trash2 className="h-4 w-4" />
-                                      </Button>
+                          </Button>
                                     </div>
                                   ))}
                                 </div>
@@ -2807,15 +2864,15 @@ export default function UniversitiesPage() {
                                       onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, curatorName: e.target.value })}
                                       className="flex-1 h-9"
                                     />
-                                    <Button
+                          <Button
                                       variant="default"
-                                      size="icon"
+                            size="icon"
                                       onClick={() => handleAddCuratorForUniversity(university.id)}
                                       disabled={!newCuratorForUniversity.city.trim() || !newCuratorForUniversity.branch.trim() || !newCuratorForUniversity.curatorName.trim()}
                                       className="shrink-0 h-9 w-9"
-                                    >
+                          >
                                       <Plus className="h-4 w-4" />
-                                    </Button>
+                          </Button>
                                   </div>
                                 </div>
                               </div>
@@ -2831,8 +2888,8 @@ export default function UniversitiesPage() {
                               <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                   <CardTitle className="text-lg">Кафедры Банка</CardTitle>
-                                  <Button
-                                    onClick={() => {
+                          <Button
+                            onClick={() => {
                                       const newDepartment: BankDepartment = {
                                         id: `dept-${Date.now()}`,
                                         name: "",
@@ -2852,12 +2909,12 @@ export default function UniversitiesPage() {
                           >
                                     <Plus className="mr-2 h-4 w-4" />
                                     Добавить кафедру
-                                  </Button>
-                        </div>
-                              </CardHeader>
+                          </Button>
+                      </div>
+                    </CardHeader>
                               <CardContent>
                                 {university.bankDepartments && university.bankDepartments.length > 0 ? (
-                                  <div className="space-y-2">
+                        <div className="space-y-2">
                                     {university.bankDepartments.map((dept) => (
                                       <div key={dept.id} className="flex items-center gap-2 p-2 border rounded-lg">
                                         <Input
@@ -2896,9 +2953,9 @@ export default function UniversitiesPage() {
                                         >
                                           <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
-                                      </div>
+                          </div>
                                     ))}
-                                  </div>
+                        </div>
                                 ) : (
                                   <div className="text-center py-4 text-muted-foreground">
                                     <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -3650,7 +3707,6 @@ export default function UniversitiesPage() {
                                     <TableHeader>
                                       <TableRow>
                                         <TableHead className="w-[240px]">Сотрудник</TableHead>
-                                        <TableHead className="w-[80px]">Возраст</TableHead>
                                       <TableHead className="w-[290px]">Должность / Подразделение</TableHead>
                                         <TableHead className="w-[120px]">Дата приема на работу</TableHead>
                                         <TableHead className="w-[120px]">Статус</TableHead>
@@ -3682,9 +3738,6 @@ export default function UniversitiesPage() {
                                                   <span className="font-medium">{intern.employeeName}</span>
                                                   </div>
                                                 </div>
-                                              </TableCell>
-                                              <TableCell className="px-4 whitespace-normal">
-                                                {intern.age} лет
                                               </TableCell>
                                               <TableCell className="px-4 whitespace-normal">
                                                     <div className="flex flex-col gap-1">
@@ -3866,7 +3919,6 @@ export default function UniversitiesPage() {
                                     <TableHeader>
                                       <TableRow>
                                         <TableHead className="w-[250px]">Сотрудник</TableHead>
-                                        <TableHead className="w-[100px]">Возраст</TableHead>
                                         <TableHead className="w-[260px]">Должность / Подразделение</TableHead>
                                         <TableHead className="w-[120px]">Дата приема на работу</TableHead>
                                         <TableHead className="w-[120px]">Статус</TableHead>
@@ -3875,7 +3927,7 @@ export default function UniversitiesPage() {
                                     </TableHeader>
                                     <TableBody>
                                       <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                                           Сотрудники не добавлены
                                               </TableCell>
                                             </TableRow>
@@ -5023,6 +5075,9 @@ export default function UniversitiesPage() {
             city: "",
             branch: [] as string[],
             cooperationStartYear: new Date().getFullYear(),
+            cooperationLine: "" as CooperationLine | "",
+            cooperationLineYear: new Date().getFullYear(),
+            cooperationLineResponsible: "",
             targetAudience: "",
             initiatorBlock: "",
             initiatorName: "",
@@ -5062,7 +5117,7 @@ export default function UniversitiesPage() {
                           <div className="flex items-center gap-2 pb-2 border-b">
                             <Building2 className="h-4 w-4 text-muted-foreground" />
                             <Label className="text-base font-semibold">Основная информация</Label>
-                          </div>
+                        </div>
                   <div className="space-y-2">
                     <Label htmlFor="university-name">
                               Наименование учебного заведения <span className="text-destructive">*</span>
@@ -5103,17 +5158,59 @@ export default function UniversitiesPage() {
                         placeholder="Москва"
                       />
                     </div>
-                          <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                              <Label htmlFor="cooperation-start-year">Год начала сотрудничества</Label>
-                      <Input
-                                id="cooperation-start-year"
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Линия сотрудничества <span className="text-destructive">*</span></Label>
+                              <Select
+                                value={universityFormData.cooperationLine}
+                                onValueChange={(value) =>
+                                  setUniversityFormData({
+                                    ...universityFormData,
+                                    cooperationLine: value as CooperationLine,
+                                  })
+                                }
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Выберите линию" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="drp">ДРП</SelectItem>
+                                  <SelectItem value="bko">БКО</SelectItem>
+                                  <SelectItem value="cntr">ЦНТР</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="cooperation-line-year">Год по линии <span className="text-destructive">*</span></Label>
+                              <Input
+                                id="cooperation-line-year"
                                 type="number"
-                                value={universityFormData.cooperationStartYear}
-                                onChange={(e) => setUniversityFormData({ ...universityFormData, cooperationStartYear: parseInt(e.target.value) || new Date().getFullYear() })}
+                                value={universityFormData.cooperationLineYear}
+                                onChange={(e) =>
+                                  setUniversityFormData({
+                                    ...universityFormData,
+                                    cooperationLineYear: parseInt(e.target.value) || new Date().getFullYear(),
+                                  })
+                                }
                                 placeholder="2024"
-                      />
-                    </div>
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="cooperation-line-responsible">Ответственное лицо по линии <span className="text-destructive">*</span></Label>
+                              <Input
+                                id="cooperation-line-responsible"
+                                value={universityFormData.cooperationLineResponsible}
+                                onChange={(e) =>
+                                  setUniversityFormData({
+                                    ...universityFormData,
+                                    cooperationLineResponsible: e.target.value,
+                                  })
+                                }
+                                placeholder="ФИО ответственного"
+                              />
+                            </div>
                             <div className="space-y-2">
                               <Label htmlFor="target-audience">Целевая аудитория</Label>
                               <Input
@@ -5122,7 +5219,7 @@ export default function UniversitiesPage() {
                                 onChange={(e) => setUniversityFormData({ ...universityFormData, targetAudience: e.target.value })}
                                 placeholder="Студенты IT-направлений"
                               />
-                  </div>
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -5155,13 +5252,18 @@ export default function UniversitiesPage() {
                     </Button>
                     <Button 
                       onClick={handleCreateUniversity}
-                      disabled={!universityFormData.name.trim() || !universityFormData.city.trim()}
+                      disabled={
+                        !universityFormData.name.trim() ||
+                        !universityFormData.city.trim() ||
+                        !universityFormData.cooperationLine ||
+                        !universityFormData.cooperationLineResponsible.trim()
+                      }
                       size="sm"
                     >
                       <CheckCircle2 className="h-4 w-4 mr-1" />
                       {editingUniversity ? "Сохранить изменения" : "Добавить ВУЗ"}
                     </Button>
-                  </div>
+                </div>
                 </div>
               ) : null}
             </DialogContent>
@@ -5533,6 +5635,9 @@ export default function UniversitiesPage() {
                       city: "Город",
                       branch: "Филиал",
                       cooperationStartYear: "Год начала сотрудничества",
+                      cooperationLine: "Линия сотрудничества",
+                      cooperationLineYear: "Год по линии",
+                      cooperationLineResponsible: "Ответственное лицо по линии",
                       targetAudience: "Целевая аудитория",
                       initiatorBlock: "Инициатор (блок)",
                       initiatorName: "Инициатор (ФИО)",
