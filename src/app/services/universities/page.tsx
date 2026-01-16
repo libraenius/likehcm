@@ -66,9 +66,14 @@ interface BranchCurator {
 // Тип для договора
 interface Contract {
   id: string;
-  type: "cooperation" | "scholarship" | "internship";
+  type: "cooperation" | "scholarship" | "internship" | "bankDepartment";
   hasContract: boolean;
   contractFile?: string; // URL или путь к файлу
+  number?: string; // Номер договора
+  date?: string; // Дата договора
+  period?: { start: string; end: string }; // Период действия (начало - конец)
+  asddLink?: string; // Ссылка на АСДД
+  contractBranch?: string; // Головной офис или филиал (только одно значение)
 }
 
 // Тип для кафедры банка
@@ -80,7 +85,7 @@ interface BankDepartment {
 // Тип для мероприятия
 interface Event {
   id: string;
-  type: "careerDays" | "expertParticipation" | "caseChampionships"; // Тип мероприятия
+  type: "careerDays" | "expertParticipation" | "caseChampionships" | "meeting"; // Тип мероприятия
   date: string; // Дата начала проведения
   endDate: string; // Дата окончания проведения
   status: "planned" | "completed"; // Статус мероприятия
@@ -299,7 +304,7 @@ const mockUniversities: University[] = [
     shortName: "МГУ",
     inn: "7707083893",
     city: "Москва",
-    branch: "Московский филиал",
+    branch: ["Московский филиал"],
     cooperationStartYear: 2020,
     cooperationLines: [
       {
@@ -332,8 +337,28 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-1", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-mgu-2020.pdf" },
-      { id: "cont-2", type: "internship", hasContract: true, bankDepartment: "Кафедра разработки", contractFile: "contract-mgu-internship.pdf" },
+      { 
+        id: "cont-1", 
+        type: "cooperation", 
+        hasContract: true, 
+        contractFile: "contract-mgu-2020.pdf",
+        number: "Д-2020-001",
+        date: "2020-03-15",
+        period: { start: "2020-03-15", end: "2025-03-14" },
+        asddLink: "https://asdd.example.com/contract/2020-001",
+        contractBranch: "Головной офис"
+      },
+      { 
+        id: "cont-2", 
+        type: "internship", 
+        hasContract: true, 
+        contractFile: "contract-mgu-internship.pdf",
+        number: "Д-2021-045",
+        date: "2021-06-10",
+        period: { start: "2021-06-10", end: "2026-06-09" },
+        asddLink: "https://asdd.example.com/contract/2021-045",
+        contractBranch: "Московский филиал"
+      },
     ],
     events: [
       {
@@ -454,8 +479,26 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-3", type: "cooperation", hasContract: true, bankDepartment: "Кафедра экономики" },
-      { id: "cont-4", type: "scholarship", hasContract: true, bankDepartment: "Кафедра финансов", contractFile: "contract-spbgu-scholarship.pdf" },
+      { 
+        id: "cont-3", 
+        type: "cooperation", 
+        hasContract: true,
+        number: "Д-2019-078",
+        date: "2019-09-01",
+        period: { start: "2019-09-01", end: "2024-08-31" },
+        asddLink: "https://asdd.example.com/contract/2019-078",
+        contractBranch: "Санкт-Петербургский филиал"
+      },
+      { 
+        id: "cont-4", 
+        type: "scholarship", 
+        hasContract: true, 
+        contractFile: "contract-spbgu-scholarship.pdf",
+        number: "Д-2022-012",
+        date: "2022-02-20",
+        period: { start: "2022-02-20", end: "2027-02-19" },
+        contractBranch: "Головной офис"
+      },
     ],
     events: [
       {
@@ -533,8 +576,26 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-5", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки" },
-      { id: "cont-6", type: "internship", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-mfti-internship.pdf" },
+      { 
+        id: "cont-5", 
+        type: "cooperation", 
+        hasContract: true,
+        number: "Д-2021-033",
+        date: "2021-04-12",
+        period: { start: "2021-04-12", end: "2026-04-11" },
+        asddLink: "https://asdd.example.com/contract/2021-033",
+        contractBranch: "Московский филиал"
+      },
+      { 
+        id: "cont-6", 
+        type: "internship", 
+        hasContract: true, 
+        contractFile: "contract-mfti-internship.pdf",
+        number: "Д-2023-089",
+        date: "2023-08-05",
+        period: { start: "2023-08-05", end: "2028-08-04" },
+        contractBranch: "Головной офис"
+      },
     ],
     events: [
       {
@@ -633,9 +694,87 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-7", type: "cooperation", hasContract: true, bankDepartment: "Кафедра экономики", contractFile: "contract-hse-2018.pdf" },
-      { id: "cont-8", type: "scholarship", hasContract: true, bankDepartment: "Кафедра финансов" },
-      { id: "cont-9", type: "internship", hasContract: true, bankDepartment: "Кафедра IT" },
+      { 
+        id: "cont-7", 
+        type: "cooperation", 
+        hasContract: true, 
+        contractFile: "contract-hse-2018.pdf",
+        number: "Д-2018-056",
+        date: "2018-11-20",
+        period: { start: "2018-11-20", end: "2023-11-19" },
+        asddLink: "https://asdd.example.com/contract/2018-056",
+        contractBranch: "Головной офис"
+      },
+      { 
+        id: "cont-8", 
+        type: "scholarship", 
+        hasContract: true,
+        number: "Д-2020-102",
+        date: "2020-05-18",
+        period: { start: "2020-05-18", end: "2025-05-17" },
+        contractBranch: "Московский филиал"
+      },
+      { 
+        id: "cont-9", 
+        type: "internship", 
+        hasContract: true,
+        number: "Д-2022-067",
+        date: "2022-07-22",
+        period: { start: "2022-07-22", end: "2027-07-21" },
+        asddLink: "https://asdd.example.com/contract/2022-067",
+        contractBranch: "Головной офис"
+      },
+      { 
+        id: "cont-hse-1", 
+        type: "bankDepartment", 
+        hasContract: true,
+        number: "Д-2023-145",
+        date: "2023-03-10",
+        period: { start: "2023-03-10", end: "2028-03-09" },
+        asddLink: "https://asdd.example.com/contract/2023-145",
+        contractBranch: "Московский филиал",
+        contractFile: "contract-hse-bank-department-2023.pdf"
+      },
+      { 
+        id: "cont-hse-2", 
+        type: "cooperation", 
+        hasContract: true,
+        number: "Д-2024-089",
+        date: "2024-01-15",
+        period: { start: "2024-01-15", end: "2029-01-14" },
+        asddLink: "https://asdd.example.com/contract/2024-089",
+        contractBranch: "Центральный офис",
+        contractFile: "contract-hse-cooperation-2024.pdf"
+      },
+      { 
+        id: "cont-hse-3", 
+        type: "scholarship", 
+        hasContract: true,
+        number: "Д-2023-278",
+        date: "2023-09-05",
+        period: { start: "2023-09-05", end: "2028-09-04" },
+        contractBranch: "Головной офис"
+      },
+      { 
+        id: "cont-hse-4", 
+        type: "internship", 
+        hasContract: true,
+        number: "Д-2024-156",
+        date: "2024-06-01",
+        period: { start: "2024-06-01", end: "2029-05-31" },
+        asddLink: "https://asdd.example.com/contract/2024-156",
+        contractBranch: "Московский филиал",
+        contractFile: "contract-hse-internship-2024.pdf"
+      },
+      { 
+        id: "cont-hse-5", 
+        type: "bankDepartment", 
+        hasContract: true,
+        number: "Д-2022-334",
+        date: "2022-12-20",
+        period: { start: "2022-12-20", end: "2027-12-19" },
+        contractBranch: "Головной офис"
+      },
     ],
     events: [
       {
@@ -1035,7 +1174,17 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-10", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки", contractFile: "contract-urfu-2022.pdf" },
+      { 
+        id: "cont-10", 
+        type: "cooperation", 
+        hasContract: true, 
+        contractFile: "contract-urfu-2022.pdf",
+        number: "Д-2022-134",
+        date: "2022-10-08",
+        period: { start: "2022-10-08", end: "2027-10-07" },
+        asddLink: "https://asdd.example.com/contract/2022-134",
+        contractBranch: "Уральский филиал"
+      },
     ],
     careerDays: true,
     expertParticipation: false,
@@ -1079,8 +1228,26 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-11", type: "cooperation", hasContract: true, bankDepartment: "Кафедра математики" },
-      { id: "cont-12", type: "internship", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-ngu-internship.pdf" },
+      { 
+        id: "cont-11", 
+        type: "cooperation", 
+        hasContract: true,
+        number: "Д-2021-091",
+        date: "2021-12-14",
+        period: { start: "2021-12-14", end: "2026-12-13" },
+        contractBranch: "Сибирский филиал"
+      },
+      { 
+        id: "cont-12", 
+        type: "internship", 
+        hasContract: true, 
+        contractFile: "contract-ngu-internship.pdf",
+        number: "Д-2023-156",
+        date: "2023-03-28",
+        period: { start: "2023-03-28", end: "2028-03-27" },
+        asddLink: "https://asdd.example.com/contract/2023-156",
+        contractBranch: "Головной офис"
+      },
     ],
     careerDays: false,
     expertParticipation: true,
@@ -1132,8 +1299,26 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-13", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-kfu-2020.pdf" },
-      { id: "cont-14", type: "scholarship", hasContract: true, bankDepartment: "Кафедра экономики" },
+      { 
+        id: "cont-13", 
+        type: "cooperation", 
+        hasContract: true, 
+        contractFile: "contract-kfu-2020.pdf",
+        number: "Д-2020-124",
+        date: "2020-08-25",
+        period: { start: "2020-08-25", end: "2025-08-24" },
+        asddLink: "https://asdd.example.com/contract/2020-124",
+        contractBranch: "Приволжский филиал"
+      },
+      { 
+        id: "cont-14", 
+        type: "scholarship", 
+        hasContract: true,
+        number: "Д-2021-198",
+        date: "2021-09-11",
+        period: { start: "2021-09-11", end: "2026-09-10" },
+        contractBranch: "Головной офис"
+      },
     ],
     careerDays: true,
     expertParticipation: true,
@@ -1183,7 +1368,16 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-15", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки" },
+      { 
+        id: "cont-15", 
+        type: "cooperation", 
+        hasContract: true,
+        number: "Д-2022-203",
+        date: "2022-11-30",
+        period: { start: "2022-11-30", end: "2027-11-29" },
+        asddLink: "https://asdd.example.com/contract/2022-203",
+        contractBranch: "Дальневосточный филиал"
+      },
     ],
     careerDays: true,
     expertParticipation: false,
@@ -1243,8 +1437,26 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-16", type: "cooperation", hasContract: true, bankDepartment: "Кафедра инженерии", contractFile: "contract-spbpu-2021.pdf" },
-      { id: "cont-17", type: "internship", hasContract: true, bankDepartment: "Кафедра IT" },
+      { 
+        id: "cont-16", 
+        type: "cooperation", 
+        hasContract: true, 
+        contractFile: "contract-spbpu-2021.pdf",
+        number: "Д-2021-167",
+        date: "2021-07-19",
+        period: { start: "2021-07-19", end: "2026-07-18" },
+        asddLink: "https://asdd.example.com/contract/2021-167",
+        contractBranch: "Санкт-Петербургский филиал"
+      },
+      { 
+        id: "cont-17", 
+        type: "internship", 
+        hasContract: true,
+        number: "Д-2023-234",
+        date: "2023-05-14",
+        period: { start: "2023-05-14", end: "2028-05-13" },
+        contractBranch: "Головной офис"
+      },
     ],
     careerDays: true,
     expertParticipation: true,
@@ -1296,9 +1508,36 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-18", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-rudn-2020.pdf" },
-      { id: "cont-19", type: "scholarship", hasContract: true, bankDepartment: "Кафедра экономики" },
-      { id: "cont-20", type: "internship", hasContract: true, bankDepartment: "Кафедра разработки" },
+      { 
+        id: "cont-18", 
+        type: "cooperation", 
+        hasContract: true, 
+        contractFile: "contract-rudn-2020.pdf",
+        number: "Д-2020-178",
+        date: "2020-06-03",
+        period: { start: "2020-06-03", end: "2025-06-02" },
+        asddLink: "https://asdd.example.com/contract/2020-178",
+        contractBranch: "Головной офис"
+      },
+      { 
+        id: "cont-19", 
+        type: "scholarship", 
+        hasContract: true,
+        number: "Д-2021-245",
+        date: "2021-10-15",
+        period: { start: "2021-10-15", end: "2026-10-14" },
+        contractBranch: "Южный филиал"
+      },
+      { 
+        id: "cont-20", 
+        type: "internship", 
+        hasContract: true,
+        number: "Д-2023-112",
+        date: "2023-01-27",
+        period: { start: "2023-01-27", end: "2028-01-26" },
+        asddLink: "https://asdd.example.com/contract/2023-112",
+        contractBranch: "Головной офис"
+      },
     ],
     careerDays: true,
     expertParticipation: true,
@@ -1342,7 +1581,15 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-21", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT" },
+      { 
+        id: "cont-21", 
+        type: "cooperation", 
+        hasContract: true,
+        number: "Д-2022-278",
+        date: "2022-12-09",
+        period: { start: "2022-12-09", end: "2027-12-08" },
+        contractBranch: "Южный филиал"
+      },
     ],
     careerDays: true,
     expertParticipation: false,
@@ -1386,7 +1633,17 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-22", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки", contractFile: "contract-dvfu-2023.pdf" },
+      { 
+        id: "cont-22", 
+        type: "cooperation", 
+        hasContract: true, 
+        contractFile: "contract-dvfu-2023.pdf",
+        number: "Д-2023-189",
+        date: "2023-04-16",
+        period: { start: "2023-04-16", end: "2028-04-15" },
+        asddLink: "https://asdd.example.com/contract/2023-189",
+        contractBranch: "Дальневосточный филиал"
+      },
     ],
     careerDays: false,
     expertParticipation: true,
@@ -1430,8 +1687,25 @@ const mockUniversities: University[] = [
       },
     ],
     contracts: [
-      { id: "cont-23", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT" },
-      { id: "cont-24", type: "internship", hasContract: true, bankDepartment: "Кафедра разработки" },
+      { 
+        id: "cont-23", 
+        type: "cooperation", 
+        hasContract: true,
+        number: "Д-2021-267",
+        date: "2021-11-22",
+        period: { start: "2021-11-22", end: "2026-11-21" },
+        contractBranch: "Центральный филиал"
+      },
+      { 
+        id: "cont-24", 
+        type: "internship", 
+        hasContract: true,
+        number: "Д-2023-298",
+        date: "2023-09-07",
+        period: { start: "2023-09-07", end: "2028-09-06" },
+        asddLink: "https://asdd.example.com/contract/2023-298",
+        contractBranch: "Головной офис"
+      },
     ],
     careerDays: true,
     expertParticipation: false,
@@ -1776,6 +2050,14 @@ export default function UniversitiesPage() {
     status: null,
   });
 
+  const [contractFilters, setContractFilters] = useState<{
+    type: Contract["type"] | null;
+    status: "active" | "expired" | null;
+  }>({
+    type: null,
+    status: null,
+  });
+
   // Состояния для работы с договорами в табе
   const [editingContract, setEditingContract] = useState<{ universityId: string; contract: Contract } | null>(null);
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
@@ -1804,13 +2086,23 @@ export default function UniversitiesPage() {
     type: Contract["type"];
     hasContract: boolean;
     contractFile: string;
+    number: string;
+    date: string;
+    period: { start: string; end: string };
+    asddLink: string;
+    contractBranch: string;
   }>({
     type: "cooperation",
     hasContract: true,
     contractFile: "",
+    number: "",
+    date: "",
+    period: { start: "", end: "" },
+    asddLink: "",
+    contractBranch: "",
   });
   const [newEvent, setNewEvent] = useState<{
-    type: "careerDays" | "expertParticipation" | "caseChampionships" | "";
+    type: "careerDays" | "expertParticipation" | "caseChampionships" | "meeting" | "";
     date: string;
     endDate: string;
     status: "planned" | "completed";
@@ -2474,6 +2766,14 @@ export default function UniversitiesPage() {
       type: newContractForTab.type,
       hasContract: true,
       contractFile: newContractForTab.contractFile.trim() || undefined,
+      number: newContractForTab.number.trim() || undefined,
+      date: newContractForTab.date || undefined,
+      period: (newContractForTab.period.start || newContractForTab.period.end) ? {
+        start: newContractForTab.period.start,
+        end: newContractForTab.period.end,
+      } : undefined,
+      asddLink: newContractForTab.asddLink.trim() || undefined,
+      contractBranch: newContractForTab.contractBranch || undefined,
     };
     const university = universities.find(u => u.id === universityId);
     if (university) {
@@ -2481,7 +2781,7 @@ export default function UniversitiesPage() {
       setUniversities(universities.map(u => 
         u.id === universityId ? { ...u, contracts: updatedContracts } : u
       ));
-      setNewContractForTab({ type: "cooperation", hasContract: true, contractFile: "" });
+      setNewContractForTab({ type: "cooperation", hasContract: true, contractFile: "", number: "", date: "", period: { start: "", end: "" }, asddLink: "", contractBranch: "" });
       setIsContractDialogOpen(false);
     }
   };
@@ -2496,6 +2796,11 @@ export default function UniversitiesPage() {
         type: contract.type,
         hasContract: contract.hasContract,
         contractFile: contract.contractFile || "",
+        number: contract.number || "",
+        date: contract.date || "",
+        period: contract.period || { start: "", end: "" },
+        asddLink: contract.asddLink || "",
+        contractBranch: contract.contractBranch || "",
       });
       setIsContractDialogOpen(true);
     }
@@ -2515,6 +2820,14 @@ export default function UniversitiesPage() {
               type: newContractForTab.type, 
               hasContract: true,
               contractFile: newContractForTab.contractFile.trim() || undefined,
+              number: newContractForTab.number.trim() || undefined,
+              date: newContractForTab.date || undefined,
+              period: (newContractForTab.period.start || newContractForTab.period.end) ? {
+                start: newContractForTab.period.start,
+                end: newContractForTab.period.end,
+              } : undefined,
+              asddLink: newContractForTab.asddLink.trim() || undefined,
+              contractBranch: newContractForTab.contractBranch || undefined,
             }
           : c
       ) || [];
@@ -2522,7 +2835,7 @@ export default function UniversitiesPage() {
       u.id === editingContract.universityId ? { ...u, contracts: updatedContracts } : u
     ));
     setEditingContract(null);
-    setNewContractForTab({ type: "cooperation", hasContract: true, contractFile: "" });
+    setNewContractForTab({ type: "cooperation", hasContract: true, contractFile: "", number: "", date: "", period: { start: "", end: "" }, asddLink: "", contractBranch: "" });
     setIsContractDialogOpen(false);
   };
 
@@ -2554,12 +2867,27 @@ export default function UniversitiesPage() {
     setPractitionerCommentValue("");
   };
   
+  // Форматирование даты из YYYY-MM-DD в дд.мм.гггг
+  const formatDateToDDMMYYYY = (dateString: string): string => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString + "T00:00:00");
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}.${month}.${year}`;
+    } catch {
+      return dateString;
+    }
+  };
+
   // Получение цвета бейджа по типу договора
   const getContractTypeBadgeColor = (type: Contract["type"]): string => {
     const colorMap: Record<Contract["type"], string> = {
       cooperation: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700",
       scholarship: "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700",
       internship: "bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700",
+      bankDepartment: "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-700",
     };
     return colorMap[type] || "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
   };
@@ -2585,7 +2913,7 @@ export default function UniversitiesPage() {
     const university = universities.find(u => u.id === universityId);
     if (!university || !university.events) {
     return {
-        byType: { careerDays: 0, expertParticipation: 0, caseChampionships: 0 },
+        byType: { careerDays: 0, expertParticipation: 0, caseChampionships: 0, meeting: 0 },
         byStatus: { planned: 0, completed: 0 },
         total: 0,
       };
@@ -2594,6 +2922,7 @@ export default function UniversitiesPage() {
       careerDays: university.events.filter(e => e.type === "careerDays").length,
       expertParticipation: university.events.filter(e => e.type === "expertParticipation").length,
       caseChampionships: university.events.filter(e => e.type === "caseChampionships").length,
+      meeting: university.events.filter(e => e.type === "meeting").length,
     };
     const byStatus = {
       planned: university.events.filter(e => e.status === "planned").length,
@@ -2603,6 +2932,39 @@ export default function UniversitiesPage() {
       byType,
       byStatus,
       total: university.events.length,
+    };
+  };
+
+  const getContractStatistics = (universityId: string) => {
+    const university = universities.find(u => u.id === universityId);
+    if (!university || !university.contracts) {
+      return {
+        byType: { cooperation: 0, scholarship: 0, internship: 0, bankDepartment: 0 },
+        byStatus: { active: 0, expired: 0 },
+        total: 0,
+      };
+    }
+    const now = new Date();
+    const byType = {
+      cooperation: university.contracts.filter(c => c.type === "cooperation").length,
+      scholarship: university.contracts.filter(c => c.type === "scholarship").length,
+      internship: university.contracts.filter(c => c.type === "internship").length,
+      bankDepartment: university.contracts.filter(c => c.type === "bankDepartment").length,
+    };
+    const byStatus = {
+      active: university.contracts.filter(c => {
+        if (!c.period?.end) return true; // Если нет конечной даты, считаем активным
+        return new Date(c.period.end) >= now;
+      }).length,
+      expired: university.contracts.filter(c => {
+        if (!c.period?.end) return false;
+        return new Date(c.period.end) < now;
+      }).length,
+    };
+    return {
+      byType,
+      byStatus,
+      total: university.contracts.length,
     };
   };
   
@@ -2696,7 +3058,7 @@ export default function UniversitiesPage() {
   }, [universities]);
   
   const uniqueRegions = useMemo(() => {
-    const regions = new Set(universities.map(u => u.region).filter(Boolean));
+    const regions = new Set(universities.map(u => u.region).filter((r): r is string => Boolean(r)));
     return Array.from(regions).sort();
   }, [universities]);
 
@@ -3491,7 +3853,14 @@ export default function UniversitiesPage() {
                           <Tabs value={generalSubTab} onValueChange={(v) => setGeneralSubTab(v as typeof generalSubTab)} className="w-full">
                             <TabsList className="grid w-full grid-cols-2">
                               <TabsTrigger value="main">Головной ВУЗ</TabsTrigger>
-                              <TabsTrigger value="branches">Филиалы ВУЗа</TabsTrigger>
+                              <TabsTrigger value="branches" className="flex items-center gap-2">
+                                Филиалы ВУЗа
+                                {university.branchCurators && university.branchCurators.length > 0 && (
+                                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                                    {university.branchCurators.length}
+                                  </Badge>
+                                )}
+                              </TabsTrigger>
                             </TabsList>
                             
                             {/* Подтаб: Головной ВУЗ */}
@@ -4008,94 +4377,123 @@ export default function UniversitiesPage() {
                         {/* Таб 2: Договорная база */}
                         <TabsContent value="contracts" className="space-y-4 mt-4">
                           <div className="space-y-4">
-                            {/* Блок кафедр банка */}
-                            <Card>
-                              <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                  <CardTitle className="text-lg">Кафедры Банка</CardTitle>
-                          <Button
-                            onClick={() => {
-                                      const newDepartment: BankDepartment = {
-                                        id: `dept-${Date.now()}`,
-                                        name: "",
-                                      };
-                                      const updatedUniversities = universities.map((u) =>
-                                        u.id === university.id
-                                          ? {
-                                              ...u,
-                                              bankDepartments: [...(u.bankDepartments || []), newDepartment],
-                                            }
-                                          : u
-                                      );
-                                      setUniversities(updatedUniversities);
-                                    }}
-                                    size="sm"
-                            variant="outline"
-                          >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Добавить кафедру
-                          </Button>
-                      </div>
-                    </CardHeader>
-                              <CardContent>
-                                {university.bankDepartments && university.bankDepartments.length > 0 ? (
-                        <div className="space-y-2">
-                                    {university.bankDepartments.map((dept) => (
-                                      <div key={dept.id} className="flex items-center gap-2 p-2 border rounded-lg">
-                                        <Input
-                                          value={dept.name}
-                                          onChange={(e) => {
-                                            const updatedUniversities = universities.map((u) =>
-                                              u.id === university.id
-                                                ? {
-                                                    ...u,
-                                                    bankDepartments: (u.bankDepartments || []).map((d) =>
-                                                      d.id === dept.id ? { ...d, name: e.target.value } : d
-                                                    ),
-                                                  }
-                                                : u
-                                            );
-                                            setUniversities(updatedUniversities);
-                                          }}
-                                          placeholder="Название кафедры"
-                                          className="flex-1"
-                                        />
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 w-8 p-0"
-                                          onClick={() => {
-                                            const updatedUniversities = universities.map((u) =>
-                                              u.id === university.id
-                                                ? {
-                                                    ...u,
-                                                    bankDepartments: (u.bankDepartments || []).filter((d) => d.id !== dept.id),
-                                                  }
-                                                : u
-                                            );
-                                            setUniversities(updatedUniversities);
-                                          }}
-                                        >
-                                          <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                          </div>
-                                    ))}
-                        </div>
-                                ) : (
-                                  <div className="text-center py-4 text-muted-foreground">
-                                    <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                    <p className="text-sm">Кафедры не добавлены</p>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-
-                            {/* Кнопка добавления договора */}
-                            <div className="flex items-center justify-end w-full">
+                            {/* Виджет статистики и кнопка добавления */}
+                            <div className="flex items-center gap-4 w-full">
+                              {selectedUniversity && (() => {
+                                const stats = getContractStatistics(selectedUniversity);
+                                return (
+                                  <>
+                                    <Card className="p-3 flex-[3]">
+                                      <div className="space-y-2">
+                                        <Label className="text-base font-semibold">Тип договора</Label>
+                                        <div className="flex items-center gap-3">
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">О сотрудничестве: </span>
+                                            <Badge
+                                              variant="outline"
+                                              className={`!bg-blue-500 !text-white !border-blue-500 hover:!bg-blue-600 cursor-pointer ${contractFilters.type === "cooperation" ? "ring-2 ring-blue-600" : ""}`}
+                                              onClick={() => {
+                                                setContractFilters(prev => ({
+                                                  ...prev,
+                                                  type: prev.type === "cooperation" ? null : "cooperation"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byType.cooperation}
+                                            </Badge>
+                                          </div>
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Об именных стипендиях: </span>
+                                            <Badge 
+                                              variant="outline"
+                                              className={`!bg-purple-500 !text-white !border-purple-500 hover:!bg-purple-600 cursor-pointer ${contractFilters.type === "scholarship" ? "ring-2 ring-purple-600" : ""}`}
+                                              onClick={() => {
+                                                setContractFilters(prev => ({
+                                                  ...prev,
+                                                  type: prev.type === "scholarship" ? null : "scholarship"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byType.scholarship}
+                                            </Badge>
+                                          </div>
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">О практике: </span>
+                                            <Badge 
+                                              variant="outline" 
+                                              className={`!bg-green-500 !text-white !border-green-500 hover:!bg-green-600 cursor-pointer ${contractFilters.type === "internship" ? "ring-2 ring-green-600" : ""}`}
+                                              onClick={() => {
+                                                setContractFilters(prev => ({
+                                                  ...prev,
+                                                  type: prev.type === "internship" ? null : "internship"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byType.internship}
+                                            </Badge>
+                                          </div>
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Кафедра банка: </span>
+                                            <Badge 
+                                              variant="outline" 
+                                              className={`!bg-orange-500 !text-white !border-orange-500 hover:!bg-orange-600 cursor-pointer ${contractFilters.type === "bankDepartment" ? "ring-2 ring-orange-600" : ""}`}
+                                              onClick={() => {
+                                                setContractFilters(prev => ({
+                                                  ...prev,
+                                                  type: prev.type === "bankDepartment" ? null : "bankDepartment"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byType.bankDepartment}
+                                            </Badge>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </Card>
+                                    <Card className="p-3 flex-[1]">
+                                      <div className="space-y-2">
+                                        <Label className="text-base font-semibold">Статус</Label>
+                                        <div className="flex items-center gap-3">
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Активный: </span>
+                                            <Badge 
+                                              variant="outline" 
+                                              className={`cursor-pointer ${contractFilters.status === "active" ? "ring-2 ring-primary" : ""}`}
+                                              onClick={() => {
+                                                setContractFilters(prev => ({
+                                                  ...prev,
+                                                  status: prev.status === "active" ? null : "active"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byStatus.active}
+                                            </Badge>
+                                          </div>
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Истекший: </span>
+                                            <Badge 
+                                              variant="default" 
+                                              className={`cursor-pointer ${contractFilters.status === "expired" ? "ring-2 ring-primary" : ""}`}
+                                              onClick={() => {
+                                                setContractFilters(prev => ({
+                                                  ...prev,
+                                                  status: prev.status === "expired" ? null : "expired"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byStatus.expired}
+                                            </Badge>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </Card>
+                                  </>
+                                );
+                              })()}
                               <Button
                                 onClick={() => {
                                   setEditingContract(null);
-                                  setNewContractForTab({ type: "cooperation", hasContract: true, contractFile: "" });
+                                  setNewContractForTab({ type: "cooperation", hasContract: true, contractFile: "", number: "", date: "", period: { start: "", end: "" }, asddLink: "", contractBranch: "" });
                                   setIsContractDialogOpen(true);
                                 }}
                                 size="sm"
@@ -4106,33 +4504,111 @@ export default function UniversitiesPage() {
                             </div>
 
                             {/* Список договоров */}
-                            {university.contracts && university.contracts.length > 0 ? (
-                              <div className="space-y-3">
-                                {university.contracts.map((contract) => {
+                            {university.contracts && university.contracts.length > 0 ? (() => {
+                              const filteredContracts = university.contracts.filter((contract) => {
+                                // Фильтрация по типу
+                                if (contractFilters.type && contract.type !== contractFilters.type) return false;
+                                // Фильтрация по статусу
+                                if (contractFilters.status) {
+                                  const now = new Date();
+                                  const isExpired = contract.period?.end ? new Date(contract.period.end) < now : false;
+                                  if (contractFilters.status === "expired" && !isExpired) return false;
+                                  if (contractFilters.status === "active" && isExpired) return false;
+                                }
+                                return true;
+                              });
+                              return filteredContracts.length > 0 ? (
+                                <div className="space-y-3">
+                                  {filteredContracts.map((contract) => {
                                   const contractTypeLabels: Record<Contract["type"], string> = {
                                     cooperation: "О сотрудничестве",
                                     scholarship: "Об именных стипендиях",
                                     internship: "О практике",
+                                    bankDepartment: "Кафедра банка",
                                   };
+                                  // Проверка истечения срока действия договора
+                                  const isExpired = contract.period?.end 
+                                    ? new Date(contract.period.end) < new Date()
+                                    : false;
                                   return (
-                                    <Card key={contract.id} className="p-3">
+                                    <Card 
+                                      key={contract.id} 
+                                      className={`p-4 relative ${isExpired ? 'border-2 border-red-300' : ''}`}
+                                    >
+                                      {isExpired && (
+                                        <div className="absolute -top-3 left-4 px-2 bg-red-100 text-red-700 text-xs font-medium rounded border border-red-300">
+                                          Истек срок действия договора
+                                        </div>
+                                      )}
                                       <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1 space-y-1.5">
-                                          <div className="flex items-center gap-2">
+                                        <div className="flex-1 space-y-3">
+                                          <div className="flex items-center gap-2 flex-wrap">
                                             <Badge variant="outline" className={`text-xs ${getContractTypeBadgeColor(contract.type)}`}>
                                               {contractTypeLabels[contract.type]}
-                          </Badge>
-                        </div>
-                                          {contract.contractFile && (
-                                            <div className="flex items-center gap-2 text-sm">
-                                              <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                              <a href={contract.contractFile} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">
-                                                {contract.contractFile}
-                                              </a>
-                                            </div>
-                                          )}
+                                            </Badge>
+                                            {contract.contractBranch && (
+                                              <Badge variant="secondary" className="text-xs">
+                                                {contract.contractBranch}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          
+                                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                            {contract.number && (
+                                              <div className="flex items-start gap-2">
+                                                <span className="text-muted-foreground whitespace-nowrap">Номер:</span>
+                                                <span className="font-medium">{contract.number}</span>
+                                              </div>
+                                            )}
+                                            {contract.date && (
+                                              <div className="flex items-start gap-2">
+                                                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Дата:</span>
+                                                <span className="font-medium">{contract.date}</span>
+                                              </div>
+                                            )}
+                                            {contract.period && (contract.period.start || contract.period.end) && (
+                                              <div className="flex items-start gap-2">
+                                                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Период действия:</span>
+                                                <span className="font-medium">
+                                                  {contract.period.start && contract.period.end 
+                                                    ? `${formatDateToDDMMYYYY(contract.period.start)}.${formatDateToDDMMYYYY(contract.period.end)}`
+                                                    : formatDateToDDMMYYYY(contract.period.start || contract.period.end || "")}
+                                                </span>
+                                              </div>
+                                            )}
+                                            {contract.asddLink && (
+                                              <div className="flex items-start gap-2 md:col-span-2">
+                                                <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Ссылка на АСДД:</span>
+                                                <a 
+                                                  href={contract.asddLink} 
+                                                  target="_blank" 
+                                                  rel="noopener noreferrer" 
+                                                  className="text-primary hover:underline break-all"
+                                                >
+                                                  {contract.asddLink}
+                                                </a>
+                                              </div>
+                                            )}
+                                            {contract.contractFile && (
+                                              <div className="flex items-start gap-2 md:col-span-2">
+                                                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Файл договора:</span>
+                                                <a 
+                                                  href={contract.contractFile} 
+                                                  target="_blank" 
+                                                  rel="noopener noreferrer" 
+                                                  className="text-primary hover:underline break-all"
+                                                >
+                                                  {contract.contractFile}
+                                                </a>
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-1 flex-shrink-0">
                                           <Button
                                             variant="ghost"
                                             size="sm"
@@ -4155,9 +4631,15 @@ export default function UniversitiesPage() {
                                       </div>
                                     </Card>
                                   );
-                                })}
-                              </div>
-                            ) : (
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                  <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                  <p className="text-base">Договоры не найдены по выбранным фильтрам</p>
+                                </div>
+                              );
+                            })() : (
                               <div className="text-center py-8 text-muted-foreground">
                                 <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                                 <p className="text-base">Договоры не добавлены</p>
@@ -4175,7 +4657,7 @@ export default function UniversitiesPage() {
                                 const stats = getEventStatistics(selectedUniversity);
                                 return (
                                   <>
-                                    <Card className="p-3 flex-1">
+                                    <Card className="p-3 flex-[3]">
                         <div className="space-y-2">
                                         <Label className="text-base font-semibold">Типы мероприятий</Label>
                                         <div className="flex items-center gap-3">
@@ -4227,7 +4709,7 @@ export default function UniversitiesPage() {
                                         </div>
                                       </div>
                                     </Card>
-                                    <Card className="p-3 flex-1">
+                                    <Card className="p-3 flex-[1]">
                         <div className="space-y-2">
                                         <Label className="text-base font-semibold">Статусы</Label>
                                                 <div className="flex items-center gap-3">
@@ -4300,7 +4782,7 @@ export default function UniversitiesPage() {
                                     planned: "Запланировано",
                                     completed: "Проведено",
                                   };
-                                  const getEventTypeBadgeVariant = (type: Event["type"]) => {
+                                  const getEventTypeBadgeVariant = (type: Event["type"]): "outline" => {
                                     return "outline"; // Используем outline для всех, чтобы кастомные цвета работали
                                   };
                                   const getEventTypeBadgeClassName = (type: Event["type"]) => {
@@ -6517,7 +6999,7 @@ export default function UniversitiesPage() {
             setIsContractDialogOpen(open);
             if (!open) {
               setEditingContract(null);
-              setNewContractForTab({ type: "cooperation", hasContract: false, contractFile: "" });
+              setNewContractForTab({ type: "cooperation", hasContract: false, contractFile: "", number: "", date: "", period: { start: "", end: "" }, asddLink: "", contractBranch: "" });
             }
           }}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -6540,7 +7022,7 @@ export default function UniversitiesPage() {
                         <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Выберите тип договора: о сотрудничестве, об именных стипендиях или о практике</p>
+                        <p>Выберите тип договора: о сотрудничестве, об именных стипендиях, о практике или кафедра банка</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -6555,6 +7037,85 @@ export default function UniversitiesPage() {
                       <SelectItem value="cooperation">О сотрудничестве</SelectItem>
                       <SelectItem value="scholarship">Об именных стипендиях</SelectItem>
                       <SelectItem value="internship">О практике</SelectItem>
+                      <SelectItem value="bankDepartment">Кафедра банка</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contract-number">Номер</Label>
+                  <Input
+                    id="contract-number"
+                    placeholder="Введите номер договора"
+                    value={newContractForTab.number}
+                    onChange={(e) => setNewContractForTab({ ...newContractForTab, number: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contract-date">Дата</Label>
+                  <Input
+                    id="contract-date"
+                    type="date"
+                    value={newContractForTab.date}
+                    onChange={(e) => setNewContractForTab({ ...newContractForTab, date: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contract-period-start">Период действия (начало)</Label>
+                    <Input
+                      id="contract-period-start"
+                      type="date"
+                      value={newContractForTab.period.start}
+                      onChange={(e) => setNewContractForTab({ ...newContractForTab, period: { ...newContractForTab.period, start: e.target.value } })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contract-period-end">Период действия (конец)</Label>
+                    <Input
+                      id="contract-period-end"
+                      type="date"
+                      value={newContractForTab.period.end}
+                      onChange={(e) => setNewContractForTab({ ...newContractForTab, period: { ...newContractForTab.period, end: e.target.value } })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contract-asdd-link">Ссылка на АСДД</Label>
+                  <Input
+                    id="contract-asdd-link"
+                    type="url"
+                    placeholder="Введите ссылку на АСДД"
+                    value={newContractForTab.asddLink}
+                    onChange={(e) => setNewContractForTab({ ...newContractForTab, asddLink: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contract-branch">Головной офис / Филиал</Label>
+                  <Select
+                    value={newContractForTab.contractBranch}
+                    onValueChange={(value) => setNewContractForTab({ ...newContractForTab, contractBranch: value })}
+                  >
+                    <SelectTrigger id="contract-branch">
+                      <SelectValue placeholder="Выберите головной офис или филиал" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Головной офис">Головной офис</SelectItem>
+                      {selectedUniversity && (() => {
+                        const university = universities.find(u => u.id === selectedUniversity);
+                        const branches = university?.branchCurators || [];
+                        return branches.length > 0 ? (
+                          branches.map((curator) => (
+                            <SelectItem key={curator.id} value={curator.branch}>
+                              {curator.branch}
+                            </SelectItem>
+                          ))
+                        ) : null;
+                      })()}
                     </SelectContent>
                   </Select>
                 </div>
@@ -6590,7 +7151,7 @@ export default function UniversitiesPage() {
                   onClick={() => {
                     setIsContractDialogOpen(false);
                     setEditingContract(null);
-                    setNewContractForTab({ type: "cooperation", hasContract: false, contractFile: "" });
+                    setNewContractForTab({ type: "cooperation", hasContract: false, contractFile: "", number: "", date: "", period: { start: "", end: "" }, asddLink: "", contractBranch: "" });
                   }}
                 >
                   Отмена
