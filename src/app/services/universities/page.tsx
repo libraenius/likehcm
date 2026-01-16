@@ -1608,6 +1608,14 @@ export default function UniversitiesPage() {
     curatorName: "",
   });
   
+  // Состояние для редактирования куратора
+  const [editingCuratorId, setEditingCuratorId] = useState<string | null>(null);
+  const [editingCurator, setEditingCurator] = useState({
+    city: "",
+    branch: "",
+    curatorName: "",
+  });
+  
   // Состояние для добавления договора
   const [newContract, setNewContract] = useState({
     type: "cooperation" as Contract["type"],
@@ -1676,7 +1684,9 @@ export default function UniversitiesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"name" | "city">("name");
+  const [regionFilter, setRegionFilter] = useState<string>("all");
+  const [cooperationLineFilter, setCooperationLineFilter] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<"name" | "city" | "region">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showArchived, setShowArchived] = useState(false);
   const [editingStudent, setEditingStudent] = useState<{ partnershipId: string; student: Student } | null>(null);
@@ -1991,6 +2001,49 @@ export default function UniversitiesPage() {
     setUniversities(updatedUniversities);
   };
   
+  // Обновление куратора для выбранного университета
+  const handleUpdateCuratorForUniversity = (universityId: string, curatorId: string) => {
+    if (!editingCurator.city.trim() || !editingCurator.branch.trim() || !editingCurator.curatorName.trim()) {
+      return;
+    }
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            branchCurators: (u.branchCurators || []).map(c =>
+              c.id === curatorId
+                ? {
+                    ...c,
+                    city: editingCurator.city.trim(),
+                    branch: editingCurator.branch.trim(),
+                    curatorName: editingCurator.curatorName.trim(),
+                  }
+                : c
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+    setEditingCuratorId(null);
+    setEditingCurator({ city: "", branch: "", curatorName: "" });
+  };
+  
+  // Начало редактирования куратора
+  const handleStartEditingCurator = (curator: BranchCurator) => {
+    setEditingCuratorId(curator.id);
+    setEditingCurator({
+      city: curator.city,
+      branch: curator.branch,
+      curatorName: curator.curatorName,
+    });
+  };
+  
+  // Отмена редактирования куратора
+  const handleCancelEditingCurator = () => {
+    setEditingCuratorId(null);
+    setEditingCurator({ city: "", branch: "", curatorName: "" });
+  };
+  
   // Добавление договора
   const handleAddContract = () => {
     if (!newContract.hasContract) {
@@ -2247,9 +2300,32 @@ export default function UniversitiesPage() {
       return university;
     }).filter(u => {
       if (cityFilter !== "all" && u.city !== cityFilter) return false;
+      
+      // Фильтр по региону
+      if (regionFilter !== "all" && u.region !== regionFilter) return false;
+      
+      // Фильтр по линиям сотрудничества
+      if (cooperationLineFilter.length > 0) {
+        const hasMatchingLine = cooperationLineFilter.some(filterLine => {
+          // Проверяем новый формат (cooperationLines)
+          if (u.cooperationLines && u.cooperationLines.length > 0) {
+            return u.cooperationLines.some(cl => cl.line === filterLine);
+          }
+          // Проверяем старый формат (cooperationLine)
+          if (u.cooperationLine) {
+            if (Array.isArray(u.cooperationLine)) {
+              return u.cooperationLine.includes(filterLine as CooperationLine);
+            }
+            return u.cooperationLine === filterLine;
+          }
+          return false;
+        });
+        if (!hasMatchingLine) return false;
+      }
+      
       return !searchQuery.trim();
     });
-    
+
     // Сортировка
     result.sort((a, b) => {
       let comparison = 0;
@@ -2260,12 +2336,17 @@ export default function UniversitiesPage() {
         case "city":
           comparison = a.city.localeCompare(b.city);
           break;
+        case "region":
+          const regionA = a.region || "";
+          const regionB = b.region || "";
+          comparison = regionA.localeCompare(regionB);
+          break;
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
-    
+
     return result;
-  }, [universities, searchQuery, statusFilter, typeFilter, cityFilter, sortBy, sortOrder, showArchived]);
+  }, [universities, searchQuery, statusFilter, typeFilter, cityFilter, regionFilter, cooperationLineFilter, sortBy, sortOrder, showArchived]);
   
   // Сортированный список ВУЗов для левой колонки
   const sortedUniversitiesList = useMemo(() => {
@@ -2281,6 +2362,11 @@ export default function UniversitiesPage() {
   const uniqueCities = useMemo(() => {
     const cities = new Set(universities.map(u => u.city));
     return Array.from(cities).sort();
+  }, [universities]);
+  
+  const uniqueRegions = useMemo(() => {
+    const regions = new Set(universities.map(u => u.region).filter(Boolean));
+    return Array.from(regions).sort();
   }, [universities]);
 
   // Функции удаления
@@ -2708,12 +2794,14 @@ export default function UniversitiesPage() {
             >
               <Filter className="h-4 w-4 mr-2" />
               Фильтры
-              {(statusFilter !== "all" || typeFilter !== "all" || cityFilter !== "all" || showArchived) && (
+              {(statusFilter !== "all" || typeFilter !== "all" || cityFilter !== "all" || regionFilter !== "all" || cooperationLineFilter.length > 0 || showArchived) && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
                   {[
                     statusFilter !== "all" ? 1 : 0,
                     typeFilter !== "all" ? 1 : 0,
                     cityFilter !== "all" ? 1 : 0,
+                    regionFilter !== "all" ? 1 : 0,
+                    cooperationLineFilter.length > 0 ? 1 : 0,
                     showArchived ? 1 : 0,
                   ].reduce((a, b) => a + b, 0)}
                 </Badge>
@@ -2724,6 +2812,62 @@ export default function UniversitiesPage() {
                 Добавить ВУЗ
                     </Button>
                   </div>
+                  
+                  {/* Выбранные фильтры */}
+                  {(() => {
+                    const activeFilters: Array<{ label: string; onRemove: () => void }> = [];
+                    
+                    // Фильтр по городу
+                    if (cityFilter !== "all") {
+                      activeFilters.push({
+                        label: `Город: ${cityFilter}`,
+                        onRemove: () => setCityFilter("all"),
+                      });
+                    }
+                    
+                    // Фильтр по региону
+                    if (regionFilter !== "all") {
+                      activeFilters.push({
+                        label: `Регион: ${regionFilter}`,
+                        onRemove: () => setRegionFilter("all"),
+                      });
+                    }
+                    
+                    // Фильтр по линиям сотрудничества
+                    cooperationLineFilter.forEach((lineValue) => {
+                      const line = cooperationLines.find(l => l.value === lineValue);
+                      if (line) {
+                        activeFilters.push({
+                          label: `Линия: ${line.label}`,
+                          onRemove: () => setCooperationLineFilter(cooperationLineFilter.filter(l => l !== lineValue)),
+                        });
+                      }
+                    });
+                    
+                    if (activeFilters.length === 0) return null;
+                    
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {activeFilters.map((filter, index) => (
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="flex items-center gap-1 px-2 py-1"
+                          >
+                            <span className="text-sm">{filter.label}</span>
+                            <button
+                              type="button"
+                              onClick={filter.onRemove}
+                              className="ml-1 rounded-full hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                              aria-label="Удалить фильтр"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    );
+                  })()}
           {/* Двухколоночная структура */}
           {filteredData.length === 0 ? (
             <Card>
@@ -3139,7 +3283,6 @@ export default function UniversitiesPage() {
                           )}
 
                           {/* Филиалы ВУЗа */}
-                          <Separator />
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 text-base font-semibold">
                               <Building2 className="h-4 w-4" />
@@ -3150,28 +3293,94 @@ export default function UniversitiesPage() {
                                   <>
                                     {university.branchCurators.map((curator) => (
                                       <Card key={curator.id} className="p-3">
-                                        <div className="flex items-start justify-between gap-3">
-                                          <div className="flex items-start gap-2 flex-1 min-w-0">
-                                            <Avatar className="h-10 w-10 flex-shrink-0">
-                                              <AvatarImage src={curator.image} alt={curator.curatorName} />
-                                              <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                                {curator.curatorName.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
-                                              </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1 min-w-0 space-y-1.5">
-                                              <p className="text-sm font-medium">{curator.curatorName}</p>
-                                              <p className="text-xs text-muted-foreground">{curator.city} - {curator.branch}</p>
+                                        {editingCuratorId === curator.id ? (
+                                          <div className="flex-1 space-y-1.5">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                              <div className="space-y-1">
+                                                <Label htmlFor={`edit-curator-city-${curator.id}`} className="text-xs text-muted-foreground">Город</Label>
+                                                <Input
+                                                  id={`edit-curator-city-${curator.id}`}
+                                                  placeholder="Москва"
+                                                  value={editingCurator.city}
+                                                  onChange={(e) => setEditingCurator({ ...editingCurator, city: e.target.value })}
+                                                  className="h-9"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <Label htmlFor={`edit-curator-branch-${curator.id}`} className="text-xs text-muted-foreground">Филиал</Label>
+                                                <Input
+                                                  id={`edit-curator-branch-${curator.id}`}
+                                                  placeholder="Московский филиал"
+                                                  value={editingCurator.branch}
+                                                  onChange={(e) => setEditingCurator({ ...editingCurator, branch: e.target.value })}
+                                                  className="h-9"
+                                                />
+                                              </div>
+                                              <div className="space-y-1">
+                                                <Label htmlFor={`edit-curator-name-${curator.id}`} className="text-xs text-muted-foreground">Куратор</Label>
+                                                <Input
+                                                  id={`edit-curator-name-${curator.id}`}
+                                                  placeholder="Иванов И.И."
+                                                  value={editingCurator.curatorName}
+                                                  onChange={(e) => setEditingCurator({ ...editingCurator, curatorName: e.target.value })}
+                                                  className="h-9"
+                                                />
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 justify-end">
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={handleCancelEditingCurator}
+                                              >
+                                                Отмена
+                                              </Button>
+                                              <Button
+                                                variant="default"
+                                                size="sm"
+                                                onClick={() => handleUpdateCuratorForUniversity(university.id, curator.id)}
+                                                disabled={!editingCurator.city.trim() || !editingCurator.branch.trim() || !editingCurator.curatorName.trim()}
+                                              >
+                                                Сохранить
+                                              </Button>
                                             </div>
                                           </div>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleRemoveCuratorForUniversity(university.id, curator.id)}
-                                            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </div>
+                                        ) : (
+                                          <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-start gap-2 flex-1 min-w-0">
+                                              <Avatar className="h-10 w-10 flex-shrink-0">
+                                                <AvatarImage src={curator.image} alt={curator.curatorName} />
+                                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                  {curator.curatorName.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <div className="flex-1 min-w-0 space-y-1.5">
+                                                <p className="text-sm font-medium">{curator.curatorName}</p>
+                                                <p className="text-xs text-muted-foreground">{curator.city} - {curator.branch}</p>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleStartEditingCurator(curator)}
+                                                className="h-8 w-8 text-muted-foreground hover:text-primary shrink-0"
+                                                title="Редактировать"
+                                              >
+                                                <Pencil className="h-4 w-4" />
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleRemoveCuratorForUniversity(university.id, curator.id)}
+                                                className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                                                title="Удалить"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        )}
                                       </Card>
                                     ))}
                                   </>
@@ -6166,6 +6375,38 @@ export default function UniversitiesPage() {
                   </Select>
                 </div>
 
+                {uniqueRegions.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>Регион</Label>
+                      <Select value={regionFilter} onValueChange={setRegionFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Выберите регион" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Все регионы</SelectItem>
+                          {uniqueRegions.map(region => (
+                            <SelectItem key={region} value={region}>{region}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Линии сотрудничества</Label>
+                  <MultiSelect
+                    options={cooperationLines.map(line => ({ value: line.value, label: line.label }))}
+                    selected={cooperationLineFilter}
+                    onChange={setCooperationLineFilter}
+                    placeholder="Выберите линии сотрудничества"
+                  />
+                </div>
+
                 <Separator />
 
                 <div className="space-y-2">
@@ -6178,6 +6419,9 @@ export default function UniversitiesPage() {
                       <SelectContent>
                         <SelectItem value="name">По названию</SelectItem>
                         <SelectItem value="city">По городу</SelectItem>
+                        {uniqueRegions.length > 0 && (
+                          <SelectItem value="region">По региону</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <Button
@@ -6196,6 +6440,8 @@ export default function UniversitiesPage() {
                   variant="outline"
                   onClick={() => {
                     setCityFilter("all");
+                    setRegionFilter("all");
+                    setCooperationLineFilter([]);
                     setSortBy("name");
                     setSortOrder("asc");
                   }}
