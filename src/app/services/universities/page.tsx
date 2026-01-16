@@ -58,8 +58,9 @@ interface BranchCurator {
   id: string;
   city: string;
   branch: string;
-  curatorName: string;
   image?: string;
+  cooperationLines?: CooperationLineRecord[]; // Линии сотрудничества для филиала
+  cooperationStartYear?: number; // Год начала сотрудничества
 }
 
 // Тип для договора
@@ -319,7 +320,16 @@ const mockUniversities: University[] = [
     initiatorName: "Иванов Иван Иванович",
     initiatorImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     branchCurators: [
-      { id: "cur-1", city: "Москва", branch: "Московский филиал", curatorName: "Петров Петр Петрович" },
+      { 
+        id: "cur-1", 
+        city: "Москва", 
+        branch: "Московский филиал", 
+        cooperationLines: [
+          { id: "clr-cur-1-1", line: "drp", year: 2020, responsible: ["person-1"] },
+          { id: "clr-cur-1-2", line: "bko", year: 2021, responsible: ["person-2"] },
+        ],
+        cooperationStartYear: 2020,
+      },
     ],
     contracts: [
       { id: "cont-1", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-mgu-2020.pdf" },
@@ -422,8 +432,26 @@ const mockUniversities: University[] = [
     initiatorName: "Смирнова Анна Владимировна",
     initiatorImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
     branchCurators: [
-      { id: "cur-2", city: "Санкт-Петербург", branch: "Санкт-Петербургский филиал", curatorName: "Козлов Дмитрий Сергеевич" },
-      { id: "cur-3", city: "Санкт-Петербург", branch: "Центральный офис", curatorName: "Новикова Елена Петровна" },
+      { 
+        id: "cur-2", 
+        city: "Санкт-Петербург", 
+        branch: "Санкт-Петербургский филиал", 
+        cooperationLines: [
+          { id: "clr-cur-2-1", line: "bko", year: 2019, responsible: ["person-4"] },
+        ],
+        cooperationStartYear: 2019,
+      },
+      { 
+        id: "cur-3", 
+        city: "Санкт-Петербург", 
+        branch: "Центральный офис", 
+        cooperationLines: [
+          { id: "clr-cur-3-1", line: "drp", year: 2020, responsible: ["person-5"] },
+          { id: "clr-cur-3-2", line: "bko", year: 2020, responsible: ["person-6"] },
+          { id: "clr-cur-3-3", line: "cntr", year: 2021, responsible: ["person-7"] },
+        ],
+        cooperationStartYear: 2020,
+      },
     ],
     contracts: [
       { id: "cont-3", type: "cooperation", hasContract: true, bankDepartment: "Кафедра экономики" },
@@ -494,7 +522,15 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок технологий",
     initiatorName: "Соколов Алексей Николаевич",
     branchCurators: [
-      { id: "cur-4", city: "Долгопрудный", branch: "Московский филиал", curatorName: "Волков Михаил Игоревич" },
+      { 
+        id: "cur-4", 
+        city: "Долгопрудный", 
+        branch: "Московский филиал", 
+        cooperationLines: [
+          { id: "clr-cur-4-1", line: "drp", year: 2021, responsible: ["person-7"] },
+        ],
+        cooperationStartYear: 2021,
+      },
     ],
     contracts: [
       { id: "cont-5", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки" },
@@ -576,8 +612,25 @@ const mockUniversities: University[] = [
     initiatorName: "Морозова Ольга Александровна",
     initiatorPosition: "Руководитель направления развития талантов",
     branchCurators: [
-      { id: "cur-5", city: "Москва", branch: "Московский филиал", curatorName: "Лебедев Сергей Викторович" },
-      { id: "cur-6", city: "Москва", branch: "Центральный офис", curatorName: "Федорова Мария Дмитриевна" },
+      { 
+        id: "cur-5", 
+        city: "Москва", 
+        branch: "Московский филиал", 
+        cooperationLines: [
+          { id: "clr-cur-5-1", line: "drp", year: 2018, responsible: ["person-1"] },
+          { id: "clr-cur-5-2", line: "bko", year: 2019, responsible: ["person-3"] },
+        ],
+        cooperationStartYear: 2018,
+      },
+      { 
+        id: "cur-6", 
+        city: "Москва", 
+        branch: "Центральный офис", 
+        cooperationLines: [
+          { id: "clr-cur-6-1", line: "drp", year: 2018, responsible: ["person-1", "person-3"] },
+        ],
+        cooperationStartYear: 2018,
+      },
     ],
     contracts: [
       { id: "cont-7", type: "cooperation", hasContract: true, bankDepartment: "Кафедра экономики", contractFile: "contract-hse-2018.pdf" },
@@ -970,7 +1023,16 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок развития",
     initiatorName: "Тихонов Андрей Борисович",
     branchCurators: [
-      { id: "cur-7", city: "Екатеринбург", branch: "Уральский филиал", curatorName: "Семенова Ирина Алексеевна" },
+      { 
+        id: "cur-7", 
+        city: "Екатеринбург", 
+        branch: "Уральский филиал", 
+        cooperationLines: [
+          { id: "clr-cur-7-1", line: "drp", year: 2022, responsible: ["person-7"] },
+          { id: "clr-cur-7-2", line: "cntr", year: 2022, responsible: ["person-8"] },
+        ],
+        cooperationStartYear: 2022,
+      },
     ],
     contracts: [
       { id: "cont-10", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки", contractFile: "contract-urfu-2022.pdf" },
@@ -1006,7 +1068,15 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок технологий",
     initiatorName: "Павлов Денис Олегович",
     branchCurators: [
-      { id: "cur-8", city: "Новосибирск", branch: "Сибирский филиал", curatorName: "Орлова Татьяна Сергеевна" },
+      { 
+        id: "cur-8", 
+        city: "Новосибирск", 
+        branch: "Сибирский филиал", 
+        cooperationLines: [
+          { id: "clr-cur-8-1", line: "drp", year: 2021, responsible: ["person-9"] },
+        ],
+        cooperationStartYear: 2021,
+      },
     ],
     contracts: [
       { id: "cont-11", type: "cooperation", hasContract: true, bankDepartment: "Кафедра математики" },
@@ -1049,7 +1119,17 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок развития",
     initiatorName: "Гарифуллин Рамиль Фаритович",
     branchCurators: [
-      { id: "cur-9", city: "Казань", branch: "Приволжский филиал", curatorName: "Хабибуллина Алина Рашидовна", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face" },
+      { 
+        id: "cur-9", 
+        city: "Казань", 
+        branch: "Приволжский филиал", 
+        image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
+        cooperationLines: [
+          { id: "clr-cur-9-1", line: "drp", year: 2020, responsible: ["person-1", "person-5"] },
+          { id: "clr-cur-9-2", line: "bko", year: 2020, responsible: ["person-5"] },
+        ],
+        cooperationStartYear: 2020,
+      },
     ],
     contracts: [
       { id: "cont-13", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-kfu-2020.pdf" },
@@ -1092,7 +1172,15 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок технологий",
     initiatorName: "Кузнецов Владимир Петрович",
     branchCurators: [
-      { id: "cur-10", city: "Томск", branch: "Сибирский филиал", curatorName: "Иванова Светлана Николаевна" },
+      { 
+        id: "cur-10", 
+        city: "Томск", 
+        branch: "Сибирский филиал", 
+        cooperationLines: [
+          { id: "clr-cur-10-1", line: "drp", year: 2019, responsible: ["person-2"] },
+        ],
+        cooperationStartYear: 2019,
+      },
     ],
     contracts: [
       { id: "cont-15", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки" },
@@ -1134,8 +1222,25 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок технологий",
     initiatorName: "Романов Павел Андреевич",
     branchCurators: [
-      { id: "cur-11", city: "Санкт-Петербург", branch: "Санкт-Петербургский филиал", curatorName: "Соколова Екатерина Викторовна" },
-      { id: "cur-12", city: "Санкт-Петербург", branch: "Центральный офис", curatorName: "Медведев Игорь Сергеевич" },
+      { 
+        id: "cur-11", 
+        city: "Санкт-Петербург", 
+        branch: "Санкт-Петербургский филиал", 
+        cooperationLines: [
+          { id: "clr-cur-11-1", line: "bko", year: 2021, responsible: [] },
+        ],
+        cooperationStartYear: 2021,
+      },
+      { 
+        id: "cur-12", 
+        city: "Санкт-Петербург", 
+        branch: "Центральный офис", 
+        cooperationLines: [
+          { id: "clr-cur-12-1", line: "drp", year: 2021, responsible: [] },
+          { id: "clr-cur-12-2", line: "bko", year: 2021, responsible: [] },
+        ],
+        cooperationStartYear: 2021,
+      },
     ],
     contracts: [
       { id: "cont-16", type: "cooperation", hasContract: true, bankDepartment: "Кафедра инженерии", contractFile: "contract-spbpu-2021.pdf" },
@@ -1178,7 +1283,17 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок стратегии",
     initiatorName: "Алиева Зарина Магомедовна",
     branchCurators: [
-      { id: "cur-13", city: "Москва", branch: "Московский филиал", curatorName: "Ким Дмитрий Владимирович" },
+      { 
+        id: "cur-13", 
+        city: "Москва", 
+        branch: "Московский филиал", 
+        cooperationLines: [
+          { id: "clr-cur-13-1", line: "drp", year: 2020, responsible: ["person-2", "person-7"] },
+          { id: "clr-cur-13-2", line: "bko", year: 2020, responsible: ["person-4", "person-9"] },
+          { id: "clr-cur-13-3", line: "cntr", year: 2021, responsible: ["person-10"] },
+        ],
+        cooperationStartYear: 2020,
+      },
     ],
     contracts: [
       { id: "cont-18", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT", contractFile: "contract-rudn-2020.pdf" },
@@ -1216,7 +1331,15 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок развития",
     initiatorName: "Петренко Виктор Иванович",
     branchCurators: [
-      { id: "cur-14", city: "Ростов-на-Дону", branch: "Южный филиал", curatorName: "Мельникова Оксана Анатольевна" },
+      { 
+        id: "cur-14", 
+        city: "Ростов-на-Дону", 
+        branch: "Южный филиал", 
+        cooperationLines: [
+          { id: "clr-cur-14-1", line: "drp", year: 2022, responsible: ["person-5"] },
+        ],
+        cooperationStartYear: 2022,
+      },
     ],
     contracts: [
       { id: "cont-21", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT" },
@@ -1252,7 +1375,15 @@ const mockUniversities: University[] = [
     initiatorBlock: "Блок технологий",
     initiatorName: "Ким Александр Сергеевич",
     branchCurators: [
-      { id: "cur-15", city: "Владивосток", branch: "Дальневосточный филиал", curatorName: "Ли Елена Викторовна" },
+      { 
+        id: "cur-15", 
+        city: "Владивосток", 
+        branch: "Дальневосточный филиал", 
+        cooperationLines: [
+          { id: "clr-cur-15-1", line: "cntr", year: 2023, responsible: ["person-6"] },
+        ],
+        cooperationStartYear: 2023,
+      },
     ],
     contracts: [
       { id: "cont-22", type: "cooperation", hasContract: true, bankDepartment: "Кафедра разработки", contractFile: "contract-dvfu-2023.pdf" },
@@ -1288,7 +1419,15 @@ const mockUniversities: University[] = [
     initiatorName: "Степанова Наталья Михайловна",
     initiatorImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
     branchCurators: [
-      { id: "cur-16", city: "Белгород", branch: "Центральный филиал", curatorName: "Григорьев Андрей Валерьевич" },
+      { 
+        id: "cur-16", 
+        city: "Белгород", 
+        branch: "Центральный филиал", 
+        cooperationLines: [
+          { id: "clr-cur-16-1", line: "drp", year: 2021, responsible: ["person-2", "person-7"] },
+        ],
+        cooperationStartYear: 2021,
+      },
     ],
     contracts: [
       { id: "cont-23", type: "cooperation", hasContract: true, bankDepartment: "Кафедра IT" },
@@ -1464,6 +1603,7 @@ export default function UniversitiesPage() {
   const [universities, setUniversities] = useState<University[]>(mockUniversities);
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
   const [universityDetailTab, setUniversityDetailTab] = useState<"general" | "contracts" | "events" | "staff" | "bko" | "cntr">("general");
+  const [generalSubTab, setGeneralSubTab] = useState<"main" | "branches">("main");
   const [staffSubTab, setStaffSubTab] = useState<"interns" | "practitioners">("interns");
   const [universitiesSortOrder, setUniversitiesSortOrder] = useState<"asc" | "desc">("asc");
   const [expandedUniversities, setExpandedUniversities] = useState<Set<string>>(new Set());
@@ -1598,14 +1738,13 @@ export default function UniversitiesPage() {
   const [newCurator, setNewCurator] = useState({
     city: "",
     branch: "",
-    curatorName: "",
   });
   
   // Состояние для добавления куратора на вкладке "Общая информация"
   const [newCuratorForUniversity, setNewCuratorForUniversity] = useState({
     city: "",
     branch: "",
-    curatorName: "",
+    cooperationLines: [] as CooperationLineRecord[],
   });
   
   // Состояние для редактирования куратора
@@ -1613,8 +1752,11 @@ export default function UniversitiesPage() {
   const [editingCurator, setEditingCurator] = useState({
     city: "",
     branch: "",
-    curatorName: "",
+    cooperationLines: [] as CooperationLineRecord[],
   });
+  
+  // Состояние для отслеживания свернутых филиалов
+  const [collapsedBranches, setCollapsedBranches] = useState<Set<string>>(new Set());
   
   // Состояние для добавления договора
   const [newContract, setNewContract] = useState({
@@ -1637,6 +1779,27 @@ export default function UniversitiesPage() {
   // Состояния для работы с договорами в табе
   const [editingContract, setEditingContract] = useState<{ universityId: string; contract: Contract } | null>(null);
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
+  
+  // Состояния для модальных окон филиалов
+  const [isBranchDialogOpen, setIsBranchDialogOpen] = useState(false);
+  const [isCooperationLineDialogOpen, setIsCooperationLineDialogOpen] = useState(false);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+  const [newCooperationLineForBranch, setNewCooperationLineForBranch] = useState<CooperationLineRecord>({
+    id: `clr-${Date.now()}`,
+    line: "drp",
+    year: new Date().getFullYear(),
+    responsible: [],
+  });
+  
+  // Состояния для модального окна линии сотрудничества головного ВУЗа
+  const [isMainCooperationLineDialogOpen, setIsMainCooperationLineDialogOpen] = useState(false);
+  const [newCooperationLineForMain, setNewCooperationLineForMain] = useState<CooperationLineRecord>({
+    id: `clr-${Date.now()}`,
+    line: "drp",
+    year: new Date().getFullYear(),
+    responsible: [],
+  });
+  const [editingMainCooperationLine, setEditingMainCooperationLine] = useState<{ universityId: string; lineId: string } | null>(null);
   const [newContractForTab, setNewContractForTab] = useState<{
     type: Contract["type"];
     hasContract: boolean;
@@ -1817,7 +1980,7 @@ export default function UniversitiesPage() {
       region: "",
       description: "",
     });
-    setNewCurator({ city: "", branch: "", curatorName: "" });
+    setNewCurator({ city: "", branch: "" });
     setNewContract({ type: "cooperation", hasContract: false, contractFile: "" });
   };
   
@@ -1825,19 +1988,6 @@ export default function UniversitiesPage() {
   const handleCreateUniversity = () => {
     // Проверка обязательных полей
     if (!universityFormData.name.trim() || !universityFormData.city.trim()) {
-      return;
-    }
-    
-    // Проверка наличия хотя бы одной линии сотрудничества
-    if (universityFormData.cooperationLines.length === 0) {
-      return;
-    }
-    
-    // Проверка, что у каждой линии заполнены обязательные поля
-    const hasInvalidLines = universityFormData.cooperationLines.some(
-      line => !line.line || !line.year || line.responsible.length === 0
-    );
-    if (hasInvalidLines) {
       return;
     }
     
@@ -1935,26 +2085,25 @@ export default function UniversitiesPage() {
       region: "",
       description: "",
     });
-    setNewCurator({ city: "", branch: "", curatorName: "" });
+    setNewCurator({ city: "", branch: "" });
     setNewContract({ type: "cooperation", hasContract: false, contractFile: "" });
   };
   
   // Добавление куратора
   const handleAddCurator = () => {
-    if (!newCurator.city.trim() || !newCurator.branch.trim() || !newCurator.curatorName.trim()) {
+    if (!newCurator.city.trim() || !newCurator.branch.trim()) {
       return;
     }
     const curator: BranchCurator = {
       id: `curator-${Date.now()}`,
       city: newCurator.city.trim(),
       branch: newCurator.branch.trim(),
-      curatorName: newCurator.curatorName.trim(),
     };
     setUniversityFormData({
       ...universityFormData,
       branchCurators: [...universityFormData.branchCurators, curator],
     });
-    setNewCurator({ city: "", branch: "", curatorName: "" });
+    setNewCurator({ city: "", branch: "" });
   };
   
   // Удаление куратора
@@ -1967,14 +2116,17 @@ export default function UniversitiesPage() {
   
   // Добавление куратора для выбранного университета
   const handleAddCuratorForUniversity = (universityId: string) => {
-    if (!newCuratorForUniversity.city.trim() || !newCuratorForUniversity.branch.trim() || !newCuratorForUniversity.curatorName.trim()) {
+    if (!newCuratorForUniversity.city.trim() || !newCuratorForUniversity.branch.trim()) {
       return;
     }
     const curator: BranchCurator = {
       id: `curator-${Date.now()}`,
       city: newCuratorForUniversity.city.trim(),
       branch: newCuratorForUniversity.branch.trim(),
-      curatorName: newCuratorForUniversity.curatorName.trim(),
+      cooperationLines: newCuratorForUniversity.cooperationLines.length > 0 ? newCuratorForUniversity.cooperationLines : undefined,
+      cooperationStartYear: newCuratorForUniversity.cooperationLines.length > 0 
+        ? Math.min(...newCuratorForUniversity.cooperationLines.map(cl => cl.year))
+        : undefined,
     };
     const updatedUniversities = universities.map((u) =>
       u.id === universityId
@@ -1985,7 +2137,7 @@ export default function UniversitiesPage() {
         : u
     );
     setUniversities(updatedUniversities);
-    setNewCuratorForUniversity({ city: "", branch: "", curatorName: "" });
+    setNewCuratorForUniversity({ city: "", branch: "", cooperationLines: [] });
   };
   
   // Удаление куратора для выбранного университета
@@ -2003,7 +2155,7 @@ export default function UniversitiesPage() {
   
   // Обновление куратора для выбранного университета
   const handleUpdateCuratorForUniversity = (universityId: string, curatorId: string) => {
-    if (!editingCurator.city.trim() || !editingCurator.branch.trim() || !editingCurator.curatorName.trim()) {
+    if (!editingCurator.city.trim() || !editingCurator.branch.trim()) {
       return;
     }
     const updatedUniversities = universities.map((u) =>
@@ -2016,7 +2168,10 @@ export default function UniversitiesPage() {
                     ...c,
                     city: editingCurator.city.trim(),
                     branch: editingCurator.branch.trim(),
-                    curatorName: editingCurator.curatorName.trim(),
+                    cooperationLines: editingCurator.cooperationLines.length > 0 ? editingCurator.cooperationLines : undefined,
+                    cooperationStartYear: editingCurator.cooperationLines.length > 0
+                      ? Math.min(...editingCurator.cooperationLines.map(cl => cl.year))
+                      : undefined,
                   }
                 : c
             ),
@@ -2025,7 +2180,7 @@ export default function UniversitiesPage() {
     );
     setUniversities(updatedUniversities);
     setEditingCuratorId(null);
-    setEditingCurator({ city: "", branch: "", curatorName: "" });
+    setEditingCurator({ city: "", branch: "", cooperationLines: [] });
   };
   
   // Начало редактирования куратора
@@ -2034,14 +2189,190 @@ export default function UniversitiesPage() {
     setEditingCurator({
       city: curator.city,
       branch: curator.branch,
-      curatorName: curator.curatorName,
+      cooperationLines: curator.cooperationLines || [],
     });
   };
   
   // Отмена редактирования куратора
   const handleCancelEditingCurator = () => {
     setEditingCuratorId(null);
-    setEditingCurator({ city: "", branch: "", curatorName: "" });
+    setEditingCurator({ city: "", branch: "", cooperationLines: [] });
+  };
+  
+  // Добавление линии сотрудничества в филиал
+  const handleAddCooperationLineToBranch = (universityId: string, branchId: string) => {
+    if (!selectedBranchId) return;
+    
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            branchCurators: (u.branchCurators || []).map((c) =>
+              c.id === branchId
+                ? {
+                    ...c,
+                    cooperationLines: [
+                      ...(c.cooperationLines || []),
+                      newCooperationLineForBranch,
+                    ],
+                  }
+                : c
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+    setIsCooperationLineDialogOpen(false);
+    setSelectedBranchId(null);
+    setNewCooperationLineForBranch({
+      id: `clr-${Date.now()}`,
+      line: "drp",
+      year: new Date().getFullYear(),
+      responsible: [],
+    });
+  };
+  
+  // Удаление линии сотрудничества из филиала
+  const handleRemoveCooperationLineFromBranch = (universityId: string, branchId: string, lineId: string) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            branchCurators: (u.branchCurators || []).map((c) =>
+              c.id === branchId
+                ? {
+                    ...c,
+                    cooperationLines: (c.cooperationLines || []).filter((cl) => cl.id !== lineId),
+                  }
+                : c
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+  };
+  
+  // Редактирование линии сотрудничества в филиале
+  const [editingCooperationLine, setEditingCooperationLine] = useState<{ universityId: string; branchId: string; lineId: string } | null>(null);
+  const handleEditCooperationLineInBranch = (universityId: string, branchId: string, lineId: string) => {
+    const university = universities.find(u => u.id === universityId);
+    const branch = university?.branchCurators?.find(c => c.id === branchId);
+    const line = branch?.cooperationLines?.find(cl => cl.id === lineId);
+    
+    if (line) {
+      setEditingCooperationLine({ universityId, branchId, lineId });
+      setNewCooperationLineForBranch({ ...line });
+      setSelectedBranchId(branchId);
+      setIsCooperationLineDialogOpen(true);
+    }
+  };
+  
+  // Сохранение изменений линии сотрудничества в филиале
+  const handleSaveCooperationLineInBranch = () => {
+    if (!editingCooperationLine || !selectedBranchId) return;
+    
+    const updatedUniversities = universities.map((u) =>
+      u.id === editingCooperationLine.universityId
+        ? {
+            ...u,
+            branchCurators: (u.branchCurators || []).map((c) =>
+              c.id === editingCooperationLine.branchId
+                ? {
+                    ...c,
+                    cooperationLines: (c.cooperationLines || []).map((cl) =>
+                      cl.id === editingCooperationLine.lineId ? newCooperationLineForBranch : cl
+                    ),
+                  }
+                : c
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+    setIsCooperationLineDialogOpen(false);
+    setEditingCooperationLine(null);
+    setSelectedBranchId(null);
+    setNewCooperationLineForBranch({
+      id: `clr-${Date.now()}`,
+      line: "drp",
+      year: new Date().getFullYear(),
+      responsible: [],
+    });
+  };
+  
+  // Добавление линии сотрудничества для головного ВУЗа
+  const handleAddCooperationLineToMain = (universityId: string) => {
+    if (!selectedUniversity) return;
+    
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            cooperationLines: [
+              ...(u.cooperationLines || []),
+              newCooperationLineForMain,
+            ],
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+    setIsMainCooperationLineDialogOpen(false);
+    setNewCooperationLineForMain({
+      id: `clr-${Date.now()}`,
+      line: "drp",
+      year: new Date().getFullYear(),
+      responsible: [],
+    });
+  };
+  
+  // Удаление линии сотрудничества из головного ВУЗа
+  const handleRemoveCooperationLineFromMain = (universityId: string, lineId: string) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            cooperationLines: (u.cooperationLines || []).filter((cl) => cl.id !== lineId),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+  };
+  
+  // Редактирование линии сотрудничества в головном ВУЗе
+  const handleEditCooperationLineInMain = (universityId: string, lineId: string) => {
+    const university = universities.find(u => u.id === universityId);
+    const line = university?.cooperationLines?.find(cl => cl.id === lineId);
+    
+    if (line) {
+      setEditingMainCooperationLine({ universityId, lineId });
+      setNewCooperationLineForMain({ ...line });
+      setIsMainCooperationLineDialogOpen(true);
+    }
+  };
+  
+  // Сохранение изменений линии сотрудничества в головном ВУЗе
+  const handleSaveCooperationLineInMain = () => {
+    if (!editingMainCooperationLine || !selectedUniversity) return;
+    
+    const updatedUniversities = universities.map((u) =>
+      u.id === editingMainCooperationLine.universityId
+        ? {
+            ...u,
+            cooperationLines: (u.cooperationLines || []).map((cl) =>
+              cl.id === editingMainCooperationLine.lineId ? newCooperationLineForMain : cl
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+    setIsMainCooperationLineDialogOpen(false);
+    setEditingMainCooperationLine(null);
+    setNewCooperationLineForMain({
+      id: `clr-${Date.now()}`,
+      line: "drp",
+      year: new Date().getFullYear(),
+      responsible: [],
+    });
   };
   
   // Добавление договора
@@ -3052,7 +3383,7 @@ export default function UniversitiesPage() {
                             )}
                             {university.inn && (
                               <CardDescription className="text-sm text-muted-foreground mt-0.5">
-                                ИНН: {university.inn}
+                                ИНН: {university.inn} {university.city && `• ${university.city}`}
                               </CardDescription>
                             )}
                             {university.targetAudience && (
@@ -3156,62 +3487,84 @@ export default function UniversitiesPage() {
                         </TabsList>
                         
                         {/* Таб 1: Общая информация */}
-                        <TabsContent value="general" className="mt-2 space-y-2">
-
-                          {/* Линии сотрудничества */}
-                          {((university.cooperationLines && university.cooperationLines.length > 0) || university.cooperationLine) && (
-                            <>
-                              <div className="space-y-4">
-                                <div className="flex items-center gap-2 text-base font-semibold">
-                                  <Handshake className="h-4 w-4" />
-                                  Линии сотрудничества
-                                </div>
+                        <TabsContent value="general" className="space-y-4 mt-4">
+                          <Tabs value={generalSubTab} onValueChange={(v) => setGeneralSubTab(v as typeof generalSubTab)} className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                              <TabsTrigger value="main">Головной ВУЗ</TabsTrigger>
+                              <TabsTrigger value="branches">Филиалы ВУЗа</TabsTrigger>
+                            </TabsList>
+                            
+                            {/* Подтаб: Головной ВУЗ */}
+                            <TabsContent value="main" className="space-y-4 mt-4">
+                              {/* Линии сотрудничества */}
+                              {((university.cooperationLines && university.cooperationLines.length > 0) || university.cooperationLine) ? (
+                                <div className="space-y-4">
                                 {/* Новый формат: список записей линий сотрудничества */}
                                 {university.cooperationLines && university.cooperationLines.length > 0 ? (
                                   <div className="space-y-3">
                                     {university.cooperationLines.map((record, index) => (
                                       <Card key={record.id || index} className="p-3">
-                                        <div className="flex-1 space-y-1.5">
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            <Badge variant="outline" className={`text-xs ${getCooperationLineBadgeColor(record.line)}`}>
-                                              {getCooperationLineLabel(record.line)}
-                                            </Badge>
-                                            <div className="flex items-center gap-2">
-                                              <Label className="text-sm text-muted-foreground">Год начала сотрудничества:</Label>
-                                              <span className="text-base font-medium text-foreground">{record.year}</span>
-                                            </div>
-                                          </div>
-                                          {record.responsible && record.responsible.length > 0 && (
-                                            <div className="flex items-center gap-2">
-                                              <Label className="text-sm font-semibold">Ответственное лицо:</Label>
-                                              <div className="flex flex-wrap gap-3">
-                                                {record.responsible.map((personId, personIndex) => {
-                                                  const person = responsiblePersons.find(p => p.value === personId);
-                                                  return person ? (
-                                                    <div key={personIndex} className="flex items-center gap-2">
-                                                      <Avatar className="h-10 w-10">
-                                                        <AvatarImage src={person.image} alt={person.label} />
-                                                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                                          {person.label.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
-                                                        </AvatarFallback>
-                                                      </Avatar>
-                                                      <div className="flex flex-col">
-                                                        <span className="text-sm font-medium">{person.label}</span>
-                                                        <span className="text-xs text-muted-foreground">{person.position}</span>
-                                                      </div>
-                                                    </div>
-                                                  ) : null;
-                                                })}
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="flex-1 space-y-1.5">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <Badge variant="outline" className={`text-xs ${getCooperationLineBadgeColor(record.line)}`}>
+                                                {getCooperationLineLabel(record.line)}
+                                              </Badge>
+                                              <div className="flex items-center gap-2">
+                                                <Label className="text-sm text-muted-foreground">Год начала сотрудничества:</Label>
+                                                <span className="text-base font-medium text-foreground">{record.year}</span>
                                               </div>
                                             </div>
-                                          )}
+                                            {record.responsible && record.responsible.length > 0 && (
+                                              <div className="flex items-center gap-2">
+                                                <Label className="text-sm font-semibold">Ответственное лицо:</Label>
+                                                <div className="flex flex-wrap gap-3">
+                                                  {record.responsible.map((personId, personIndex) => {
+                                                    const person = responsiblePersons.find(p => p.value === personId);
+                                                    return person ? (
+                                                      <div key={personIndex} className="flex items-center gap-2">
+                                                        <Avatar className="h-10 w-10">
+                                                          <AvatarImage src={person.image} alt={person.label} />
+                                                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                                            {person.label.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
+                                                          </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex flex-col">
+                                                          <span className="text-sm font-medium">{person.label}</span>
+                                                          <span className="text-xs text-muted-foreground">{person.position}</span>
+                                                        </div>
+                                                      </div>
+                                                    ) : null;
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="flex gap-1 shrink-0">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0 shrink-0"
+                                              onClick={() => handleEditCooperationLineInMain(university.id, record.id)}
+                                            >
+                                              <Pencil className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0 shrink-0"
+                                              onClick={() => handleRemoveCooperationLineFromMain(university.id, record.id)}
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                            </Button>
+                                          </div>
                                         </div>
                                       </Card>
                                     ))}
                                   </div>
-                                  ) : (
-                                    /* Старый формат: для обратной совместимости */
-                                    <Card className="p-3">
+                                ) : (
+                                  /* Старый формат: для обратной совместимости */
+                                  <Card className="p-3">
                                       <div className="flex-1 space-y-1.5">
                                         {university.cooperationLine && (
                                           <div className="flex items-center gap-2 flex-wrap">
@@ -3277,18 +3630,56 @@ export default function UniversitiesPage() {
                                         </div>
                                       </div>
                                     </Card>
-                                  )}
-                              </div>
-                            </>
-                          )}
-
-                          {/* Филиалы ВУЗа */}
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-base font-semibold">
-                              <Building2 className="h-4 w-4" />
-                              Филиалы ВУЗа
-                            </div>
-                            <div className="space-y-3">
+                                )}
+                                <div className="flex items-center justify-end w-full">
+                                  <Button
+                                    onClick={() => {
+                                      setNewCooperationLineForMain({
+                                        id: `clr-${Date.now()}`,
+                                        line: "drp",
+                                        year: new Date().getFullYear(),
+                                        responsible: [],
+                                      });
+                                      setEditingMainCooperationLine(null);
+                                      setIsMainCooperationLineDialogOpen(true);
+                                    }}
+                                    size="sm"
+                                    disabled={!selectedUniversity}
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Добавить линию сотрудничества
+                                  </Button>
+                                </div>
+                                </div>
+                              ) : (
+                                <Card className="p-3">
+                                  <p className="text-sm text-muted-foreground text-center">Линии сотрудничества не добавлены</p>
+                                  <div className="flex items-center justify-end w-full mt-3">
+                                    <Button
+                                      onClick={() => {
+                                        setNewCooperationLineForMain({
+                                          id: `clr-${Date.now()}`,
+                                          line: "drp",
+                                          year: new Date().getFullYear(),
+                                          responsible: [],
+                                        });
+                                        setEditingMainCooperationLine(null);
+                                        setIsMainCooperationLineDialogOpen(true);
+                                      }}
+                                      size="sm"
+                                      disabled={!selectedUniversity}
+                                    >
+                                      <Plus className="mr-2 h-4 w-4" />
+                                      Добавить линию сотрудничества
+                                    </Button>
+                                  </div>
+                                </Card>
+                              )}
+                            </TabsContent>
+                            
+                            {/* Подтаб: Филиалы ВУЗа */}
+                            <TabsContent value="branches" className="space-y-4 mt-4">
+                              <div className="space-y-3">
                                 {university.branchCurators && university.branchCurators.length > 0 ? (
                                   <>
                                     {university.branchCurators.map((curator) => (
@@ -3316,15 +3707,101 @@ export default function UniversitiesPage() {
                                                   className="h-9"
                                                 />
                                               </div>
-                                              <div className="space-y-1">
-                                                <Label htmlFor={`edit-curator-name-${curator.id}`} className="text-xs text-muted-foreground">Куратор</Label>
-                                                <Input
-                                                  id={`edit-curator-name-${curator.id}`}
-                                                  placeholder="Иванов И.И."
-                                                  value={editingCurator.curatorName}
-                                                  onChange={(e) => setEditingCurator({ ...editingCurator, curatorName: e.target.value })}
-                                                  className="h-9"
-                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label className="text-xs text-muted-foreground">Линии сотрудничества (максимум 3)</Label>
+                                              <div className="space-y-3">
+                                                {editingCurator.cooperationLines.map((record, index) => (
+                                                  <div key={record.id} className="p-3 border rounded-lg space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                      <Select
+                                                        value={record.line}
+                                                        onValueChange={(value) => {
+                                                          const updated = editingCurator.cooperationLines.map((r, i) =>
+                                                            i === index ? { ...r, line: value as CooperationLine } : r
+                                                          );
+                                                          setEditingCurator({ ...editingCurator, cooperationLines: updated });
+                                                        }}
+                                                      >
+                                                        <SelectTrigger className="flex-1 h-9">
+                                                          <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                          {cooperationLines.map((line) => (
+                                                            <SelectItem key={line.value} value={line.value}>
+                                                              {line.label}
+                                                            </SelectItem>
+                                                          ))}
+                                                        </SelectContent>
+                                                      </Select>
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => {
+                                                          const updated = editingCurator.cooperationLines.filter((_, i) => i !== index);
+                                                          setEditingCurator({ ...editingCurator, cooperationLines: updated });
+                                                        }}
+                                                        className="h-9 w-9"
+                                                      >
+                                                        <X className="h-4 w-4" />
+                                                      </Button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                      <div className="space-y-1">
+                                                        <Label className="text-xs text-muted-foreground">Год начала</Label>
+                                                        <Input
+                                                          type="number"
+                                                          value={record.year}
+                                                          onChange={(e) => {
+                                                            const updated = editingCurator.cooperationLines.map((r, i) =>
+                                                              i === index ? { ...r, year: parseInt(e.target.value) || new Date().getFullYear() } : r
+                                                            );
+                                                            setEditingCurator({ ...editingCurator, cooperationLines: updated });
+                                                          }}
+                                                          placeholder={String(new Date().getFullYear())}
+                                                          className="h-9"
+                                                        />
+                                                      </div>
+                                                      <div className="space-y-1">
+                                                        <Label className="text-xs text-muted-foreground">Ответственное лицо</Label>
+                                                        <MultiSelect
+                                                          options={responsiblePersons.map(p => ({ value: p.value, label: p.label }))}
+                                                          selected={record.responsible}
+                                                          onChange={(selected) => {
+                                                            const updated = editingCurator.cooperationLines.map((r, i) =>
+                                                              i === index ? { ...r, responsible: selected } : r
+                                                            );
+                                                            setEditingCurator({ ...editingCurator, cooperationLines: updated });
+                                                          }}
+                                                          placeholder="Выберите ответственное лицо"
+                                                        />
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                                {editingCurator.cooperationLines.length < 3 && (
+                                                  <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                      const newRecord: CooperationLineRecord = {
+                                                        id: `clr-${Date.now()}`,
+                                                        line: "drp",
+                                                        year: new Date().getFullYear(),
+                                                        responsible: [],
+                                                      };
+                                                      setEditingCurator({
+                                                        ...editingCurator,
+                                                        cooperationLines: [...editingCurator.cooperationLines, newRecord],
+                                                      });
+                                                    }}
+                                                    className="w-full"
+                                                  >
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    Добавить линию
+                                                  </Button>
+                                                )}
                                               </div>
                                             </div>
                                             <div className="flex items-center gap-2 justify-end">
@@ -3339,107 +3816,193 @@ export default function UniversitiesPage() {
                                                 variant="default"
                                                 size="sm"
                                                 onClick={() => handleUpdateCuratorForUniversity(university.id, curator.id)}
-                                                disabled={!editingCurator.city.trim() || !editingCurator.branch.trim() || !editingCurator.curatorName.trim()}
+                                                disabled={!editingCurator.city.trim() || !editingCurator.branch.trim()}
                                               >
                                                 Сохранить
                                               </Button>
                                             </div>
                                           </div>
                                         ) : (
-                                          <div className="flex items-start justify-between gap-3">
-                                            <div className="flex items-start gap-2 flex-1 min-w-0">
-                                              <Avatar className="h-10 w-10 flex-shrink-0">
-                                                <AvatarImage src={curator.image} alt={curator.curatorName} />
-                                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                                  {curator.curatorName.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
-                                                </AvatarFallback>
-                                              </Avatar>
-                                              <div className="flex-1 min-w-0 space-y-1.5">
-                                                <p className="text-sm font-medium">{curator.curatorName}</p>
-                                                <p className="text-xs text-muted-foreground">{curator.city} - {curator.branch}</p>
+                                          <>
+                                            <div className="flex items-start justify-between gap-3">
+                                              <div className="flex-1">
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 shrink-0"
+                                                    onClick={() => {
+                                                      const newCollapsed = new Set(collapsedBranches);
+                                                      if (newCollapsed.has(curator.id)) {
+                                                        newCollapsed.delete(curator.id);
+                                                      } else {
+                                                        newCollapsed.add(curator.id);
+                                                      }
+                                                      setCollapsedBranches(newCollapsed);
+                                                    }}
+                                                    title={collapsedBranches.has(curator.id) ? "Развернуть" : "Свернуть"}
+                                                  >
+                                                    {collapsedBranches.has(curator.id) ? (
+                                                      <ChevronRight className="h-3.5 w-3.5" />
+                                                    ) : (
+                                                      <ChevronDown className="h-3.5 w-3.5" />
+                                                    )}
+                                                  </Button>
+                                                  <Badge variant="secondary" className="text-sm font-semibold px-3 py-1.5 flex items-center gap-1.5 bg-primary/10 text-primary border-primary/20">
+                                                    <Building2 className="h-4 w-4" />
+                                                    <span className="text-sm text-muted-foreground font-normal">Филиал:</span>
+                                                    <span className="text-base font-bold">{curator.branch}</span>
+                                                  </Badge>
+                                                  <Separator orientation="vertical" className="h-6" />
+                                                  <Badge variant="secondary" className="text-sm font-semibold px-3 py-1.5 flex items-center gap-1.5 bg-primary/10 text-primary border-primary/20">
+                                                    <MapPin className="h-4 w-4" />
+                                                    <span className="text-sm text-muted-foreground font-normal">Город:</span>
+                                                    <span className="text-base font-bold">{curator.city}</span>
+                                                  </Badge>
+                                                  {curator.cooperationLines && curator.cooperationLines.length > 0 && (
+                                                    <>
+                                                      <Separator orientation="vertical" className="h-6" />
+                                                      <div className="flex items-center gap-2 flex-wrap">
+                                                        {curator.cooperationLines.map((record, idx) => (
+                                                          <Badge key={record.id || idx} variant="outline" className={`text-xs ${getCooperationLineBadgeColor(record.line)}`}>
+                                                            {getCooperationLineLabel(record.line)}
+                                                          </Badge>
+                                                        ))}
+                                                      </div>
+                                                    </>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              <div className="flex gap-1 shrink-0">
+                                                {(!curator.cooperationLines || curator.cooperationLines.length < 3) && (
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 shrink-0"
+                                                    onClick={() => {
+                                                      setSelectedBranchId(curator.id);
+                                                      setNewCooperationLineForBranch({
+                                                        id: `clr-${Date.now()}`,
+                                                        line: "drp",
+                                                        year: new Date().getFullYear(),
+                                                        responsible: [],
+                                                      });
+                                                      setIsCooperationLineDialogOpen(true);
+                                                    }}
+                                                    title="Добавить линию сотрудничества"
+                                                  >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                  </Button>
+                                                )}
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-8 w-8 p-0 shrink-0"
+                                                  onClick={() => handleStartEditingCurator(curator)}
+                                                  title="Редактировать"
+                                                >
+                                                  <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-8 w-8 p-0 shrink-0"
+                                                  onClick={() => handleRemoveCuratorForUniversity(university.id, curator.id)}
+                                                  title="Удалить"
+                                                >
+                                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                                </Button>
                                               </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleStartEditingCurator(curator)}
-                                                className="h-8 w-8 text-muted-foreground hover:text-primary shrink-0"
-                                                title="Редактировать"
-                                              >
-                                                <Pencil className="h-4 w-4" />
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleRemoveCuratorForUniversity(university.id, curator.id)}
-                                                className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                                                title="Удалить"
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                            </div>
-                                          </div>
+                                            {!collapsedBranches.has(curator.id) && curator.cooperationLines && curator.cooperationLines.length > 0 && (
+                                              <div className="space-y-3 mt-3 pt-3 border-t">
+                                                {curator.cooperationLines.map((record, idx) => (
+                                                  <Card key={record.id || idx} className="p-3">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                      <div className="flex-1 space-y-1.5">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                          <Badge variant="outline" className={`text-xs ${getCooperationLineBadgeColor(record.line)}`}>
+                                                            {getCooperationLineLabel(record.line)}
+                                                          </Badge>
+                                                          <div className="flex items-center gap-2">
+                                                            <Label className="text-sm text-muted-foreground">Год начала сотрудничества:</Label>
+                                                            <span className="text-base font-medium text-foreground">{record.year}</span>
+                                                          </div>
+                                                        </div>
+                                                        {record.responsible && record.responsible.length > 0 && (
+                                                          <div className="flex items-center gap-2">
+                                                            <Label className="text-sm font-semibold">Ответственное лицо:</Label>
+                                                            <div className="flex flex-wrap gap-3">
+                                                              {record.responsible.map((personId, personIndex) => {
+                                                                const person = responsiblePersons.find(p => p.value === personId);
+                                                                return person ? (
+                                                                  <div key={personIndex} className="flex items-center gap-2">
+                                                                    <Avatar className="h-10 w-10">
+                                                                      <AvatarImage src={person.image} alt={person.label} />
+                                                                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                                                        {person.label.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
+                                                                      </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="flex flex-col">
+                                                                      <span className="text-sm font-medium">{person.label}</span>
+                                                                      <span className="text-xs text-muted-foreground">{person.position}</span>
+                                                                    </div>
+                                                                  </div>
+                                                                ) : null;
+                                                              })}
+                                                            </div>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                      <div className="flex gap-1 shrink-0">
+                                                        <Button
+                                                          variant="ghost"
+                                                          size="sm"
+                                                          className="h-8 w-8 p-0 shrink-0"
+                                                          onClick={() => handleEditCooperationLineInBranch(university.id, curator.id, record.id)}
+                                                        >
+                                                          <Pencil className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button
+                                                          variant="ghost"
+                                                          size="sm"
+                                                          className="h-8 w-8 p-0 shrink-0"
+                                                          onClick={() => handleRemoveCooperationLineFromBranch(university.id, curator.id, record.id)}
+                                                        >
+                                                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                                        </Button>
+                                                      </div>
+                                                    </div>
+                                                  </Card>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </>
                                         )}
                                       </Card>
                                     ))}
                                   </>
                                 ) : (
                                   <Card className="p-3">
-                                    <p className="text-sm text-muted-foreground text-center">Кураторы от филиалов не добавлены</p>
+                                    <p className="text-sm text-muted-foreground text-center">Филиалы ВУЗа не добавлены</p>
                                   </Card>
                                 )}
                                 
-                                <Card className="p-3">
-                                  <div className="flex-1 space-y-1.5">
-                                    <Label className="text-sm font-semibold">Добавить филиал</Label>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                      <div className="space-y-1">
-                                        <Label htmlFor="curator-city" className="text-xs text-muted-foreground">Город</Label>
-                                        <Input
-                                          id="curator-city"
-                                          placeholder="Москва"
-                                          value={newCuratorForUniversity.city}
-                                          onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, city: e.target.value })}
-                                          className="h-9"
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor="curator-branch" className="text-xs text-muted-foreground">Филиал</Label>
-                                        <Input
-                                          id="curator-branch"
-                                          placeholder="Московский филиал"
-                                          value={newCuratorForUniversity.branch}
-                                          onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, branch: e.target.value })}
-                                          className="h-9"
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor="curator-name" className="text-xs text-muted-foreground">Куратор</Label>
-                                        <div className="flex gap-2">
-                                          <Input
-                                            id="curator-name"
-                                            placeholder="Иванов И.И."
-                                            value={newCuratorForUniversity.curatorName}
-                                            onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, curatorName: e.target.value })}
-                                            className="flex-1 h-9"
-                                          />
-                                          <Button
-                                            variant="default"
-                                            size="icon"
-                                            onClick={() => handleAddCuratorForUniversity(university.id)}
-                                            disabled={!newCuratorForUniversity.city.trim() || !newCuratorForUniversity.branch.trim() || !newCuratorForUniversity.curatorName.trim()}
-                                            className="shrink-0 h-9 w-9"
-                                          >
-                                            <Plus className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </Card>
-                            </div>
-                          </div>
+                                <div className="flex items-center justify-end w-full">
+                                  <Button
+                                    onClick={() => {
+                                      setNewCuratorForUniversity({ city: "", branch: "", cooperationLines: [] });
+                                      setIsBranchDialogOpen(true);
+                                    }}
+                                    size="sm"
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Добавить филиал
+                                  </Button>
+                                </div>
+                              </div>
+                            </TabsContent>
+                          </Tabs>
                         </TabsContent>
 
                         {/* Таб 2: Договорная база */}
@@ -5653,7 +6216,8 @@ export default function UniversitiesPage() {
             region: "",
                 description: "",
               });
-          setNewCurator({ city: "", branch: "", curatorName: "" });
+          setNewCurator({ city: "", branch: "" });
+          setNewCuratorForUniversity({ city: "", branch: "", cooperationLines: [] });
           setNewContract({ type: "cooperation", hasContract: false, contractFile: "" });
             }
           }}>
@@ -5733,127 +6297,6 @@ export default function UniversitiesPage() {
                       />
                     </div>
                         </div>
-
-                        {/* Линии сотрудничества */}
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between pb-2 border-b">
-                            <div className="flex items-center gap-2">
-                              <Handshake className="h-4 w-4 text-muted-foreground" />
-                              <Label className="text-base font-semibold">Линии сотрудничества</Label>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const newRecord: CooperationLineRecord = {
-                                  id: `clr-${Date.now()}`,
-                                  line: "drp",
-                                  year: new Date().getFullYear(),
-                                  responsible: [],
-                                };
-                                setUniversityFormData({
-                                  ...universityFormData,
-                                  cooperationLines: [...universityFormData.cooperationLines, newRecord],
-                                });
-                              }}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Добавить линию
-                            </Button>
-                          </div>
-                          
-                          {universityFormData.cooperationLines.length === 0 ? (
-                            <div className="text-sm text-muted-foreground py-4 text-center">
-                              Нет добавленных линий сотрудничества. Нажмите "Добавить линию" для создания новой записи.
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              {universityFormData.cooperationLines.map((record, index) => (
-                                <div key={record.id} className="p-4 border rounded-lg space-y-4">
-                                  <div className="flex items-center justify-between">
-                                    <Label className="text-sm font-medium">Линия сотрудничества {index + 1}</Label>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setUniversityFormData({
-                                          ...universityFormData,
-                                          cooperationLines: universityFormData.cooperationLines.filter(r => r.id !== record.id),
-                                        });
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                  </div>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <Label>Линия сотрудничества <span className="text-destructive">*</span></Label>
-                                      <Select
-                                        value={record.line}
-                                        onValueChange={(value) => {
-                                          const updated = universityFormData.cooperationLines.map(r =>
-                                            r.id === record.id ? { ...r, line: value as CooperationLine } : r
-                                          );
-                                          setUniversityFormData({
-                                            ...universityFormData,
-                                            cooperationLines: updated,
-                                          });
-                                        }}
-                                      >
-                                        <SelectTrigger className="w-full">
-                                          <SelectValue placeholder="Выберите линию" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="drp">ДРП</SelectItem>
-                                          <SelectItem value="bko">БКО</SelectItem>
-                                          <SelectItem value="cntr">ЦНТР</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label>Год начала сотрудничества <span className="text-destructive">*</span></Label>
-                                      <Input
-                                        type="number"
-                                        value={record.year}
-                                        onChange={(e) => {
-                                          const updated = universityFormData.cooperationLines.map(r =>
-                                            r.id === record.id ? { ...r, year: parseInt(e.target.value) || new Date().getFullYear() } : r
-                                          );
-                                          setUniversityFormData({
-                                            ...universityFormData,
-                                            cooperationLines: updated,
-                                          });
-                                        }}
-                                        placeholder="2024"
-                                      />
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label>Ответственное лицо по линии <span className="text-destructive">*</span></Label>
-                                    <MultiSelect
-                                      options={responsiblePersons}
-                                      selected={record.responsible}
-                                      onChange={(selected) => {
-                                        const updated = universityFormData.cooperationLines.map(r =>
-                                          r.id === record.id ? { ...r, responsible: selected } : r
-                                        );
-                                        setUniversityFormData({
-                                          ...universityFormData,
-                                          cooperationLines: updated,
-                                        });
-                                      }}
-                                      placeholder="Выберите ответственных лиц"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
                       </div>
                   </div>
 
@@ -5866,11 +6309,7 @@ export default function UniversitiesPage() {
                       onClick={handleCreateUniversity}
                       disabled={
                         !universityFormData.name.trim() ||
-                        !universityFormData.city.trim() ||
-                        universityFormData.cooperationLines.length === 0 ||
-                        universityFormData.cooperationLines.some(
-                          line => !line.line || !line.year || line.responsible.length === 0
-                        )
+                        !universityFormData.city.trim()
                       }
                       size="sm"
                     >
@@ -6199,6 +6638,260 @@ export default function UniversitiesPage() {
           </AlertDialog>
 
           {/* Диалог истории изменений университета */}
+          {/* Модальное окно для добавления филиала */}
+          <Dialog open={isBranchDialogOpen} onOpenChange={(open) => {
+            setIsBranchDialogOpen(open);
+            if (!open) {
+              setNewCuratorForUniversity({ city: "", branch: "", cooperationLines: [] });
+            }
+          }}>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Добавить филиал</DialogTitle>
+                <DialogDescription>
+                  Заполните информацию о филиале
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dialog-curator-city">Город</Label>
+                    <Input
+                      id="dialog-curator-city"
+                      placeholder="Москва"
+                      value={newCuratorForUniversity.city}
+                      onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, city: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dialog-curator-branch">Филиал</Label>
+                    <Input
+                      id="dialog-curator-branch"
+                      placeholder="Московский филиал"
+                      value={newCuratorForUniversity.branch}
+                      onChange={(e) => setNewCuratorForUniversity({ ...newCuratorForUniversity, branch: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsBranchDialogOpen(false);
+                    setNewCuratorForUniversity({ city: "", branch: "", cooperationLines: [] });
+                  }}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedUniversity) {
+                      handleAddCuratorForUniversity(selectedUniversity);
+                      setIsBranchDialogOpen(false);
+                    }
+                  }}
+                  disabled={!newCuratorForUniversity.city.trim() || !newCuratorForUniversity.branch.trim() || !selectedUniversity}
+                >
+                  Добавить филиал
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Модальное окно для добавления/редактирования линии сотрудничества в филиале */}
+          <Dialog open={isCooperationLineDialogOpen} onOpenChange={(open) => {
+            setIsCooperationLineDialogOpen(open);
+            if (!open) {
+              setSelectedBranchId(null);
+              setEditingCooperationLine(null);
+              setNewCooperationLineForBranch({
+                id: `clr-${Date.now()}`,
+                line: "drp",
+                year: new Date().getFullYear(),
+                responsible: [],
+              });
+            }
+          }}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingCooperationLine ? "Редактировать линию сотрудничества" : "Добавить линию сотрудничества"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingCooperationLine ? "Внесите изменения в линию сотрудничества для филиала" : "Заполните информацию о линии сотрудничества для филиала"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Линия сотрудничества</Label>
+                  <Select
+                    value={newCooperationLineForBranch.line}
+                    onValueChange={(value) => setNewCooperationLineForBranch({ ...newCooperationLineForBranch, line: value as CooperationLine })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cooperationLines.map((line) => (
+                        <SelectItem key={line.value} value={line.value}>
+                          {line.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Год начала</Label>
+                    <Input
+                      type="number"
+                      value={newCooperationLineForBranch.year}
+                      onChange={(e) => setNewCooperationLineForBranch({ ...newCooperationLineForBranch, year: parseInt(e.target.value) || new Date().getFullYear() })}
+                      placeholder={String(new Date().getFullYear())}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ответственное лицо</Label>
+                    <MultiSelect
+                      options={responsiblePersons.map(p => ({ value: p.value, label: p.label }))}
+                      selected={newCooperationLineForBranch.responsible}
+                      onChange={(selected) => setNewCooperationLineForBranch({ ...newCooperationLineForBranch, responsible: selected })}
+                      placeholder="Выберите ответственное лицо"
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsCooperationLineDialogOpen(false);
+                    setSelectedBranchId(null);
+                    setEditingCooperationLine(null);
+                    setNewCooperationLineForBranch({
+                      id: `clr-${Date.now()}`,
+                      line: "drp",
+                      year: new Date().getFullYear(),
+                      responsible: [],
+                    });
+                  }}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedBranchId && selectedUniversity) {
+                      if (editingCooperationLine) {
+                        handleSaveCooperationLineInBranch();
+                      } else {
+                        handleAddCooperationLineToBranch(selectedUniversity, selectedBranchId);
+                      }
+                    }
+                  }}
+                >
+                  {editingCooperationLine ? "Сохранить изменения" : "Добавить линию"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Модальное окно для добавления/редактирования линии сотрудничества головного ВУЗа */}
+          <Dialog open={isMainCooperationLineDialogOpen} onOpenChange={(open) => {
+            setIsMainCooperationLineDialogOpen(open);
+            if (!open) {
+              setEditingMainCooperationLine(null);
+              setNewCooperationLineForMain({
+                id: `clr-${Date.now()}`,
+                line: "drp",
+                year: new Date().getFullYear(),
+                responsible: [],
+              });
+            }
+          }}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingMainCooperationLine ? "Редактировать линию сотрудничества" : "Добавить линию сотрудничества"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingMainCooperationLine ? "Внесите изменения в линию сотрудничества для головного ВУЗа" : "Заполните информацию о линии сотрудничества для головного ВУЗа"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Линия сотрудничества</Label>
+                  <Select
+                    value={newCooperationLineForMain.line}
+                    onValueChange={(value) => setNewCooperationLineForMain({ ...newCooperationLineForMain, line: value as CooperationLine })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cooperationLines.map((line) => (
+                        <SelectItem key={line.value} value={line.value}>
+                          {line.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Год начала</Label>
+                    <Input
+                      type="number"
+                      value={newCooperationLineForMain.year}
+                      onChange={(e) => setNewCooperationLineForMain({ ...newCooperationLineForMain, year: parseInt(e.target.value) || new Date().getFullYear() })}
+                      placeholder={String(new Date().getFullYear())}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ответственное лицо</Label>
+                    <MultiSelect
+                      options={responsiblePersons.map(p => ({ value: p.value, label: p.label }))}
+                      selected={newCooperationLineForMain.responsible}
+                      onChange={(selected) => setNewCooperationLineForMain({ ...newCooperationLineForMain, responsible: selected })}
+                      placeholder="Выберите ответственное лицо"
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsMainCooperationLineDialogOpen(false);
+                    setEditingMainCooperationLine(null);
+                    setNewCooperationLineForMain({
+                      id: `clr-${Date.now()}`,
+                      line: "drp",
+                      year: new Date().getFullYear(),
+                      responsible: [],
+                    });
+                  }}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedUniversity) {
+                      if (editingMainCooperationLine) {
+                        handleSaveCooperationLineInMain();
+                      } else {
+                        handleAddCooperationLineToMain(selectedUniversity);
+                      }
+                    }
+                  }}
+                  disabled={!selectedUniversity}
+                >
+                  {editingMainCooperationLine ? "Сохранить изменения" : "Добавить линию"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={universityHistoryDialogOpen} onOpenChange={setUniversityHistoryDialogOpen}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
