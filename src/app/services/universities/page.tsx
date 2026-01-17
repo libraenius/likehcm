@@ -85,13 +85,13 @@ interface BankDepartment {
 // Тип для мероприятия
 interface Event {
   id: string;
-  type: "careerDays" | "expertParticipation" | "caseChampionships" | "meeting"; // Тип мероприятия
+  type: "careerDays" | "expertParticipation" | "caseChampionships" | "meeting" | "communication"; // Тип мероприятия
   date: string; // Дата начала проведения
   endDate: string; // Дата окончания проведения
-  status: "planned" | "completed"; // Статус мероприятия
+  status: "planned" | "in_progress" | "completed"; // Статус мероприятия
   comments?: string; // Комментарии
-  responsiblePerson: string; // Ответственное лицо Банк
-  responsiblePersonImage?: string; // Фото ответственного лица
+  responsiblePerson: string[]; // Ответственные лица Банк (массив ID)
+  responsiblePersonImage?: string; // Фото ответтельного лица (устаревшее, для обратной совместимости)
 }
 
 // Тип для стажера
@@ -367,7 +367,7 @@ const mockUniversities: University[] = [
         date: "2024-02-10",
         endDate: "2024-02-12",
         status: "completed",
-        responsiblePerson: "Смирнов Андрей Викторович",
+        responsiblePerson: ["person-1"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
         comments: "Дни карьеры для студентов факультета вычислительной математики и кибернетики.",
       },
@@ -377,7 +377,7 @@ const mockUniversities: University[] = [
         date: "2024-06-15",
         endDate: "2024-06-15",
         status: "completed",
-        responsiblePerson: "Кузнецова Елена Сергеевна",
+        responsiblePerson: ["person-2"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
         comments: "Участие в качестве эксперта на защите магистерских диссертаций.",
       },
@@ -507,7 +507,7 @@ const mockUniversities: University[] = [
         date: "2024-03-20",
         endDate: "2024-03-22",
         status: "completed",
-        responsiblePerson: "Орлов Дмитрий Александрович",
+        responsiblePerson: ["person-3"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
         comments: "Дни карьеры для студентов экономического факультета СПбГУ.",
       },
@@ -517,7 +517,7 @@ const mockUniversities: University[] = [
         date: "2024-05-25",
         endDate: "2024-05-27",
         status: "completed",
-        responsiblePerson: "Белова Мария Игоревна",
+        responsiblePerson: ["person-4"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
         comments: "Кейс-чемпионат по финансовому моделированию.",
       },
@@ -604,7 +604,7 @@ const mockUniversities: University[] = [
         date: "2024-04-05",
         endDate: "2024-04-05",
         status: "completed",
-        responsiblePerson: "Григорьев Павел Сергеевич",
+        responsiblePerson: ["person-5"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
         comments: "Участие в качестве эксперта на конференции по машинному обучению.",
       },
@@ -614,7 +614,7 @@ const mockUniversities: University[] = [
         date: "2024-06-01",
         endDate: "2024-06-03",
         status: "completed",
-        responsiblePerson: "Тихонов Игорь Владимирович",
+        responsiblePerson: ["person-6"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face",
         comments: "Кейс-чемпионат по разработке финансовых алгоритмов.",
       },
@@ -624,7 +624,7 @@ const mockUniversities: University[] = [
         date: "2024-11-10",
         endDate: "2024-11-10",
         status: "planned",
-        responsiblePerson: "Соколова Анна Дмитриевна",
+        responsiblePerson: ["person-7"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
         comments: "Планируется участие в качестве эксперта на защите дипломных проектов.",
       },
@@ -783,7 +783,7 @@ const mockUniversities: University[] = [
         date: "2024-03-15",
         endDate: "2024-03-17",
         status: "completed",
-        responsiblePerson: "Иванов Иван Иванович",
+        responsiblePerson: ["person-1"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
         comments: "Проведены дни карьеры для студентов экономического факультета. Участвовало более 150 студентов.",
       },
@@ -793,7 +793,7 @@ const mockUniversities: University[] = [
         date: "2024-04-20",
         endDate: "2024-04-20",
         status: "completed",
-        responsiblePerson: "Петрова Мария Сергеевна",
+        responsiblePerson: ["person-2"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
         comments: "Участие в качестве эксперта на защите дипломных работ по направлению 'Финансы и кредит'.",
       },
@@ -803,7 +803,7 @@ const mockUniversities: University[] = [
         date: "2024-05-10",
         endDate: "2024-05-12",
         status: "completed",
-        responsiblePerson: "Сидоров Алексей Дмитриевич",
+        responsiblePerson: ["person-3"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
         comments: "Кейс-чемпионат по банковскому делу. Победила команда студентов 3 курса.",
       },
@@ -813,7 +813,7 @@ const mockUniversities: University[] = [
         date: "2024-09-25",
         endDate: "2024-09-27",
         status: "planned",
-        responsiblePerson: "Козлова Елена Владимировна",
+        responsiblePerson: ["person-4"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
         comments: "Запланированы дни карьеры для студентов IT-направления. Ожидается участие 200+ студентов.",
       },
@@ -823,7 +823,7 @@ const mockUniversities: University[] = [
         date: "2024-10-15",
         endDate: "2024-10-15",
         status: "planned",
-        responsiblePerson: "Волков Дмитрий Николаевич",
+        responsiblePerson: ["person-5"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
         comments: "Планируется участие в качестве эксперта на конференции по финансовым технологиям.",
       },
@@ -833,7 +833,7 @@ const mockUniversities: University[] = [
         date: "2024-11-20",
         endDate: "2024-11-22",
         status: "planned",
-        responsiblePerson: "Новикова Анна Петровна",
+        responsiblePerson: ["person-6"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
         comments: "Организация кейс-чемпионата по управлению рисками в банковской сфере.",
       },
@@ -843,7 +843,7 @@ const mockUniversities: University[] = [
         date: "2024-12-05",
         endDate: "2024-12-07",
         status: "planned",
-        responsiblePerson: "Морозов Сергей Александрович",
+        responsiblePerson: ["person-7"],
         responsiblePersonImage: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face",
         comments: "Дни карьеры для выпускников магистратуры. Фокус на карьерные возможности в банковском секторе.",
       },
@@ -2102,19 +2102,19 @@ export default function UniversitiesPage() {
     contractBranch: "",
   });
   const [newEvent, setNewEvent] = useState<{
-    type: "careerDays" | "expertParticipation" | "caseChampionships" | "meeting" | "";
+    type: "careerDays" | "expertParticipation" | "caseChampionships" | "meeting" | "communication" | "";
     date: string;
     endDate: string;
-    status: "planned" | "completed";
+    status: "planned" | "in_progress" | "completed";
     comments: string;
-    responsiblePerson: string;
+    responsiblePerson: string[];
   }>({
     type: "",
     date: "",
     endDate: "",
     status: "planned",
     comments: "",
-    responsiblePerson: "",
+    responsiblePerson: [],
   });
   
   // Состояние для модального окна добавления студентов
@@ -2695,17 +2695,17 @@ export default function UniversitiesPage() {
   
   // Добавление мероприятия
   const handleAddEvent = (universityId: string) => {
-    if (!newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || !newEvent.responsiblePerson.trim()) {
+    if (!newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || newEvent.responsiblePerson.length === 0) {
       return;
     }
     const event: Event = {
       id: `event-${Date.now()}`,
-      type: newEvent.type as "careerDays" | "expertParticipation" | "caseChampionships",
+      type: newEvent.type as "careerDays" | "expertParticipation" | "caseChampionships" | "meeting" | "communication",
       date: newEvent.date,
       endDate: newEvent.endDate,
       status: newEvent.status,
       comments: newEvent.comments.trim() || undefined,
-      responsiblePerson: newEvent.responsiblePerson.trim(),
+      responsiblePerson: newEvent.responsiblePerson,
     };
     const university = universities.find(u => u.id === universityId);
     if (university) {
@@ -2713,7 +2713,7 @@ export default function UniversitiesPage() {
       setUniversities(universities.map(u => 
         u.id === universityId ? { ...u, events: updatedEvents } : u
       ));
-      setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
+      setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: [] });
       setIsEventDialogOpen(false);
     }
   };
@@ -2738,21 +2738,21 @@ export default function UniversitiesPage() {
   
   // Сохранение изменений мероприятия
   const handleSaveEvent = () => {
-    if (!editingEvent || !newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || !newEvent.responsiblePerson.trim()) {
+    if (!editingEvent || !newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || newEvent.responsiblePerson.length === 0) {
       return;
     }
     const updatedEvents = universities
       .find(u => u.id === editingEvent.universityId)
       ?.events?.map(e => 
         e.id === editingEvent.event.id 
-          ? { ...e, type: newEvent.type as "careerDays" | "expertParticipation" | "caseChampionships", date: newEvent.date, endDate: newEvent.endDate, status: newEvent.status, comments: newEvent.comments.trim() || undefined, responsiblePerson: newEvent.responsiblePerson.trim() }
+          ? { ...e, type: newEvent.type as "careerDays" | "expertParticipation" | "caseChampionships" | "meeting" | "communication", date: newEvent.date, endDate: newEvent.endDate, status: newEvent.status, comments: newEvent.comments.trim() || undefined, responsiblePerson: newEvent.responsiblePerson }
           : e
       ) || [];
     setUniversities(universities.map(u => 
       u.id === editingEvent.universityId ? { ...u, events: updatedEvents } : u
     ));
     setEditingEvent(null);
-    setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
+    setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: [] });
     setIsEventDialogOpen(false);
   };
 
@@ -2913,8 +2913,8 @@ export default function UniversitiesPage() {
     const university = universities.find(u => u.id === universityId);
     if (!university || !university.events) {
     return {
-        byType: { careerDays: 0, expertParticipation: 0, caseChampionships: 0, meeting: 0 },
-        byStatus: { planned: 0, completed: 0 },
+        byType: { careerDays: 0, expertParticipation: 0, caseChampionships: 0, meeting: 0, communication: 0 },
+        byStatus: { planned: 0, in_progress: 0, completed: 0 },
         total: 0,
       };
     }
@@ -2923,9 +2923,11 @@ export default function UniversitiesPage() {
       expertParticipation: university.events.filter(e => e.type === "expertParticipation").length,
       caseChampionships: university.events.filter(e => e.type === "caseChampionships").length,
       meeting: university.events.filter(e => e.type === "meeting").length,
+      communication: university.events.filter(e => e.type === "communication").length,
     };
     const byStatus = {
       planned: university.events.filter(e => e.status === "planned").length,
+      in_progress: university.events.filter(e => e.status === "in_progress").length,
       completed: university.events.filter(e => e.status === "completed").length,
     };
     return {
@@ -4564,7 +4566,7 @@ export default function UniversitiesPage() {
                                               <div className="flex items-start gap-2">
                                                 <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                                                 <span className="text-muted-foreground whitespace-nowrap">Дата:</span>
-                                                <span className="font-medium">{contract.date}</span>
+                                                <span className="font-medium">{formatDateToDDMMYYYY(contract.date)}</span>
                                               </div>
                                             )}
                                             {contract.period && (contract.period.start || contract.period.end) && (
@@ -4657,9 +4659,9 @@ export default function UniversitiesPage() {
                                 const stats = getEventStatistics(selectedUniversity);
                                 return (
                                   <>
-                                    <Card className="p-3 flex-[3]">
+                                    <Card className="p-3 flex-[2]">
                         <div className="space-y-2">
-                                        <Label className="text-base font-semibold">Типы мероприятий</Label>
+                                        <Label className="text-base font-semibold">Тип мероприятия</Label>
                                         <div className="flex items-center gap-3">
                                           <div className="text-base">
                                             <span className="text-muted-foreground">Дни карьеры: </span>
@@ -4706,18 +4708,52 @@ export default function UniversitiesPage() {
                                               {stats.byType.caseChampionships}
                                             </Badge>
                           </div>
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Встреча: </span>
+                                            <Badge 
+                                              variant="outline" 
+                                              className={`!bg-gray-500 !text-white !border-gray-500 hover:!bg-gray-600 cursor-pointer ${eventFilters.type === "meeting" ? "ring-2 ring-gray-600" : ""}`}
+                                              onClick={() => {
+                                                setEventFilters(prev => ({
+                                                  ...prev,
+                                                  type: prev.type === "meeting" ? null : "meeting"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byType.meeting}
+                                            </Badge>
+                          </div>
+                                          <div className="text-base">
+                                            <span className="text-muted-foreground">Коммуникация: </span>
+                                            <Badge 
+                                              variant="outline" 
+                                              className={`!bg-cyan-500 !text-white !border-cyan-500 hover:!bg-cyan-600 cursor-pointer ${eventFilters.type === "communication" ? "ring-2 ring-cyan-600" : ""}`}
+                                              onClick={() => {
+                                                setEventFilters(prev => ({
+                                                  ...prev,
+                                                  type: prev.type === "communication" ? null : "communication"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byType.communication}
+                                            </Badge>
+                          </div>
                                         </div>
                                       </div>
                                     </Card>
                                     <Card className="p-3 flex-[1]">
                         <div className="space-y-2">
-                                        <Label className="text-base font-semibold">Статусы</Label>
-                                                <div className="flex items-center gap-3">
+                                        <Label className="text-base font-semibold">Статус</Label>
+                                                <div className="flex items-center gap-3 flex-wrap">
                                           <div className="text-base">
                                             <span className="text-muted-foreground">Запланировано: </span>
                                             <Badge 
                                               variant="outline" 
-                                              className={`cursor-pointer ${eventFilters.status === "planned" ? "ring-2 ring-primary" : ""}`}
+                                              className={cn(
+                                                "cursor-pointer",
+                                                getStatusBadgeColor("planned"),
+                                                eventFilters.status === "planned" && "ring-2 ring-primary"
+                                              )}
                                               onClick={() => {
                                                 setEventFilters(prev => ({
                                                   ...prev,
@@ -4729,10 +4765,33 @@ export default function UniversitiesPage() {
                           </Badge>
                                                   </div>
                                           <div className="text-base">
+                                            <span className="text-muted-foreground">В процессе: </span>
+                                            <Badge 
+                                              variant="outline" 
+                                              className={cn(
+                                                "cursor-pointer",
+                                                getStatusBadgeColor("in_progress"),
+                                                eventFilters.status === "in_progress" && "ring-2 ring-primary"
+                                              )}
+                                              onClick={() => {
+                                                setEventFilters(prev => ({
+                                                  ...prev,
+                                                  status: prev.status === "in_progress" ? null : "in_progress"
+                                                }));
+                                              }}
+                                            >
+                                              {stats.byStatus.in_progress}
+                                            </Badge>
+                                                </div>
+                                          <div className="text-base">
                                             <span className="text-muted-foreground">Проведено: </span>
                                             <Badge 
-                                              variant="default" 
-                                              className={`cursor-pointer ${eventFilters.status === "completed" ? "ring-2 ring-primary" : ""}`}
+                                              variant="outline" 
+                                              className={cn(
+                                                "cursor-pointer",
+                                                getStatusBadgeColor("completed"),
+                                                eventFilters.status === "completed" && "ring-2 ring-primary"
+                                              )}
                                               onClick={() => {
                                                 setEventFilters(prev => ({
                                                   ...prev,
@@ -4752,7 +4811,7 @@ export default function UniversitiesPage() {
                               <Button
                                 onClick={() => {
                                   setEditingEvent(null);
-                                  setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
+                                  setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: [] });
                                   setIsEventDialogOpen(true);
                                 }}
                                 disabled={!selectedUniversity}
@@ -4777,9 +4836,12 @@ export default function UniversitiesPage() {
                                     careerDays: "Дни карьеры",
                                     expertParticipation: "Экспертное участие",
                                     caseChampionships: "Кейс-чемпионат",
+                                    meeting: "Встреча",
+                                    communication: "Коммуникация",
                                   };
                                   const eventStatusLabels: Record<Event["status"], string> = {
                                     planned: "Запланировано",
+                                    in_progress: "В процессе",
                                     completed: "Проведено",
                                   };
                                   const getEventTypeBadgeVariant = (type: Event["type"]): "outline" => {
@@ -4793,6 +4855,10 @@ export default function UniversitiesPage() {
                                         return "!bg-purple-500 !text-white !border-purple-500 hover:!bg-purple-600";
                                       case "caseChampionships":
                                         return "!bg-green-500 !text-white !border-green-500 hover:!bg-green-600";
+                                      case "meeting":
+                                        return "!bg-gray-500 !text-white !border-gray-500 hover:!bg-gray-600";
+                                      case "communication":
+                                        return "!bg-cyan-500 !text-white !border-cyan-500 hover:!bg-cyan-600";
                                       default:
                                         return "";
                                     }
@@ -4808,7 +4874,10 @@ export default function UniversitiesPage() {
                                             >
                                               {eventTypeLabels[event.type]}
                                             </Badge>
-                                            <Badge variant={event.status === "completed" ? "default" : "outline"}>
+                                            <Badge 
+                                              variant="outline" 
+                                              className={cn(getStatusBadgeColor(event.status))}
+                                            >
                                               {eventStatusLabels[event.status]}
                                             </Badge>
                             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -4829,15 +4898,26 @@ export default function UniversitiesPage() {
                           </div>
                                       <div className="flex items-center gap-2">
                                             <Label className="text-sm font-semibold">Ответственное лицо Банк:</Label>
-                                            <div className="flex items-center gap-2">
-                                                  <Avatar className="h-10 w-10 shrink-0">
-                                                <AvatarImage src={event.responsiblePersonImage} alt={event.responsiblePerson} />
-                                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                                  {event.responsiblePerson.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
-                                                    </AvatarFallback>
-                                                  </Avatar>
-                                              <span className="text-sm font-medium">{event.responsiblePerson}</span>
-                        </div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              {event.responsiblePerson.length > 0 ? (
+                                                event.responsiblePerson.map((personId, index) => {
+                                                  const person = responsiblePersons.find(p => p.value === personId);
+                                                  return person ? (
+                                                    <div key={index} className="flex items-center gap-2">
+                                                      <Avatar className="h-10 w-10 shrink-0">
+                                                        <AvatarImage src={person.image} alt={person.label} />
+                                                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                          {person.label.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase()}
+                                                        </AvatarFallback>
+                                                      </Avatar>
+                                                      <span className="text-sm font-medium">{person.label}</span>
+                                                    </div>
+                                                  ) : null;
+                                                })
+                                              ) : (
+                                                <span className="text-sm text-muted-foreground">Не указано</span>
+                                              )}
+                                            </div>
                                                 </div>
                                           {event.comments && (
                                             <div className="flex items-center gap-2">
@@ -6809,7 +6889,7 @@ export default function UniversitiesPage() {
             setIsEventDialogOpen(open);
             if (!open) {
               setEditingEvent(null);
-              setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
+              setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: [] });
             }
           }}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -6833,13 +6913,13 @@ export default function UniversitiesPage() {
                           <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Выберите тип мероприятия: дни карьеры, экспертное участие или кейс-чемпионат</p>
+                          <p>Выберите тип мероприятия: дни карьеры, экспертное участие, кейс-чемпионат, встреча или коммуникация</p>
                         </TooltipContent>
                       </Tooltip>
                   </div>
                     <Select
                       value={newEvent.type}
-                      onValueChange={(value) => setNewEvent({ ...newEvent, type: value as "careerDays" | "expertParticipation" | "caseChampionships" })}
+                      onValueChange={(value) => setNewEvent({ ...newEvent, type: value as "careerDays" | "expertParticipation" | "caseChampionships" | "meeting" | "communication" })}
                     >
                       <SelectTrigger id="event-type-dialog" className="w-full">
                         <SelectValue placeholder="Выберите тип" />
@@ -6848,6 +6928,8 @@ export default function UniversitiesPage() {
                         <SelectItem value="careerDays">Дни карьеры</SelectItem>
                         <SelectItem value="expertParticipation">Экспертное участие</SelectItem>
                         <SelectItem value="caseChampionships">Кейс-чемпионат</SelectItem>
+                        <SelectItem value="meeting">Встреча</SelectItem>
+                        <SelectItem value="communication">Коммуникация</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -6899,24 +6981,26 @@ export default function UniversitiesPage() {
                           <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Выберите статус мероприятия: запланировано или проведено</p>
+                          <p>Выберите статус мероприятия: запланировано, в процессе или проведено</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
                       <Select
                       value={newEvent.status}
-                      onValueChange={(value) => setNewEvent({ ...newEvent, status: value as "planned" | "completed" })}
+                      onValueChange={(value) => setNewEvent({ ...newEvent, status: value as "planned" | "in_progress" | "completed" })}
                       >
                       <SelectTrigger id="event-status-dialog" className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="planned">Запланировано</SelectItem>
+                          <SelectItem value="in_progress">В процессе</SelectItem>
                         <SelectItem value="completed">Проведено</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                  <div className="flex-1 space-y-2">
+                </div>
+                  <div className="space-y-2">
                     <div className="flex items-center gap-1">
                       <Label htmlFor="event-responsible-dialog">Ответственное лицо Банк</Label>
                       <Tooltip>
@@ -6924,18 +7008,17 @@ export default function UniversitiesPage() {
                           <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Укажите ФИО сотрудника Банка, ответственного за проведение мероприятия</p>
+                          <p>Выберите сотрудников Банка, ответственных за проведение мероприятия</p>
                         </TooltipContent>
                       </Tooltip>
                   </div>
-                      <Input
-                      id="event-responsible-dialog"
-                      value={newEvent.responsiblePerson}
-                      onChange={(e) => setNewEvent({ ...newEvent, responsiblePerson: e.target.value })}
-                      placeholder="ФИО ответственного лица"
-                      className="w-full"
+                      <MultiSelect
+                        options={responsiblePersons.map(p => ({ value: p.value, label: p.label }))}
+                        selected={newEvent.responsiblePerson}
+                        onChange={(selected) => setNewEvent({ ...newEvent, responsiblePerson: selected })}
+                        placeholder="Выберите ответственное лицо"
+                        className="w-full"
                       />
-                    </div>
                     </div>
                     <div className="space-y-2">
                   <div className="flex items-center gap-1">
@@ -6963,7 +7046,7 @@ export default function UniversitiesPage() {
                   onClick={() => {
                     setIsEventDialogOpen(false);
                     setEditingEvent(null);
-                    setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: "" });
+                    setNewEvent({ type: "", date: "", endDate: "", status: "planned", comments: "", responsiblePerson: [] });
                   }}
                 >
                   Отмена
@@ -6973,7 +7056,7 @@ export default function UniversitiesPage() {
                     onClick={() => {
                       handleSaveEvent();
                     }}
-                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || !newEvent.responsiblePerson.trim()}
+                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || newEvent.responsiblePerson.length === 0}
                   >
                     Сохранить
                   </Button>
@@ -6984,7 +7067,7 @@ export default function UniversitiesPage() {
                         handleAddEvent(selectedUniversity);
                       }
                     }}
-                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || !newEvent.responsiblePerson.trim() || !selectedUniversity}
+                    disabled={!newEvent.type || !newEvent.date.trim() || !newEvent.endDate.trim() || newEvent.responsiblePerson.length === 0 || !selectedUniversity}
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Добавить
