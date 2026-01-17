@@ -151,6 +151,28 @@ interface TargetPractitioner {
   comments?: string; // Комментарии
 }
 
+// Тип для элемента инфраструктуры ЦНТР
+interface CNTRInfrastructureItem {
+  id: string;
+  developmentType: "financing" | "endowment" | "endowment-fund"; // Вид развития
+  date: string; // Дата (формат YYYY-MM-DD)
+  branch?: string; // Головной офис или филиал
+  description?: string; // Описание
+  document?: string; // Документ (URL или путь к PDF файлу)
+}
+
+// Тип для элемента проекта ЦНТР
+interface CNTRProjectItem {
+  id: string;
+  projectName: string; // Название проекта
+  date: string; // Дата (формат YYYY-MM-DD)
+  branch?: string; // Головной офис или филиал
+  fundingAmount?: number; // Размер финансирования (в рублях)
+  supportFormat?: "grant-cofinancing" | "ordered-rd-center-lift" | "targeted-charity"; // Формат поддержки
+  description?: string; // Описание
+  document?: string; // Документ (URL или путь к PDF файлу)
+}
+
 // Тип для университета
 type CooperationLine = "drp" | "bko" | "cntr";
 
@@ -194,6 +216,8 @@ interface University {
   practitionerList?: Practitioner[]; // Список практикантов
   caseChampionshipParticipants?: CaseChampionshipParticipant[]; // Участники кейс-чемпионатов
   targetPractitioners?: TargetPractitioner[]; // Целевые практиканты
+  cntrInfrastructure?: CNTRInfrastructureItem[]; // Элементы инфраструктуры ЦНТР
+  cntrProjects?: CNTRProjectItem[]; // Элементы проектов ЦНТР
   region?: string;
   description?: string;
   image?: string; // Фото/логотип ВУЗа
@@ -1259,6 +1283,45 @@ const mockUniversities: University[] = [
       { id: "tp-hse-4", employeeName: "Козлова Мария Дмитриевна", targetStartDate: "2025-03-15", targetEndDate: "2025-07-15", department: "Управление качества и тестирования", practiceSupervisor: "Козлова Елена Владимировна" },
       { id: "tp-hse-5", employeeName: "Новиков Игорь Владимирович", targetStartDate: "2025-01-10", targetEndDate: "2025-04-10", department: "Управление развития общекорпоративных систем", practiceSupervisor: "Федоров Сергей Николаевич", comments: "Проходит целевую практику в области системной разработки." },
     ],
+    cntrInfrastructure: [
+      { 
+        id: "cntr-infra-hse-1", 
+        developmentType: "financing", 
+        date: "2023-05-15", 
+        branch: "Головной офис",
+        description: "Финансирование направлено на развитие современных исследовательских лабораторий и приобретение высокотехнологичного оборудования для научных исследований. Проект включает создание центра обработки данных, модернизацию инфраструктуры связи и внедрение передовых технологий в образовательный процесс. Ожидается значительное повышение качества научных исследований и привлечение талантливых ученых.",
+        document: "https://example.com/documents/infrastructure-financing-2023.pdf"
+      },
+      { 
+        id: "cntr-infra-hse-2", 
+        developmentType: "endowment", 
+        date: "2023-09-20", 
+        branch: "Московский филиал",
+        description: "Эндаумент фонд создан для обеспечения долгосрочной финансовой стабильности научно-технологической инфраструктуры университета. Средства фонда используются для поддержки инновационных проектов, развития исследовательской базы и привлечения ведущих специалистов. Фонд управляется профессиональной командой с учетом международных стандартов инвестирования и прозрачности использования средств.",
+        document: "https://example.com/documents/endowment-fund-2023.pdf"
+      },
+    ],
+    cntrProjects: [
+      {
+        id: "cntr-project-hse-1",
+        projectName: "Разработка платформы для анализа больших данных",
+        date: "2023-03-10",
+        branch: "Головной офис",
+        fundingAmount: 15000000,
+        supportFormat: "grant-cofinancing",
+        description: "Проект направлен на создание инновационной платформы для обработки и анализа больших объемов данных в режиме реального времени. Платформа будет использоваться для научных исследований в области машинного обучения, искусственного интеллекта и анализа финансовых рынков. Проект предполагает тесное сотрудничество с ведущими исследовательскими центрами и промышленными партнерами.",
+        document: "https://example.com/documents/big-data-platform-2023.pdf"
+      },
+      {
+        id: "cntr-project-hse-2",
+        projectName: "Центр квантовых вычислений и криптографии",
+        date: "2024-01-20",
+        branch: "Московский филиал",
+        fundingAmount: 25000000,
+        supportFormat: "ordered-rd-center-lift",
+        description: "Проект по созданию центра квантовых вычислений и разработке новых методов криптографической защиты информации. Центр объединит исследователей в области квантовой физики, информатики и математики для решения задач создания безопасных коммуникационных систем нового поколения. Ожидается значительный вклад в развитие национальной технологической безопасности и создание инновационных продуктов для финансового сектора."
+      },
+    ],
     region: "Московская область",
     description: "Ведущий экономический и IT-университет",
     image: "https://www.hse.ru//images/main/main_logo_ru_full.svg",
@@ -2000,6 +2063,37 @@ export default function UniversitiesPage() {
   const [universityDetailTab, setUniversityDetailTab] = useState<"general" | "contracts" | "events" | "staff" | "bko" | "cntr">("general");
   const [generalSubTab, setGeneralSubTab] = useState<"main" | "branches">("main");
   const [staffSubTab, setStaffSubTab] = useState<"interns" | "practitioners">("interns");
+  const [cntrSubTab, setCntrSubTab] = useState<"infrastructure" | "projects" | "accelerator" | "events" | "agreements" | "educational">("infrastructure");
+  
+  // Состояние для добавления элемента инфраструктуры ЦНТР
+  const [addInfrastructureDialogOpen, setAddInfrastructureDialogOpen] = useState(false);
+  const [newInfrastructure, setNewInfrastructure] = useState({
+    developmentType: "",
+    date: "",
+    branch: "",
+    description: "",
+    document: "",
+  });
+  
+  // Состояние для редактирования элемента инфраструктуры ЦНТР
+  const [editInfrastructureDialogOpen, setEditInfrastructureDialogOpen] = useState(false);
+  const [editingInfrastructure, setEditingInfrastructure] = useState<{ universityId: string; itemId: string } | null>(null);
+  
+  // Состояние для добавления элемента проекта ЦНТР
+  const [addProjectDialogOpen, setAddProjectDialogOpen] = useState(false);
+  const [newProject, setNewProject] = useState({
+    projectName: "",
+    date: "",
+    branch: "",
+    fundingAmount: "",
+    supportFormat: "",
+    description: "",
+    document: "",
+  });
+  
+  // Состояние для редактирования элемента проекта ЦНТР
+  const [editProjectDialogOpen, setEditProjectDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<{ universityId: string; itemId: string } | null>(null);
   const [universitiesSortOrder, setUniversitiesSortOrder] = useState<"asc" | "desc">("asc");
   const [expandedUniversities, setExpandedUniversities] = useState<Set<string>>(new Set());
   
@@ -8804,15 +8898,896 @@ export default function UniversitiesPage() {
 
                         {/* Таб 6: ЦНТР */}
                         <TabsContent value="cntr" className="space-y-4 mt-4">
-                          <Card>
-                            <CardContent className="space-y-6">
-                              <div className="text-center py-12 text-muted-foreground">
-                                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p className="text-lg font-medium mb-2">ЦНТР</p>
-                                <p className="text-sm">Раздел находится в разработке</p>
+                          <Tabs value={cntrSubTab} onValueChange={(value) => setCntrSubTab(value as typeof cntrSubTab)} className="w-full">
+                            <div className="flex gap-4">
+                              {/* Контент слева */}
+                              <div className="flex-1">
+                            
+                            {/* Подвкладка 1: Развитие научно-технологической инфраструктуры */}
+                            <TabsContent value="infrastructure" className="space-y-4 mt-0">
+                              <div className="flex items-center justify-end mb-4">
+                                <Dialog open={addInfrastructureDialogOpen} onOpenChange={setAddInfrastructureDialogOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button variant="default" size="sm" onClick={() => {
+                                      setNewInfrastructure({ developmentType: "", date: "", branch: "", description: "", document: "" });
+                                      setEditingInfrastructure(null);
+                                    }}>
+                                      <Plus className="mr-2 h-4 w-4" />
+                                      Добавить
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Добавить элемент инфраструктуры</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="infrastructure-development-type">Вид развития *</Label>
+                                        <Select
+                                          value={newInfrastructure.developmentType}
+                                          onValueChange={(value) => setNewInfrastructure({ ...newInfrastructure, developmentType: value })}
+                                        >
+                                          <SelectTrigger id="infrastructure-development-type">
+                                            <SelectValue placeholder="Выберите вид развития" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="financing">Финансирование научно-технологической инфраструктуры</SelectItem>
+                                            <SelectItem value="endowment">Финансирование научно-технологической инфраструктуры (эндаумент)</SelectItem>
+                                            <SelectItem value="endowment-fund">Финансирование научно-технологической инфраструктуры (эндаумент фонд)</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="infrastructure-date">Дата *</Label>
+                                        <Input
+                                          id="infrastructure-date"
+                                          type="date"
+                                          value={newInfrastructure.date}
+                                          onChange={(e) => setNewInfrastructure({ ...newInfrastructure, date: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="infrastructure-branch">Головной офис / Филиал</Label>
+                                        <Select
+                                          value={newInfrastructure.branch}
+                                          onValueChange={(value) => setNewInfrastructure({ ...newInfrastructure, branch: value })}
+                                        >
+                                          <SelectTrigger id="infrastructure-branch">
+                                            <SelectValue placeholder="Выберите офис/филиал" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="Головной офис">Головной офис</SelectItem>
+                                            {university?.branch?.map((branchName) => (
+                                              <SelectItem key={branchName} value={branchName}>
+                                                {branchName}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="infrastructure-description">Описание</Label>
+                                        <Textarea
+                                          id="infrastructure-description"
+                                          placeholder="Введите описание элемента инфраструктуры..."
+                                          value={newInfrastructure.description}
+                                          onChange={(e) => setNewInfrastructure({ ...newInfrastructure, description: e.target.value })}
+                                          rows={4}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="infrastructure-document">Документ (PDF)</Label>
+                                        <Input
+                                          id="infrastructure-document"
+                                          type="text"
+                                          placeholder="URL или путь к PDF файлу..."
+                                          value={newInfrastructure.document}
+                                          onChange={(e) => setNewInfrastructure({ ...newInfrastructure, document: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <DialogFooter>
+                                      <Button variant="outline" onClick={() => {
+                                        setAddInfrastructureDialogOpen(false);
+                                        setEditingInfrastructure(null);
+                                        setNewInfrastructure({ developmentType: "", date: "", branch: "", description: "" });
+                                      }}>
+                                        Отмена
+                                      </Button>
+                                      <Button 
+                                        onClick={() => {
+                                          if (newInfrastructure.developmentType && newInfrastructure.date && selectedUniversity) {
+                                            // Добавление
+                                            const newItem: CNTRInfrastructureItem = {
+                                              id: `cntr-infra-${Date.now()}`,
+                                              developmentType: newInfrastructure.developmentType as "financing" | "endowment" | "endowment-fund",
+                                              date: newInfrastructure.date,
+                                              branch: newInfrastructure.branch || undefined,
+                                              description: newInfrastructure.description?.trim() || undefined,
+                                              document: newInfrastructure.document?.trim() || undefined,
+                                            };
+                                            const updatedUniversities = universities.map((u) =>
+                                              u.id === selectedUniversity
+                                                ? {
+                                                    ...u,
+                                                    cntrInfrastructure: [...(u.cntrInfrastructure || []), newItem],
+                                                  }
+                                                : u
+                                            );
+                                            setUniversities(updatedUniversities);
+                                            setAddInfrastructureDialogOpen(false);
+                                            setNewInfrastructure({ developmentType: "", date: "", branch: "", description: "", document: "" });
+                                          }
+                                        }}
+                                        disabled={!newInfrastructure.developmentType || !newInfrastructure.date}
+                                      >
+                                        Добавить
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                                
+                                {/* Диалог редактирования инфраструктуры */}
+                                <Dialog open={editInfrastructureDialogOpen} onOpenChange={setEditInfrastructureDialogOpen}>
+                                  <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Редактировать элемент инфраструктуры</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-infrastructure-development-type">Вид развития *</Label>
+                                        <Select
+                                          value={newInfrastructure.developmentType}
+                                          onValueChange={(value) => setNewInfrastructure({ ...newInfrastructure, developmentType: value })}
+                                        >
+                                          <SelectTrigger id="edit-infrastructure-development-type">
+                                            <SelectValue placeholder="Выберите вид развития" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="financing">Финансирование научно-технологической инфраструктуры</SelectItem>
+                                            <SelectItem value="endowment">Финансирование научно-технологической инфраструктуры (эндаумент)</SelectItem>
+                                            <SelectItem value="endowment-fund">Финансирование научно-технологической инфраструктуры (эндаумент фонд)</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-infrastructure-date">Дата *</Label>
+                                        <Input
+                                          id="edit-infrastructure-date"
+                                          type="date"
+                                          value={newInfrastructure.date}
+                                          onChange={(e) => setNewInfrastructure({ ...newInfrastructure, date: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-infrastructure-branch">Головной офис / Филиал</Label>
+                                        <Select
+                                          value={newInfrastructure.branch}
+                                          onValueChange={(value) => setNewInfrastructure({ ...newInfrastructure, branch: value })}
+                                        >
+                                          <SelectTrigger id="edit-infrastructure-branch">
+                                            <SelectValue placeholder="Выберите офис/филиал" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="Головной офис">Головной офис</SelectItem>
+                                            {university?.branch?.map((branchName) => (
+                                              <SelectItem key={branchName} value={branchName}>
+                                                {branchName}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-infrastructure-description">Описание</Label>
+                                        <Textarea
+                                          id="edit-infrastructure-description"
+                                          placeholder="Введите описание элемента инфраструктуры..."
+                                          value={newInfrastructure.description}
+                                          onChange={(e) => setNewInfrastructure({ ...newInfrastructure, description: e.target.value })}
+                                          rows={4}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-infrastructure-document">Документ (PDF)</Label>
+                                        <Input
+                                          id="edit-infrastructure-document"
+                                          type="text"
+                                          placeholder="URL или путь к PDF файлу..."
+                                          value={newInfrastructure.document}
+                                          onChange={(e) => setNewInfrastructure({ ...newInfrastructure, document: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <DialogFooter>
+                                      <Button variant="outline" onClick={() => {
+                                        setEditInfrastructureDialogOpen(false);
+                                        setEditingInfrastructure(null);
+                                        setNewInfrastructure({ developmentType: "", date: "", branch: "", description: "", document: "" });
+                                      }}>
+                                        Отмена
+                                      </Button>
+                                      <Button 
+                                        onClick={() => {
+                                          if (newInfrastructure.developmentType && newInfrastructure.date && selectedUniversity && editingInfrastructure) {
+                                            const updatedUniversities = universities.map((u) =>
+                                              u.id === selectedUniversity
+                                                ? {
+                                                    ...u,
+                                                    cntrInfrastructure: (u.cntrInfrastructure || []).map((item) =>
+                                                      item.id === editingInfrastructure.itemId
+                                                        ? {
+                                                            ...item,
+                                                            developmentType: newInfrastructure.developmentType as "financing" | "endowment" | "endowment-fund",
+                                                            date: newInfrastructure.date,
+                                                            branch: newInfrastructure.branch || undefined,
+                                                            description: newInfrastructure.description?.trim() || undefined,
+                                                            document: newInfrastructure.document?.trim() || undefined,
+                                                          }
+                                                        : item
+                                                    ),
+                                                  }
+                                                : u
+                                            );
+                                            setUniversities(updatedUniversities);
+                                            setEditInfrastructureDialogOpen(false);
+                                            setNewInfrastructure({ developmentType: "", date: "", branch: "", description: "", document: "" });
+                                            setEditingInfrastructure(null);
+                                          }
+                                        }}
+                                        disabled={!newInfrastructure.developmentType || !newInfrastructure.date}
+                                      >
+                                        Сохранить
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
                               </div>
-                            </CardContent>
-                          </Card>
+                              
+                              {(() => {
+                                const infrastructureItems = university.cntrInfrastructure || [];
+                                const getDevelopmentTypeLabel = (type: string) => {
+                                  switch (type) {
+                                    case "financing":
+                                      return "Финансирование научно-технологической инфраструктуры";
+                                    case "endowment":
+                                      return "Финансирование научно-технологической инфраструктуры (эндаумент)";
+                                    case "endowment-fund":
+                                      return "Финансирование научно-технологической инфраструктуры (эндаумент фонд)";
+                                    default:
+                                      return type;
+                                  }
+                                };
+                                
+                                const formatDate = (dateStr: string) => {
+                                  const [year, month, day] = dateStr.split('-').map(Number);
+                                  return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                };
+                                
+                                const handleEditInfrastructure = (item: CNTRInfrastructureItem) => {
+                                  if (!selectedUniversity) return;
+                                  setEditingInfrastructure({ universityId: selectedUniversity, itemId: item.id });
+                                  setNewInfrastructure({
+                                    developmentType: item.developmentType,
+                                    date: item.date,
+                                    branch: item.branch || "",
+                                    description: item.description || "",
+                                    document: item.document || "",
+                                  });
+                                  setEditInfrastructureDialogOpen(true);
+                                };
+                                
+                                const handleRemoveInfrastructure = (itemId: string) => {
+                                  if (!selectedUniversity) return;
+                                  const updatedUniversities = universities.map((u) =>
+                                    u.id === selectedUniversity
+                                      ? {
+                                          ...u,
+                                          cntrInfrastructure: (u.cntrInfrastructure || []).filter((item) => item.id !== itemId),
+                                        }
+                                      : u
+                                  );
+                                  setUniversities(updatedUniversities);
+                                };
+                                
+                                return infrastructureItems.length > 0 ? (
+                                  <div className="space-y-4">
+                                    {infrastructureItems.map((item) => (
+                                      <Card key={item.id} className="p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                          <div className="flex-1 space-y-3">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <Badge variant="outline" className="text-xs">
+                                                {getDevelopmentTypeLabel(item.developmentType)}
+                                              </Badge>
+                                              {item.branch && (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  {item.branch}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                              <div className="flex items-start gap-2">
+                                                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Дата:</span>
+                                                <span className="font-medium">{formatDate(item.date)}</span>
+                                              </div>
+                                            </div>
+                                            {item.description && (
+                                              <div className="text-sm">
+                                                <span className="text-muted-foreground">Описание:</span>
+                                                <p className="mt-1 text-foreground">{item.description}</p>
+                                              </div>
+                                            )}
+                                            {item.document && (
+                                              <div className="flex items-start gap-2 md:col-span-2 text-sm">
+                                                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Документ:</span>
+                                                <a 
+                                                  href={item.document} 
+                                                  target="_blank" 
+                                                  rel="noopener noreferrer" 
+                                                  className="text-primary hover:underline break-all"
+                                                >
+                                                  {item.document}
+                                                </a>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-1 flex-shrink-0">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => handleEditInfrastructure(item)}
+                                            >
+                                              <Pencil className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => handleRemoveInfrastructure(item.id)}
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Card>
+                                    <CardContent className="space-y-6 pt-6">
+                                      <div className="text-center py-12 text-muted-foreground">
+                                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                        <p className="text-lg font-medium mb-2">Развитие научно-технологической инфраструктуры</p>
+                                        <p className="text-sm">Элементы инфраструктуры не добавлены</p>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })()}
+                            </TabsContent>
+                            
+                            {/* Подвкладка 2: Развитие научно-технологических проектов */}
+                            <TabsContent value="projects" className="space-y-4 mt-0">
+                              <div className="flex items-center justify-end mb-4">
+                                <Dialog open={addProjectDialogOpen} onOpenChange={setAddProjectDialogOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button variant="default" size="sm" onClick={() => {
+                                      setNewProject({ projectName: "", date: "", branch: "", fundingAmount: "", supportFormat: "", description: "", document: "" });
+                                      setEditingProject(null);
+                                    }}>
+                                      <Plus className="mr-2 h-4 w-4" />
+                                      Добавить
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Добавить проект</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="project-name">Название проекта *</Label>
+                                        <Input
+                                          id="project-name"
+                                          placeholder="Введите название проекта..."
+                                          value={newProject.projectName}
+                                          onChange={(e) => setNewProject({ ...newProject, projectName: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="project-date">Дата *</Label>
+                                        <Input
+                                          id="project-date"
+                                          type="date"
+                                          value={newProject.date}
+                                          onChange={(e) => setNewProject({ ...newProject, date: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="project-branch">Головной офис / Филиал</Label>
+                                        <Select
+                                          value={newProject.branch}
+                                          onValueChange={(value) => setNewProject({ ...newProject, branch: value })}
+                                        >
+                                          <SelectTrigger id="project-branch">
+                                            <SelectValue placeholder="Выберите офис/филиал" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="Головной офис">Головной офис</SelectItem>
+                                            {university?.branch?.map((branchName) => (
+                                              <SelectItem key={branchName} value={branchName}>
+                                                {branchName}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="project-funding-amount">Размер финансирования (руб.)</Label>
+                                        <Input
+                                          id="project-funding-amount"
+                                          type="number"
+                                          placeholder="Введите размер финансирования..."
+                                          value={newProject.fundingAmount}
+                                          onChange={(e) => setNewProject({ ...newProject, fundingAmount: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="project-support-format">Формат поддержки</Label>
+                                        <Select
+                                          value={newProject.supportFormat}
+                                          onValueChange={(value) => setNewProject({ ...newProject, supportFormat: value })}
+                                        >
+                                          <SelectTrigger id="project-support-format">
+                                            <SelectValue placeholder="Выберите формат поддержки" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="grant-cofinancing">софинансирование гранта</SelectItem>
+                                            <SelectItem value="ordered-rd-center-lift">заказной НИОКР в интересах центра ЛИФТ</SelectItem>
+                                            <SelectItem value="targeted-charity">целевая благотворительность</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="project-description">Описание</Label>
+                                        <Textarea
+                                          id="project-description"
+                                          placeholder="Введите описание проекта..."
+                                          value={newProject.description}
+                                          onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                                          rows={4}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="project-document">Документ (PDF)</Label>
+                                        <Input
+                                          id="project-document"
+                                          type="text"
+                                          placeholder="URL или путь к PDF файлу..."
+                                          value={newProject.document}
+                                          onChange={(e) => setNewProject({ ...newProject, document: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <DialogFooter>
+                                      <Button variant="outline" onClick={() => {
+                                        setAddProjectDialogOpen(false);
+                                        setEditingProject(null);
+                                        setNewProject({ projectName: "", date: "", branch: "", fundingAmount: "", supportFormat: "", description: "", document: "" });
+                                      }}>
+                                        Отмена
+                                      </Button>
+                                      <Button 
+                                        onClick={() => {
+                                          if (newProject.projectName && newProject.date && selectedUniversity) {
+                                            const newItem: CNTRProjectItem = {
+                                              id: `cntr-project-${Date.now()}`,
+                                              projectName: newProject.projectName,
+                                              date: newProject.date,
+                                              branch: newProject.branch || undefined,
+                                              fundingAmount: newProject.fundingAmount ? Number(newProject.fundingAmount) : undefined,
+                                              supportFormat: (newProject.supportFormat as "grant-cofinancing" | "ordered-rd-center-lift" | "targeted-charity") || undefined,
+                                              description: newProject.description?.trim() || undefined,
+                                              document: newProject.document?.trim() || undefined,
+                                            };
+                                            const updatedUniversities = universities.map((u) =>
+                                              u.id === selectedUniversity
+                                                ? {
+                                                    ...u,
+                                                    cntrProjects: [...(u.cntrProjects || []), newItem],
+                                                  }
+                                                : u
+                                            );
+                                            setUniversities(updatedUniversities);
+                                            setAddProjectDialogOpen(false);
+                                            setNewProject({ projectName: "", date: "", branch: "", fundingAmount: "", supportFormat: "", description: "", document: "" });
+                                          }
+                                        }}
+                                        disabled={!newProject.projectName || !newProject.date}
+                                      >
+                                        Добавить
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                                
+                                {/* Диалог редактирования проекта */}
+                                <Dialog open={editProjectDialogOpen} onOpenChange={setEditProjectDialogOpen}>
+                                  <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Редактировать проект</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-project-name">Название проекта *</Label>
+                                        <Input
+                                          id="edit-project-name"
+                                          placeholder="Введите название проекта..."
+                                          value={newProject.projectName}
+                                          onChange={(e) => setNewProject({ ...newProject, projectName: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-project-date">Дата *</Label>
+                                        <Input
+                                          id="edit-project-date"
+                                          type="date"
+                                          value={newProject.date}
+                                          onChange={(e) => setNewProject({ ...newProject, date: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-project-branch">Головной офис / Филиал</Label>
+                                        <Select
+                                          value={newProject.branch}
+                                          onValueChange={(value) => setNewProject({ ...newProject, branch: value })}
+                                        >
+                                          <SelectTrigger id="edit-project-branch">
+                                            <SelectValue placeholder="Выберите офис/филиал" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="Головной офис">Головной офис</SelectItem>
+                                            {university?.branch?.map((branchName) => (
+                                              <SelectItem key={branchName} value={branchName}>
+                                                {branchName}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-project-funding-amount">Размер финансирования (руб.)</Label>
+                                        <Input
+                                          id="edit-project-funding-amount"
+                                          type="number"
+                                          placeholder="Введите размер финансирования..."
+                                          value={newProject.fundingAmount}
+                                          onChange={(e) => setNewProject({ ...newProject, fundingAmount: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-project-support-format">Формат поддержки</Label>
+                                        <Select
+                                          value={newProject.supportFormat}
+                                          onValueChange={(value) => setNewProject({ ...newProject, supportFormat: value })}
+                                        >
+                                          <SelectTrigger id="edit-project-support-format">
+                                            <SelectValue placeholder="Выберите формат поддержки" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="grant-cofinancing">софинансирование гранта</SelectItem>
+                                            <SelectItem value="ordered-rd-center-lift">заказной НИОКР в интересах центра ЛИФТ</SelectItem>
+                                            <SelectItem value="targeted-charity">целевая благотворительность</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-project-description">Описание</Label>
+                                        <Textarea
+                                          id="edit-project-description"
+                                          placeholder="Введите описание проекта..."
+                                          value={newProject.description}
+                                          onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                                          rows={4}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-project-document">Документ (PDF)</Label>
+                                        <Input
+                                          id="edit-project-document"
+                                          type="text"
+                                          placeholder="URL или путь к PDF файлу..."
+                                          value={newProject.document}
+                                          onChange={(e) => setNewProject({ ...newProject, document: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <DialogFooter>
+                                      <Button variant="outline" onClick={() => {
+                                        setEditProjectDialogOpen(false);
+                                        setEditingProject(null);
+                                        setNewProject({ projectName: "", date: "", branch: "", fundingAmount: "", supportFormat: "", description: "", document: "" });
+                                      }}>
+                                        Отмена
+                                      </Button>
+                                      <Button 
+                                        onClick={() => {
+                                          if (newProject.projectName && newProject.date && selectedUniversity && editingProject) {
+                                            const updatedUniversities = universities.map((u) =>
+                                              u.id === selectedUniversity
+                                                ? {
+                                                    ...u,
+                                                    cntrProjects: (u.cntrProjects || []).map((item) =>
+                                                      item.id === editingProject.itemId
+                                                        ? {
+                                                            ...item,
+                                                            projectName: newProject.projectName,
+                                                            date: newProject.date,
+                                                            branch: newProject.branch || undefined,
+                                                            fundingAmount: newProject.fundingAmount ? Number(newProject.fundingAmount) : undefined,
+                                                            supportFormat: (newProject.supportFormat as "grant-cofinancing" | "ordered-rd-center-lift" | "targeted-charity") || undefined,
+                                                            description: newProject.description?.trim() || undefined,
+                                                            document: newProject.document?.trim() || undefined,
+                                                          }
+                                                        : item
+                                                    ),
+                                                  }
+                                                : u
+                                            );
+                                            setUniversities(updatedUniversities);
+                                            setEditProjectDialogOpen(false);
+                                            setNewProject({ projectName: "", date: "", branch: "", fundingAmount: "", supportFormat: "", description: "", document: "" });
+                                            setEditingProject(null);
+                                          }
+                                        }}
+                                        disabled={!newProject.projectName || !newProject.date}
+                                      >
+                                        Сохранить
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
+                              
+                              {(() => {
+                                const projectItems = university.cntrProjects || [];
+                                const formatDate = (dateStr: string) => {
+                                  const [year, month, day] = dateStr.split('-').map(Number);
+                                  return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                };
+                                
+                                const formatFundingAmount = (amount?: number) => {
+                                  if (!amount) return "";
+                                  return `${amount.toLocaleString('ru-RU')} руб`;
+                                };
+                                
+                                const formatSupportFormat = (format?: string) => {
+                                  if (!format) return "";
+                                  const formatMap: Record<string, string> = {
+                                    "grant-cofinancing": "Софинансирование гранта",
+                                    "ordered-rd-center-lift": "Заказной НИОКР в интересах центра ЛИФТ",
+                                    "targeted-charity": "Целевая благотворительность",
+                                  };
+                                  return formatMap[format] || format;
+                                };
+                                
+                                const handleEditProject = (item: CNTRProjectItem) => {
+                                  if (!selectedUniversity) return;
+                                  setEditingProject({ universityId: selectedUniversity, itemId: item.id });
+                                  setNewProject({
+                                    projectName: item.projectName,
+                                    date: item.date,
+                                    branch: item.branch || "",
+                                    fundingAmount: item.fundingAmount?.toString() || "",
+                                    supportFormat: item.supportFormat || "",
+                                    description: item.description || "",
+                                    document: item.document || "",
+                                  });
+                                  setEditProjectDialogOpen(true);
+                                };
+                                
+                                const handleRemoveProject = (itemId: string) => {
+                                  if (!selectedUniversity) return;
+                                  const updatedUniversities = universities.map((u) =>
+                                    u.id === selectedUniversity
+                                      ? {
+                                          ...u,
+                                          cntrProjects: (u.cntrProjects || []).filter((item) => item.id !== itemId),
+                                        }
+                                      : u
+                                  );
+                                  setUniversities(updatedUniversities);
+                                };
+                                
+                                return projectItems.length > 0 ? (
+                                  <div className="space-y-4">
+                                    {projectItems.map((item) => (
+                                      <Card key={item.id} className="p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                          <div className="flex-1 space-y-3">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <Badge variant="outline" className="text-xs">
+                                                {item.projectName}
+                                              </Badge>
+                                              {item.branch && (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  {item.branch}
+                                                </Badge>
+                                              )}
+                                              {item.fundingAmount && (
+                                                <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                                                  {formatFundingAmount(item.fundingAmount)}
+                                                </Badge>
+                                              )}
+                                              {item.supportFormat && (
+                                                <Badge variant="outline" className="text-xs">
+                                                  {formatSupportFormat(item.supportFormat)}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                              <div className="flex items-start gap-2">
+                                                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Дата:</span>
+                                                <span className="font-medium">{formatDate(item.date)}</span>
+                                              </div>
+                                            </div>
+                                            {item.description && (
+                                              <div className="text-sm">
+                                                <span className="text-muted-foreground">Описание:</span>
+                                                <p className="mt-1 text-foreground">{item.description}</p>
+                                              </div>
+                                            )}
+                                            {item.document && (
+                                              <div className="flex items-start gap-2 md:col-span-2 text-sm">
+                                                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Документ:</span>
+                                                <a 
+                                                  href={item.document} 
+                                                  target="_blank" 
+                                                  rel="noopener noreferrer" 
+                                                  className="text-primary hover:underline break-all"
+                                                >
+                                                  {item.document}
+                                                </a>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-1 flex-shrink-0">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => handleEditProject(item)}
+                                            >
+                                              <Pencil className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => handleRemoveProject(item.id)}
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Card>
+                                    <CardContent className="space-y-6 pt-6">
+                                      <div className="text-center py-12 text-muted-foreground">
+                                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                        <p className="text-lg font-medium mb-2">Развитие научно-технологических проектов</p>
+                                        <p className="text-sm">Проекты не добавлены</p>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })()}
+                            </TabsContent>
+                            
+                            {/* Подвкладка 3: Участие в акселераторе Газпромбанк Тех. Трек Наука */}
+                            <TabsContent value="accelerator" className="space-y-4 mt-0">
+                              <Card>
+                                <CardContent className="space-y-6 pt-6">
+                                  <div className="text-center py-12 text-muted-foreground">
+                                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p className="text-lg font-medium mb-2">Участие в акселераторе Газпромбанк Тех. Трек Наука</p>
+                                    <p className="text-sm">Раздел находится в разработке</p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </TabsContent>
+                            
+                            {/* Подвкладка 4: Мероприятия */}
+                            <TabsContent value="events" className="space-y-4 mt-0">
+                              <Card>
+                                <CardContent className="space-y-6 pt-6">
+                                  <div className="text-center py-12 text-muted-foreground">
+                                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p className="text-lg font-medium mb-2">Мероприятия</p>
+                                    <p className="text-sm">Раздел находится в разработке</p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </TabsContent>
+                            
+                            {/* Подвкладка 5: Соглашения о сотрудничестве */}
+                            <TabsContent value="agreements" className="space-y-4 mt-0">
+                              <Card>
+                                <CardContent className="space-y-6 pt-6">
+                                  <div className="text-center py-12 text-muted-foreground">
+                                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p className="text-lg font-medium mb-2">Соглашения о сотрудничестве</p>
+                                    <p className="text-sm">Раздел находится в разработке</p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </TabsContent>
+                            
+                            {/* Подвкладка 6: Образовательные проекты */}
+                            <TabsContent value="educational" className="space-y-4 mt-0">
+                              <Card>
+                                <CardContent className="space-y-6 pt-6">
+                                  <div className="text-center py-12 text-muted-foreground">
+                                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p className="text-lg font-medium mb-2">Образовательные проекты</p>
+                                    <p className="text-sm">Раздел находится в разработке</p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </TabsContent>
+                              </div>
+                              
+                              {/* Навигация справа вертикально */}
+                              <div className="w-[280px] shrink-0">
+                                <TabsList className="flex flex-col h-auto bg-transparent p-0 py-2 w-full border-l pl-4">
+                                  <TabsTrigger 
+                                    value="infrastructure" 
+                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                  >
+                                    Развитие научно-технологической инфраструктуры
+                                  </TabsTrigger>
+                                  <TabsTrigger 
+                                    value="projects" 
+                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                  >
+                                    Развитие научно-технологических проектов
+                                  </TabsTrigger>
+                                  <TabsTrigger 
+                                    value="accelerator" 
+                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                  >
+                                    Участие в акселераторе Газпромбанк Тех. Трек Наука
+                                  </TabsTrigger>
+                                  <TabsTrigger 
+                                    value="events" 
+                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                  >
+                                    Мероприятия
+                                  </TabsTrigger>
+                                  <TabsTrigger 
+                                    value="agreements" 
+                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                  >
+                                    Соглашения о сотрудничестве
+                                  </TabsTrigger>
+                                  <TabsTrigger 
+                                    value="educational" 
+                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                  >
+                                    Образовательные проекты
+                                  </TabsTrigger>
+                                </TabsList>
+                              </div>
+                            </div>
+                          </Tabs>
                         </TabsContent>
                       </Tabs>
                     </CardContent>
