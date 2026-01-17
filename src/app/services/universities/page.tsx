@@ -104,6 +104,7 @@ interface Intern {
   hireDate: string; // Дата приема на работу (формат YYYY-MM-DD)
   status: "active" | "dismissed"; // Статус: работает или уволен
   dismissalDate?: string; // Дата увольнения (формат YYYY-MM-DD)
+  practiceInBank: boolean; // Практика в банке: да/нет
   internshipInBank: boolean; // Стажировка в банке: да/нет
   internshipStartDate?: string; // Дата начала стажировки в банке (формат YYYY-MM-DD)
   internshipEndDate?: string; // Дата окончания стажировки в банке (формат YYYY-MM-DD)
@@ -137,6 +138,17 @@ interface CaseChampionshipParticipant {
   eventId: string; // ID мероприятия (кейс-чемпионата)
   status: "registered" | "participated" | "winner" | "prize_winner"; // Статус: зарегистрирован, участвовал, победитель, призёр
   comments?: string; // Комментарии к участию
+}
+
+// Тип для целевого практиканта
+interface TargetPractitioner {
+  id: string;
+  employeeName: string; // ФИО практиканта
+  targetStartDate: string; // Дата начала целевой практики (формат YYYY-MM-DD)
+  targetEndDate: string; // Дата окончания целевой практики (формат YYYY-MM-DD)
+  department?: string; // Подразделение
+  practiceSupervisor?: string; // Руководитель практики
+  comments?: string; // Комментарии
 }
 
 // Тип для университета
@@ -181,6 +193,7 @@ interface University {
   internList?: Intern[]; // Список стажеров
   practitionerList?: Practitioner[]; // Список практикантов
   caseChampionshipParticipants?: CaseChampionshipParticipant[]; // Участники кейс-чемпионатов
+  targetPractitioners?: TargetPractitioner[]; // Целевые практиканты
   region?: string;
   description?: string;
   image?: string; // Фото/логотип ВУЗа
@@ -410,6 +423,7 @@ const mockUniversities: University[] = [
         department: "Департамент автоматизации внутренних сервисов",
         hireDate: "2024-01-15",
         status: "active",
+        practiceInBank: true,
         internshipInBank: true,
         internshipStartDate: "2023-06-01",
         internshipEndDate: "2023-08-31",
@@ -422,6 +436,7 @@ const mockUniversities: University[] = [
         department: "Управление развития общекорпоративных систем",
         hireDate: "2024-02-01",
         status: "active",
+        practiceInBank: true,
         internshipInBank: true,
         internshipStartDate: "2023-07-15",
         internshipEndDate: "2023-09-30",
@@ -435,6 +450,7 @@ const mockUniversities: University[] = [
         hireDate: "2024-03-10",
         status: "dismissed",
         dismissalDate: "2024-06-15",
+        practiceInBank: false,
         internshipInBank: false,
       },
     ],
@@ -911,10 +927,62 @@ const mockUniversities: University[] = [
       ];
       
       const interns: Intern[] = [];
+      
+      // Добавляем стажеров с именами практикантов/участников/целевых практикантов для отображения tooltip
+      const practiceEmployees = [
+        // Практиканты
+        { name: "Соколова Анастасия Дмитриевна", age: 22, position: "Стажер-экономист", department: "Департамент информационной безопасности", hireDate: "2024-01-15" },
+        { name: "Тихонов Артем Викторович", age: 23, position: "Стажер-разработчик", department: "Управление разработки банковских продуктов", hireDate: "2024-02-20" },
+        { name: "Романова Екатерина Сергеевна", age: 21, position: "Стажер-аналитик", department: "Департамент автоматизации внутренних сервисов", hireDate: "2024-03-10" },
+        { name: "Григорьев Максим Александрович", age: 24, position: "Стажер-финансист", department: "Управление развития общекорпоративных систем", hireDate: "2024-04-05" },
+        { name: "Федорова Виктория Игоревна", age: 22, position: "Стажер-тестировщик", department: "Управление качества и тестирования", hireDate: "2024-05-12" },
+        // Участники кейс-чемпионатов
+        { name: "Белова Анастасия Игоревна", age: 22, position: "Стажер-экономист", department: "Департамент автоматизации внутренних сервисов", hireDate: "2024-01-20" },
+        { name: "Громов Кирилл Александрович", age: 23, position: "Стажер-аналитик", department: "Управление разработки банковских продуктов", hireDate: "2024-02-15" },
+        { name: "Денисова Полина Сергеевна", age: 21, position: "Стажер-экономист", department: "Департамент информационной безопасности", hireDate: "2024-03-01" },
+        { name: "Егоров Станислав Дмитриевич", age: 24, position: "Стажер-разработчик", department: "Управление развития общекорпоративных систем", hireDate: "2024-03-15" },
+        { name: "Жукова Виктория Андреевна", age: 22, position: "Стажер-тестировщик", department: "Управление качества и тестирования", hireDate: "2024-04-01" },
+        // Целевые практиканты
+        { name: "Соколов Дмитрий Петрович", age: 23, position: "Стажер-разработчик", department: "Департамент автоматизации внутренних сервисов", hireDate: "2025-01-15" },
+        { name: "Морозова Анна Сергеевна", age: 22, position: "Стажер-разработчик", department: "Управление разработки банковских продуктов", hireDate: "2024-11-15" },
+        { name: "Волков Павел Александрович", age: 24, position: "Стажер-аналитик", department: "Департамент информационной безопасности", hireDate: "2024-08-15" },
+      ];
+      
+      practiceEmployees.forEach((emp, index) => {
+        const hireDateObj = new Date(emp.hireDate);
+        const status: "active" | "dismissed" = "active";
+        const internshipInBank = Math.random() < 0.6;
+        let internshipStartDate: string | undefined;
+        let internshipEndDate: string | undefined;
+        
+        if (internshipInBank) {
+          const internshipStart = new Date(hireDateObj);
+          internshipStart.setMonth(internshipStart.getMonth() - Math.floor(Math.random() * 6) - 1);
+          internshipStartDate = internshipStart.toISOString().split('T')[0];
+          const internshipEnd = new Date(internshipStart);
+          internshipEnd.setMonth(internshipEnd.getMonth() + Math.floor(Math.random() * 3) + 2);
+          internshipEndDate = internshipEnd.toISOString().split('T')[0];
+        }
+        
+        interns.push({
+          id: `intern-hse-practice-${index + 1}`,
+          employeeName: emp.name,
+          age: emp.age,
+          position: emp.position,
+          department: emp.department,
+          hireDate: emp.hireDate,
+          status,
+          practiceInBank: true, // Все эти стажеры имеют практику
+          internshipInBank,
+          internshipStartDate,
+          internshipEndDate,
+        });
+      });
+      
       const startDate = new Date("2022-01-01");
       const endDate = new Date("2024-12-31");
       
-      for (let i = 1; i <= 100; i++) {
+      for (let i = 1; i <= 87; i++) { // Уменьшил с 100 до 87, чтобы всего было 100 (13 + 87)
         const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
         const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
         const middleName = middleNames[Math.floor(Math.random() * middleNames.length)];
@@ -958,6 +1026,9 @@ const mockUniversities: University[] = [
           internshipEndDate = internshipEnd.toISOString().split('T')[0];
         }
         
+        // 50% имеют практику в банке
+        const practiceInBank = Math.random() < 0.5;
+        
         interns.push({
           id: `intern-hse-${i}`,
           employeeName: fullName,
@@ -967,6 +1038,7 @@ const mockUniversities: University[] = [
           hireDate,
           status,
           dismissalDate,
+          practiceInBank,
           internshipInBank,
           internshipStartDate,
           internshipEndDate,
@@ -1022,6 +1094,7 @@ const mockUniversities: University[] = [
           internshipEndDate: "2023-11-30",
           practiceStartDate: "2024-02-20",
           practiceEndDate: "2024-06-20",
+          practiceSupervisor: "Петрова Мария Сергеевна",
           practiceStatus: "exceeds",
           addedBy: "Петрова Мария Сергеевна",
           comment: "Активно участвует в разработке новых функций",
@@ -1090,6 +1163,7 @@ const mockUniversities: University[] = [
           internshipEndDate: "2023-07-31",
           practiceStartDate: "2023-11-20",
           practiceEndDate: "2024-03-20",
+          practiceSupervisor: "Новикова Анна Петровна",
           practiceStatus: "not_meets",
           addedBy: "Новикова Анна Петровна",
           comment: "Практика завершена досрочно",
@@ -1177,6 +1251,13 @@ const mockUniversities: University[] = [
       { id: "ccp-hse-6", employeeName: "Захаров Артём Олегович", eventId: "event-hse-3", status: "participated" },
       { id: "ccp-hse-7", employeeName: "Ильина Светлана Владимировна", eventId: "event-hse-6", status: "registered" },
       { id: "ccp-hse-8", employeeName: "Калинин Роман Петрович", eventId: "event-hse-6", status: "registered" },
+    ],
+    targetPractitioners: [
+      { id: "tp-hse-1", employeeName: "Соколов Дмитрий Петрович", targetStartDate: "2025-02-01", targetEndDate: "2025-05-31", department: "Департамент автоматизации внутренних сервисов", practiceSupervisor: "Иванов Иван Иванович", comments: "Запланирована целевая практика для изучения банковских процессов." },
+      { id: "tp-hse-2", employeeName: "Морозова Анна Сергеевна", targetStartDate: "2024-12-01", targetEndDate: "2025-03-31", department: "Управление разработки банковских продуктов", practiceSupervisor: "Петрова Мария Сергеевна", comments: "Активно проходит целевую практику. Показывает хорошие результаты в разработке." },
+      { id: "tp-hse-3", employeeName: "Волков Павел Александрович", targetStartDate: "2024-09-01", targetEndDate: "2024-12-31", department: "Департамент информационной безопасности", practiceSupervisor: "Сидоров Алексей Дмитриевич", comments: "Успешно завершил целевую практику. Рекомендован к трудоустройству." },
+      { id: "tp-hse-4", employeeName: "Козлова Мария Дмитриевна", targetStartDate: "2025-03-15", targetEndDate: "2025-07-15", department: "Управление качества и тестирования", practiceSupervisor: "Козлова Елена Владимировна" },
+      { id: "tp-hse-5", employeeName: "Новиков Игорь Владимирович", targetStartDate: "2025-01-10", targetEndDate: "2025-04-10", department: "Управление развития общекорпоративных систем", practiceSupervisor: "Федоров Сергей Николаевич", comments: "Проходит целевую практику в области системной разработки." },
     ],
     region: "Московская область",
     description: "Ведущий экономический и IT-университет",
@@ -1980,6 +2061,7 @@ export default function UniversitiesPage() {
     hireDateFrom: string;
     hireDateTo: string;
     statuses: ("active" | "dismissed")[];
+    practiceInBank: "yes" | "no" | "all";
     internshipInBank: "yes" | "no" | "all";
   }>({
     employeeName: "",
@@ -1990,6 +2072,7 @@ export default function UniversitiesPage() {
     hireDateFrom: "",
     hireDateTo: "",
     statuses: [],
+    practiceInBank: "all",
     internshipInBank: "all",
   });
   
@@ -1997,8 +2080,8 @@ export default function UniversitiesPage() {
   const [practitionersCurrentPage, setPractitionersCurrentPage] = useState(1);
   const [practitionersItemsPerPage, setPractitionersItemsPerPage] = useState(10);
   
-  // Состояние для переключения между практикантами и участниками кейс-чемпионатов
-  const [practitionersSubTab, setPractitionersSubTab] = useState<"practitioners" | "caseChampionships">("practitioners");
+  // Состояние для переключения между практикантами, участниками кейс-чемпионатов и целевыми практикантами
+  const [practitionersSubTab, setPractitionersSubTab] = useState<"practitioners" | "caseChampionships" | "targetPractitioners">("practitioners");
   
   // Состояние для добавления практиканта
   const [addPractitionerDialogOpen, setAddPractitionerDialogOpen] = useState(false);
@@ -2018,6 +2101,17 @@ export default function UniversitiesPage() {
     employeeName: "",
     eventId: "",
     status: "registered" as "registered" | "participated" | "winner" | "prize_winner",
+    comments: "",
+  });
+  
+  // Состояние для добавления целевого практиканта
+  const [addTargetPractitionerDialogOpen, setAddTargetPractitionerDialogOpen] = useState(false);
+  const [newTargetPractitioner, setNewTargetPractitioner] = useState({
+    employeeName: "",
+    targetStartDate: "",
+    targetEndDate: "",
+    department: "",
+    practiceSupervisor: "",
     comments: "",
   });
   
@@ -2043,6 +2137,19 @@ export default function UniversitiesPage() {
     employeeName: string;
     eventId: string;
     status: "registered" | "participated" | "winner" | "prize_winner";
+    comments?: string;
+  } | null>(null);
+  
+  // Состояние для редактирования целевого практиканта
+  const [editTargetPractitionerDialogOpen, setEditTargetPractitionerDialogOpen] = useState(false);
+  const [editingTargetPractitioner, setEditingTargetPractitioner] = useState<{
+    id: string;
+    universityId: string;
+    employeeName: string;
+    targetStartDate: string;
+    targetEndDate: string;
+    department?: string;
+    practiceSupervisor?: string;
     comments?: string;
   } | null>(null);
   
@@ -2080,6 +2187,22 @@ export default function UniversitiesPage() {
     comments: "",
   });
   
+  // Состояние для фильтров целевых практикантов
+  const [targetPractitionersFilterDialogOpen, setTargetPractitionersFilterDialogOpen] = useState(false);
+  const [targetPractitionersFilters, setTargetPractitionersFilters] = useState<{
+    employeeName: string;
+    departments: string[];
+    targetStartDate: string;
+    targetEndDate: string;
+    comments: string;
+  }>({
+    employeeName: "",
+    departments: [],
+    targetStartDate: "",
+    targetEndDate: "",
+    comments: "",
+  });
+  
   // Состояние для модального окна комментария практиканта
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [commentDialogPractitioner, setCommentDialogPractitioner] = useState<{ universityId: string; practitionerId: string; comment: string } | null>(null);
@@ -2087,6 +2210,10 @@ export default function UniversitiesPage() {
   // Состояние для модального окна комментария участника кейс-чемпионата
   const [commentDialogParticipantOpen, setCommentDialogParticipantOpen] = useState(false);
   const [commentDialogParticipant, setCommentDialogParticipant] = useState<{ universityId: string; participantId: string; comment: string } | null>(null);
+  
+  // Состояние для модального окна комментария целевого практиканта
+  const [commentDialogTargetPractitionerOpen, setCommentDialogTargetPractitionerOpen] = useState(false);
+  const [commentDialogTargetPractitioner, setCommentDialogTargetPractitioner] = useState<{ universityId: string; targetPractitionerId: string; comment: string } | null>(null);
   
   // Состояние для формы создания университета
   const [universityFormData, setUniversityFormData] = useState({
@@ -2352,6 +2479,10 @@ export default function UniversitiesPage() {
   const [participantsCurrentPage, setParticipantsCurrentPage] = useState(1);
   const [participantsItemsPerPage, setParticipantsItemsPerPage] = useState(10);
   
+  // Состояние для пагинации целевых практикантов
+  const [targetPractitionersCurrentPage, setTargetPractitionersCurrentPage] = useState(1);
+  const [targetPractitionersItemsPerPage, setTargetPractitionersItemsPerPage] = useState(10);
+  
   // Сброс страницы при изменении фильтров практикантов
   useEffect(() => {
     setPractitionersCurrentPage(1);
@@ -2361,6 +2492,11 @@ export default function UniversitiesPage() {
   useEffect(() => {
     setParticipantsCurrentPage(1);
   }, [participantsFilters]);
+  
+  // Сброс страницы при изменении фильтров целевых практикантов
+  useEffect(() => {
+    setTargetPractitionersCurrentPage(1);
+  }, [targetPractitionersFilters]);
   
   // Открытие диалога создания ВУЗа
   const handleCreate = () => {
@@ -3198,6 +3334,126 @@ export default function UniversitiesPage() {
   const handleOpenParticipantCommentDialog = (universityId: string, participantId: string, currentComment?: string) => {
     setCommentDialogParticipant({ universityId, participantId, comment: currentComment || "" });
     setCommentDialogParticipantOpen(true);
+  };
+  
+  // Добавление целевого практиканта
+  const handleAddTargetPractitioner = (universityId: string) => {
+    if (!newTargetPractitioner.employeeName.trim() || !newTargetPractitioner.targetStartDate || !newTargetPractitioner.targetEndDate) {
+      return;
+    }
+    
+    const targetPractitioner: TargetPractitioner = {
+      id: `tp-${Date.now()}`,
+      employeeName: newTargetPractitioner.employeeName.trim(),
+      targetStartDate: newTargetPractitioner.targetStartDate,
+      targetEndDate: newTargetPractitioner.targetEndDate,
+      department: newTargetPractitioner.department.trim() || undefined,
+      practiceSupervisor: newTargetPractitioner.practiceSupervisor.trim() || undefined,
+      comments: newTargetPractitioner.comments?.trim() || undefined,
+    };
+    
+    setUniversities(universities.map(u => {
+      if (u.id === universityId) {
+        return {
+          ...u,
+          targetPractitioners: [...(u.targetPractitioners || []), targetPractitioner],
+        };
+      }
+      return u;
+    }));
+    
+    setNewTargetPractitioner({
+      employeeName: "",
+      targetStartDate: "",
+      targetEndDate: "",
+      department: "",
+      practiceSupervisor: "",
+      comments: "",
+    });
+    setAddTargetPractitionerDialogOpen(false);
+  };
+  
+  // Начать редактирование целевого практиканта
+  const handleStartEditTargetPractitioner = (universityId: string, targetPractitioner: TargetPractitioner) => {
+    setEditingTargetPractitioner({
+      id: targetPractitioner.id,
+      universityId,
+      employeeName: targetPractitioner.employeeName,
+      targetStartDate: targetPractitioner.targetStartDate,
+      targetEndDate: targetPractitioner.targetEndDate,
+      department: targetPractitioner.department || "",
+      practiceSupervisor: targetPractitioner.practiceSupervisor || "",
+      comments: targetPractitioner.comments || "",
+    });
+    setEditTargetPractitionerDialogOpen(true);
+  };
+  
+  // Сохранить редактирование целевого практиканта
+  const handleSaveEditTargetPractitioner = () => {
+    if (!editingTargetPractitioner) return;
+    
+    setUniversities(universities.map(u => {
+      if (u.id === editingTargetPractitioner.universityId && u.targetPractitioners) {
+        return {
+          ...u,
+          targetPractitioners: u.targetPractitioners.map(p => 
+            p.id === editingTargetPractitioner.id 
+              ? {
+                  ...p,
+                  employeeName: editingTargetPractitioner.employeeName.trim(),
+                  targetStartDate: editingTargetPractitioner.targetStartDate,
+                  targetEndDate: editingTargetPractitioner.targetEndDate,
+                  department: editingTargetPractitioner.department?.trim() || undefined,
+                  practiceSupervisor: editingTargetPractitioner.practiceSupervisor?.trim() || undefined,
+                  comments: editingTargetPractitioner.comments?.trim() || undefined,
+                }
+              : p
+          ),
+        };
+      }
+      return u;
+    }));
+    
+    setEditingTargetPractitioner(null);
+    setEditTargetPractitionerDialogOpen(false);
+  };
+  
+  // Удалить целевого практиканта
+  const handleDeleteTargetPractitioner = (universityId: string, targetPractitionerId: string) => {
+    setUniversities(universities.map(u => {
+      if (u.id === universityId && u.targetPractitioners) {
+        return {
+          ...u,
+          targetPractitioners: u.targetPractitioners.filter(p => p.id !== targetPractitionerId),
+        };
+      }
+      return u;
+    }));
+  };
+  
+  // Обновление комментария целевого практиканта
+  const handleUpdateTargetPractitionerComment = (comment: string) => {
+    if (!commentDialogTargetPractitioner) return;
+    
+    setUniversities(universities.map(u => {
+      if (u.id === commentDialogTargetPractitioner.universityId && u.targetPractitioners) {
+        return {
+          ...u,
+          targetPractitioners: u.targetPractitioners.map(p => 
+            p.id === commentDialogTargetPractitioner.targetPractitionerId ? { ...p, comments: comment.trim() || undefined } : p
+          )
+        };
+      }
+      return u;
+    }));
+    setCommentDialogTargetPractitionerOpen(false);
+    setCommentDialogTargetPractitioner(null);
+  };
+
+  // Открытие модального окна комментария целевого практиканта
+  const handleOpenTargetPractitionerCommentDialog = (universityId: string, targetPractitionerId: string, currentComment?: string) => {
+    setCommentDialogTargetPractitioner({ universityId, targetPractitionerId, comment: currentComment || "" });
+    setCommentDialogTargetPractitionerOpen(true);
   };
   
   // Удалить участника кейс-чемпионата
@@ -5366,6 +5622,17 @@ export default function UniversitiesPage() {
                                     return false;
                                   }
                                   
+                                  // Фильтр по практике в банке
+                                  if (internsFilters.practiceInBank !== "all") {
+                                    const hasPractice = intern.practiceInBank;
+                                    if (internsFilters.practiceInBank === "yes" && !hasPractice) {
+                                      return false;
+                                    }
+                                    if (internsFilters.practiceInBank === "no" && hasPractice) {
+                                      return false;
+                                    }
+                                  }
+                                  
                                   // Фильтр по стажировке в банке
                                   if (internsFilters.internshipInBank !== "all") {
                                     const hasInternship = intern.internshipInBank;
@@ -5403,6 +5670,7 @@ export default function UniversitiesPage() {
                                               hireDateFrom: "",
                                               hireDateTo: "",
                                               statuses: [],
+                                              practiceInBank: "all",
                                               internshipInBank: "all",
                                             });
                                             setInternsCurrentPage(1);
@@ -5423,6 +5691,7 @@ export default function UniversitiesPage() {
                                               hireDateFrom: "",
                                               hireDateTo: "",
                                               statuses: [],
+                                              practiceInBank: "all",
                                               internshipInBank: "all",
                                             });
                                             setInternsCurrentPage(1);
@@ -5445,6 +5714,7 @@ export default function UniversitiesPage() {
                                               internsFilters.departments.length +
                                               (internsFilters.hireDateFrom || internsFilters.hireDateTo ? 1 : 0) +
                                               internsFilters.statuses.length +
+                                              (internsFilters.practiceInBank !== "all" ? 1 : 0) +
                                               (internsFilters.internshipInBank !== "all" ? 1 : 0);
                                             return activeFiltersCount > 0 ? (
                                               <Badge variant="secondary" className="ml-2">
@@ -5621,6 +5891,24 @@ export default function UniversitiesPage() {
                                             </div>
                                           </div>
                                           
+                                          {/* Фильтр по практике в банке */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Практика в банке</Label>
+                                            <Select
+                                              value={internsFilters.practiceInBank}
+                                              onValueChange={(value) => setInternsFilters({ ...internsFilters, practiceInBank: value as typeof internsFilters.practiceInBank })}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="all">Все</SelectItem>
+                                                <SelectItem value="yes">Да</SelectItem>
+                                                <SelectItem value="no">Нет</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                          
                                           {/* Фильтр по стажировке в банке */}
                                           <div className="space-y-2">
                                             <Label className="text-sm font-medium">Стажировка в банке</Label>
@@ -5748,6 +6036,14 @@ export default function UniversitiesPage() {
                                       });
                                     });
                                     
+                                    // Фильтр по практике в банке
+                                    if (internsFilters.practiceInBank !== "all") {
+                                      activeFilters.push({
+                                        label: `Практика в банке: ${internsFilters.practiceInBank === "yes" ? "Да" : "Нет"}`,
+                                        onRemove: () => setInternsFilters({ ...internsFilters, practiceInBank: "all" }),
+                                      });
+                                    }
+                                    
                                     // Фильтр по стажировке в банке
                                     if (internsFilters.internshipInBank !== "all") {
                                       activeFilters.push({
@@ -5790,6 +6086,7 @@ export default function UniversitiesPage() {
                                         <TableHead className="w-[290px]">Должность / Подразделение</TableHead>
                                         <TableHead className="w-[120px]">Дата приема на работу</TableHead>
                                         <TableHead className="w-[120px]">Статус</TableHead>
+                                        <TableHead className="w-[140px]">Практика в банке</TableHead>
                                         <TableHead className="w-[120px]">Стажировка в банке</TableHead>
                                       </TableRow>
                                     </TableHeader>
@@ -5805,6 +6102,52 @@ export default function UniversitiesPage() {
                                           const getInitials = (name: string) => {
                                             return name.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase();
                                           };
+                                          
+                                          // Функция для получения информации о практике
+                                          const getPracticeInfo = () => {
+                                            // Проверяем практикантов
+                                            const practitioner = university.practitionerList?.find(p => p.employeeName === intern.employeeName);
+                                            if (practitioner) {
+                                              const formatDate = (dateStr: string) => {
+                                                const [year, month, day] = dateStr.split('-').map(Number);
+                                                return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                              };
+                                              return {
+                                                type: "Практика",
+                                                period: `${formatDate(practitioner.practiceStartDate)} - ${formatDate(practitioner.practiceEndDate)}`,
+                                                comment: practitioner.comment,
+                                              };
+                                            }
+                                            
+                                            // Проверяем участников кейс-чемпионатов
+                                            const participant = university.caseChampionshipParticipants?.find(p => p.employeeName === intern.employeeName);
+                                            if (participant) {
+                                              return {
+                                                type: "Участник кейс-чемп",
+                                                period: null,
+                                                comment: participant.comments,
+                                              };
+                                            }
+                                            
+                                            // Проверяем целевых практикантов
+                                            const targetPractitioner = university.targetPractitioners?.find(p => p.employeeName === intern.employeeName);
+                                            if (targetPractitioner) {
+                                              const formatDate = (dateStr: string) => {
+                                                const [year, month, day] = dateStr.split('-').map(Number);
+                                                return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                              };
+                                              return {
+                                                type: "Целевая практика",
+                                                period: `${formatDate(targetPractitioner.targetStartDate)} - ${formatDate(targetPractitioner.targetEndDate)}`,
+                                                comment: targetPractitioner.comments,
+                                              };
+                                            }
+                                            
+                                            return null;
+                                          };
+                                          
+                                          const practiceInfo = getPracticeInfo();
+                                          
                                           return (
                                           <TableRow key={intern.id}>
                                               <TableCell className="px-4 whitespace-normal">
@@ -5868,6 +6211,56 @@ export default function UniversitiesPage() {
                                                     )}
                                                   >
                                                     Работает
+                                                  </Badge>
+                                                )}
+                                              </TableCell>
+                                              <TableCell>
+                                                {intern.practiceInBank ? (
+                                                  practiceInfo ? (
+                                                    <Tooltip>
+                                                      <TooltipTrigger asChild>
+                                                        <Badge
+                                                          variant="outline"
+                                                          className={cn(
+                                                            "text-xs px-2 py-0.5 cursor-help",
+                                                            getStatusBadgeColor("approved")
+                                                          )}
+                                                        >
+                                                          Да
+                                                        </Badge>
+                                                      </TooltipTrigger>
+                                                      <TooltipContent className="max-w-xs">
+                                                        <div className="space-y-1">
+                                                          <p className="font-semibold">Вид практики: {practiceInfo.type}</p>
+                                                          {practiceInfo.period && (
+                                                            <p>Период прохождения практики: {practiceInfo.period}</p>
+                                                          )}
+                                                          {practiceInfo.comment && (
+                                                            <p className="text-sm">Комментарий: {practiceInfo.comment}</p>
+                                                          )}
+                                                        </div>
+                                                      </TooltipContent>
+                                                    </Tooltip>
+                                                  ) : (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className={cn(
+                                                        "text-xs px-2 py-0.5",
+                                                        getStatusBadgeColor("approved")
+                                                      )}
+                                                    >
+                                                      Да
+                                                    </Badge>
+                                                  )
+                                                ) : (
+                                                  <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                      "text-xs px-2 py-0.5",
+                                                      getStatusBadgeColor("notStarted")
+                                                    )}
+                                                  >
+                                                    Нет
                                                   </Badge>
                                                 )}
                                               </TableCell>
@@ -6006,12 +6399,13 @@ export default function UniversitiesPage() {
                                         <TableHead className="w-[260px]">Должность / Подразделение</TableHead>
                                         <TableHead className="w-[120px]">Дата приема на работу</TableHead>
                                         <TableHead className="w-[120px]">Статус</TableHead>
+                                        <TableHead className="w-[140px]">Практика в банке</TableHead>
                                         <TableHead className="w-[120px]">Стажировка в банке</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                       <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                                           Сотрудники не добавлены
                                               </TableCell>
                                             </TableRow>
@@ -6044,6 +6438,16 @@ export default function UniversitiesPage() {
                                   Участники кейс-чемпионатов
                                   {university.caseChampionshipParticipants && university.caseChampionshipParticipants.length > 0 && (
                                     <Badge variant="secondary" className="ml-2">{university.caseChampionshipParticipants.length}</Badge>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant={practitionersSubTab === "targetPractitioners" ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setPractitionersSubTab("targetPractitioners")}
+                                >
+                                  Целевые практиканты
+                                  {university.targetPractitioners && university.targetPractitioners.length > 0 && (
+                                    <Badge variant="secondary" className="ml-2">{university.targetPractitioners.length}</Badge>
                                   )}
                                 </Button>
                               </div>
@@ -6149,7 +6553,7 @@ export default function UniversitiesPage() {
                                           
                                           {/* Фильтр по подразделению */}
                                           <div className="space-y-2">
-                                            <Label className="text-sm font-medium">Подразделение (практика)</Label>
+                                            <Label className="text-sm font-medium">Подразделение</Label>
                                             <div className="space-y-1.5 max-h-32 overflow-y-auto">
                                               {(() => {
                                                 const uniqueDepartments = Array.from(new Set(university.practitionerList?.map(i => i.department) || []));
@@ -6518,7 +6922,7 @@ export default function UniversitiesPage() {
                                       <TableRow>
                                         <TableHead className="w-[240px]">ФИО</TableHead>
                                         <TableHead className="w-[200px]">Период прохождения практики</TableHead>
-                                        <TableHead className="w-[250px]">Подразделение (практика)</TableHead>
+                                        <TableHead className="w-[250px]">Подразделение</TableHead>
                                         <TableHead className="w-[220px]">Руководитель практики</TableHead>
                                         <TableHead className="w-[150px] text-center">Статус</TableHead>
                                         <TableHead className="w-[80px] text-center">Действия</TableHead>
@@ -6549,7 +6953,7 @@ export default function UniversitiesPage() {
                                                 {formatDate(practitioner.practiceStartDate)}-{formatDate(practitioner.practiceEndDate)}
                                               </TableCell>
                                               <TableCell className="px-4 whitespace-normal">
-                                                <span className="font-medium">{practitioner.department}</span>
+                                                {practitioner.department}
                                               </TableCell>
                                               <TableCell className="px-4 whitespace-normal">
                                                 {practitioner.practiceSupervisor ? (
@@ -6706,7 +7110,7 @@ export default function UniversitiesPage() {
                                       <TableRow>
                                         <TableHead className="w-[240px]">ФИО</TableHead>
                                         <TableHead className="w-[200px]">Период прохождения практики</TableHead>
-                                        <TableHead className="w-[250px]">Подразделение (практика)</TableHead>
+                                        <TableHead className="w-[250px]">Подразделение</TableHead>
                                         <TableHead className="w-[220px]">Руководитель практики</TableHead>
                                         <TableHead className="w-[150px] text-center">Статус</TableHead>
                                         <TableHead className="w-[80px] text-center">Действия</TableHead>
@@ -7238,6 +7642,478 @@ export default function UniversitiesPage() {
                                   </div>
                                 );
                               })()}
+
+                              {/* Таблица: Целевые практиканты */}
+                              {practitionersSubTab === "targetPractitioners" && (() => {
+                                // Вычисляем отфильтрованные данные один раз
+                                const filteredTargetPractitioners = (university.targetPractitioners || []).filter((targetPractitioner) => {
+                                  // Фильтр по имени
+                                  if (targetPractitionersFilters.employeeName) {
+                                    const searchName = targetPractitionersFilters.employeeName.toLowerCase();
+                                    if (!targetPractitioner.employeeName.toLowerCase().includes(searchName)) {
+                                      return false;
+                                    }
+                                  }
+                                  
+                                  // Фильтр по подразделению
+                                  if (targetPractitionersFilters.departments.length > 0 && (!targetPractitioner.department || !targetPractitionersFilters.departments.includes(targetPractitioner.department))) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по периоду
+                                  if (targetPractitionersFilters.targetStartDate && targetPractitioner.targetStartDate < targetPractitionersFilters.targetStartDate) {
+                                    return false;
+                                  }
+                                  if (targetPractitionersFilters.targetEndDate && targetPractitioner.targetEndDate > targetPractitionersFilters.targetEndDate) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по комментарию
+                                  if (targetPractitionersFilters.comments) {
+                                    const searchComment = targetPractitionersFilters.comments.toLowerCase();
+                                    if (!targetPractitioner.comments || !targetPractitioner.comments.toLowerCase().includes(searchComment)) {
+                                      return false;
+                                    }
+                                  }
+                                  
+                                  return true;
+                                });
+                                
+                                return university.targetPractitioners && university.targetPractitioners.length > 0 ? (
+                                  <>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="text-sm text-muted-foreground">
+                                        Найдено: <span className="font-semibold text-foreground">{filteredTargetPractitioners.length}</span> {filteredTargetPractitioners.length === 1 ? 'практикант' : filteredTargetPractitioners.length > 1 && filteredTargetPractitioners.length < 5 ? 'практиканта' : 'практикантов'}
+                                        {filteredTargetPractitioners.length !== university.targetPractitioners.length && (
+                                          <span className="text-xs ml-1">из {university.targetPractitioners.length}</span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Button variant="outline">
+                                          <FileText className="mr-2 h-4 w-4" />
+                                          Импорт Excel
+                                        </Button>
+                                        <Dialog open={targetPractitionersFilterDialogOpen} onOpenChange={setTargetPractitionersFilterDialogOpen}>
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline">
+                                          <Filter className="mr-2 h-4 w-4" />
+                                          Фильтры
+                                          {(() => {
+                                            const activeFiltersCount = 
+                                              (targetPractitionersFilters.employeeName ? 1 : 0) +
+                                              targetPractitionersFilters.departments.length +
+                                              (targetPractitionersFilters.targetStartDate || targetPractitionersFilters.targetEndDate ? 1 : 0) +
+                                              (targetPractitionersFilters.comments ? 1 : 0);
+                                            return activeFiltersCount > 0 ? (
+                                              <Badge variant="secondary" className="ml-2">
+                                                {activeFiltersCount}
+                                              </Badge>
+                                            ) : null;
+                                          })()}
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                        <DialogHeader className="pb-3">
+                                          <DialogTitle className="text-lg">Фильтры целевых практикантов</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-2">
+                                          {/* Фильтр по имени */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Практикант</Label>
+                                            <Input
+                                              placeholder="Поиск по ФИО..."
+                                              value={targetPractitionersFilters.employeeName}
+                                              onChange={(e) => setTargetPractitionersFilters({ ...targetPractitionersFilters, employeeName: e.target.value })}
+                                            />
+                                          </div>
+                                          
+                                          {/* Фильтр по подразделению */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Подразделение</Label>
+                                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                              {(() => {
+                                                const uniqueDepartments = Array.from(new Set(university.targetPractitioners?.map(tp => tp.department).filter(Boolean) || []));
+                                                return uniqueDepartments.map((department) => (
+                                                  <div key={department} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`filter-target-practitioner-department-${department}`}
+                                                      checked={targetPractitionersFilters.departments.includes(department)}
+                                                      onCheckedChange={(checked) => {
+                                                        if (checked) {
+                                                          setTargetPractitionersFilters({
+                                                            ...targetPractitionersFilters,
+                                                            departments: [...targetPractitionersFilters.departments, department],
+                                                          });
+                                                        } else {
+                                                          setTargetPractitionersFilters({
+                                                            ...targetPractitionersFilters,
+                                                            departments: targetPractitionersFilters.departments.filter((d) => d !== department),
+                                                          });
+                                                        }
+                                                      }}
+                                                    />
+                                                    <Label
+                                                      htmlFor={`filter-target-practitioner-department-${department}`}
+                                                      className="text-sm font-normal cursor-pointer"
+                                                    >
+                                                      {department}
+                                                    </Label>
+                                                  </div>
+                                                ));
+                                              })()}
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по периоду */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Период прохождения практики</Label>
+                                            <div className="flex items-center gap-2">
+                                              <Input
+                                                type="date"
+                                                placeholder="От"
+                                                value={targetPractitionersFilters.targetStartDate}
+                                                onChange={(e) => setTargetPractitionersFilters({ ...targetPractitionersFilters, targetStartDate: e.target.value })}
+                                                className="w-full"
+                                              />
+                                              <span className="text-sm text-muted-foreground">—</span>
+                                              <Input
+                                                type="date"
+                                                placeholder="До"
+                                                value={targetPractitionersFilters.targetEndDate}
+                                                onChange={(e) => setTargetPractitionersFilters({ ...targetPractitionersFilters, targetEndDate: e.target.value })}
+                                                className="w-full"
+                                              />
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по комментарию */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Комментарий</Label>
+                                            <Input
+                                              placeholder="Поиск по комментарию..."
+                                              value={targetPractitionersFilters.comments}
+                                              onChange={(e) => setTargetPractitionersFilters({ ...targetPractitionersFilters, comments: e.target.value })}
+                                            />
+                                          </div>
+                                        </div>
+                                        <DialogFooter className="pt-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                              setTargetPractitionersFilters({
+                                                employeeName: "",
+                                                departments: [],
+                                                targetStartDate: "",
+                                                targetEndDate: "",
+                                                comments: "",
+                                              });
+                                              setTargetPractitionersCurrentPage(1);
+                                            }}
+                                          >
+                                            Сбросить
+                                          </Button>
+                                          <Button size="sm" onClick={() => {
+                                            setTargetPractitionersFilterDialogOpen(false);
+                                            setTargetPractitionersCurrentPage(1);
+                                          }}>
+                                            Применить
+                                          </Button>
+                                        </DialogFooter>
+                                      </DialogContent>
+                                    </Dialog>
+                                        <Dialog open={addTargetPractitionerDialogOpen} onOpenChange={setAddTargetPractitionerDialogOpen}>
+                                          <DialogTrigger asChild>
+                                            <Button variant="default" size="sm">
+                                              <Plus className="mr-2 h-4 w-4" />
+                                              Добавить практиканта
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent className="max-w-md">
+                                            <DialogHeader>
+                                              <DialogTitle>Добавить практиканта</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                              <div className="space-y-2">
+                                                <Label htmlFor="target-practitioner-name">ФИО *</Label>
+                                                <Input
+                                                  id="target-practitioner-name"
+                                                  placeholder="Иванов Иван Иванович"
+                                                  value={newTargetPractitioner.employeeName}
+                                                  onChange={(e) => setNewTargetPractitioner({ ...newTargetPractitioner, employeeName: e.target.value })}
+                                                />
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                  <Label htmlFor="target-practitioner-start-date">Дата начала *</Label>
+                                                  <Input
+                                                    id="target-practitioner-start-date"
+                                                    type="date"
+                                                    value={newTargetPractitioner.targetStartDate}
+                                                    onChange={(e) => setNewTargetPractitioner({ ...newTargetPractitioner, targetStartDate: e.target.value })}
+                                                  />
+                                                </div>
+                                                <div className="space-y-2">
+                                                  <Label htmlFor="target-practitioner-end-date">Дата окончания *</Label>
+                                                  <Input
+                                                    id="target-practitioner-end-date"
+                                                    type="date"
+                                                    value={newTargetPractitioner.targetEndDate}
+                                                    onChange={(e) => setNewTargetPractitioner({ ...newTargetPractitioner, targetEndDate: e.target.value })}
+                                                  />
+                                                </div>
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="target-practitioner-department">Подразделение</Label>
+                                                <Input
+                                                  id="target-practitioner-department"
+                                                  placeholder="Департамент развития"
+                                                  value={newTargetPractitioner.department}
+                                                  onChange={(e) => setNewTargetPractitioner({ ...newTargetPractitioner, department: e.target.value })}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="target-practitioner-supervisor">Руководитель практики</Label>
+                                                <Input
+                                                  id="target-practitioner-supervisor"
+                                                  placeholder="ФИО руководителя (необязательно)"
+                                                  value={newTargetPractitioner.practiceSupervisor}
+                                                  onChange={(e) => setNewTargetPractitioner({ ...newTargetPractitioner, practiceSupervisor: e.target.value })}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="target-practitioner-comments">Комментарии</Label>
+                                                <Textarea
+                                                  id="target-practitioner-comments"
+                                                  placeholder="Комментарии к целевой практике..."
+                                                  value={newTargetPractitioner.comments}
+                                                  onChange={(e) => setNewTargetPractitioner({ ...newTargetPractitioner, comments: e.target.value })}
+                                                  rows={3}
+                                                />
+                                              </div>
+                                            </div>
+                                            <DialogFooter>
+                                              <Button variant="outline" onClick={() => setAddTargetPractitionerDialogOpen(false)}>
+                                                Отмена
+                                              </Button>
+                                              <Button 
+                                                onClick={() => handleAddTargetPractitioner(university.id)}
+                                                disabled={!newTargetPractitioner.employeeName.trim() || !newTargetPractitioner.targetStartDate || !newTargetPractitioner.targetEndDate}
+                                              >
+                                                Добавить
+                                              </Button>
+                                            </DialogFooter>
+                                          </DialogContent>
+                                        </Dialog>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Активные фильтры */}
+                                    {(() => {
+                                      const activeFilters: Array<{ label: string; onRemove: () => void }> = [];
+                                      
+                                      // Фильтр по имени
+                                      if (targetPractitionersFilters.employeeName) {
+                                        activeFilters.push({
+                                          label: `Практикант: ${targetPractitionersFilters.employeeName}`,
+                                          onRemove: () => setTargetPractitionersFilters({ ...targetPractitionersFilters, employeeName: "" }),
+                                        });
+                                      }
+                                      
+                                      // Фильтр по подразделениям
+                                      targetPractitionersFilters.departments.forEach((department) => {
+                                        activeFilters.push({
+                                          label: `Подразделение: ${department}`,
+                                          onRemove: () => setTargetPractitionersFilters({
+                                            ...targetPractitionersFilters,
+                                            departments: targetPractitionersFilters.departments.filter((d) => d !== department),
+                                          }),
+                                        });
+                                      });
+                                      
+                                      // Фильтр по периоду
+                                      if (targetPractitionersFilters.targetStartDate || targetPractitionersFilters.targetEndDate) {
+                                        const formatDate = (dateString: string) => {
+                                          if (!dateString) return "";
+                                          const [year, month, day] = dateString.split('-').map(Number);
+                                          return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                        };
+                                        const dateLabel = targetPractitionersFilters.targetStartDate && targetPractitionersFilters.targetEndDate
+                                          ? `Период: ${formatDate(targetPractitionersFilters.targetStartDate)} - ${formatDate(targetPractitionersFilters.targetEndDate)}`
+                                          : targetPractitionersFilters.targetStartDate
+                                          ? `Период: с ${formatDate(targetPractitionersFilters.targetStartDate)}`
+                                          : `Период: до ${formatDate(targetPractitionersFilters.targetEndDate)}`;
+                                        activeFilters.push({
+                                          label: dateLabel,
+                                          onRemove: () => setTargetPractitionersFilters({ ...targetPractitionersFilters, targetStartDate: "", targetEndDate: "" }),
+                                        });
+                                      }
+                                      
+                                      // Фильтр по комментарию
+                                      if (targetPractitionersFilters.comments) {
+                                        activeFilters.push({
+                                          label: `Комментарий: ${targetPractitionersFilters.comments}`,
+                                          onRemove: () => setTargetPractitionersFilters({ ...targetPractitionersFilters, comments: "" }),
+                                        });
+                                      }
+                                      
+                                      if (activeFilters.length === 0) return null;
+                                      
+                                      return (
+                                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                                          {activeFilters.map((filter, index) => (
+                                            <Badge
+                                              key={index}
+                                              variant="secondary"
+                                              className="flex items-center gap-1 px-2 py-1"
+                                            >
+                                              <span className="text-sm">{filter.label}</span>
+                                              <button
+                                                type="button"
+                                                onClick={filter.onRemove}
+                                                className="ml-1 rounded-full hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                                aria-label="Удалить фильтр"
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </button>
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      );
+                                    })()}
+                                    
+                                    <div className="border rounded-lg overflow-hidden">
+                                      <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="w-[300px]">ФИО</TableHead>
+                                          <TableHead className="w-[200px]">Период прохождения практики</TableHead>
+                                          <TableHead className="w-[250px]">Подразделение</TableHead>
+                                          <TableHead className="w-[220px]">Руководитель практики</TableHead>
+                                          <TableHead className="w-[80px] text-center">Действия</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {(() => {
+                                          const totalPages = Math.ceil(filteredTargetPractitioners.length / targetPractitionersItemsPerPage);
+                                          const startIndex = (targetPractitionersCurrentPage - 1) * targetPractitionersItemsPerPage;
+                                          const endIndex = startIndex + targetPractitionersItemsPerPage;
+                                          const paginatedTargetPractitioners = filteredTargetPractitioners.slice(startIndex, endIndex);
+                                          
+                                          return paginatedTargetPractitioners.length > 0 ? (
+                                            paginatedTargetPractitioners.map((targetPractitioner) => {
+                                          const formatDate = (dateStr: string) => {
+                                            const [year, month, day] = dateStr.split('-').map(Number);
+                                            return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                          };
+                                          const getInitials = (name: string) => {
+                                            return name.split(' ').slice(1, 3).map(n => n[0]).join('').toUpperCase();
+                                          };
+                                          return (
+                                            <TableRow key={targetPractitioner.id}>
+                                              <TableCell className="font-medium">{targetPractitioner.employeeName}</TableCell>
+                                              <TableCell>
+                                                {formatDate(targetPractitioner.targetStartDate)} - {formatDate(targetPractitioner.targetEndDate)}
+                                              </TableCell>
+                                              <TableCell>{targetPractitioner.department || <span className="text-muted-foreground">—</span>}</TableCell>
+                                              <TableCell>
+                                                {targetPractitioner.practiceSupervisor ? (
+                                                  <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10 shrink-0">
+                                                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                        {getInitials(targetPractitioner.practiceSupervisor)}
+                                                      </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex flex-col min-w-0">
+                                                      <span className="font-medium">{targetPractitioner.practiceSupervisor}</span>
+                                                    </div>
+                                                  </div>
+                                                ) : (
+                                                  <span className="text-muted-foreground">—</span>
+                                                )}
+                                              </TableCell>
+                                              <TableCell className="text-center">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-8 w-8"
+                                                  onClick={() => handleStartEditTargetPractitioner(university.id, targetPractitioner)}
+                                                >
+                                                  <Pencil className="h-4 w-4" />
+                                                </Button>
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                            })
+                                          ) : (
+                                            <TableRow>
+                                              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                                Целевые практиканты не найдены
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })()}
+                                      </TableBody>
+                                    </Table>
+                                    </div>
+                                    
+                                    {/* Пагинация */}
+                                    {(() => {
+                                      const totalPages = Math.ceil(filteredTargetPractitioners.length / targetPractitionersItemsPerPage);
+                                      
+                                      return totalPages > 1 ? (
+                                        <div className="flex items-center justify-between mt-3">
+                                          <div className="text-sm text-muted-foreground">
+                                            Страница {targetPractitionersCurrentPage} из {totalPages}
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setTargetPractitionersCurrentPage(1)}
+                                              disabled={targetPractitionersCurrentPage === 1}
+                                            >
+                                              <ChevronsLeft className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setTargetPractitionersCurrentPage(targetPractitionersCurrentPage - 1)}
+                                              disabled={targetPractitionersCurrentPage === 1}
+                                            >
+                                              <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setTargetPractitionersCurrentPage(targetPractitionersCurrentPage + 1)}
+                                              disabled={targetPractitionersCurrentPage === totalPages}
+                                            >
+                                              <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setTargetPractitionersCurrentPage(totalPages)}
+                                              disabled={targetPractitionersCurrentPage === totalPages}
+                                            >
+                                              <ChevronsRight className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ) : null;
+                                    })()}
+                                  </>
+                                ) : (
+                                  <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                                    Целевые практиканты не добавлены
+                                  </div>
+                                );
+                              })()}
                               
                               {/* Модальное окно редактирования практиканта */}
                               <Dialog open={editPractitionerDialogOpen} onOpenChange={setEditPractitionerDialogOpen}>
@@ -7488,6 +8364,129 @@ export default function UniversitiesPage() {
                                       Отмена
                                     </Button>
                                     <Button onClick={() => handleUpdateParticipantComment(commentDialogParticipant?.comment || "")}>
+                                      Сохранить
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                              
+                              {/* Модальное окно редактирования целевого практиканта */}
+                              <Dialog open={editTargetPractitionerDialogOpen} onOpenChange={setEditTargetPractitionerDialogOpen}>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Редактировать целевого практиканта</DialogTitle>
+                                  </DialogHeader>
+                                  {editingTargetPractitioner && (
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-target-practitioner-name">ФИО *</Label>
+                                        <Input
+                                          id="edit-target-practitioner-name"
+                                          value={editingTargetPractitioner.employeeName}
+                                          onChange={(e) => setEditingTargetPractitioner({ ...editingTargetPractitioner, employeeName: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label htmlFor="edit-target-practitioner-start-date">Дата начала *</Label>
+                                          <Input
+                                            id="edit-target-practitioner-start-date"
+                                            type="date"
+                                            value={editingTargetPractitioner.targetStartDate}
+                                            onChange={(e) => setEditingTargetPractitioner({ ...editingTargetPractitioner, targetStartDate: e.target.value })}
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label htmlFor="edit-target-practitioner-end-date">Дата окончания *</Label>
+                                          <Input
+                                            id="edit-target-practitioner-end-date"
+                                            type="date"
+                                            value={editingTargetPractitioner.targetEndDate}
+                                            onChange={(e) => setEditingTargetPractitioner({ ...editingTargetPractitioner, targetEndDate: e.target.value })}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-target-practitioner-department">Подразделение</Label>
+                                        <Input
+                                          id="edit-target-practitioner-department"
+                                          value={editingTargetPractitioner.department || ""}
+                                          onChange={(e) => setEditingTargetPractitioner({ ...editingTargetPractitioner, department: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-target-practitioner-supervisor">Руководитель практики</Label>
+                                        <Input
+                                          id="edit-target-practitioner-supervisor"
+                                          placeholder="ФИО руководителя (необязательно)"
+                                          value={editingTargetPractitioner.practiceSupervisor || ""}
+                                          onChange={(e) => setEditingTargetPractitioner({ ...editingTargetPractitioner, practiceSupervisor: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-target-practitioner-comments">Комментарии</Label>
+                                        <Textarea
+                                          id="edit-target-practitioner-comments"
+                                          placeholder="Комментарии к целевой практике..."
+                                          value={editingTargetPractitioner.comments || ""}
+                                          onChange={(e) => setEditingTargetPractitioner({ ...editingTargetPractitioner, comments: e.target.value })}
+                                          rows={3}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  <DialogFooter className="flex justify-between">
+                                    <Button
+                                      variant="destructive"
+                                      onClick={() => editingTargetPractitioner && handleDeleteTargetPractitioner(editingTargetPractitioner.universityId, editingTargetPractitioner.id)}
+                                    >
+                                      Удалить
+                                    </Button>
+                                    <div className="flex gap-2">
+                                      <Button variant="outline" onClick={() => setEditTargetPractitionerDialogOpen(false)}>
+                                        Отмена
+                                      </Button>
+                                      <Button 
+                                        onClick={handleSaveEditTargetPractitioner}
+                                        disabled={!editingTargetPractitioner?.employeeName.trim() || !editingTargetPractitioner?.targetStartDate || !editingTargetPractitioner?.targetEndDate}
+                                      >
+                                        Сохранить
+                                      </Button>
+                                    </div>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                              
+                              {/* Модальное окно комментария целевого практиканта */}
+                              <Dialog open={commentDialogTargetPractitionerOpen} onOpenChange={setCommentDialogTargetPractitionerOpen}>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Комментарий к целевому практиканту</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="target-practitioner-comment-dialog">Комментарий</Label>
+                                      <Textarea
+                                        id="target-practitioner-comment-dialog"
+                                        placeholder="Введите комментарий..."
+                                        value={commentDialogTargetPractitioner?.comment || ""}
+                                        onChange={(e) => {
+                                          if (commentDialogTargetPractitioner) {
+                                            setCommentDialogTargetPractitioner({
+                                              ...commentDialogTargetPractitioner,
+                                              comment: e.target.value
+                                            });
+                                          }
+                                        }}
+                                        rows={5}
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => setCommentDialogTargetPractitionerOpen(false)}>
+                                      Отмена
+                                    </Button>
+                                    <Button onClick={() => handleUpdateTargetPractitionerComment(commentDialogTargetPractitioner?.comment || "")}>
                                       Сохранить
                                     </Button>
                                   </DialogFooter>
