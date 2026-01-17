@@ -156,7 +156,7 @@ interface CNTRInfrastructureItem {
   id: string;
   developmentType: "financing" | "endowment" | "endowment-fund"; // Вид развития
   date: string; // Дата (формат YYYY-MM-DD)
-  branch?: string; // Головной офис или филиал
+  branch?: string; // Головной ВУЗ или филиал
   description?: string; // Описание
   document?: string; // Документ (URL или путь к PDF файлу)
 }
@@ -166,9 +166,47 @@ interface CNTRProjectItem {
   id: string;
   projectName: string; // Название проекта
   date: string; // Дата (формат YYYY-MM-DD)
-  branch?: string; // Головной офис или филиал
+  branch?: string; // Головной ВУЗ или филиал
   fundingAmount?: number; // Размер финансирования (в рублях)
   supportFormat?: "grant-cofinancing" | "ordered-rd-center-lift" | "targeted-charity"; // Формат поддержки
+  description?: string; // Описание
+  document?: string; // Документ (URL или путь к PDF файлу)
+}
+
+// Тип для элемента акселератора ЦНТР
+interface CNTRAcceleratorItem {
+  id: string;
+  developmentType?: "financing" | "endowment" | "endowment-fund"; // Вид развития (опционально, для обратной совместимости)
+  date: string; // Дата (формат YYYY-MM-DD)
+  branch?: string; // Головной ВУЗ или филиал
+  description?: string; // Описание
+  document?: string; // Документ (URL или путь к PDF файлу)
+}
+
+// Тип для элемента мероприятий ЦНТР
+interface CNTREventItem {
+  id: string;
+  date: string; // Дата (формат YYYY-MM-DD)
+  branch?: string; // Головной ВУЗ или филиал
+  description?: string; // Описание
+  document?: string; // Документ (URL или путь к PDF файлу)
+}
+
+// Тип для элемента образовательных проектов ЦНТР
+interface CNTREducationalProjectItem {
+  id: string;
+  date: string; // Дата (формат YYYY-MM-DD)
+  branch?: string; // Головной ВУЗ или филиал
+  description?: string; // Описание
+  document?: string; // Документ (URL или путь к PDF файлу)
+}
+
+// Тип для элемента соглашений о сотрудничестве ЦНТР
+interface CNTRAgreementItem {
+  id: string;
+  date: string; // Дата (формат YYYY-MM-DD)
+  branch?: string; // Головной ВУЗ или филиал
+  status?: "in-progress" | "signed"; // Статус: в процессе или подписано
   description?: string; // Описание
   document?: string; // Документ (URL или путь к PDF файлу)
 }
@@ -218,6 +256,12 @@ interface University {
   targetPractitioners?: TargetPractitioner[]; // Целевые практиканты
   cntrInfrastructure?: CNTRInfrastructureItem[]; // Элементы инфраструктуры ЦНТР
   cntrProjects?: CNTRProjectItem[]; // Элементы проектов ЦНТР
+  cntrAcceleratorEnabled?: boolean; // Участие в Акселераторе Газпромбанк.Тех: Наука
+  cntrAcceleratorItems?: CNTRAcceleratorItem[]; // Элементы акселератора ЦНТР
+  cntrEventsItems?: CNTREventItem[]; // Элементы мероприятий ЦНТР
+  cntrEducationalProjectsItems?: CNTREducationalProjectItem[]; // Элементы образовательных проектов ЦНТР
+  cntrAgreementEnabled?: boolean; // Соглашение о сотрудничестве
+  cntrAgreementItems?: CNTRAgreementItem[]; // Элементы соглашений о сотрудничестве ЦНТР
   region?: string;
   description?: string;
   image?: string; // Фото/логотип ВУЗа
@@ -1288,7 +1332,7 @@ const mockUniversities: University[] = [
         id: "cntr-infra-hse-1", 
         developmentType: "financing", 
         date: "2023-05-15", 
-        branch: "Головной офис",
+        branch: "Головной ВУЗ",
         description: "Финансирование направлено на развитие современных исследовательских лабораторий и приобретение высокотехнологичного оборудования для научных исследований. Проект включает создание центра обработки данных, модернизацию инфраструктуры связи и внедрение передовых технологий в образовательный процесс. Ожидается значительное повышение качества научных исследований и привлечение талантливых ученых.",
         document: "https://example.com/documents/infrastructure-financing-2023.pdf"
       },
@@ -1306,7 +1350,7 @@ const mockUniversities: University[] = [
         id: "cntr-project-hse-1",
         projectName: "Разработка платформы для анализа больших данных",
         date: "2023-03-10",
-        branch: "Головной офис",
+        branch: "Головной ВУЗ",
         fundingAmount: 15000000,
         supportFormat: "grant-cofinancing",
         description: "Проект направлен на создание инновационной платформы для обработки и анализа больших объемов данных в режиме реального времени. Платформа будет использоваться для научных исследований в области машинного обучения, искусственного интеллекта и анализа финансовых рынков. Проект предполагает тесное сотрудничество с ведущими исследовательскими центрами и промышленными партнерами.",
@@ -1320,6 +1364,92 @@ const mockUniversities: University[] = [
         fundingAmount: 25000000,
         supportFormat: "ordered-rd-center-lift",
         description: "Проект по созданию центра квантовых вычислений и разработке новых методов криптографической защиты информации. Центр объединит исследователей в области квантовой физики, информатики и математики для решения задач создания безопасных коммуникационных систем нового поколения. Ожидается значительный вклад в развитие национальной технологической безопасности и создание инновационных продуктов для финансового сектора."
+      },
+    ],
+    cntrAcceleratorEnabled: true,
+    cntrAcceleratorItems: [
+      {
+        id: "cntr-accelerator-hse-1",
+        developmentType: "financing",
+        date: "2023-06-15",
+        branch: "Головной ВУЗ",
+        description: "Участие в акселераторе Газпромбанк.Тех: Наука направлено на поддержку инновационных стартапов в области финансовых технологий и искусственного интеллекта. Проект предусматривает менторскую поддержку, доступ к инфраструктуре банка и возможность тестирования решений в реальных условиях. Ожидается создание перспективных технологических решений для банковского сектора.",
+        document: "https://example.com/documents/accelerator-hse-2023.pdf"
+      },
+      {
+        id: "cntr-accelerator-hse-2",
+        developmentType: "endowment",
+        date: "2024-03-20",
+        branch: "Московский филиал",
+        description: "Второй проект в рамках акселератора связан с разработкой решений для анализа больших данных в финансовой сфере. Проект объединяет экспертизу университета в области data science с практическим опытом банка в обработке финансовой информации. Результатом станет создание платформы для интеллектуального анализа финансовых потоков и прогнозирования рыночных тенденций."
+      },
+    ],
+    cntrEventsItems: [
+      {
+        id: "cntr-event-hse-1",
+        date: "2023-09-15",
+        branch: "Головной ВУЗ",
+        description: "Международная конференция по финансовым технологиям и цифровой экономике. Мероприятие собрало ведущих экспертов в области финтех, представителей банковского сектора и академического сообщества. Обсуждены вопросы развития цифровых платежных систем, блокчейн-технологий и искусственного интеллекта в финансовой сфере.",
+        document: "https://example.com/documents/fintech-conference-2023.pdf"
+      },
+      {
+        id: "cntr-event-hse-2",
+        date: "2023-11-20",
+        branch: "Московский филиал",
+        description: "День карьеры для студентов IT-направлений. Банк представил возможности стажировок и трудоустройства для студентов ВШЭ. Проведены мастер-классы по финансовому моделированию, разработке банковских систем и работе с большими данными. Более 200 студентов приняли участие в мероприятии.",
+        document: "https://example.com/documents/career-day-hse-2023.pdf"
+      },
+      {
+        id: "cntr-event-hse-3",
+        date: "2024-02-10",
+        branch: "Головной ВУЗ",
+        description: "Семинар по применению машинного обучения в банковской аналитике. Эксперты банка поделились опытом использования алгоритмов машинного обучения для оценки кредитных рисков, выявления мошенничества и персонализации финансовых продуктов. Студенты и преподаватели ВШЭ представили результаты своих исследований.",
+      },
+      {
+        id: "cntr-event-hse-4",
+        date: "2024-04-25",
+        branch: "Головной ВУЗ",
+        description: "Кейс-чемпионат по финансовому моделированию и анализу данных. Студенты ВШЭ решали реальные бизнес-кейсы, предоставленные банком. Участники разрабатывали модели для прогнозирования оттока клиентов, оптимизации продуктовой линейки и оценки эффективности маркетинговых кампаний. Победители получили приглашение на стажировку в банке.",
+        document: "https://example.com/documents/case-championship-2024.pdf"
+      },
+      {
+        id: "cntr-event-hse-5",
+        date: "2024-06-12",
+        branch: "Московский филиал",
+        description: "Выпускное мероприятие программы стажировок для студентов ВШЭ. Подведены итоги годовой программы сотрудничества, награждены лучшие стажеры. Выпускники программы поделились опытом работы в банке и возможностями карьерного роста. Заключены соглашения о дальнейшем сотрудничестве и развитии совместных образовательных программ.",
+      },
+    ],
+    cntrEducationalProjectsItems: [
+      {
+        id: "cntr-educational-project-hse-1",
+        date: "2023-10-05",
+        branch: "Головной ВУЗ",
+        description: "Разработка совместной магистерской программы по финансовым технологиям. Программа объединяет академическую подготовку ВШЭ в области IT и экономики с практическим опытом банка в разработке финансовых продуктов. Студенты получают возможность работать над реальными проектами банка, проходить стажировки и защищать дипломные работы на актуальных для банка темах.",
+        document: "https://example.com/documents/master-program-fintech-2023.pdf"
+      },
+      {
+        id: "cntr-educational-project-hse-2",
+        date: "2024-01-15",
+        branch: "Московский филиал",
+        description: "Создание специализированного курса по анализу больших данных в финансовой сфере. Курс разработан для студентов бакалавриата и магистратуры IT-направлений. Преподаватели банка проводят практические занятия, студенты работают с реальными данными банка (обезличенными) и решают практические задачи по прогнозированию, кластеризации клиентов и выявлению мошенничества.",
+      },
+      {
+        id: "cntr-educational-project-hse-3",
+        date: "2024-05-20",
+        branch: "Головной ВУЗ",
+        description: "Организация программы профессиональной переподготовки для выпускников ВШЭ. Программа направлена на переквалификацию специалистов из смежных областей в банковскую сферу. Включает интенсивное обучение основам банковского дела, финансового анализа, риск-менеджмента и цифровых технологий. Выпускники программы получают возможность трудоустройства в банке на позиции младших и средних специалистов.",
+        document: "https://example.com/documents/re-qualification-program-2024.pdf"
+      },
+    ],
+    cntrAgreementEnabled: true,
+    cntrAgreementItems: [
+      {
+        id: "cntr-agreement-hse-1",
+        date: "2023-07-20",
+        branch: "Головной ВУЗ",
+        status: "signed",
+        description: "Соглашение о долгосрочном сотрудничестве между Национальным исследовательским университетом «Высшая школа экономики» и Газпромбанком. Соглашение охватывает совместные образовательные программы, научно-исследовательские проекты, программы стажировок и трудоустройства выпускников. Предусмотрено создание совместных лабораторий и центров компетенций в области финансовых технологий и анализа данных.",
+        document: "https://example.com/documents/agreement-hse-2023.pdf"
       },
     ],
     region: "Московская область",
@@ -2094,6 +2224,61 @@ export default function UniversitiesPage() {
   // Состояние для редактирования элемента проекта ЦНТР
   const [editProjectDialogOpen, setEditProjectDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<{ universityId: string; itemId: string } | null>(null);
+  
+  // Состояние для добавления элемента акселератора ЦНТР
+  const [addAcceleratorDialogOpen, setAddAcceleratorDialogOpen] = useState(false);
+  const [newAccelerator, setNewAccelerator] = useState({
+    developmentType: "",
+    date: "",
+    branch: "",
+    description: "",
+    document: "",
+  });
+  
+  // Состояние для редактирования элемента акселератора ЦНТР
+  const [editAcceleratorDialogOpen, setEditAcceleratorDialogOpen] = useState(false);
+  const [editingAccelerator, setEditingAccelerator] = useState<{ universityId: string; itemId: string } | null>(null);
+  
+  // Состояние для добавления элемента мероприятий ЦНТР
+  const [addCntrEventDialogOpen, setAddCntrEventDialogOpen] = useState(false);
+  const [newCntrEvent, setNewCntrEvent] = useState({
+    date: "",
+    branch: "",
+    description: "",
+    document: "",
+  });
+  
+  // Состояние для редактирования элемента мероприятий ЦНТР
+  const [editCntrEventDialogOpen, setEditCntrEventDialogOpen] = useState(false);
+  const [editingCntrEvent, setEditingCntrEvent] = useState<{ universityId: string; itemId: string } | null>(null);
+  
+  // Состояние для добавления элемента образовательных проектов ЦНТР
+  const [addCntrEducationalProjectDialogOpen, setAddCntrEducationalProjectDialogOpen] = useState(false);
+  const [newCntrEducationalProject, setNewCntrEducationalProject] = useState({
+    date: "",
+    branch: "",
+    description: "",
+    document: "",
+  });
+  
+  // Состояние для редактирования элемента образовательных проектов ЦНТР
+  const [editCntrEducationalProjectDialogOpen, setEditCntrEducationalProjectDialogOpen] = useState(false);
+  const [editingCntrEducationalProject, setEditingCntrEducationalProject] = useState<{ universityId: string; itemId: string } | null>(null);
+  
+  // Состояние для добавления элемента соглашений о сотрудничестве ЦНТР
+  const [addCntrAgreementDialogOpen, setAddCntrAgreementDialogOpen] = useState(false);
+  const [newCntrAgreement, setNewCntrAgreement] = useState({
+    date: "",
+    branch: "",
+    status: "",
+    description: "",
+    document: "",
+  });
+  
+  // Состояние для редактирования элемента соглашений о сотрудничестве ЦНТР
+  const [editCntrAgreementDialogOpen, setEditCntrAgreementDialogOpen] = useState(false);
+  const [editingCntrAgreement, setEditingCntrAgreement] = useState<{ universityId: string; itemId: string } | null>(null);
+  
   const [universitiesSortOrder, setUniversitiesSortOrder] = useState<"asc" | "desc">("asc");
   const [expandedUniversities, setExpandedUniversities] = useState<Set<string>>(new Set());
   
@@ -8947,16 +9132,16 @@ export default function UniversitiesPage() {
                                         />
                                       </div>
                                       <div className="space-y-2">
-                                        <Label htmlFor="infrastructure-branch">Головной офис / Филиал</Label>
+                                        <Label htmlFor="infrastructure-branch">Головной ВУЗ / Филиал</Label>
                                         <Select
                                           value={newInfrastructure.branch}
                                           onValueChange={(value) => setNewInfrastructure({ ...newInfrastructure, branch: value })}
                                         >
                                           <SelectTrigger id="infrastructure-branch">
-                                            <SelectValue placeholder="Выберите офис/филиал" />
+                                            <SelectValue placeholder="Выберите ВУЗ/филиал" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="Головной офис">Головной офис</SelectItem>
+                                            <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
                                             {university?.branch?.map((branchName) => (
                                               <SelectItem key={branchName} value={branchName}>
                                                 {branchName}
@@ -9060,16 +9245,16 @@ export default function UniversitiesPage() {
                                         />
                                       </div>
                                       <div className="space-y-2">
-                                        <Label htmlFor="edit-infrastructure-branch">Головной офис / Филиал</Label>
+                                        <Label htmlFor="edit-infrastructure-branch">Головной ВУЗ / Филиал</Label>
                                         <Select
                                           value={newInfrastructure.branch}
                                           onValueChange={(value) => setNewInfrastructure({ ...newInfrastructure, branch: value })}
                                         >
                                           <SelectTrigger id="edit-infrastructure-branch">
-                                            <SelectValue placeholder="Выберите офис/филиал" />
+                                            <SelectValue placeholder="Выберите ВУЗ/филиал" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="Головной офис">Головной офис</SelectItem>
+                                            <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
                                             {university?.branch?.map((branchName) => (
                                               <SelectItem key={branchName} value={branchName}>
                                                 {branchName}
@@ -9307,16 +9492,16 @@ export default function UniversitiesPage() {
                                         />
                                       </div>
                                       <div className="space-y-2">
-                                        <Label htmlFor="project-branch">Головной офис / Филиал</Label>
+                                        <Label htmlFor="project-branch">Головной ВУЗ / Филиал</Label>
                                         <Select
                                           value={newProject.branch}
                                           onValueChange={(value) => setNewProject({ ...newProject, branch: value })}
                                         >
                                           <SelectTrigger id="project-branch">
-                                            <SelectValue placeholder="Выберите офис/филиал" />
+                                            <SelectValue placeholder="Выберите ВУЗ/филиал" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="Головной офис">Головной офис</SelectItem>
+                                            <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
                                             {university?.branch?.map((branchName) => (
                                               <SelectItem key={branchName} value={branchName}>
                                                 {branchName}
@@ -9440,16 +9625,16 @@ export default function UniversitiesPage() {
                                         />
                                       </div>
                                       <div className="space-y-2">
-                                        <Label htmlFor="edit-project-branch">Головной офис / Филиал</Label>
+                                        <Label htmlFor="edit-project-branch">Головной ВУЗ / Филиал</Label>
                                         <Select
                                           value={newProject.branch}
                                           onValueChange={(value) => setNewProject({ ...newProject, branch: value })}
                                         >
                                           <SelectTrigger id="edit-project-branch">
-                                            <SelectValue placeholder="Выберите офис/филиал" />
+                                            <SelectValue placeholder="Выберите ВУЗ/филиал" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="Головной офис">Головной офис</SelectItem>
+                                            <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
                                             {university?.branch?.map((branchName) => (
                                               <SelectItem key={branchName} value={branchName}>
                                                 {branchName}
@@ -9696,52 +9881,1381 @@ export default function UniversitiesPage() {
                             <TabsContent value="accelerator" className="space-y-4 mt-0">
                               <Card>
                                 <CardContent className="space-y-6 pt-6">
-                                  <div className="text-center py-12 text-muted-foreground">
-                                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p className="text-lg font-medium mb-2">Участие в акселераторе Газпромбанк Тех. Трек Наука</p>
-                                    <p className="text-sm">Раздел находится в разработке</p>
+                                  <div className="flex items-center justify-between mb-4">
+                                    <Label htmlFor="accelerator-switch" className="text-base font-medium">
+                                      Участие в Акселераторе Газпромбанк.Тех: Наука
+                                    </Label>
+                                    <Switch
+                                      id="accelerator-switch"
+                                      checked={university.cntrAcceleratorEnabled || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                cntrAcceleratorEnabled: checked,
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
                                   </div>
+                                  
+                                  {university.cntrAcceleratorEnabled && (
+                                    <>
+                                      <div className="flex items-center justify-end mb-4">
+                                        <Dialog open={addAcceleratorDialogOpen} onOpenChange={setAddAcceleratorDialogOpen}>
+                                          <DialogTrigger asChild>
+                                            <Button variant="default" size="sm" onClick={() => {
+                                              setNewAccelerator({ developmentType: "", date: "", branch: "", description: "", document: "" });
+                                              setEditingAccelerator(null);
+                                            }}>
+                                              <Plus className="mr-2 h-4 w-4" />
+                                              Добавить
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent className="max-w-2xl">
+                                            <DialogHeader>
+                                              <DialogTitle>Добавить элемент акселератора</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                              <div className="space-y-2">
+                                                <Label htmlFor="accelerator-date">Дата *</Label>
+                                                <Input
+                                                  id="accelerator-date"
+                                                  type="date"
+                                                  value={newAccelerator.date}
+                                                  onChange={(e) => setNewAccelerator({ ...newAccelerator, date: e.target.value })}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="accelerator-branch">Головной ВУЗ / Филиал</Label>
+                                                <Select
+                                                  value={newAccelerator.branch}
+                                                  onValueChange={(value) => setNewAccelerator({ ...newAccelerator, branch: value })}
+                                                >
+                                                  <SelectTrigger id="accelerator-branch">
+                                                    <SelectValue placeholder="Выберите ВУЗ/филиал" />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
+                                                    {university?.branch?.map((branchName) => (
+                                                      <SelectItem key={branchName} value={branchName}>
+                                                        {branchName}
+                                                      </SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="accelerator-description">Описание</Label>
+                                                <Textarea
+                                                  id="accelerator-description"
+                                                  placeholder="Введите описание элемента акселератора..."
+                                                  value={newAccelerator.description}
+                                                  onChange={(e) => setNewAccelerator({ ...newAccelerator, description: e.target.value })}
+                                                  rows={4}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="accelerator-document">Документ (PDF)</Label>
+                                                <Input
+                                                  id="accelerator-document"
+                                                  type="text"
+                                                  placeholder="URL или путь к PDF файлу..."
+                                                  value={newAccelerator.document}
+                                                  onChange={(e) => setNewAccelerator({ ...newAccelerator, document: e.target.value })}
+                                                />
+                                              </div>
+                                            </div>
+                                            <DialogFooter>
+                                              <Button variant="outline" onClick={() => {
+                                                setAddAcceleratorDialogOpen(false);
+                                                setEditingAccelerator(null);
+                                                setNewAccelerator({ developmentType: "", date: "", branch: "", description: "", document: "" });
+                                              }}>
+                                                Отмена
+                                              </Button>
+                                              <Button 
+                                                onClick={() => {
+                                                  if (newAccelerator.date && selectedUniversity) {
+                                                    const newItem: CNTRAcceleratorItem = {
+                                                      id: `cntr-accelerator-${Date.now()}`,
+                                                      developmentType: newAccelerator.developmentType as "financing" | "endowment" | "endowment-fund" || undefined,
+                                                      date: newAccelerator.date,
+                                                      branch: newAccelerator.branch || undefined,
+                                                      description: newAccelerator.description?.trim() || undefined,
+                                                      document: newAccelerator.document?.trim() || undefined,
+                                                    };
+                                                    const updatedUniversities = universities.map((u) =>
+                                                      u.id === selectedUniversity
+                                                        ? {
+                                                            ...u,
+                                                            cntrAcceleratorItems: [...(u.cntrAcceleratorItems || []), newItem],
+                                                          }
+                                                        : u
+                                                    );
+                                                    setUniversities(updatedUniversities);
+                                                    setAddAcceleratorDialogOpen(false);
+                                                    setNewAccelerator({ developmentType: "", date: "", branch: "", description: "", document: "" });
+                                                  }
+                                                }}
+                                                disabled={!newAccelerator.date}
+                                              >
+                                                Сохранить
+                                              </Button>
+                                            </DialogFooter>
+                                          </DialogContent>
+                                        </Dialog>
+                                      </div>
+                                      
+                                      {(() => {
+                                        const acceleratorItems = university.cntrAcceleratorItems || [];
+                                        
+                                        const formatDate = (dateStr: string) => {
+                                          const [year, month, day] = dateStr.split('-').map(Number);
+                                          return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                        };
+                                        
+                                        const handleEditAccelerator = (item: CNTRAcceleratorItem) => {
+                                          if (!selectedUniversity) return;
+                                          setEditingAccelerator({ universityId: selectedUniversity, itemId: item.id });
+                                          setNewAccelerator({
+                                            developmentType: item.developmentType || "",
+                                            date: item.date,
+                                            branch: item.branch || "",
+                                            description: item.description || "",
+                                            document: item.document || "",
+                                          });
+                                          setEditAcceleratorDialogOpen(true);
+                                        };
+                                        
+                                        const handleRemoveAccelerator = (itemId: string) => {
+                                          if (!selectedUniversity) return;
+                                          const updatedUniversities = universities.map((u) =>
+                                            u.id === selectedUniversity
+                                              ? {
+                                                  ...u,
+                                                  cntrAcceleratorItems: (u.cntrAcceleratorItems || []).filter((item) => item.id !== itemId),
+                                                }
+                                              : u
+                                          );
+                                          setUniversities(updatedUniversities);
+                                        };
+                                        
+                                        return acceleratorItems.length > 0 ? (
+                                          <div className="space-y-4">
+                                            {acceleratorItems.map((item) => (
+                                              <Card key={item.id} className="p-4">
+                                                <div className="flex items-start justify-between gap-4">
+                                                  <div className="flex-1 space-y-3">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                      {item.branch && (
+                                                        <Badge variant="secondary" className="text-xs">
+                                                          {item.branch}
+                                                        </Badge>
+                                                      )}
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                                      <div className="flex items-start gap-2">
+                                                        <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                        <span className="text-muted-foreground whitespace-nowrap">Дата:</span>
+                                                        <span className="font-medium">{formatDate(item.date)}</span>
+                                                      </div>
+                                                    </div>
+                                                    {item.description && (
+                                                      <div className="text-sm">
+                                                        <span className="text-muted-foreground">Описание:</span>
+                                                        <p className="mt-1 text-foreground">{item.description}</p>
+                                                      </div>
+                                                    )}
+                                                    {item.document && (
+                                                      <div className="flex items-start gap-2 md:col-span-2 text-sm">
+                                                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                        <span className="text-muted-foreground whitespace-nowrap">Документ:</span>
+                                                        <a 
+                                                          href={item.document} 
+                                                          target="_blank" 
+                                                          rel="noopener noreferrer" 
+                                                          className="text-primary hover:underline break-all"
+                                                        >
+                                                          {item.document}
+                                                        </a>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      className="h-8 w-8 p-0"
+                                                      onClick={() => handleEditAccelerator(item)}
+                                                    >
+                                                      <Pencil className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      className="h-8 w-8 p-0"
+                                                      onClick={() => handleRemoveAccelerator(item.id)}
+                                                    >
+                                                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              </Card>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <Card>
+                                            <CardContent className="space-y-6 pt-6">
+                                              <div className="text-center py-12 text-muted-foreground">
+                                                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                                <p className="text-lg font-medium mb-2">Участие в акселераторе Газпромбанк Тех. Трек Наука</p>
+                                                <p className="text-sm">Элементы акселератора не добавлены</p>
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        );
+                                      })()}
+                                    </>
+                                  )}
+                                  
+                                  {!university.cntrAcceleratorEnabled && (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                      <p className="text-sm">Включите участие в акселераторе для добавления элементов</p>
+                                    </div>
+                                  )}
                                 </CardContent>
                               </Card>
+                              
+                              {/* Диалог редактирования элемента акселератора */}
+                              <Dialog open={editAcceleratorDialogOpen} onOpenChange={setEditAcceleratorDialogOpen}>
+                                <DialogContent className="max-w-2xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Редактировать элемент акселератора</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-accelerator-date">Дата *</Label>
+                                      <Input
+                                        id="edit-accelerator-date"
+                                        type="date"
+                                        value={newAccelerator.date}
+                                        onChange={(e) => setNewAccelerator({ ...newAccelerator, date: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-accelerator-branch">Головной ВУЗ / Филиал</Label>
+                                      <Select
+                                        value={newAccelerator.branch}
+                                        onValueChange={(value) => setNewAccelerator({ ...newAccelerator, branch: value })}
+                                      >
+                                        <SelectTrigger id="edit-accelerator-branch">
+                                          <SelectValue placeholder="Выберите ВУЗ/филиал" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
+                                          {university?.branch?.map((branchName) => (
+                                            <SelectItem key={branchName} value={branchName}>
+                                              {branchName}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-accelerator-description">Описание</Label>
+                                      <Textarea
+                                        id="edit-accelerator-description"
+                                        placeholder="Введите описание элемента акселератора..."
+                                        value={newAccelerator.description}
+                                        onChange={(e) => setNewAccelerator({ ...newAccelerator, description: e.target.value })}
+                                        rows={4}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-accelerator-document">Документ (PDF)</Label>
+                                      <Input
+                                        id="edit-accelerator-document"
+                                        type="text"
+                                        placeholder="URL или путь к PDF файлу..."
+                                        value={newAccelerator.document}
+                                        onChange={(e) => setNewAccelerator({ ...newAccelerator, document: e.target.value })}
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => {
+                                      setEditAcceleratorDialogOpen(false);
+                                      setEditingAccelerator(null);
+                                      setNewAccelerator({ developmentType: "", date: "", branch: "", description: "", document: "" });
+                                    }}>
+                                      Отмена
+                                    </Button>
+                                    <Button 
+                                      onClick={() => {
+                                        if (newAccelerator.date && selectedUniversity && editingAccelerator) {
+                                          const updatedUniversities = universities.map((u) =>
+                                            u.id === selectedUniversity
+                                              ? {
+                                                  ...u,
+                                                  cntrAcceleratorItems: (u.cntrAcceleratorItems || []).map((item) =>
+                                                    item.id === editingAccelerator.itemId
+                                                      ? {
+                                                          ...item,
+                                                          developmentType: newAccelerator.developmentType as "financing" | "endowment" | "endowment-fund" || undefined,
+                                                          date: newAccelerator.date,
+                                                          branch: newAccelerator.branch || undefined,
+                                                          description: newAccelerator.description?.trim() || undefined,
+                                                          document: newAccelerator.document?.trim() || undefined,
+                                                        }
+                                                      : item
+                                                  ),
+                                                }
+                                              : u
+                                          );
+                                          setUniversities(updatedUniversities);
+                                          setEditAcceleratorDialogOpen(false);
+                                          setNewAccelerator({ developmentType: "", date: "", branch: "", description: "", document: "" });
+                                          setEditingAccelerator(null);
+                                        }
+                                      }}
+                                      disabled={!newAccelerator.date}
+                                    >
+                                      Сохранить
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
                             </TabsContent>
                             
                             {/* Подвкладка 4: Мероприятия */}
                             <TabsContent value="events" className="space-y-4 mt-0">
-                              <Card>
-                                <CardContent className="space-y-6 pt-6">
-                                  <div className="text-center py-12 text-muted-foreground">
-                                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p className="text-lg font-medium mb-2">Мероприятия</p>
-                                    <p className="text-sm">Раздел находится в разработке</p>
+                              <div className="flex items-center justify-end mb-4">
+                                <Dialog open={addCntrEventDialogOpen} onOpenChange={setAddCntrEventDialogOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button variant="default" size="sm" onClick={() => {
+                                      setNewCntrEvent({ date: "", branch: "", description: "", document: "" });
+                                      setEditingCntrEvent(null);
+                                    }}>
+                                      <Plus className="mr-2 h-4 w-4" />
+                                      Добавить
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Добавить мероприятие</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="cntr-event-date">Дата *</Label>
+                                        <Input
+                                          id="cntr-event-date"
+                                          type="date"
+                                          value={newCntrEvent.date}
+                                          onChange={(e) => setNewCntrEvent({ ...newCntrEvent, date: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="cntr-event-branch">Головной ВУЗ / Филиал</Label>
+                                        <Select
+                                          value={newCntrEvent.branch}
+                                          onValueChange={(value) => setNewCntrEvent({ ...newCntrEvent, branch: value })}
+                                        >
+                                          <SelectTrigger id="cntr-event-branch">
+                                            <SelectValue placeholder="Выберите ВУЗ/филиал" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
+                                            {university?.branch?.map((branchName) => (
+                                              <SelectItem key={branchName} value={branchName}>
+                                                {branchName}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="cntr-event-description">Описание</Label>
+                                        <Textarea
+                                          id="cntr-event-description"
+                                          placeholder="Введите описание мероприятия..."
+                                          value={newCntrEvent.description}
+                                          onChange={(e) => setNewCntrEvent({ ...newCntrEvent, description: e.target.value })}
+                                          rows={4}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="cntr-event-document">Документ (PDF)</Label>
+                                        <Input
+                                          id="cntr-event-document"
+                                          type="text"
+                                          placeholder="URL или путь к PDF файлу..."
+                                          value={newCntrEvent.document}
+                                          onChange={(e) => setNewCntrEvent({ ...newCntrEvent, document: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <DialogFooter>
+                                      <Button variant="outline" onClick={() => {
+                                        setAddCntrEventDialogOpen(false);
+                                        setEditingCntrEvent(null);
+                                        setNewCntrEvent({ date: "", branch: "", description: "", document: "" });
+                                      }}>
+                                        Отмена
+                                      </Button>
+                                      <Button 
+                                        onClick={() => {
+                                          if (newCntrEvent.date && selectedUniversity) {
+                                            const newItem: CNTREventItem = {
+                                              id: `cntr-event-${Date.now()}`,
+                                              date: newCntrEvent.date,
+                                              branch: newCntrEvent.branch || undefined,
+                                              description: newCntrEvent.description?.trim() || undefined,
+                                              document: newCntrEvent.document?.trim() || undefined,
+                                            };
+                                            const updatedUniversities = universities.map((u) =>
+                                              u.id === selectedUniversity
+                                                ? {
+                                                    ...u,
+                                                    cntrEventsItems: [...(u.cntrEventsItems || []), newItem],
+                                                  }
+                                                : u
+                                            );
+                                            setUniversities(updatedUniversities);
+                                            setAddCntrEventDialogOpen(false);
+                                            setNewCntrEvent({ date: "", branch: "", description: "", document: "" });
+                                          }
+                                        }}
+                                        disabled={!newCntrEvent.date}
+                                      >
+                                        Сохранить
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
+                              
+                              {(() => {
+                                const eventItems = university.cntrEventsItems || [];
+                                
+                                const formatDate = (dateStr: string) => {
+                                  const [year, month, day] = dateStr.split('-').map(Number);
+                                  return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                };
+                                
+                                const handleEditCntrEvent = (item: CNTREventItem) => {
+                                  if (!selectedUniversity) return;
+                                  setEditingCntrEvent({ universityId: selectedUniversity, itemId: item.id });
+                                  setNewCntrEvent({
+                                    date: item.date,
+                                    branch: item.branch || "",
+                                    description: item.description || "",
+                                    document: item.document || "",
+                                  });
+                                  setEditCntrEventDialogOpen(true);
+                                };
+                                
+                                const handleRemoveCntrEvent = (itemId: string) => {
+                                  if (!selectedUniversity) return;
+                                  const updatedUniversities = universities.map((u) =>
+                                    u.id === selectedUniversity
+                                      ? {
+                                          ...u,
+                                          cntrEventsItems: (u.cntrEventsItems || []).filter((item) => item.id !== itemId),
+                                        }
+                                      : u
+                                  );
+                                  setUniversities(updatedUniversities);
+                                };
+                                
+                                return eventItems.length > 0 ? (
+                                  <div className="space-y-4">
+                                    {eventItems.map((item) => (
+                                      <Card key={item.id} className="p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                          <div className="flex-1 space-y-3">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              {item.branch && (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  {item.branch}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                              <div className="flex items-start gap-2">
+                                                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Дата:</span>
+                                                <span className="font-medium">{formatDate(item.date)}</span>
+                                              </div>
+                                            </div>
+                                            {item.description && (
+                                              <div className="text-sm">
+                                                <span className="text-muted-foreground">Описание:</span>
+                                                <p className="mt-1 text-foreground">{item.description}</p>
+                                              </div>
+                                            )}
+                                            {item.document && (
+                                              <div className="flex items-start gap-2 md:col-span-2 text-sm">
+                                                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Документ:</span>
+                                                <a 
+                                                  href={item.document} 
+                                                  target="_blank" 
+                                                  rel="noopener noreferrer" 
+                                                  className="text-primary hover:underline break-all"
+                                                >
+                                                  {item.document}
+                                                </a>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-1 flex-shrink-0">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => handleEditCntrEvent(item)}
+                                            >
+                                              <Pencil className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => handleRemoveCntrEvent(item.id)}
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </Card>
+                                    ))}
                                   </div>
-                                </CardContent>
-                              </Card>
+                                ) : (
+                                  <Card>
+                                    <CardContent className="space-y-6 pt-6">
+                                      <div className="text-center py-12 text-muted-foreground">
+                                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                        <p className="text-lg font-medium mb-2">Мероприятия</p>
+                                        <p className="text-sm">Мероприятия не добавлены</p>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })()}
+                              
+                              {/* Диалог редактирования мероприятия */}
+                              <Dialog open={editCntrEventDialogOpen} onOpenChange={setEditCntrEventDialogOpen}>
+                                <DialogContent className="max-w-2xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Редактировать мероприятие</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-event-date">Дата *</Label>
+                                      <Input
+                                        id="edit-cntr-event-date"
+                                        type="date"
+                                        value={newCntrEvent.date}
+                                        onChange={(e) => setNewCntrEvent({ ...newCntrEvent, date: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-event-branch">Головной ВУЗ / Филиал</Label>
+                                      <Select
+                                        value={newCntrEvent.branch}
+                                        onValueChange={(value) => setNewCntrEvent({ ...newCntrEvent, branch: value })}
+                                      >
+                                        <SelectTrigger id="edit-cntr-event-branch">
+                                          <SelectValue placeholder="Выберите ВУЗ/филиал" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
+                                          {university?.branch?.map((branchName) => (
+                                            <SelectItem key={branchName} value={branchName}>
+                                              {branchName}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-event-description">Описание</Label>
+                                      <Textarea
+                                        id="edit-cntr-event-description"
+                                        placeholder="Введите описание мероприятия..."
+                                        value={newCntrEvent.description}
+                                        onChange={(e) => setNewCntrEvent({ ...newCntrEvent, description: e.target.value })}
+                                        rows={4}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-event-document">Документ (PDF)</Label>
+                                      <Input
+                                        id="edit-cntr-event-document"
+                                        type="text"
+                                        placeholder="URL или путь к PDF файлу..."
+                                        value={newCntrEvent.document}
+                                        onChange={(e) => setNewCntrEvent({ ...newCntrEvent, document: e.target.value })}
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => {
+                                      setEditCntrEventDialogOpen(false);
+                                      setEditingCntrEvent(null);
+                                      setNewCntrEvent({ date: "", branch: "", description: "", document: "" });
+                                    }}>
+                                      Отмена
+                                    </Button>
+                                    <Button 
+                                      onClick={() => {
+                                        if (newCntrEvent.date && selectedUniversity && editingCntrEvent) {
+                                          const updatedUniversities = universities.map((u) =>
+                                            u.id === selectedUniversity
+                                              ? {
+                                                  ...u,
+                                                  cntrEventsItems: (u.cntrEventsItems || []).map((item) =>
+                                                    item.id === editingCntrEvent.itemId
+                                                      ? {
+                                                          ...item,
+                                                          date: newCntrEvent.date,
+                                                          branch: newCntrEvent.branch || undefined,
+                                                          description: newCntrEvent.description?.trim() || undefined,
+                                                          document: newCntrEvent.document?.trim() || undefined,
+                                                        }
+                                                      : item
+                                                  ),
+                                                }
+                                              : u
+                                          );
+                                          setUniversities(updatedUniversities);
+                                          setEditCntrEventDialogOpen(false);
+                                          setNewCntrEvent({ date: "", branch: "", description: "", document: "" });
+                                          setEditingCntrEvent(null);
+                                        }
+                                      }}
+                                      disabled={!newCntrEvent.date}
+                                    >
+                                      Сохранить
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
                             </TabsContent>
                             
                             {/* Подвкладка 5: Соглашения о сотрудничестве */}
                             <TabsContent value="agreements" className="space-y-4 mt-0">
                               <Card>
                                 <CardContent className="space-y-6 pt-6">
-                                  <div className="text-center py-12 text-muted-foreground">
-                                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p className="text-lg font-medium mb-2">Соглашения о сотрудничестве</p>
-                                    <p className="text-sm">Раздел находится в разработке</p>
+                                  <div className="flex items-center justify-between mb-4">
+                                    <Label htmlFor="agreement-switch" className="text-base font-medium">
+                                      Соглашение о сотрудничестве
+                                    </Label>
+                                    <Switch
+                                      id="agreement-switch"
+                                      checked={university.cntrAgreementEnabled || false}
+                                      onCheckedChange={(checked) => {
+                                        const updatedUniversities = universities.map((u) =>
+                                          u.id === university.id
+                                            ? {
+                                                ...u,
+                                                cntrAgreementEnabled: checked,
+                                              }
+                                            : u
+                                        );
+                                        setUniversities(updatedUniversities);
+                                      }}
+                                    />
                                   </div>
+                                  
+                                  {university.cntrAgreementEnabled && (
+                                    <>
+                                      <div className="flex items-center justify-end mb-4">
+                                        <Dialog open={addCntrAgreementDialogOpen} onOpenChange={setAddCntrAgreementDialogOpen}>
+                                          <DialogTrigger asChild>
+                                            <Button variant="default" size="sm" onClick={() => {
+                                              setNewCntrAgreement({ date: "", branch: "", status: "", description: "", document: "" });
+                                              setEditingCntrAgreement(null);
+                                            }}>
+                                              <Plus className="mr-2 h-4 w-4" />
+                                              Добавить
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent className="max-w-2xl">
+                                            <DialogHeader>
+                                              <DialogTitle>Добавить соглашение о сотрудничестве</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                              <div className="space-y-2">
+                                                <Label htmlFor="cntr-agreement-date">Дата *</Label>
+                                                <Input
+                                                  id="cntr-agreement-date"
+                                                  type="date"
+                                                  value={newCntrAgreement.date}
+                                                  onChange={(e) => setNewCntrAgreement({ ...newCntrAgreement, date: e.target.value })}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="cntr-agreement-branch">Головной ВУЗ / Филиал</Label>
+                                                <Select
+                                                  value={newCntrAgreement.branch}
+                                                  onValueChange={(value) => setNewCntrAgreement({ ...newCntrAgreement, branch: value })}
+                                                >
+                                                  <SelectTrigger id="cntr-agreement-branch">
+                                                    <SelectValue placeholder="Выберите ВУЗ/филиал" />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
+                                                    {university?.branch?.map((branchName) => (
+                                                      <SelectItem key={branchName} value={branchName}>
+                                                        {branchName}
+                                                      </SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="cntr-agreement-status">Статус</Label>
+                                                <Select
+                                                  value={newCntrAgreement.status}
+                                                  onValueChange={(value) => setNewCntrAgreement({ ...newCntrAgreement, status: value })}
+                                                >
+                                                  <SelectTrigger id="cntr-agreement-status">
+                                                    <SelectValue placeholder="Выберите статус" />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="in-progress">в процессе</SelectItem>
+                                                    <SelectItem value="signed">подписано</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="cntr-agreement-description">Описание</Label>
+                                                <Textarea
+                                                  id="cntr-agreement-description"
+                                                  placeholder="Введите описание соглашения о сотрудничестве..."
+                                                  value={newCntrAgreement.description}
+                                                  onChange={(e) => setNewCntrAgreement({ ...newCntrAgreement, description: e.target.value })}
+                                                  rows={4}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="cntr-agreement-document">Документ (PDF)</Label>
+                                                <Input
+                                                  id="cntr-agreement-document"
+                                                  type="text"
+                                                  placeholder="URL или путь к PDF файлу..."
+                                                  value={newCntrAgreement.document}
+                                                  onChange={(e) => setNewCntrAgreement({ ...newCntrAgreement, document: e.target.value })}
+                                                />
+                                              </div>
+                                            </div>
+                                            <DialogFooter>
+                                              <Button variant="outline" onClick={() => {
+                                                setAddCntrAgreementDialogOpen(false);
+                                                setEditingCntrAgreement(null);
+                                                setNewCntrAgreement({ date: "", branch: "", status: "", description: "", document: "" });
+                                              }}>
+                                                Отмена
+                                              </Button>
+                                              <Button 
+                                                onClick={() => {
+                                                  if (newCntrAgreement.date && selectedUniversity) {
+                                                    const newItem: CNTRAgreementItem = {
+                                                      id: `cntr-agreement-${Date.now()}`,
+                                                      date: newCntrAgreement.date,
+                                                      branch: newCntrAgreement.branch || undefined,
+                                                      status: (newCntrAgreement.status as "in-progress" | "signed") || undefined,
+                                                      description: newCntrAgreement.description?.trim() || undefined,
+                                                      document: newCntrAgreement.document?.trim() || undefined,
+                                                    };
+                                                    const updatedUniversities = universities.map((u) =>
+                                                      u.id === selectedUniversity
+                                                        ? {
+                                                            ...u,
+                                                            cntrAgreementItems: [...(u.cntrAgreementItems || []), newItem],
+                                                          }
+                                                        : u
+                                                    );
+                                                    setUniversities(updatedUniversities);
+                                                    setAddCntrAgreementDialogOpen(false);
+                                                    setNewCntrAgreement({ date: "", branch: "", status: "", description: "", document: "" });
+                                                  }
+                                                }}
+                                                disabled={!newCntrAgreement.date}
+                                              >
+                                                Сохранить
+                                              </Button>
+                                            </DialogFooter>
+                                          </DialogContent>
+                                        </Dialog>
+                                      </div>
+                                      
+                                      {(() => {
+                                        const agreementItems = university.cntrAgreementItems || [];
+                                        
+                                        const formatDate = (dateStr: string) => {
+                                          const [year, month, day] = dateStr.split('-').map(Number);
+                                          return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                        };
+                                        
+                                        const formatAgreementStatus = (status?: string) => {
+                                          switch (status) {
+                                            case "in-progress":
+                                              return "в процессе";
+                                            case "signed":
+                                              return "подписано";
+                                            default:
+                                              return "";
+                                          }
+                                        };
+                                        
+                                        const handleEditCntrAgreement = (item: CNTRAgreementItem) => {
+                                          if (!selectedUniversity) return;
+                                          setEditingCntrAgreement({ universityId: selectedUniversity, itemId: item.id });
+                                          setNewCntrAgreement({
+                                            date: item.date,
+                                            branch: item.branch || "",
+                                            status: item.status || "",
+                                            description: item.description || "",
+                                            document: item.document || "",
+                                          });
+                                          setEditCntrAgreementDialogOpen(true);
+                                        };
+                                        
+                                        const handleRemoveCntrAgreement = (itemId: string) => {
+                                          if (!selectedUniversity) return;
+                                          const updatedUniversities = universities.map((u) =>
+                                            u.id === selectedUniversity
+                                              ? {
+                                                  ...u,
+                                                  cntrAgreementItems: (u.cntrAgreementItems || []).filter((item) => item.id !== itemId),
+                                                }
+                                              : u
+                                          );
+                                          setUniversities(updatedUniversities);
+                                        };
+                                        
+                                        return agreementItems.length > 0 ? (
+                                          <div className="space-y-4">
+                                            {agreementItems.map((item) => (
+                                              <Card key={item.id} className="p-4">
+                                                <div className="flex items-start justify-between gap-4">
+                                                  <div className="flex-1 space-y-3">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                      {item.branch && (
+                                                        <Badge variant="secondary" className="text-xs">
+                                                          {item.branch}
+                                                        </Badge>
+                                                      )}
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                                      <div className="flex items-start gap-2">
+                                                        <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                        <span className="text-muted-foreground whitespace-nowrap">Дата:</span>
+                                                        <span className="font-medium">{formatDate(item.date)}</span>
+                                                      </div>
+                                                    </div>
+                                                    {item.description && (
+                                                      <div className="text-sm">
+                                                        <span className="text-muted-foreground">Описание:</span>
+                                                        <p className="mt-1 text-foreground">{item.description}</p>
+                                                      </div>
+                                                    )}
+                                                    {item.document && (
+                                                      <div className="flex items-start gap-2 md:col-span-2 text-sm">
+                                                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                        <span className="text-muted-foreground whitespace-nowrap">Документ:</span>
+                                                        <a 
+                                                          href={item.document} 
+                                                          target="_blank" 
+                                                          rel="noopener noreferrer" 
+                                                          className="text-primary hover:underline break-all"
+                                                        >
+                                                          {item.document}
+                                                        </a>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      className="h-8 w-8 p-0"
+                                                      onClick={() => handleEditCntrAgreement(item)}
+                                                    >
+                                                      <Pencil className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      className="h-8 w-8 p-0"
+                                                      onClick={() => handleRemoveCntrAgreement(item.id)}
+                                                    >
+                                                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              </Card>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <Card>
+                                            <CardContent className="space-y-6 pt-6">
+                                              <div className="text-center py-12 text-muted-foreground">
+                                                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                                <p className="text-lg font-medium mb-2">Соглашения о сотрудничестве</p>
+                                                <p className="text-sm">Соглашения не добавлены</p>
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        );
+                                      })()}
+                                    </>
+                                  )}
+                                  
+                                  {!university.cntrAgreementEnabled && (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                      <p className="text-sm">Включите соглашение о сотрудничестве для добавления элементов</p>
+                                    </div>
+                                  )}
                                 </CardContent>
                               </Card>
+                              
+                              {/* Диалог редактирования соглашения о сотрудничестве */}
+                              <Dialog open={editCntrAgreementDialogOpen} onOpenChange={setEditCntrAgreementDialogOpen}>
+                                <DialogContent className="max-w-2xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Редактировать соглашение о сотрудничестве</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-agreement-date">Дата *</Label>
+                                      <Input
+                                        id="edit-cntr-agreement-date"
+                                        type="date"
+                                        value={newCntrAgreement.date}
+                                        onChange={(e) => setNewCntrAgreement({ ...newCntrAgreement, date: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-agreement-branch">Головной ВУЗ / Филиал</Label>
+                                      <Select
+                                        value={newCntrAgreement.branch}
+                                        onValueChange={(value) => setNewCntrAgreement({ ...newCntrAgreement, branch: value })}
+                                      >
+                                        <SelectTrigger id="edit-cntr-agreement-branch">
+                                          <SelectValue placeholder="Выберите ВУЗ/филиал" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
+                                          {university?.branch?.map((branchName) => (
+                                            <SelectItem key={branchName} value={branchName}>
+                                              {branchName}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-agreement-status">Статус</Label>
+                                      <Select
+                                        value={newCntrAgreement.status}
+                                        onValueChange={(value) => setNewCntrAgreement({ ...newCntrAgreement, status: value })}
+                                      >
+                                        <SelectTrigger id="edit-cntr-agreement-status">
+                                          <SelectValue placeholder="Выберите статус" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="in-progress">в процессе</SelectItem>
+                                          <SelectItem value="signed">подписано</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-agreement-description">Описание</Label>
+                                      <Textarea
+                                        id="edit-cntr-agreement-description"
+                                        placeholder="Введите описание соглашения о сотрудничестве..."
+                                        value={newCntrAgreement.description}
+                                        onChange={(e) => setNewCntrAgreement({ ...newCntrAgreement, description: e.target.value })}
+                                        rows={4}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-agreement-document">Документ (PDF)</Label>
+                                      <Input
+                                        id="edit-cntr-agreement-document"
+                                        type="text"
+                                        placeholder="URL или путь к PDF файлу..."
+                                        value={newCntrAgreement.document}
+                                        onChange={(e) => setNewCntrAgreement({ ...newCntrAgreement, document: e.target.value })}
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => {
+                                      setEditCntrAgreementDialogOpen(false);
+                                      setEditingCntrAgreement(null);
+                                      setNewCntrAgreement({ date: "", branch: "", status: "", description: "", document: "" });
+                                    }}>
+                                      Отмена
+                                    </Button>
+                                    <Button 
+                                      onClick={() => {
+                                        if (newCntrAgreement.date && selectedUniversity && editingCntrAgreement) {
+                                          const updatedUniversities = universities.map((u) =>
+                                            u.id === selectedUniversity
+                                              ? {
+                                                  ...u,
+                                                  cntrAgreementItems: (u.cntrAgreementItems || []).map((item) =>
+                                                    item.id === editingCntrAgreement.itemId
+                                                      ? {
+                                                          ...item,
+                                                          date: newCntrAgreement.date,
+                                                          branch: newCntrAgreement.branch || undefined,
+                                                          status: (newCntrAgreement.status as "in-progress" | "signed") || undefined,
+                                                          description: newCntrAgreement.description?.trim() || undefined,
+                                                          document: newCntrAgreement.document?.trim() || undefined,
+                                                        }
+                                                      : item
+                                                  ),
+                                                }
+                                              : u
+                                          );
+                                          setUniversities(updatedUniversities);
+                                          setEditCntrAgreementDialogOpen(false);
+                                          setNewCntrAgreement({ date: "", branch: "", status: "", description: "", document: "" });
+                                          setEditingCntrAgreement(null);
+                                        }
+                                      }}
+                                      disabled={!newCntrAgreement.date}
+                                    >
+                                      Сохранить
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
                             </TabsContent>
                             
                             {/* Подвкладка 6: Образовательные проекты */}
                             <TabsContent value="educational" className="space-y-4 mt-0">
-                              <Card>
-                                <CardContent className="space-y-6 pt-6">
-                                  <div className="text-center py-12 text-muted-foreground">
-                                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p className="text-lg font-medium mb-2">Образовательные проекты</p>
-                                    <p className="text-sm">Раздел находится в разработке</p>
+                              <div className="flex items-center justify-end mb-4">
+                                <Dialog open={addCntrEducationalProjectDialogOpen} onOpenChange={setAddCntrEducationalProjectDialogOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button variant="default" size="sm" onClick={() => {
+                                      setNewCntrEducationalProject({ date: "", branch: "", description: "", document: "" });
+                                      setEditingCntrEducationalProject(null);
+                                    }}>
+                                      <Plus className="mr-2 h-4 w-4" />
+                                      Добавить
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Добавить образовательный проект</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="cntr-educational-project-date">Дата *</Label>
+                                        <Input
+                                          id="cntr-educational-project-date"
+                                          type="date"
+                                          value={newCntrEducationalProject.date}
+                                          onChange={(e) => setNewCntrEducationalProject({ ...newCntrEducationalProject, date: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="cntr-educational-project-branch">Головной ВУЗ / Филиал</Label>
+                                        <Select
+                                          value={newCntrEducationalProject.branch}
+                                          onValueChange={(value) => setNewCntrEducationalProject({ ...newCntrEducationalProject, branch: value })}
+                                        >
+                                          <SelectTrigger id="cntr-educational-project-branch">
+                                            <SelectValue placeholder="Выберите ВУЗ/филиал" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
+                                            {university?.branch?.map((branchName) => (
+                                              <SelectItem key={branchName} value={branchName}>
+                                                {branchName}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="cntr-educational-project-description">Описание</Label>
+                                        <Textarea
+                                          id="cntr-educational-project-description"
+                                          placeholder="Введите описание образовательного проекта..."
+                                          value={newCntrEducationalProject.description}
+                                          onChange={(e) => setNewCntrEducationalProject({ ...newCntrEducationalProject, description: e.target.value })}
+                                          rows={4}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="cntr-educational-project-document">Документ (PDF)</Label>
+                                        <Input
+                                          id="cntr-educational-project-document"
+                                          type="text"
+                                          placeholder="URL или путь к PDF файлу..."
+                                          value={newCntrEducationalProject.document}
+                                          onChange={(e) => setNewCntrEducationalProject({ ...newCntrEducationalProject, document: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <DialogFooter>
+                                      <Button variant="outline" onClick={() => {
+                                        setAddCntrEducationalProjectDialogOpen(false);
+                                        setEditingCntrEducationalProject(null);
+                                        setNewCntrEducationalProject({ date: "", branch: "", description: "", document: "" });
+                                      }}>
+                                        Отмена
+                                      </Button>
+                                      <Button 
+                                        onClick={() => {
+                                          if (newCntrEducationalProject.date && selectedUniversity) {
+                                            const newItem: CNTREducationalProjectItem = {
+                                              id: `cntr-educational-project-${Date.now()}`,
+                                              date: newCntrEducationalProject.date,
+                                              branch: newCntrEducationalProject.branch || undefined,
+                                              description: newCntrEducationalProject.description?.trim() || undefined,
+                                              document: newCntrEducationalProject.document?.trim() || undefined,
+                                            };
+                                            const updatedUniversities = universities.map((u) =>
+                                              u.id === selectedUniversity
+                                                ? {
+                                                    ...u,
+                                                    cntrEducationalProjectsItems: [...(u.cntrEducationalProjectsItems || []), newItem],
+                                                  }
+                                                : u
+                                            );
+                                            setUniversities(updatedUniversities);
+                                            setAddCntrEducationalProjectDialogOpen(false);
+                                            setNewCntrEducationalProject({ date: "", branch: "", description: "", document: "" });
+                                          }
+                                        }}
+                                        disabled={!newCntrEducationalProject.date}
+                                      >
+                                        Сохранить
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
+                              
+                              {(() => {
+                                const educationalProjectItems = university.cntrEducationalProjectsItems || [];
+                                
+                                const formatDate = (dateStr: string) => {
+                                  const [year, month, day] = dateStr.split('-').map(Number);
+                                  return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                };
+                                
+                                const handleEditCntrEducationalProject = (item: CNTREducationalProjectItem) => {
+                                  if (!selectedUniversity) return;
+                                  setEditingCntrEducationalProject({ universityId: selectedUniversity, itemId: item.id });
+                                  setNewCntrEducationalProject({
+                                    date: item.date,
+                                    branch: item.branch || "",
+                                    description: item.description || "",
+                                    document: item.document || "",
+                                  });
+                                  setEditCntrEducationalProjectDialogOpen(true);
+                                };
+                                
+                                const handleRemoveCntrEducationalProject = (itemId: string) => {
+                                  if (!selectedUniversity) return;
+                                  const updatedUniversities = universities.map((u) =>
+                                    u.id === selectedUniversity
+                                      ? {
+                                          ...u,
+                                          cntrEducationalProjectsItems: (u.cntrEducationalProjectsItems || []).filter((item) => item.id !== itemId),
+                                        }
+                                      : u
+                                  );
+                                  setUniversities(updatedUniversities);
+                                };
+                                
+                                return educationalProjectItems.length > 0 ? (
+                                  <div className="space-y-4">
+                                    {educationalProjectItems.map((item) => (
+                                      <Card key={item.id} className="p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                          <div className="flex-1 space-y-3">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              {item.branch && (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  {item.branch}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                              <div className="flex items-start gap-2">
+                                                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Дата:</span>
+                                                <span className="font-medium">{formatDate(item.date)}</span>
+                                              </div>
+                                            </div>
+                                            {item.description && (
+                                              <div className="text-sm">
+                                                <span className="text-muted-foreground">Описание:</span>
+                                                <p className="mt-1 text-foreground">{item.description}</p>
+                                              </div>
+                                            )}
+                                            {item.document && (
+                                              <div className="flex items-start gap-2 md:col-span-2 text-sm">
+                                                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                <span className="text-muted-foreground whitespace-nowrap">Документ:</span>
+                                                <a 
+                                                  href={item.document} 
+                                                  target="_blank" 
+                                                  rel="noopener noreferrer" 
+                                                  className="text-primary hover:underline break-all"
+                                                >
+                                                  {item.document}
+                                                </a>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-1 flex-shrink-0">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => handleEditCntrEducationalProject(item)}
+                                            >
+                                              <Pencil className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => handleRemoveCntrEducationalProject(item.id)}
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </Card>
+                                    ))}
                                   </div>
-                                </CardContent>
-                              </Card>
+                                ) : (
+                                  <Card>
+                                    <CardContent className="space-y-6 pt-6">
+                                      <div className="text-center py-12 text-muted-foreground">
+                                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                        <p className="text-lg font-medium mb-2">Образовательные проекты</p>
+                                        <p className="text-sm">Образовательные проекты не добавлены</p>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })()}
+                              
+                              {/* Диалог редактирования образовательного проекта */}
+                              <Dialog open={editCntrEducationalProjectDialogOpen} onOpenChange={setEditCntrEducationalProjectDialogOpen}>
+                                <DialogContent className="max-w-2xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Редактировать образовательный проект</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-educational-project-date">Дата *</Label>
+                                      <Input
+                                        id="edit-cntr-educational-project-date"
+                                        type="date"
+                                        value={newCntrEducationalProject.date}
+                                        onChange={(e) => setNewCntrEducationalProject({ ...newCntrEducationalProject, date: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-educational-project-branch">Головной ВУЗ / Филиал</Label>
+                                      <Select
+                                        value={newCntrEducationalProject.branch}
+                                        onValueChange={(value) => setNewCntrEducationalProject({ ...newCntrEducationalProject, branch: value })}
+                                      >
+                                        <SelectTrigger id="edit-cntr-educational-project-branch">
+                                          <SelectValue placeholder="Выберите ВУЗ/филиал" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="Головной ВУЗ">Головной ВУЗ</SelectItem>
+                                          {university?.branch?.map((branchName) => (
+                                            <SelectItem key={branchName} value={branchName}>
+                                              {branchName}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-educational-project-description">Описание</Label>
+                                      <Textarea
+                                        id="edit-cntr-educational-project-description"
+                                        placeholder="Введите описание образовательного проекта..."
+                                        value={newCntrEducationalProject.description}
+                                        onChange={(e) => setNewCntrEducationalProject({ ...newCntrEducationalProject, description: e.target.value })}
+                                        rows={4}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-cntr-educational-project-document">Документ (PDF)</Label>
+                                      <Input
+                                        id="edit-cntr-educational-project-document"
+                                        type="text"
+                                        placeholder="URL или путь к PDF файлу..."
+                                        value={newCntrEducationalProject.document}
+                                        onChange={(e) => setNewCntrEducationalProject({ ...newCntrEducationalProject, document: e.target.value })}
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => {
+                                      setEditCntrEducationalProjectDialogOpen(false);
+                                      setEditingCntrEducationalProject(null);
+                                      setNewCntrEducationalProject({ date: "", branch: "", description: "", document: "" });
+                                    }}>
+                                      Отмена
+                                    </Button>
+                                    <Button 
+                                      onClick={() => {
+                                        if (newCntrEducationalProject.date && selectedUniversity && editingCntrEducationalProject) {
+                                          const updatedUniversities = universities.map((u) =>
+                                            u.id === selectedUniversity
+                                              ? {
+                                                  ...u,
+                                                  cntrEducationalProjectsItems: (u.cntrEducationalProjectsItems || []).map((item) =>
+                                                    item.id === editingCntrEducationalProject.itemId
+                                                      ? {
+                                                          ...item,
+                                                          date: newCntrEducationalProject.date,
+                                                          branch: newCntrEducationalProject.branch || undefined,
+                                                          description: newCntrEducationalProject.description?.trim() || undefined,
+                                                          document: newCntrEducationalProject.document?.trim() || undefined,
+                                                        }
+                                                      : item
+                                                  ),
+                                                }
+                                              : u
+                                          );
+                                          setUniversities(updatedUniversities);
+                                          setEditCntrEducationalProjectDialogOpen(false);
+                                          setNewCntrEducationalProject({ date: "", branch: "", description: "", document: "" });
+                                          setEditingCntrEducationalProject(null);
+                                        }
+                                      }}
+                                      disabled={!newCntrEducationalProject.date}
+                                    >
+                                      Сохранить
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
                             </TabsContent>
                               </div>
                               
@@ -9750,39 +11264,69 @@ export default function UniversitiesPage() {
                                 <TabsList className="flex flex-col h-auto bg-transparent p-0 py-2 w-full border-l pl-4">
                                   <TabsTrigger 
                                     value="infrastructure" 
-                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                    className="w-full justify-between items-center whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
                                   >
-                                    Развитие научно-технологической инфраструктуры
+                                    <span>Развитие научно-технологической инфраструктуры</span>
+                                    {university.cntrInfrastructure && university.cntrInfrastructure.length > 0 && (
+                                      <Badge variant="secondary" className="ml-2 shrink-0 bg-primary/10 text-primary border-primary/20">
+                                        {university.cntrInfrastructure.length}
+                                      </Badge>
+                                    )}
                                   </TabsTrigger>
                                   <TabsTrigger 
                                     value="projects" 
-                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                    className="w-full justify-between items-center whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
                                   >
-                                    Развитие научно-технологических проектов
+                                    <span>Развитие научно-технологических проектов</span>
+                                    {university.cntrProjects && university.cntrProjects.length > 0 && (
+                                      <Badge variant="secondary" className="ml-2 shrink-0 bg-primary/10 text-primary border-primary/20">
+                                        {university.cntrProjects.length}
+                                      </Badge>
+                                    )}
                                   </TabsTrigger>
                                   <TabsTrigger 
                                     value="accelerator" 
-                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                    className="w-full justify-between items-center whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
                                   >
-                                    Участие в акселераторе Газпромбанк Тех. Трек Наука
+                                    <span>Участие в акселераторе Газпромбанк Тех. Трек Наука</span>
+                                    {university.cntrAcceleratorItems && university.cntrAcceleratorItems.length > 0 && (
+                                      <Badge variant="secondary" className="ml-2 shrink-0 bg-primary/10 text-primary border-primary/20">
+                                        {university.cntrAcceleratorItems.length}
+                                      </Badge>
+                                    )}
                                   </TabsTrigger>
                                   <TabsTrigger 
                                     value="events" 
-                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                    className="w-full justify-between items-center whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
                                   >
-                                    Мероприятия
+                                    <span>Мероприятия</span>
+                                    {university.cntrEventsItems && university.cntrEventsItems.length > 0 && (
+                                      <Badge variant="secondary" className="ml-2 shrink-0 bg-primary/10 text-primary border-primary/20">
+                                        {university.cntrEventsItems.length}
+                                      </Badge>
+                                    )}
                                   </TabsTrigger>
                                   <TabsTrigger 
                                     value="agreements" 
-                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                    className="w-full justify-between items-center whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
                                   >
-                                    Соглашения о сотрудничестве
+                                    <span>Соглашения о сотрудничестве</span>
+                                    {university.cntrAgreementItems && university.cntrAgreementItems.length > 0 && (
+                                      <Badge variant="secondary" className="ml-2 shrink-0 bg-primary/10 text-primary border-primary/20">
+                                        {university.cntrAgreementItems.length}
+                                      </Badge>
+                                    )}
                                   </TabsTrigger>
                                   <TabsTrigger 
                                     value="educational" 
-                                    className="w-full justify-start whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
+                                    className="w-full justify-between items-center whitespace-normal text-left border border-transparent rounded-md data-[state=active]:border-primary data-[state=active]:bg-primary/5"
                                   >
-                                    Образовательные проекты
+                                    <span>Образовательные проекты</span>
+                                    {university.cntrEducationalProjectsItems && university.cntrEducationalProjectsItems.length > 0 && (
+                                      <Badge variant="secondary" className="ml-2 shrink-0 bg-primary/10 text-primary border-primary/20">
+                                        {university.cntrEducationalProjectsItems.length}
+                                      </Badge>
+                                    )}
                                   </TabsTrigger>
                                 </TabsList>
                               </div>
