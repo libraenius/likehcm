@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, User, ArrowRight, HelpCircle, Handshake } from "lucide-react";
+import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, User, ArrowRight, HelpCircle, Handshake, MessageCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -136,6 +136,7 @@ interface CaseChampionshipParticipant {
   employeeName: string; // ФИО участника
   eventId: string; // ID мероприятия (кейс-чемпионата)
   status: "registered" | "participated" | "winner" | "prize_winner"; // Статус: зарегистрирован, участвовал, победитель, призёр
+  comments?: string; // Комментарии к участию
 }
 
 // Тип для университета
@@ -1003,6 +1004,8 @@ const mockUniversities: University[] = [
           internshipEndDate: "2023-08-31",
           practiceStartDate: "2024-01-15",
           practiceEndDate: "2024-05-31",
+          practiceSupervisor: "Иванов Иван Иванович",
+          practiceStatus: "exceeds",
           addedBy: "Иванов Иван Иванович",
           comment: "Отличные результаты в работе с финансовыми данными",
         },
@@ -1019,6 +1022,7 @@ const mockUniversities: University[] = [
           internshipEndDate: "2023-11-30",
           practiceStartDate: "2024-02-20",
           practiceEndDate: "2024-06-20",
+          practiceStatus: "exceeds",
           addedBy: "Петрова Мария Сергеевна",
           comment: "Активно участвует в разработке новых функций",
         },
@@ -1033,6 +1037,8 @@ const mockUniversities: University[] = [
           internshipInBank: false,
           practiceStartDate: "2024-03-10",
           practiceEndDate: "2024-07-10",
+          practiceSupervisor: "Сидоров Алексей Дмитриевич",
+          practiceStatus: "meets",
           addedBy: "Сидоров Алексей Дмитриевич",
           comment: "Показывает хорошие аналитические способности",
         },
@@ -1049,6 +1055,8 @@ const mockUniversities: University[] = [
           internshipEndDate: "2024-02-29",
           practiceStartDate: "2024-04-05",
           practiceEndDate: "2024-08-05",
+          practiceSupervisor: "Козлова Елена Владимировна",
+          practiceStatus: "meets",
           addedBy: "Козлова Елена Владимировна",
           comment: "Ответственный подход к работе",
         },
@@ -1063,6 +1071,8 @@ const mockUniversities: University[] = [
           internshipInBank: false,
           practiceStartDate: "2024-05-12",
           practiceEndDate: "2024-09-12",
+          practiceSupervisor: "Волков Дмитрий Николаевич",
+          practiceStatus: "meets",
           addedBy: "Волков Дмитрий Николаевич",
           comment: "Внимательность к деталям при тестировании",
         },
@@ -1080,6 +1090,7 @@ const mockUniversities: University[] = [
           internshipEndDate: "2023-07-31",
           practiceStartDate: "2023-11-20",
           practiceEndDate: "2024-03-20",
+          practiceStatus: "not_meets",
           addedBy: "Новикова Анна Петровна",
           comment: "Практика завершена досрочно",
         },
@@ -1096,6 +1107,8 @@ const mockUniversities: University[] = [
           internshipEndDate: "2024-03-31",
           practiceStartDate: "2024-06-01",
           practiceEndDate: "2024-10-01",
+          practiceSupervisor: "Морозов Сергей Александрович",
+          practiceStatus: "exceeds",
           addedBy: "Морозов Сергей Александрович",
           comment: "Быстро осваивает новые технологии",
         },
@@ -1110,6 +1123,8 @@ const mockUniversities: University[] = [
           internshipInBank: false,
           practiceStartDate: "2024-07-10",
           practiceEndDate: "2024-11-10",
+          practiceSupervisor: "Лебедев Сергей Викторович",
+          practiceStatus: "meets",
           addedBy: "Лебедев Сергей Викторович",
           comment: "Хорошо работает с большими объемами данных",
         },
@@ -1126,6 +1141,8 @@ const mockUniversities: University[] = [
           internshipEndDate: "2024-04-30",
           practiceStartDate: "2024-08-20",
           practiceEndDate: "2024-12-20",
+          practiceSupervisor: "Федорова Мария Дмитриевна",
+          practiceStatus: "exceeds",
           addedBy: "Федорова Мария Дмитриевна",
           comment: "Проявляет инициативу в решении задач",
         },
@@ -1142,6 +1159,8 @@ const mockUniversities: University[] = [
           internshipEndDate: "2024-05-31",
           practiceStartDate: "2024-09-05",
           practiceEndDate: "2025-01-05",
+          practiceSupervisor: "Иванов Иван Иванович",
+          practiceStatus: "meets",
           addedBy: "Иванов Иван Иванович",
           comment: "Качественное тестирование продуктов",
         },
@@ -1150,11 +1169,11 @@ const mockUniversities: University[] = [
       return practitioners;
     })(),
     caseChampionshipParticipants: [
-      { id: "ccp-hse-1", employeeName: "Белова Анастасия Игоревна", eventId: "event-hse-3", status: "winner" },
-      { id: "ccp-hse-2", employeeName: "Громов Кирилл Александрович", eventId: "event-hse-3", status: "prize_winner" },
+      { id: "ccp-hse-1", employeeName: "Белова Анастасия Игоревна", eventId: "event-hse-3", status: "winner", comments: "Отличное выступление на финальном этапе. Демонстрировала глубокое понимание финансового моделирования." },
+      { id: "ccp-hse-2", employeeName: "Громов Кирилл Александрович", eventId: "event-hse-3", status: "prize_winner", comments: "Показал хорошие аналитические навыки при решении кейса." },
       { id: "ccp-hse-3", employeeName: "Денисова Полина Сергеевна", eventId: "event-hse-3", status: "prize_winner" },
       { id: "ccp-hse-4", employeeName: "Егоров Станислав Дмитриевич", eventId: "event-hse-3", status: "participated" },
-      { id: "ccp-hse-5", employeeName: "Жукова Виктория Андреевна", eventId: "event-hse-3", status: "participated" },
+      { id: "ccp-hse-5", employeeName: "Жукова Виктория Андреевна", eventId: "event-hse-3", status: "participated", comments: "Активное участие в командной работе." },
       { id: "ccp-hse-6", employeeName: "Захаров Артём Олегович", eventId: "event-hse-3", status: "participated" },
       { id: "ccp-hse-7", employeeName: "Ильина Светлана Владимировна", eventId: "event-hse-6", status: "registered" },
       { id: "ccp-hse-8", employeeName: "Калинин Роман Петрович", eventId: "event-hse-6", status: "registered" },
@@ -1999,6 +2018,7 @@ export default function UniversitiesPage() {
     employeeName: "",
     eventId: "",
     status: "registered" as "registered" | "participated" | "winner" | "prize_winner",
+    comments: "",
   });
   
   // Состояние для редактирования практиканта
@@ -2023,6 +2043,7 @@ export default function UniversitiesPage() {
     employeeName: string;
     eventId: string;
     status: "registered" | "participated" | "winner" | "prize_winner";
+    comments?: string;
   } | null>(null);
   
   // Состояние для фильтров практикантов
@@ -2033,6 +2054,7 @@ export default function UniversitiesPage() {
     practiceStartDate: string;
     practiceEndDate: string;
     addedBy: string[];
+    practiceStatus: ("not_meets" | "meets" | "exceeds")[];
     comment: string;
   }>({
     employeeName: "",
@@ -2040,12 +2062,31 @@ export default function UniversitiesPage() {
     practiceStartDate: "",
     practiceEndDate: "",
     addedBy: [],
+    practiceStatus: [],
     comment: "",
   });
   
-  // Состояние для редактирования комментария практиканта
-  const [editingPractitionerComment, setEditingPractitionerComment] = useState<string | null>(null);
-  const [practitionerCommentValue, setPractitionerCommentValue] = useState<string>("");
+  // Состояние для фильтров участников кейс-чемпионатов
+  const [participantsFilterDialogOpen, setParticipantsFilterDialogOpen] = useState(false);
+  const [participantsFilters, setParticipantsFilters] = useState<{
+    employeeName: string;
+    eventIds: string[];
+    statuses: ("registered" | "participated" | "winner" | "prize_winner")[];
+    comments: string;
+  }>({
+    employeeName: "",
+    eventIds: [],
+    statuses: [],
+    comments: "",
+  });
+  
+  // Состояние для модального окна комментария практиканта
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [commentDialogPractitioner, setCommentDialogPractitioner] = useState<{ universityId: string; practitionerId: string; comment: string } | null>(null);
+  
+  // Состояние для модального окна комментария участника кейс-чемпионата
+  const [commentDialogParticipantOpen, setCommentDialogParticipantOpen] = useState(false);
+  const [commentDialogParticipant, setCommentDialogParticipant] = useState<{ universityId: string; participantId: string; comment: string } | null>(null);
   
   // Состояние для формы создания университета
   const [universityFormData, setUniversityFormData] = useState({
@@ -2307,10 +2348,19 @@ export default function UniversitiesPage() {
     setInternsCurrentPage(1);
   }, [internsFilters]);
   
+  // Состояние для пагинации участников кейс-чемпионатов
+  const [participantsCurrentPage, setParticipantsCurrentPage] = useState(1);
+  const [participantsItemsPerPage, setParticipantsItemsPerPage] = useState(10);
+  
   // Сброс страницы при изменении фильтров практикантов
   useEffect(() => {
     setPractitionersCurrentPage(1);
   }, [practitionersFilters]);
+  
+  // Сброс страницы при изменении фильтров участников кейс-чемпионатов
+  useEffect(() => {
+    setParticipantsCurrentPage(1);
+  }, [participantsFilters]);
   
   // Открытие диалога создания ВУЗа
   const handleCreate = () => {
@@ -2919,20 +2969,28 @@ export default function UniversitiesPage() {
   };
   
   // Обновление комментария практиканта
-  const handleUpdatePractitionerComment = (universityId: string, practitionerId: string, comment: string) => {
+  const handleUpdatePractitionerComment = (comment: string) => {
+    if (!commentDialogPractitioner) return;
+    
     setUniversities(universities.map(u => {
-      if (u.id === universityId && u.practitionerList) {
-          return {
-            ...u,
+      if (u.id === commentDialogPractitioner.universityId && u.practitionerList) {
+        return {
+          ...u,
           practitionerList: u.practitionerList.map(p => 
-            p.id === practitionerId ? { ...p, comment: comment.trim() || undefined } : p
+            p.id === commentDialogPractitioner.practitionerId ? { ...p, comment: comment.trim() || undefined } : p
           )
-          };
-        }
-        return u;
+        };
+      }
+      return u;
     }));
-    setEditingPractitionerComment(null);
-    setPractitionerCommentValue("");
+    setCommentDialogOpen(false);
+    setCommentDialogPractitioner(null);
+  };
+
+  // Открытие модального окна комментария
+  const handleOpenCommentDialog = (universityId: string, practitionerId: string, currentComment?: string) => {
+    setCommentDialogPractitioner({ universityId, practitionerId, comment: currentComment || "" });
+    setCommentDialogOpen(true);
   };
   
   // Добавление практиканта
@@ -2992,6 +3050,7 @@ export default function UniversitiesPage() {
       employeeName: newParticipant.employeeName.trim(),
       eventId: newParticipant.eventId,
       status: newParticipant.status,
+      comments: newParticipant.comments?.trim() || undefined,
     };
     
     setUniversities(universities.map(u => {
@@ -3008,6 +3067,7 @@ export default function UniversitiesPage() {
       employeeName: "",
       eventId: "",
       status: "registered",
+      comments: "",
     });
     setAddParticipantDialogOpen(false);
   };
@@ -3082,6 +3142,7 @@ export default function UniversitiesPage() {
       employeeName: participant.employeeName,
       eventId: participant.eventId,
       status: participant.status,
+      comments: participant.comments || "",
     });
     setEditParticipantDialogOpen(true);
   };
@@ -3101,6 +3162,7 @@ export default function UniversitiesPage() {
                   employeeName: editingParticipant.employeeName.trim(),
                   eventId: editingParticipant.eventId,
                   status: editingParticipant.status,
+                  comments: editingParticipant.comments?.trim() || undefined,
                 }
               : p
           ),
@@ -3111,6 +3173,31 @@ export default function UniversitiesPage() {
     
     setEditingParticipant(null);
     setEditParticipantDialogOpen(false);
+  };
+  
+  // Обновление комментария участника кейс-чемпионата
+  const handleUpdateParticipantComment = (comment: string) => {
+    if (!commentDialogParticipant) return;
+    
+    setUniversities(universities.map(u => {
+      if (u.id === commentDialogParticipant.universityId && u.caseChampionshipParticipants) {
+        return {
+          ...u,
+          caseChampionshipParticipants: u.caseChampionshipParticipants.map(p => 
+            p.id === commentDialogParticipant.participantId ? { ...p, comments: comment.trim() || undefined } : p
+          )
+        };
+      }
+      return u;
+    }));
+    setCommentDialogParticipantOpen(false);
+    setCommentDialogParticipant(null);
+  };
+
+  // Открытие модального окна комментария участника кейс-чемпионата
+  const handleOpenParticipantCommentDialog = (universityId: string, participantId: string, currentComment?: string) => {
+    setCommentDialogParticipant({ universityId, participantId, comment: currentComment || "" });
+    setCommentDialogParticipantOpen(true);
   };
   
   // Удалить участника кейс-чемпионата
@@ -5991,6 +6078,14 @@ export default function UniversitiesPage() {
                                     return false;
                                   }
                                   
+                                  // Фильтр по статусу практики
+                                  if (practitionersFilters.practiceStatus.length > 0) {
+                                    const status = practitioner.practiceStatus || "meets";
+                                    if (!practitionersFilters.practiceStatus.includes(status)) {
+                                      return false;
+                                    }
+                                  }
+                                  
                                   // Фильтр по комментарию
                                   if (practitionersFilters.comment) {
                                     const searchComment = practitionersFilters.comment.toLowerCase();
@@ -6027,6 +6122,7 @@ export default function UniversitiesPage() {
                                               practitionersFilters.departments.length +
                                               (practitionersFilters.practiceStartDate || practitionersFilters.practiceEndDate ? 1 : 0) +
                                               practitionersFilters.addedBy.length +
+                                              practitionersFilters.practiceStatus.length +
                                               (practitionersFilters.comment ? 1 : 0);
                                             return activeFiltersCount > 0 ? (
                                               <Badge variant="secondary" className="ml-2">
@@ -6147,6 +6243,44 @@ export default function UniversitiesPage() {
                                             </div>
                                           </div>
                                           
+                                          {/* Фильтр по статусу практики */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Статус практики</Label>
+                                            <div className="space-y-1.5">
+                                              {[
+                                                { value: "meets", label: "Соответствует" },
+                                                { value: "exceeds", label: "Превосходит" },
+                                                { value: "not_meets", label: "Не соответствует" },
+                                              ].map((status) => (
+                                                <div key={status.value} className="flex items-center space-x-2">
+                                                  <Checkbox
+                                                    id={`filter-practitioner-status-${status.value}`}
+                                                    checked={practitionersFilters.practiceStatus.includes(status.value as "not_meets" | "meets" | "exceeds")}
+                                                    onCheckedChange={(checked) => {
+                                                      if (checked) {
+                                                        setPractitionersFilters({
+                                                          ...practitionersFilters,
+                                                          practiceStatus: [...practitionersFilters.practiceStatus, status.value as "not_meets" | "meets" | "exceeds"],
+                                                        });
+                                                      } else {
+                                                        setPractitionersFilters({
+                                                          ...practitionersFilters,
+                                                          practiceStatus: practitionersFilters.practiceStatus.filter((s) => s !== status.value),
+                                                        });
+                                                      }
+                                                    }}
+                                                  />
+                                                  <Label
+                                                    htmlFor={`filter-practitioner-status-${status.value}`}
+                                                    className="text-sm font-normal cursor-pointer"
+                                                  >
+                                                    {status.label}
+                                                  </Label>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          
                                           {/* Фильтр по комментарию */}
                                           <div className="space-y-2">
                                             <Label className="text-sm font-medium">Комментарий</Label>
@@ -6168,6 +6302,7 @@ export default function UniversitiesPage() {
                                                 practiceStartDate: "",
                                                 practiceEndDate: "",
                                                 addedBy: [],
+                                                practiceStatus: [],
                                                 comment: "",
                                               });
                                               setPractitionersCurrentPage(1);
@@ -6259,15 +6394,6 @@ export default function UniversitiesPage() {
                                                   </SelectContent>
                                                 </Select>
                                               </div>
-                                              <div className="space-y-2">
-                                                <Label htmlFor="practitioner-comment">Комментарий</Label>
-                                                <Input
-                                                  id="practitioner-comment"
-                                                  placeholder="Комментарий (необязательно)"
-                                                  value={newPractitioner.comment}
-                                                  onChange={(e) => setNewPractitioner({ ...newPractitioner, comment: e.target.value })}
-                                                />
-                                              </div>
                                             </div>
                                             <DialogFooter>
                                               <Button variant="outline" onClick={() => setAddPractitionerDialogOpen(false)}>
@@ -6337,6 +6463,22 @@ export default function UniversitiesPage() {
                                       });
                                     });
                                     
+                                    // Фильтр по статусу практики
+                                    practitionersFilters.practiceStatus.forEach((status) => {
+                                      const statusLabels: Record<string, string> = {
+                                        not_meets: "Не соответствует",
+                                        meets: "Соответствует",
+                                        exceeds: "Превосходит",
+                                      };
+                                      activeFilters.push({
+                                        label: `Статус практики: ${statusLabels[status]}`,
+                                        onRemove: () => setPractitionersFilters({
+                                          ...practitionersFilters,
+                                          practiceStatus: practitionersFilters.practiceStatus.filter((s) => s !== status),
+                                        }),
+                                      });
+                                    });
+                                    
                                     // Фильтр по комментарию
                                     if (practitionersFilters.comment) {
                                       activeFilters.push({
@@ -6377,9 +6519,8 @@ export default function UniversitiesPage() {
                                         <TableHead className="w-[240px]">ФИО</TableHead>
                                         <TableHead className="w-[200px]">Период прохождения практики</TableHead>
                                         <TableHead className="w-[250px]">Подразделение (практика)</TableHead>
-                                        <TableHead className="w-[180px]">Руководитель практики</TableHead>
-                                        <TableHead className="w-[200px]">Комментарий</TableHead>
-                                        <TableHead className="w-[130px] text-center">Статус</TableHead>
+                                        <TableHead className="w-[220px]">Руководитель практики</TableHead>
+                                        <TableHead className="w-[150px] text-center">Статус</TableHead>
                                         <TableHead className="w-[80px] text-center">Действия</TableHead>
                                       </TableRow>
                                     </TableHeader>
@@ -6411,66 +6552,55 @@ export default function UniversitiesPage() {
                                                 <span className="font-medium">{practitioner.department}</span>
                                               </TableCell>
                                               <TableCell className="px-4 whitespace-normal">
-                                                <span className="text-muted-foreground">{practitioner.practiceSupervisor || "—"}</span>
-                                              </TableCell>
-                                              <TableCell className="px-4 whitespace-normal">
-                                                {editingPractitionerComment === practitioner.id ? (
-                                                  <div className="flex items-center gap-2">
-                                                    <Input
-                                                      value={practitionerCommentValue}
-                                                      onChange={(e) => setPractitionerCommentValue(e.target.value)}
-                                                      onBlur={() => {
-                                                        handleUpdatePractitionerComment(university.id, practitioner.id, practitionerCommentValue);
-                                                      }}
-                                                      onKeyDown={(e) => {
-                                                        if (e.key === "Enter") {
-                                                          e.currentTarget.blur();
-                                                        }
-                                                        if (e.key === "Escape") {
-                                                          setEditingPractitionerComment(null);
-                                                          setPractitionerCommentValue("");
-                                                        }
-                                                      }}
-                                                      className="h-8 text-sm"
-                                                      autoFocus
-                                                    />
+                                                {practitioner.practiceSupervisor ? (
+                                                  <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10 shrink-0">
+                                                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                        {getInitials(practitioner.practiceSupervisor)}
+                                                      </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex flex-col min-w-0">
+                                                      <span className="font-medium">{practitioner.practiceSupervisor}</span>
+                                                    </div>
                                                   </div>
                                                 ) : (
-                                                  <span 
-                                                    className="text-sm cursor-pointer hover:text-primary hover:underline"
-                                                    onClick={() => {
-                                                      setEditingPractitionerComment(practitioner.id);
-                                                      setPractitionerCommentValue(practitioner.comment || "");
-                                                    }}
-                                                  >
-                                                    {practitioner.comment || "—"}
-                                                  </span>
+                                                  <span className="text-muted-foreground">—</span>
                                                 )}
                                               </TableCell>
                                               <TableCell className="text-center">
-                                                {(() => {
-                                                  const status = practitioner.practiceStatus || "meets";
-                                                  switch (status) {
-                                                    case "not_meets":
-                                                      return (
-                                                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                                          Не соответствует
-                                                        </Badge>
-                                                      );
-                                                    case "exceeds":
-                                                      return (
-                                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                                          Превосходит
-                                                        </Badge>
-                                                      );
-                                                    default:
-                                                      return (
-                                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                                          Соответствует
-                                                        </Badge>
-                                                      );
-                                                  }
-                                                })()}
+                                                <div className="flex items-center justify-center gap-2">
+                                                  {(() => {
+                                                    const status = practitioner.practiceStatus || "meets";
+                                                    switch (status) {
+                                                      case "not_meets":
+                                                        return (
+                                                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                                            Не соответствует
+                                                          </Badge>
+                                                        );
+                                                      case "exceeds":
+                                                        return (
+                                                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                                            Превосходит
+                                                          </Badge>
+                                                        );
+                                                      default:
+                                                        return (
+                                                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                            Соответствует
+                                                          </Badge>
+                                                        );
+                                                    }
+                                                  })()}
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => handleOpenCommentDialog(university.id, practitioner.id, practitioner.comment)}
+                                                  >
+                                                    <MessageSquare className={`h-4 w-4 ${practitioner.comment ? 'text-primary' : 'text-muted-foreground'}`} />
+                                                  </Button>
+                                                </div>
                                               </TableCell>
                                               <TableCell className="text-center">
                                                 <Button
@@ -6577,15 +6707,14 @@ export default function UniversitiesPage() {
                                         <TableHead className="w-[240px]">ФИО</TableHead>
                                         <TableHead className="w-[200px]">Период прохождения практики</TableHead>
                                         <TableHead className="w-[250px]">Подразделение (практика)</TableHead>
-                                        <TableHead className="w-[180px]">Руководитель практики</TableHead>
-                                        <TableHead className="w-[200px]">Комментарий</TableHead>
-                                        <TableHead className="w-[130px] text-center">Статус</TableHead>
+                                        <TableHead className="w-[220px]">Руководитель практики</TableHead>
+                                        <TableHead className="w-[150px] text-center">Статус</TableHead>
                                         <TableHead className="w-[80px] text-center">Действия</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                       <TableRow>
-                                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                                           Практиканты не добавлены
                                         </TableCell>
                                       </TableRow>
@@ -6596,22 +6725,201 @@ export default function UniversitiesPage() {
                               })()}
 
                               {/* Таблица: Участники кейс-чемпионатов */}
-                              {practitionersSubTab === "caseChampionships" && (
-                                university.caseChampionshipParticipants && university.caseChampionshipParticipants.length > 0 ? (
+                              {practitionersSubTab === "caseChampionships" && (() => {
+                                // Вычисляем отфильтрованные данные один раз
+                                const filteredParticipants = (university.caseChampionshipParticipants || []).filter((participant) => {
+                                  // Фильтр по имени участника
+                                  if (participantsFilters.employeeName) {
+                                    const searchName = participantsFilters.employeeName.toLowerCase();
+                                    if (!participant.employeeName.toLowerCase().includes(searchName)) {
+                                      return false;
+                                    }
+                                  }
+                                  
+                                  // Фильтр по кейс-чемпионату
+                                  if (participantsFilters.eventIds.length > 0 && !participantsFilters.eventIds.includes(participant.eventId)) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по статусу
+                                  if (participantsFilters.statuses.length > 0 && !participantsFilters.statuses.includes(participant.status)) {
+                                    return false;
+                                  }
+                                  
+                                  // Фильтр по комментарию
+                                  if (participantsFilters.comments) {
+                                    const searchComment = participantsFilters.comments.toLowerCase();
+                                    if (!participant.comments || !participant.comments.toLowerCase().includes(searchComment)) {
+                                      return false;
+                                    }
+                                  }
+                                  
+                                  return true;
+                                });
+                                
+                                return university.caseChampionshipParticipants && university.caseChampionshipParticipants.length > 0 ? (
                                   <>
                                     <div className="flex items-center justify-between mb-2">
                                       <div className="text-sm text-muted-foreground">
-                                        Найдено: <span className="font-semibold text-foreground">{university.caseChampionshipParticipants.length}</span> {university.caseChampionshipParticipants.length === 1 ? 'участник' : university.caseChampionshipParticipants.length > 1 && university.caseChampionshipParticipants.length < 5 ? 'участника' : 'участников'}
+                                        Найдено: <span className="font-semibold text-foreground">{filteredParticipants.length}</span> {filteredParticipants.length === 1 ? 'участник' : filteredParticipants.length > 1 && filteredParticipants.length < 5 ? 'участника' : 'участников'}
+                                        {filteredParticipants.length !== university.caseChampionshipParticipants.length && (
+                                          <span className="text-xs ml-1">из {university.caseChampionshipParticipants.length}</span>
+                                        )}
                                       </div>
                                       <div className="flex items-center gap-2">
                                         <Button variant="outline">
                                           <FileText className="mr-2 h-4 w-4" />
-                                          Импорт
+                                          Импорт Excel
                                         </Button>
+                                        <Dialog open={participantsFilterDialogOpen} onOpenChange={setParticipantsFilterDialogOpen}>
+                                      <DialogTrigger asChild>
                                         <Button variant="outline">
                                           <Filter className="mr-2 h-4 w-4" />
                                           Фильтры
+                                          {(() => {
+                                            const activeFiltersCount = 
+                                              (participantsFilters.employeeName ? 1 : 0) +
+                                              participantsFilters.eventIds.length +
+                                              participantsFilters.statuses.length +
+                                              (participantsFilters.comments ? 1 : 0);
+                                            return activeFiltersCount > 0 ? (
+                                              <Badge variant="secondary" className="ml-2">
+                                                {activeFiltersCount}
+                                              </Badge>
+                                            ) : null;
+                                          })()}
                                         </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                        <DialogHeader className="pb-3">
+                                          <DialogTitle className="text-lg">Фильтры участников кейс-чемпионатов</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-2">
+                                          {/* Фильтр по имени участника */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Участник</Label>
+                                            <Input
+                                              placeholder="Поиск по ФИО..."
+                                              value={participantsFilters.employeeName}
+                                              onChange={(e) => setParticipantsFilters({ ...participantsFilters, employeeName: e.target.value })}
+                                            />
+                                          </div>
+                                          
+                                          {/* Фильтр по кейс-чемпионату */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Кейс-чемпионат</Label>
+                                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                              {(() => {
+                                                const formatDate = (dateStr: string) => {
+                                                  const [year, month, day] = dateStr.split('-').map(Number);
+                                                  return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                                };
+                                                const caseChampionshipEvents = university.events?.filter(e => e.type === "caseChampionships") || [];
+                                                return caseChampionshipEvents.map((event) => (
+                                                  <div key={event.id} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`filter-participant-event-${event.id}`}
+                                                      checked={participantsFilters.eventIds.includes(event.id)}
+                                                      onCheckedChange={(checked) => {
+                                                        if (checked) {
+                                                          setParticipantsFilters({
+                                                            ...participantsFilters,
+                                                            eventIds: [...participantsFilters.eventIds, event.id],
+                                                          });
+                                                        } else {
+                                                          setParticipantsFilters({
+                                                            ...participantsFilters,
+                                                            eventIds: participantsFilters.eventIds.filter((id) => id !== event.id),
+                                                          });
+                                                        }
+                                                      }}
+                                                    />
+                                                    <Label
+                                                      htmlFor={`filter-participant-event-${event.id}`}
+                                                      className="text-sm font-normal cursor-pointer"
+                                                    >
+                                                      {event.comments || "Кейс-чемпионат"} ({formatDate(event.date)})
+                                                    </Label>
+                                                  </div>
+                                                ));
+                                              })()}
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по статусу */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Статус</Label>
+                                            <div className="space-y-1.5">
+                                              {[
+                                                { value: "registered", label: "Зарегистрирован" },
+                                                { value: "participated", label: "Участвовал" },
+                                                { value: "prize_winner", label: "Призёр" },
+                                                { value: "winner", label: "Победитель" },
+                                              ].map((status) => (
+                                                <div key={status.value} className="flex items-center space-x-2">
+                                                  <Checkbox
+                                                    id={`filter-participant-status-${status.value}`}
+                                                    checked={participantsFilters.statuses.includes(status.value as "registered" | "participated" | "winner" | "prize_winner")}
+                                                    onCheckedChange={(checked) => {
+                                                      if (checked) {
+                                                        setParticipantsFilters({
+                                                          ...participantsFilters,
+                                                          statuses: [...participantsFilters.statuses, status.value as "registered" | "participated" | "winner" | "prize_winner"],
+                                                        });
+                                                      } else {
+                                                        setParticipantsFilters({
+                                                          ...participantsFilters,
+                                                          statuses: participantsFilters.statuses.filter((s) => s !== status.value),
+                                                        });
+                                                      }
+                                                    }}
+                                                  />
+                                                  <Label
+                                                    htmlFor={`filter-participant-status-${status.value}`}
+                                                    className="text-sm font-normal cursor-pointer"
+                                                  >
+                                                    {status.label}
+                                                  </Label>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Фильтр по комментарию */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Комментарий</Label>
+                                            <Input
+                                              placeholder="Поиск по комментарию..."
+                                              value={participantsFilters.comments}
+                                              onChange={(e) => setParticipantsFilters({ ...participantsFilters, comments: e.target.value })}
+                                            />
+                                          </div>
+                                        </div>
+                                        <DialogFooter className="pt-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                              setParticipantsFilters({
+                                                employeeName: "",
+                                                eventIds: [],
+                                                statuses: [],
+                                                comments: "",
+                                              });
+                                              setParticipantsCurrentPage(1);
+                                            }}
+                                          >
+                                            Сбросить
+                                          </Button>
+                                          <Button size="sm" onClick={() => {
+                                            setParticipantsFilterDialogOpen(false);
+                                            setParticipantsCurrentPage(1);
+                                          }}>
+                                            Применить
+                                          </Button>
+                                        </DialogFooter>
+                                      </DialogContent>
+                                    </Dialog>
                                         <Dialog open={addParticipantDialogOpen} onOpenChange={setAddParticipantDialogOpen}>
                                           <DialogTrigger asChild>
                                             <Button variant="default" size="sm">
@@ -6674,6 +6982,16 @@ export default function UniversitiesPage() {
                                                   </SelectContent>
                                                 </Select>
                                               </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="participant-comments">Комментарии</Label>
+                                                <Textarea
+                                                  id="participant-comments"
+                                                  placeholder="Комментарии к участию..."
+                                                  value={newParticipant.comments}
+                                                  onChange={(e) => setNewParticipant({ ...newParticipant, comments: e.target.value })}
+                                                  rows={3}
+                                                />
+                                              </div>
                                             </div>
                                             <DialogFooter>
                                               <Button variant="outline" onClick={() => setAddParticipantDialogOpen(false)}>
@@ -6690,6 +7008,88 @@ export default function UniversitiesPage() {
                                         </Dialog>
                                       </div>
                                     </div>
+                                    
+                                    {/* Активные фильтры */}
+                                    {(() => {
+                                      const activeFilters: Array<{ label: string; onRemove: () => void }> = [];
+                                      
+                                      // Фильтр по имени участника
+                                      if (participantsFilters.employeeName) {
+                                        activeFilters.push({
+                                          label: `Участник: ${participantsFilters.employeeName}`,
+                                          onRemove: () => setParticipantsFilters({ ...participantsFilters, employeeName: "" }),
+                                        });
+                                      }
+                                      
+                                      // Фильтр по кейс-чемпионатам
+                                      participantsFilters.eventIds.forEach((eventId) => {
+                                        const event = university.events?.find(e => e.id === eventId);
+                                        const formatDate = (dateStr: string) => {
+                                          if (!dateStr) return "";
+                                          const [year, month, day] = dateStr.split('-').map(Number);
+                                          return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                        };
+                                        if (event) {
+                                          activeFilters.push({
+                                            label: `Кейс-чемпионат: ${event.comments || "Кейс-чемпионат"} (${formatDate(event.date)})`,
+                                            onRemove: () => setParticipantsFilters({
+                                              ...participantsFilters,
+                                              eventIds: participantsFilters.eventIds.filter((id) => id !== eventId),
+                                            }),
+                                          });
+                                        }
+                                      });
+                                      
+                                      // Фильтр по статусу
+                                      participantsFilters.statuses.forEach((status) => {
+                                        const statusLabels: Record<string, string> = {
+                                          registered: "Зарегистрирован",
+                                          participated: "Участвовал",
+                                          prize_winner: "Призёр",
+                                          winner: "Победитель",
+                                        };
+                                        activeFilters.push({
+                                          label: `Статус: ${statusLabels[status]}`,
+                                          onRemove: () => setParticipantsFilters({
+                                            ...participantsFilters,
+                                            statuses: participantsFilters.statuses.filter((s) => s !== status),
+                                          }),
+                                        });
+                                      });
+                                      
+                                      // Фильтр по комментарию
+                                      if (participantsFilters.comments) {
+                                        activeFilters.push({
+                                          label: `Комментарий: ${participantsFilters.comments}`,
+                                          onRemove: () => setParticipantsFilters({ ...participantsFilters, comments: "" }),
+                                        });
+                                      }
+                                      
+                                      if (activeFilters.length === 0) return null;
+                                      
+                                      return (
+                                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                                          {activeFilters.map((filter, index) => (
+                                            <Badge
+                                              key={index}
+                                              variant="secondary"
+                                              className="flex items-center gap-1 px-2 py-1"
+                                            >
+                                              <span className="text-sm">{filter.label}</span>
+                                              <button
+                                                type="button"
+                                                onClick={filter.onRemove}
+                                                className="ml-1 rounded-full hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                                aria-label="Удалить фильтр"
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </button>
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      );
+                                    })()}
+                                    
                                     <div className="border rounded-lg overflow-hidden">
                                       <Table>
                                       <TableHeader>
@@ -6701,7 +7101,14 @@ export default function UniversitiesPage() {
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
-                                        {university.caseChampionshipParticipants.map((participant) => {
+                                        {(() => {
+                                          const totalPages = Math.ceil(filteredParticipants.length / participantsItemsPerPage);
+                                          const startIndex = (participantsCurrentPage - 1) * participantsItemsPerPage;
+                                          const endIndex = startIndex + participantsItemsPerPage;
+                                          const paginatedParticipants = filteredParticipants.slice(startIndex, endIndex);
+                                          
+                                          return paginatedParticipants.length > 0 ? (
+                                            paginatedParticipants.map((participant) => {
                                           const event = university.events?.find(e => e.id === participant.eventId);
                                           const formatDate = (dateStr: string) => {
                                             const [year, month, day] = dateStr.split('-').map(Number);
@@ -6737,7 +7144,17 @@ export default function UniversitiesPage() {
                                                 )}
                                               </TableCell>
                                               <TableCell className="text-center">
-                                                {getStatusBadge(participant.status)}
+                                                <div className="flex items-center justify-center gap-2">
+                                                  {getStatusBadge(participant.status)}
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => handleOpenParticipantCommentDialog(university.id, participant.id, participant.comments)}
+                                                  >
+                                                    <MessageSquare className={`h-4 w-4 ${participant.comments ? 'text-primary' : 'text-muted-foreground'}`} />
+                                                  </Button>
+                                                </div>
                                               </TableCell>
                                               <TableCell className="text-center">
                                                 <Button
@@ -6751,17 +7168,76 @@ export default function UniversitiesPage() {
                                               </TableCell>
                                             </TableRow>
                                           );
-                                        })}
+                                            })
+                                          ) : (
+                                            <TableRow>
+                                              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                                Участники не найдены
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })()}
                                       </TableBody>
                                     </Table>
                                     </div>
+                                    
+                                    {/* Пагинация */}
+                                    {(() => {
+                                      const totalPages = Math.ceil(filteredParticipants.length / participantsItemsPerPage);
+                                      
+                                      return totalPages > 1 ? (
+                                        <div className="flex items-center justify-between mt-3">
+                                          <div className="text-sm text-muted-foreground">
+                                            Страница {participantsCurrentPage} из {totalPages}
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setParticipantsCurrentPage(1)}
+                                              disabled={participantsCurrentPage === 1}
+                                            >
+                                              <ChevronsLeft className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setParticipantsCurrentPage(participantsCurrentPage - 1)}
+                                              disabled={participantsCurrentPage === 1}
+                                            >
+                                              <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setParticipantsCurrentPage(participantsCurrentPage + 1)}
+                                              disabled={participantsCurrentPage === totalPages}
+                                            >
+                                              <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setParticipantsCurrentPage(totalPages)}
+                                              disabled={participantsCurrentPage === totalPages}
+                                            >
+                                              <ChevronsRight className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ) : null;
+                                    })()}
                                   </>
                                 ) : (
                                   <div className="border rounded-lg p-8 text-center text-muted-foreground">
                                     Участники кейс-чемпионатов не добавлены
                                   </div>
-                                )
-                              )}
+                                );
+                              })()}
                               
                               {/* Модальное окно редактирования практиканта */}
                               <Dialog open={editPractitionerDialogOpen} onOpenChange={setEditPractitionerDialogOpen}>
@@ -6831,14 +7307,6 @@ export default function UniversitiesPage() {
                                           </SelectContent>
                                         </Select>
                                       </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor="edit-practitioner-comment">Комментарий</Label>
-                                        <Input
-                                          id="edit-practitioner-comment"
-                                          value={editingPractitioner.comment}
-                                          onChange={(e) => setEditingPractitioner({ ...editingPractitioner, comment: e.target.value })}
-                                        />
-                                      </div>
                                     </div>
                                   )}
                                   <DialogFooter className="flex justify-between">
@@ -6859,6 +7327,42 @@ export default function UniversitiesPage() {
                                         Сохранить
                                       </Button>
                                     </div>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+
+                              {/* Модальное окно комментария практиканта */}
+                              <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Комментарий к практиканту</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="practitioner-comment-dialog">Комментарий</Label>
+                                      <Textarea
+                                        id="practitioner-comment-dialog"
+                                        placeholder="Введите комментарий..."
+                                        value={commentDialogPractitioner?.comment || ""}
+                                        onChange={(e) => {
+                                          if (commentDialogPractitioner) {
+                                            setCommentDialogPractitioner({
+                                              ...commentDialogPractitioner,
+                                              comment: e.target.value
+                                            });
+                                          }
+                                        }}
+                                        rows={5}
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => setCommentDialogOpen(false)}>
+                                      Отмена
+                                    </Button>
+                                    <Button onClick={() => handleUpdatePractitionerComment(commentDialogPractitioner?.comment || "")}>
+                                      Сохранить
+                                    </Button>
                                   </DialogFooter>
                                 </DialogContent>
                               </Dialog>
@@ -6920,6 +7424,16 @@ export default function UniversitiesPage() {
                                           </SelectContent>
                                         </Select>
                                       </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-participant-comments">Комментарии</Label>
+                                        <Textarea
+                                          id="edit-participant-comments"
+                                          placeholder="Комментарии к участию..."
+                                          value={editingParticipant.comments || ""}
+                                          onChange={(e) => setEditingParticipant({ ...editingParticipant, comments: e.target.value })}
+                                          rows={3}
+                                        />
+                                      </div>
                                     </div>
                                   )}
                                   <DialogFooter className="flex justify-between">
@@ -6940,6 +7454,42 @@ export default function UniversitiesPage() {
                                         Сохранить
                                       </Button>
                                     </div>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                              
+                              {/* Модальное окно комментария участника кейс-чемпионата */}
+                              <Dialog open={commentDialogParticipantOpen} onOpenChange={setCommentDialogParticipantOpen}>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Комментарий к участнику</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="participant-comment-dialog">Комментарий</Label>
+                                      <Textarea
+                                        id="participant-comment-dialog"
+                                        placeholder="Введите комментарий..."
+                                        value={commentDialogParticipant?.comment || ""}
+                                        onChange={(e) => {
+                                          if (commentDialogParticipant) {
+                                            setCommentDialogParticipant({
+                                              ...commentDialogParticipant,
+                                              comment: e.target.value
+                                            });
+                                          }
+                                        }}
+                                        rows={5}
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => setCommentDialogParticipantOpen(false)}>
+                                      Отмена
+                                    </Button>
+                                    <Button onClick={() => handleUpdateParticipantComment(commentDialogParticipant?.comment || "")}>
+                                      Сохранить
+                                    </Button>
                                   </DialogFooter>
                                 </DialogContent>
                               </Dialog>

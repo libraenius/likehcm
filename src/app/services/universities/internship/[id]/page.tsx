@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   BarChart3, 
@@ -19,7 +20,8 @@ import {
   X, 
   UserCheck, 
   Star,
-  ArrowLeft
+  ArrowLeft,
+  MessageCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EvaluationDialog } from "@/components/internships/evaluation-dialog";
@@ -52,7 +54,57 @@ export default function InternshipDetailsPage() {
   const [internships] = useState<Internship[]>(mockInternships);
   const [internshipApplications, setInternshipApplications] = useState<InternshipApplication[]>(mockApplications);
   const [internshipStudents] = useState<InternshipStudent[]>(mockStudents);
-  const [evaluations, setEvaluations] = useState<InternshipEvaluation[]>([]);
+  
+  // Создаем начальные оценки с комментариями для части заявок, без комментариев для других
+  const [evaluations, setEvaluations] = useState<InternshipEvaluation[]>(() => {
+    const evaluations: InternshipEvaluation[] = [];
+    const appsForInternship = mockApplications.filter(app => app.internshipId === internshipId);
+    const activeApps = appsForInternship.filter(app => ['confirmed', 'active', 'completed'].includes(app.status));
+    
+    // Для первых двух заявок создаем оценки С комментариями
+    // Для остальных - БЕЗ комментариев
+    activeApps.slice(0, 2).forEach((app, index) => {
+      evaluations.push({
+        id: `eval-init-${app.id}-1`,
+        applicationId: app.id,
+        internshipId: app.internshipId,
+        studentId: app.studentId,
+        evaluatorId: 'user-1',
+        evaluatorName: 'Наставник',
+        evaluationDate: new Date(),
+        period: 'weekly',
+        technicalSkills: 4 + index,
+        communication: 4,
+        initiative: 3 + index,
+        teamwork: 4,
+        overallRating: 4,
+        comments: `Отличная работа студента. Показывает хорошее понимание материала и активно участвует в проектах.${index === 0 ? ' Рекомендую к дальнейшему развитию.' : ''}`,
+        recommendations: index === 0 ? 'Продолжить работу над сложными задачами' : undefined,
+      });
+    });
+    
+    // Для остальных заявок создаем оценки БЕЗ комментариев
+    activeApps.slice(2, 4).forEach((app, index) => {
+      evaluations.push({
+        id: `eval-init-${app.id}-1`,
+        applicationId: app.id,
+        internshipId: app.internshipId,
+        studentId: app.studentId,
+        evaluatorId: 'user-1',
+        evaluatorName: 'Наставник',
+        evaluationDate: new Date(),
+        period: 'weekly',
+        technicalSkills: 3 + index,
+        communication: 3,
+        initiative: 3,
+        teamwork: 3,
+        overallRating: 3,
+        comments: '', // Без комментариев
+      });
+    });
+    
+    return evaluations;
+  });
   const [selectedInternshipApplication, setSelectedInternshipApplication] = useState<InternshipApplication | null>(null);
   const [isInternshipApplicationDialogOpen, setIsInternshipApplicationDialogOpen] = useState(false);
   const [isInternshipStatisticsDialogOpen, setIsInternshipStatisticsDialogOpen] = useState(false);
@@ -245,6 +297,15 @@ export default function InternshipDetailsPage() {
       ));
     }
   }, [selectedInternship, internshipApplications]);
+
+  // Проверка наличия комментариев для заявки
+  const hasCommentsForApplication = useCallback((applicationId: string) => {
+    return evaluations.some(e => 
+      e.applicationId === applicationId && 
+      e.comments && 
+      e.comments.trim().length > 0
+    );
+  }, [evaluations]);
 
   if (!selectedInternship) {
     return (
@@ -559,11 +620,25 @@ export default function InternshipDetailsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="break-words whitespace-normal">
-                          <Badge variant="outline" className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
-                            {application.status === 'confirmed' ? 'Подтверждено' :
-                             application.status === 'active' ? 'Активно' :
-                             application.status === 'completed' ? 'Завершено' : application.status}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className={cn(getInternshipStatusColor(application.status), "whitespace-nowrap")}>
+                              {application.status === 'confirmed' ? 'Подтверждено' :
+                               application.status === 'active' ? 'Активно' :
+                               application.status === 'completed' ? 'Завершено' : application.status}
+                            </Badge>
+                            {hasCommentsForApplication(application.id) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <MessageCircle 
+                                    className="h-4 w-4 text-blue-600 dark:text-blue-400 cursor-help" 
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Есть комментарии</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="break-words whitespace-normal">
                           {application.confirmedAt 
@@ -784,15 +859,19 @@ export default function InternshipDetailsPage() {
       </Dialog>
 
       {/* Диалог оценки студента */}
-      {evaluationApplicationId && (
-        <EvaluationDialog
-          open={isEvaluationDialogOpen}
-          onOpenChange={setIsEvaluationDialogOpen}
-          applicationId={evaluationApplicationId}
-          application={internshipApplications.find(a => a.id === evaluationApplicationId)}
-          onSave={handleSaveInternshipEvaluation}
-        />
-      )}
+      {evaluationApplicationId && (() => {
+        const evaluationApp = internshipApplications.find(a => a.id === evaluationApplicationId);
+        return evaluationApp ? (
+          <EvaluationDialog
+            open={isEvaluationDialogOpen}
+            onOpenChange={setIsEvaluationDialogOpen}
+            applicationId={evaluationApplicationId}
+            studentName={evaluationApp.studentName}
+            internshipTitle={selectedInternship?.title || ''}
+            onSubmit={handleSaveInternshipEvaluation}
+          />
+        ) : null;
+      })()}
     </div>
   );
 }
