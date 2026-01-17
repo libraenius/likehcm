@@ -11480,7 +11480,7 @@ export default function UniversitiesPage() {
                                 </Button>
                               </div>
 
-            {/* Список стажировок */}
+            {/* Канбан доска стажировок */}
             {filteredInternshipsForTab.length === 0 ? (
               <Card>
                 <CardContent className="pt-6">
@@ -11502,20 +11502,43 @@ export default function UniversitiesPage() {
                     </CardContent>
                   </Card>
                 ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 w-full">
-                {filteredInternshipsForTab
-                  .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
-                  .map((internship) => (
-                        <Card 
-                          key={internship.id}
-                          className={cn(
-                            "cursor-pointer transition-all hover:shadow-md h-[280px] flex flex-col overflow-hidden",
-                            selectedInternship?.id === internship.id && "ring-2 ring-primary"
-                          )}
-                          onClick={() => {
-                            router.push(`/services/universities/internship/${internship.id}`);
-                          }}
-                        >
+              <div className="grid grid-cols-4 gap-[18px] w-full">
+                {[
+                  { status: 'planned' as InternshipStatus, label: 'Запланированные', icon: Clock },
+                  { status: 'recruiting' as InternshipStatus, label: 'Набор участников', icon: Users },
+                  { status: 'active' as InternshipStatus, label: 'Активные стажировки', icon: Calendar },
+                  { status: 'completed' as InternshipStatus, label: 'Завершенные', icon: CheckCircle2 },
+                ].map(({ status, label, icon: Icon }) => {
+                  const columnInternships = filteredInternshipsForTab
+                    .filter(i => i.status === status)
+                    .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+
+                  return (
+                    <div
+                      key={status}
+                      className="flex flex-col"
+                    >
+                      <div className="bg-muted/30 rounded-lg p-3 mb-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          <h3 className="font-semibold text-sm">{label}</h3>
+                          <Badge variant="secondary" className="ml-auto text-xs">
+                            {columnInternships.length}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="space-y-[18px] min-h-[400px]">
+                        {columnInternships.map((internship) => (
+                          <Card 
+                            key={internship.id}
+                            className={cn(
+                              "cursor-pointer transition-all hover:shadow-md h-[280px] flex flex-col overflow-hidden",
+                              selectedInternship?.id === internship.id && "ring-2 ring-primary"
+                            )}
+                            onClick={() => {
+                              router.push(`/services/universities/internship/${internship.id}`);
+                            }}
+                          >
                           <CardHeader className="pb-3 flex-shrink-0 overflow-hidden">
                             <div className="flex items-start justify-between gap-2 min-w-0">
                               <div className="flex-1 min-w-0 overflow-hidden">
@@ -11584,11 +11607,15 @@ export default function UniversitiesPage() {
                                 Подробнее
                                 <ArrowRight className="h-3.5 w-3.5 ml-2" />
                                 </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                        ))}
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                  ))}
-            </div>
+                    );
+                  })}
+              </div>
           )}
           </TabsContent>
 

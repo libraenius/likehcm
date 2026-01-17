@@ -369,7 +369,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
         {/* Общий дашборд */}
         <TabsContent value="overview" className="space-y-6 mt-6">
       {/* Основные метрики - первый ряд */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-[18px]">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -436,7 +436,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
       </div>
 
       {/* Второй ряд метрик */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-[18px]">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -503,7 +503,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
       </div>
 
       {/* Графики и детальная информация */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-[18px]">
         {/* Распределение по линиям сотрудничества */}
         <Card>
           <CardHeader>
@@ -724,7 +724,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
       </div>
 
       {/* География и BKO */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-[18px]">
         {/* География партнерств */}
         <Card>
           <CardHeader>
@@ -828,7 +828,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
         {/* Вкладка ДРП */}
         <TabsContent value="drp" className="space-y-6 mt-6">
           {/* Метрики ДРП */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-[18px]">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -890,7 +890,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
           </div>
 
           {/* Графики ДРП */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-[18px]">
             {/* Топ ВУЗов по сотрудникам */}
             <Card>
               <CardHeader>
@@ -1026,7 +1026,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
         {/* Вкладка БКО */}
         <TabsContent value="bko" className="space-y-6 mt-6">
           {/* Метрики БКО */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-[18px]">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -1094,7 +1094,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
           </div>
 
           {/* Графики БКО */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-[18px]">
             {/* Охват продуктами */}
             <Card>
               <CardHeader>
@@ -1172,7 +1172,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
         {/* Вкладка ЦНТР */}
         <TabsContent value="cntr" className="space-y-6 mt-6">
           {/* Метрики ЦНТР */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-[18px]">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -1231,7 +1231,7 @@ export function UniversityDashboard({ universities }: UniversityDashboardProps) 
           </div>
 
           {/* Графики ЦНТР */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-[18px]">
             {/* Топ проектов по финансированию */}
             <Card>
               <CardHeader>
