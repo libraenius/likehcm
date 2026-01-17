@@ -52,6 +52,7 @@ import {
   canStartInternship,
   getNextReserveStudent,
 } from "@/lib/internships/business-logic";
+import { UniversityDashboard, UniversityReporting } from "@/components/universities";
 
 // Тип для куратора от филиала
 interface BranchCurator {
@@ -11592,39 +11593,11 @@ export default function UniversitiesPage() {
           </TabsContent>
 
           <TabsContent value="reporting" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Отчетность</CardTitle>
-                <CardDescription>
-                  Раздел для работы с отчетами по ВУЗам и стажировкам
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">Отчетность</p>
-                  <p className="text-sm">Раздел находится в разработке</p>
-              </div>
-              </CardContent>
-            </Card>
+            <UniversityReporting universities={universities} />
           </TabsContent>
 
           <TabsContent value="dashboard" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Дэшборд</CardTitle>
-                <CardDescription>
-                  Аналитика и статистика по ВУЗам и стажировкам
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">Дэшборд</p>
-                  <p className="text-sm">Раздел находится в разработке</p>
-            </div>
-              </CardContent>
-            </Card>
+            <UniversityDashboard universities={universities} />
           </TabsContent>
         </Tabs>
       </div>
