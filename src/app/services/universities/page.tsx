@@ -124,8 +124,18 @@ interface Practitioner {
   internshipEndDate?: string; // Дата окончания стажировки в банке (формат YYYY-MM-DD)
   practiceStartDate: string; // Дата начала практики (формат YYYY-MM-DD)
   practiceEndDate: string; // Дата окончания практики (формат YYYY-MM-DD)
+  practiceSupervisor?: string; // Руководитель практики
+  practiceStatus?: "not_meets" | "meets" | "exceeds"; // Статус: не соответствует / соответствует / превосходит ожидания
   addedBy: string; // Сотрудник, добавивший запись
   comment?: string; // Комментарий
+}
+
+// Тип для участника кейс-чемпионата
+interface CaseChampionshipParticipant {
+  id: string;
+  employeeName: string; // ФИО участника
+  eventId: string; // ID мероприятия (кейс-чемпионата)
+  status: "registered" | "participated" | "winner" | "prize_winner"; // Статус: зарегистрирован, участвовал, победитель, призёр
 }
 
 // Тип для университета
@@ -169,6 +179,7 @@ interface University {
   interns?: number; // Практиканты
   internList?: Intern[]; // Список стажеров
   practitionerList?: Practitioner[]; // Список практикантов
+  caseChampionshipParticipants?: CaseChampionshipParticipant[]; // Участники кейс-чемпионатов
   region?: string;
   description?: string;
   image?: string; // Фото/логотип ВУЗа
@@ -1138,6 +1149,16 @@ const mockUniversities: University[] = [
       
       return practitioners;
     })(),
+    caseChampionshipParticipants: [
+      { id: "ccp-hse-1", employeeName: "Белова Анастасия Игоревна", eventId: "event-hse-3", status: "winner" },
+      { id: "ccp-hse-2", employeeName: "Громов Кирилл Александрович", eventId: "event-hse-3", status: "prize_winner" },
+      { id: "ccp-hse-3", employeeName: "Денисова Полина Сергеевна", eventId: "event-hse-3", status: "prize_winner" },
+      { id: "ccp-hse-4", employeeName: "Егоров Станислав Дмитриевич", eventId: "event-hse-3", status: "participated" },
+      { id: "ccp-hse-5", employeeName: "Жукова Виктория Андреевна", eventId: "event-hse-3", status: "participated" },
+      { id: "ccp-hse-6", employeeName: "Захаров Артём Олегович", eventId: "event-hse-3", status: "participated" },
+      { id: "ccp-hse-7", employeeName: "Ильина Светлана Владимировна", eventId: "event-hse-6", status: "registered" },
+      { id: "ccp-hse-8", employeeName: "Калинин Роман Петрович", eventId: "event-hse-6", status: "registered" },
+    ],
     region: "Московская область",
     description: "Ведущий экономический и IT-университет",
     image: "https://www.hse.ru//images/main/main_logo_ru_full.svg",
@@ -1956,6 +1977,53 @@ export default function UniversitiesPage() {
   // Состояние для пагинации практикантов
   const [practitionersCurrentPage, setPractitionersCurrentPage] = useState(1);
   const [practitionersItemsPerPage, setPractitionersItemsPerPage] = useState(10);
+  
+  // Состояние для переключения между практикантами и участниками кейс-чемпионатов
+  const [practitionersSubTab, setPractitionersSubTab] = useState<"practitioners" | "caseChampionships">("practitioners");
+  
+  // Состояние для добавления практиканта
+  const [addPractitionerDialogOpen, setAddPractitionerDialogOpen] = useState(false);
+  const [newPractitioner, setNewPractitioner] = useState({
+    employeeName: "",
+    department: "",
+    practiceStartDate: "",
+    practiceEndDate: "",
+    practiceSupervisor: "",
+    practiceStatus: "meets" as "not_meets" | "meets" | "exceeds",
+    comment: "",
+  });
+  
+  // Состояние для добавления участника кейс-чемпионата
+  const [addParticipantDialogOpen, setAddParticipantDialogOpen] = useState(false);
+  const [newParticipant, setNewParticipant] = useState({
+    employeeName: "",
+    eventId: "",
+    status: "registered" as "registered" | "participated" | "winner" | "prize_winner",
+  });
+  
+  // Состояние для редактирования практиканта
+  const [editPractitionerDialogOpen, setEditPractitionerDialogOpen] = useState(false);
+  const [editingPractitioner, setEditingPractitioner] = useState<{
+    id: string;
+    universityId: string;
+    employeeName: string;
+    department: string;
+    practiceStartDate: string;
+    practiceEndDate: string;
+    practiceSupervisor: string;
+    practiceStatus: "not_meets" | "meets" | "exceeds";
+    comment: string;
+  } | null>(null);
+  
+  // Состояние для редактирования участника кейс-чемпионата
+  const [editParticipantDialogOpen, setEditParticipantDialogOpen] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<{
+    id: string;
+    universityId: string;
+    employeeName: string;
+    eventId: string;
+    status: "registered" | "participated" | "winner" | "prize_winner";
+  } | null>(null);
   
   // Состояние для фильтров практикантов
   const [practitionersFilterDialogOpen, setPractitionersFilterDialogOpen] = useState(false);
@@ -2865,6 +2933,199 @@ export default function UniversitiesPage() {
     }));
     setEditingPractitionerComment(null);
     setPractitionerCommentValue("");
+  };
+  
+  // Добавление практиканта
+  const handleAddPractitioner = (universityId: string) => {
+    if (!newPractitioner.employeeName.trim() || !newPractitioner.department.trim() || 
+        !newPractitioner.practiceStartDate || !newPractitioner.practiceEndDate) {
+      return;
+    }
+    
+    const practitioner: Practitioner = {
+      id: `practitioner-${Date.now()}`,
+      employeeName: newPractitioner.employeeName.trim(),
+      age: 0,
+      position: "",
+      department: newPractitioner.department.trim(),
+      hireDate: new Date().toISOString().split('T')[0],
+      status: "active",
+      internshipInBank: false,
+      practiceStartDate: newPractitioner.practiceStartDate,
+      practiceEndDate: newPractitioner.practiceEndDate,
+      practiceSupervisor: newPractitioner.practiceSupervisor.trim() || undefined,
+      practiceStatus: newPractitioner.practiceStatus,
+      addedBy: "Текущий пользователь",
+      comment: newPractitioner.comment.trim() || undefined,
+    };
+    
+    setUniversities(universities.map(u => {
+      if (u.id === universityId) {
+        return {
+          ...u,
+          practitionerList: [...(u.practitionerList || []), practitioner],
+        };
+      }
+      return u;
+    }));
+    
+    setNewPractitioner({
+      employeeName: "",
+      department: "",
+      practiceStartDate: "",
+      practiceEndDate: "",
+      practiceSupervisor: "",
+      practiceStatus: "meets",
+      comment: "",
+    });
+    setAddPractitionerDialogOpen(false);
+  };
+  
+  // Добавление участника кейс-чемпионата
+  const handleAddCaseChampionshipParticipant = (universityId: string) => {
+    if (!newParticipant.employeeName.trim() || !newParticipant.eventId) {
+      return;
+    }
+    
+    const participant: CaseChampionshipParticipant = {
+      id: `ccp-${Date.now()}`,
+      employeeName: newParticipant.employeeName.trim(),
+      eventId: newParticipant.eventId,
+      status: newParticipant.status,
+    };
+    
+    setUniversities(universities.map(u => {
+      if (u.id === universityId) {
+        return {
+          ...u,
+          caseChampionshipParticipants: [...(u.caseChampionshipParticipants || []), participant],
+        };
+      }
+      return u;
+    }));
+    
+    setNewParticipant({
+      employeeName: "",
+      eventId: "",
+      status: "registered",
+    });
+    setAddParticipantDialogOpen(false);
+  };
+  
+  // Начать редактирование практиканта
+  const handleStartEditPractitioner = (universityId: string, practitioner: Practitioner) => {
+    setEditingPractitioner({
+      id: practitioner.id,
+      universityId,
+      employeeName: practitioner.employeeName,
+      department: practitioner.department,
+      practiceStartDate: practitioner.practiceStartDate,
+      practiceEndDate: practitioner.practiceEndDate,
+      practiceSupervisor: practitioner.practiceSupervisor || "",
+      practiceStatus: practitioner.practiceStatus || "meets",
+      comment: practitioner.comment || "",
+    });
+    setEditPractitionerDialogOpen(true);
+  };
+  
+  // Сохранить редактирование практиканта
+  const handleSaveEditPractitioner = () => {
+    if (!editingPractitioner) return;
+    
+    setUniversities(universities.map(u => {
+      if (u.id === editingPractitioner.universityId && u.practitionerList) {
+        return {
+          ...u,
+          practitionerList: u.practitionerList.map(p => 
+            p.id === editingPractitioner.id 
+              ? {
+                  ...p,
+                  employeeName: editingPractitioner.employeeName.trim(),
+                  department: editingPractitioner.department.trim(),
+                  practiceStartDate: editingPractitioner.practiceStartDate,
+                  practiceEndDate: editingPractitioner.practiceEndDate,
+                  practiceSupervisor: editingPractitioner.practiceSupervisor.trim() || undefined,
+                  practiceStatus: editingPractitioner.practiceStatus,
+                  comment: editingPractitioner.comment.trim() || undefined,
+                }
+              : p
+          ),
+        };
+      }
+      return u;
+    }));
+    
+    setEditingPractitioner(null);
+    setEditPractitionerDialogOpen(false);
+  };
+  
+  // Удалить практиканта
+  const handleDeletePractitioner = (universityId: string, practitionerId: string) => {
+    setUniversities(universities.map(u => {
+      if (u.id === universityId && u.practitionerList) {
+        return {
+          ...u,
+          practitionerList: u.practitionerList.filter(p => p.id !== practitionerId),
+        };
+      }
+      return u;
+    }));
+    setEditingPractitioner(null);
+    setEditPractitionerDialogOpen(false);
+  };
+  
+  // Начать редактирование участника кейс-чемпионата
+  const handleStartEditParticipant = (universityId: string, participant: CaseChampionshipParticipant) => {
+    setEditingParticipant({
+      id: participant.id,
+      universityId,
+      employeeName: participant.employeeName,
+      eventId: participant.eventId,
+      status: participant.status,
+    });
+    setEditParticipantDialogOpen(true);
+  };
+  
+  // Сохранить редактирование участника
+  const handleSaveEditParticipant = () => {
+    if (!editingParticipant) return;
+    
+    setUniversities(universities.map(u => {
+      if (u.id === editingParticipant.universityId && u.caseChampionshipParticipants) {
+        return {
+          ...u,
+          caseChampionshipParticipants: u.caseChampionshipParticipants.map(p => 
+            p.id === editingParticipant.id 
+              ? {
+                  ...p,
+                  employeeName: editingParticipant.employeeName.trim(),
+                  eventId: editingParticipant.eventId,
+                  status: editingParticipant.status,
+                }
+              : p
+          ),
+        };
+      }
+      return u;
+    }));
+    
+    setEditingParticipant(null);
+    setEditParticipantDialogOpen(false);
+  };
+  
+  // Удалить участника кейс-чемпионата
+  const handleDeleteParticipant = (universityId: string, participantId: string) => {
+    setUniversities(universities.map(u => {
+      if (u.id === universityId && u.caseChampionshipParticipants) {
+        return {
+          ...u,
+          caseChampionshipParticipants: u.caseChampionshipParticipants.filter(p => p.id !== participantId),
+        };
+      }
+      return u;
+    }));
+    setEditingParticipant(null);
+    setEditParticipantDialogOpen(false);
   };
   
   // Форматирование даты из YYYY-MM-DD в дд.мм.гггг
@@ -5035,17 +5296,60 @@ export default function UniversitiesPage() {
                                 return university.internList && university.internList.length > 0 ? (
                                   <>
                                     <div className="flex items-center justify-between mb-2">
-                                      <div className="text-sm text-muted-foreground">
-                                        Найдено: <span className="font-semibold text-foreground">{filteredInterns.length}</span> {filteredInterns.length === 1 ? 'сотрудник' : filteredInterns.length > 1 && filteredInterns.length < 5 ? 'сотрудника' : 'сотрудников'}
-                                        {filteredInterns.length !== university.internList.length && (
-                                          <span className="ml-1">из {university.internList.length}</span>
-                                        )}
+                                      <div className="flex items-center gap-3">
+                                        <div className="text-sm text-muted-foreground">
+                                          Найдено: <span className="font-semibold text-foreground">{filteredInterns.length}</span> {filteredInterns.length === 1 ? 'сотрудник' : filteredInterns.length > 1 && filteredInterns.length < 5 ? 'сотрудника' : 'сотрудников'}
+                                          {filteredInterns.length !== university.internList.length && (
+                                            <span className="ml-1">из {university.internList.length}</span>
+                                          )}
+                                        </div>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setInternsFilters({
+                                              employeeName: "",
+                                              ageMin: "",
+                                              ageMax: "",
+                                              positions: [],
+                                              departments: [],
+                                              hireDateFrom: "",
+                                              hireDateTo: "",
+                                              statuses: [],
+                                              internshipInBank: "all",
+                                            });
+                                            setInternsCurrentPage(1);
+                                          }}
+                                        >
+                                          Показать всех
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setInternsFilters({
+                                              employeeName: "",
+                                              ageMin: "",
+                                              ageMax: "27",
+                                              positions: [],
+                                              departments: [],
+                                              hireDateFrom: "",
+                                              hireDateTo: "",
+                                              statuses: [],
+                                              internshipInBank: "all",
+                                            });
+                                            setInternsCurrentPage(1);
+                                          }}
+                                        >
+                                          До 27 лет
+                                        </Button>
                                       </div>
-                                      <Dialog open={internsFilterDialogOpen} onOpenChange={setInternsFilterDialogOpen}>
-                                      <DialogTrigger asChild>
-                                        <Button variant="outline">
-                                          <Filter className="mr-2 h-4 w-4" />
-                                          Фильтры
+                                      <div className="flex items-center gap-2">
+                                        <Dialog open={internsFilterDialogOpen} onOpenChange={setInternsFilterDialogOpen}>
+                                          <DialogTrigger asChild>
+                                            <Button variant="outline">
+                                              <Filter className="mr-2 h-4 w-4" />
+                                              Фильтры
                                           {(() => {
                                             const activeFiltersCount = 
                                               (internsFilters.employeeName ? 1 : 0) +
@@ -5278,6 +5582,7 @@ export default function UniversitiesPage() {
                                         </DialogFooter>
                                       </DialogContent>
                                     </Dialog>
+                                  </div>
                             </div>
                                   
                                   {/* Активные фильтры */}
@@ -5394,7 +5699,8 @@ export default function UniversitiesPage() {
                                     <TableHeader>
                                       <TableRow>
                                         <TableHead className="w-[240px]">Сотрудник</TableHead>
-                                      <TableHead className="w-[290px]">Должность / Подразделение</TableHead>
+                                        <TableHead className="w-[80px] text-center">Возраст</TableHead>
+                                        <TableHead className="w-[290px]">Должность / Подразделение</TableHead>
                                         <TableHead className="w-[120px]">Дата приема на работу</TableHead>
                                         <TableHead className="w-[120px]">Статус</TableHead>
                                         <TableHead className="w-[120px]">Стажировка в банке</TableHead>
@@ -5425,6 +5731,9 @@ export default function UniversitiesPage() {
                                                   <span className="font-medium">{intern.employeeName}</span>
                                                   </div>
                                                 </div>
+                                              </TableCell>
+                                              <TableCell className="px-4 whitespace-normal text-center">
+                                                {intern.age}
                                               </TableCell>
                                               <TableCell className="px-4 whitespace-normal">
                                                     <div className="flex flex-col gap-1">
@@ -5606,6 +5915,7 @@ export default function UniversitiesPage() {
                                     <TableHeader>
                                       <TableRow>
                                         <TableHead className="w-[250px]">Сотрудник</TableHead>
+                                        <TableHead className="w-[80px] text-center">Возраст</TableHead>
                                         <TableHead className="w-[260px]">Должность / Подразделение</TableHead>
                                         <TableHead className="w-[120px]">Дата приема на работу</TableHead>
                                         <TableHead className="w-[120px]">Статус</TableHead>
@@ -5614,7 +5924,7 @@ export default function UniversitiesPage() {
                                     </TableHeader>
                                     <TableBody>
                                       <TableRow>
-                                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                                           Сотрудники не добавлены
                                               </TableCell>
                                             </TableRow>
@@ -5627,7 +5937,32 @@ export default function UniversitiesPage() {
                             
                             {/* Подтаб: Практиканты */}
                             <TabsContent value="practitioners" className="space-y-4 mt-4">
-                              {(() => {
+                              {/* Переключатель между таблицами */}
+                              <div className="flex items-center gap-2 mb-4">
+                                <Button
+                                  variant={practitionersSubTab === "practitioners" ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setPractitionersSubTab("practitioners")}
+                                >
+                                  Практиканты
+                                  {university.practitionerList && university.practitionerList.length > 0 && (
+                                    <Badge variant="secondary" className="ml-2">{university.practitionerList.length}</Badge>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant={practitionersSubTab === "caseChampionships" ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setPractitionersSubTab("caseChampionships")}
+                                >
+                                  Участники кейс-чемпионатов
+                                  {university.caseChampionshipParticipants && university.caseChampionshipParticipants.length > 0 && (
+                                    <Badge variant="secondary" className="ml-2">{university.caseChampionshipParticipants.length}</Badge>
+                                  )}
+                                </Button>
+                              </div>
+
+                              {/* Таблица практикантов */}
+                              {practitionersSubTab === "practitioners" && (() => {
                                 // Вычисляем отфильтрованные данные один раз
                                 const filteredPractitioners = (university.practitionerList || []).filter((practitioner) => {
                                   // Фильтр по имени практиканта
@@ -5849,6 +6184,104 @@ export default function UniversitiesPage() {
                                         </DialogFooter>
                                       </DialogContent>
                                     </Dialog>
+                                        <Dialog open={addPractitionerDialogOpen} onOpenChange={setAddPractitionerDialogOpen}>
+                                          <DialogTrigger asChild>
+                                            <Button variant="default" size="sm">
+                                              <Plus className="mr-2 h-4 w-4" />
+                                              Добавить практиканта
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent className="max-w-md">
+                                            <DialogHeader>
+                                              <DialogTitle>Добавить практиканта</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                              <div className="space-y-2">
+                                                <Label htmlFor="practitioner-name">ФИО *</Label>
+                                                <Input
+                                                  id="practitioner-name"
+                                                  placeholder="Иванов Иван Иванович"
+                                                  value={newPractitioner.employeeName}
+                                                  onChange={(e) => setNewPractitioner({ ...newPractitioner, employeeName: e.target.value })}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="practitioner-department">Подразделение *</Label>
+                                                <Input
+                                                  id="practitioner-department"
+                                                  placeholder="Департамент развития"
+                                                  value={newPractitioner.department}
+                                                  onChange={(e) => setNewPractitioner({ ...newPractitioner, department: e.target.value })}
+                                                />
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                  <Label htmlFor="practitioner-start-date">Дата начала практики *</Label>
+                                                  <Input
+                                                    id="practitioner-start-date"
+                                                    type="date"
+                                                    value={newPractitioner.practiceStartDate}
+                                                    onChange={(e) => setNewPractitioner({ ...newPractitioner, practiceStartDate: e.target.value })}
+                                                  />
+                                                </div>
+                                                <div className="space-y-2">
+                                                  <Label htmlFor="practitioner-end-date">Дата окончания практики *</Label>
+                                                  <Input
+                                                    id="practitioner-end-date"
+                                                    type="date"
+                                                    value={newPractitioner.practiceEndDate}
+                                                    onChange={(e) => setNewPractitioner({ ...newPractitioner, practiceEndDate: e.target.value })}
+                                                  />
+                                                </div>
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="practitioner-supervisor">Руководитель практики</Label>
+                                                <Input
+                                                  id="practitioner-supervisor"
+                                                  placeholder="ФИО руководителя (необязательно)"
+                                                  value={newPractitioner.practiceSupervisor}
+                                                  onChange={(e) => setNewPractitioner({ ...newPractitioner, practiceSupervisor: e.target.value })}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="practitioner-status">Статус</Label>
+                                                <Select
+                                                  value={newPractitioner.practiceStatus}
+                                                  onValueChange={(value) => setNewPractitioner({ ...newPractitioner, practiceStatus: value as "not_meets" | "meets" | "exceeds" })}
+                                                >
+                                                  <SelectTrigger id="practitioner-status">
+                                                    <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="not_meets">Не соответствует ожиданиям</SelectItem>
+                                                    <SelectItem value="meets">Соответствует ожиданиям</SelectItem>
+                                                    <SelectItem value="exceeds">Превосходит ожидания</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="practitioner-comment">Комментарий</Label>
+                                                <Input
+                                                  id="practitioner-comment"
+                                                  placeholder="Комментарий (необязательно)"
+                                                  value={newPractitioner.comment}
+                                                  onChange={(e) => setNewPractitioner({ ...newPractitioner, comment: e.target.value })}
+                                                />
+                                              </div>
+                                            </div>
+                                            <DialogFooter>
+                                              <Button variant="outline" onClick={() => setAddPractitionerDialogOpen(false)}>
+                                                Отмена
+                                              </Button>
+                                              <Button 
+                                                onClick={() => handleAddPractitioner(university.id)}
+                                                disabled={!newPractitioner.employeeName.trim() || !newPractitioner.department.trim() || !newPractitioner.practiceStartDate || !newPractitioner.practiceEndDate}
+                                              >
+                                                Добавить
+                                              </Button>
+                                            </DialogFooter>
+                                          </DialogContent>
+                                        </Dialog>
                                       </div>
                                     </div>
                                   
@@ -5941,11 +6374,13 @@ export default function UniversitiesPage() {
                                     <Table>
                                     <TableHeader>
                                       <TableRow>
-                                        <TableHead className="w-[240px]">Практикант</TableHead>
-                                      <TableHead className="w-[290px]">Подразделение (практика)</TableHead>
+                                        <TableHead className="w-[240px]">ФИО</TableHead>
                                         <TableHead className="w-[200px]">Период прохождения практики</TableHead>
-                                        <TableHead className="w-[200px]">Сотрудник добавивший запись</TableHead>
-                                        <TableHead className="w-[250px]">Комментарий</TableHead>
+                                        <TableHead className="w-[250px]">Подразделение (практика)</TableHead>
+                                        <TableHead className="w-[180px]">Руководитель практики</TableHead>
+                                        <TableHead className="w-[200px]">Комментарий</TableHead>
+                                        <TableHead className="w-[130px] text-center">Статус</TableHead>
+                                        <TableHead className="w-[80px] text-center">Действия</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -5967,25 +6402,16 @@ export default function UniversitiesPage() {
                                           return (
                                           <TableRow key={practitioner.id}>
                                               <TableCell className="px-4 whitespace-normal">
-                                                <div className="flex items-center gap-3">
-                                                  <Avatar className="h-10 w-10 shrink-0">
-                                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                                                    {getInitials(practitioner.employeeName)}
-                                                    </AvatarFallback>
-                                                  </Avatar>
-                                                  <div className="flex flex-col min-w-0">
-                                                  <span className="font-medium">{practitioner.employeeName}</span>
-                                                  </div>
-                                                </div>
-                                              </TableCell>
-                                              <TableCell className="px-4 whitespace-normal">
-                                                <span className="font-medium">{practitioner.department}</span>
+                                                <span className="font-medium">{practitioner.employeeName}</span>
                                               </TableCell>
                                               <TableCell className="px-4 whitespace-normal">
                                                 {formatDate(practitioner.practiceStartDate)}-{formatDate(practitioner.practiceEndDate)}
                                               </TableCell>
                                               <TableCell className="px-4 whitespace-normal">
-                                                <span className="font-medium">{practitioner.addedBy}</span>
+                                                <span className="font-medium">{practitioner.department}</span>
+                                              </TableCell>
+                                              <TableCell className="px-4 whitespace-normal">
+                                                <span className="text-muted-foreground">{practitioner.practiceSupervisor || "—"}</span>
                                               </TableCell>
                                               <TableCell className="px-4 whitespace-normal">
                                                 {editingPractitionerComment === practitioner.id ? (
@@ -6020,6 +6446,41 @@ export default function UniversitiesPage() {
                                                     {practitioner.comment || "—"}
                                                   </span>
                                                 )}
+                                              </TableCell>
+                                              <TableCell className="text-center">
+                                                {(() => {
+                                                  const status = practitioner.practiceStatus || "meets";
+                                                  switch (status) {
+                                                    case "not_meets":
+                                                      return (
+                                                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                                          Не соответствует
+                                                        </Badge>
+                                                      );
+                                                    case "exceeds":
+                                                      return (
+                                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                                          Превосходит
+                                                        </Badge>
+                                                      );
+                                                    default:
+                                                      return (
+                                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                          Соответствует
+                                                        </Badge>
+                                                      );
+                                                  }
+                                                })()}
+                                              </TableCell>
+                                              <TableCell className="text-center">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-8 w-8"
+                                                  onClick={() => handleStartEditPractitioner(university.id, practitioner)}
+                                                >
+                                                  <Pencil className="h-4 w-4" />
+                                                </Button>
                                               </TableCell>
                                             </TableRow>
                                           );
@@ -6113,16 +6574,18 @@ export default function UniversitiesPage() {
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
-                                        <TableHead className="w-[240px]">Практикант</TableHead>
-                                        <TableHead className="w-[290px]">Подразделение (практика)</TableHead>
+                                        <TableHead className="w-[240px]">ФИО</TableHead>
                                         <TableHead className="w-[200px]">Период прохождения практики</TableHead>
-                                        <TableHead className="w-[200px]">Сотрудник добавивший запись</TableHead>
-                                        <TableHead className="w-[250px]">Комментарий</TableHead>
+                                        <TableHead className="w-[250px]">Подразделение (практика)</TableHead>
+                                        <TableHead className="w-[180px]">Руководитель практики</TableHead>
+                                        <TableHead className="w-[200px]">Комментарий</TableHead>
+                                        <TableHead className="w-[130px] text-center">Статус</TableHead>
+                                        <TableHead className="w-[80px] text-center">Действия</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                       <TableRow>
-                                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                                           Практиканты не добавлены
                                         </TableCell>
                                       </TableRow>
@@ -6131,6 +6594,355 @@ export default function UniversitiesPage() {
                                 </div>
                               );
                               })()}
+
+                              {/* Таблица: Участники кейс-чемпионатов */}
+                              {practitionersSubTab === "caseChampionships" && (
+                                university.caseChampionshipParticipants && university.caseChampionshipParticipants.length > 0 ? (
+                                  <>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="text-sm text-muted-foreground">
+                                        Найдено: <span className="font-semibold text-foreground">{university.caseChampionshipParticipants.length}</span> {university.caseChampionshipParticipants.length === 1 ? 'участник' : university.caseChampionshipParticipants.length > 1 && university.caseChampionshipParticipants.length < 5 ? 'участника' : 'участников'}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Button variant="outline">
+                                          <FileText className="mr-2 h-4 w-4" />
+                                          Импорт
+                                        </Button>
+                                        <Button variant="outline">
+                                          <Filter className="mr-2 h-4 w-4" />
+                                          Фильтры
+                                        </Button>
+                                        <Dialog open={addParticipantDialogOpen} onOpenChange={setAddParticipantDialogOpen}>
+                                          <DialogTrigger asChild>
+                                            <Button variant="default" size="sm">
+                                              <Plus className="mr-2 h-4 w-4" />
+                                              Добавить участника
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent className="max-w-md">
+                                            <DialogHeader>
+                                              <DialogTitle>Добавить участника кейс-чемпионата</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                              <div className="space-y-2">
+                                                <Label htmlFor="participant-name">ФИО *</Label>
+                                                <Input
+                                                  id="participant-name"
+                                                  placeholder="Иванов Иван Иванович"
+                                                  value={newParticipant.employeeName}
+                                                  onChange={(e) => setNewParticipant({ ...newParticipant, employeeName: e.target.value })}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="participant-event">Кейс-чемпионат *</Label>
+                                                <Select
+                                                  value={newParticipant.eventId}
+                                                  onValueChange={(value) => setNewParticipant({ ...newParticipant, eventId: value })}
+                                                >
+                                                  <SelectTrigger id="participant-event">
+                                                    <SelectValue placeholder="Выберите кейс-чемпионат" />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    {university.events?.filter(e => e.type === "caseChampionships").map((event) => {
+                                                      const formatDate = (dateStr: string) => {
+                                                        const [year, month, day] = dateStr.split('-').map(Number);
+                                                        return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                                      };
+                                                      return (
+                                                        <SelectItem key={event.id} value={event.id}>
+                                                          {event.comments || "Кейс-чемпионат"} ({formatDate(event.date)})
+                                                        </SelectItem>
+                                                      );
+                                                    })}
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label htmlFor="participant-status">Статус *</Label>
+                                                <Select
+                                                  value={newParticipant.status}
+                                                  onValueChange={(value) => setNewParticipant({ ...newParticipant, status: value as "registered" | "participated" | "winner" | "prize_winner" })}
+                                                >
+                                                  <SelectTrigger id="participant-status">
+                                                    <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="registered">Зарегистрирован</SelectItem>
+                                                    <SelectItem value="participated">Участвовал</SelectItem>
+                                                    <SelectItem value="prize_winner">Призёр</SelectItem>
+                                                    <SelectItem value="winner">Победитель</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            </div>
+                                            <DialogFooter>
+                                              <Button variant="outline" onClick={() => setAddParticipantDialogOpen(false)}>
+                                                Отмена
+                                              </Button>
+                                              <Button 
+                                                onClick={() => handleAddCaseChampionshipParticipant(university.id)}
+                                                disabled={!newParticipant.employeeName.trim() || !newParticipant.eventId}
+                                              >
+                                                Добавить
+                                              </Button>
+                                            </DialogFooter>
+                                          </DialogContent>
+                                        </Dialog>
+                                      </div>
+                                    </div>
+                                    <div className="border rounded-lg overflow-hidden">
+                                      <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="w-[300px]">ФИО</TableHead>
+                                          <TableHead className="w-[350px]">Кейс-чемпионат</TableHead>
+                                          <TableHead className="w-[150px] text-center">Статус</TableHead>
+                                          <TableHead className="w-[80px] text-center">Действия</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {university.caseChampionshipParticipants.map((participant) => {
+                                          const event = university.events?.find(e => e.id === participant.eventId);
+                                          const formatDate = (dateStr: string) => {
+                                            const [year, month, day] = dateStr.split('-').map(Number);
+                                            return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                          };
+                                          const getStatusBadge = (status: string) => {
+                                            switch (status) {
+                                              case "winner":
+                                                return <Badge className="bg-yellow-500 text-white">Победитель</Badge>;
+                                              case "prize_winner":
+                                                return <Badge className="bg-amber-500 text-white">Призёр</Badge>;
+                                              case "participated":
+                                                return <Badge variant="secondary">Участвовал</Badge>;
+                                              case "registered":
+                                                return <Badge variant="outline">Зарегистрирован</Badge>;
+                                              default:
+                                                return <Badge variant="outline">{status}</Badge>;
+                                            }
+                                          };
+                                          return (
+                                            <TableRow key={participant.id}>
+                                              <TableCell className="font-medium">{participant.employeeName}</TableCell>
+                                              <TableCell>
+                                                {event ? (
+                                                  <div className="flex flex-col">
+                                                    <span>{event.comments || "Кейс-чемпионат"}</span>
+                                                    <span className="text-sm text-muted-foreground">
+                                                      {formatDate(event.date)} - {formatDate(event.endDate)}
+                                                    </span>
+                                                  </div>
+                                                ) : (
+                                                  <span className="text-muted-foreground">Мероприятие не найдено</span>
+                                                )}
+                                              </TableCell>
+                                              <TableCell className="text-center">
+                                                {getStatusBadge(participant.status)}
+                                              </TableCell>
+                                              <TableCell className="text-center">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-8 w-8"
+                                                  onClick={() => handleStartEditParticipant(university.id, participant)}
+                                                >
+                                                  <Pencil className="h-4 w-4" />
+                                                </Button>
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })}
+                                      </TableBody>
+                                    </Table>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                                    Участники кейс-чемпионатов не добавлены
+                                  </div>
+                                )
+                              )}
+                              
+                              {/* Модальное окно редактирования практиканта */}
+                              <Dialog open={editPractitionerDialogOpen} onOpenChange={setEditPractitionerDialogOpen}>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Редактировать практиканта</DialogTitle>
+                                  </DialogHeader>
+                                  {editingPractitioner && (
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-practitioner-name">ФИО *</Label>
+                                        <Input
+                                          id="edit-practitioner-name"
+                                          value={editingPractitioner.employeeName}
+                                          onChange={(e) => setEditingPractitioner({ ...editingPractitioner, employeeName: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-practitioner-department">Подразделение *</Label>
+                                        <Input
+                                          id="edit-practitioner-department"
+                                          value={editingPractitioner.department}
+                                          onChange={(e) => setEditingPractitioner({ ...editingPractitioner, department: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label htmlFor="edit-practitioner-start-date">Дата начала *</Label>
+                                          <Input
+                                            id="edit-practitioner-start-date"
+                                            type="date"
+                                            value={editingPractitioner.practiceStartDate}
+                                            onChange={(e) => setEditingPractitioner({ ...editingPractitioner, practiceStartDate: e.target.value })}
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label htmlFor="edit-practitioner-end-date">Дата окончания *</Label>
+                                          <Input
+                                            id="edit-practitioner-end-date"
+                                            type="date"
+                                            value={editingPractitioner.practiceEndDate}
+                                            onChange={(e) => setEditingPractitioner({ ...editingPractitioner, practiceEndDate: e.target.value })}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-practitioner-supervisor">Руководитель практики</Label>
+                                        <Input
+                                          id="edit-practitioner-supervisor"
+                                          value={editingPractitioner.practiceSupervisor}
+                                          onChange={(e) => setEditingPractitioner({ ...editingPractitioner, practiceSupervisor: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-practitioner-status">Статус</Label>
+                                        <Select
+                                          value={editingPractitioner.practiceStatus}
+                                          onValueChange={(value) => setEditingPractitioner({ ...editingPractitioner, practiceStatus: value as "not_meets" | "meets" | "exceeds" })}
+                                        >
+                                          <SelectTrigger id="edit-practitioner-status">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="not_meets">Не соответствует ожиданиям</SelectItem>
+                                            <SelectItem value="meets">Соответствует ожиданиям</SelectItem>
+                                            <SelectItem value="exceeds">Превосходит ожидания</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-practitioner-comment">Комментарий</Label>
+                                        <Input
+                                          id="edit-practitioner-comment"
+                                          value={editingPractitioner.comment}
+                                          onChange={(e) => setEditingPractitioner({ ...editingPractitioner, comment: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  <DialogFooter className="flex justify-between">
+                                    <Button
+                                      variant="destructive"
+                                      onClick={() => editingPractitioner && handleDeletePractitioner(editingPractitioner.universityId, editingPractitioner.id)}
+                                    >
+                                      Удалить
+                                    </Button>
+                                    <div className="flex gap-2">
+                                      <Button variant="outline" onClick={() => setEditPractitionerDialogOpen(false)}>
+                                        Отмена
+                                      </Button>
+                                      <Button 
+                                        onClick={handleSaveEditPractitioner}
+                                        disabled={!editingPractitioner?.employeeName.trim() || !editingPractitioner?.department.trim()}
+                                      >
+                                        Сохранить
+                                      </Button>
+                                    </div>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                              
+                              {/* Модальное окно редактирования участника кейс-чемпионата */}
+                              <Dialog open={editParticipantDialogOpen} onOpenChange={setEditParticipantDialogOpen}>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Редактировать участника</DialogTitle>
+                                  </DialogHeader>
+                                  {editingParticipant && (
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-participant-name">ФИО *</Label>
+                                        <Input
+                                          id="edit-participant-name"
+                                          value={editingParticipant.employeeName}
+                                          onChange={(e) => setEditingParticipant({ ...editingParticipant, employeeName: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-participant-event">Кейс-чемпионат *</Label>
+                                        <Select
+                                          value={editingParticipant.eventId}
+                                          onValueChange={(value) => setEditingParticipant({ ...editingParticipant, eventId: value })}
+                                        >
+                                          <SelectTrigger id="edit-participant-event">
+                                            <SelectValue placeholder="Выберите кейс-чемпионат" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {university.events?.filter(e => e.type === "caseChampionships").map((event) => {
+                                              const formatDate = (dateStr: string) => {
+                                                const [year, month, day] = dateStr.split('-').map(Number);
+                                                return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+                                              };
+                                              return (
+                                                <SelectItem key={event.id} value={event.id}>
+                                                  {event.comments || "Кейс-чемпионат"} ({formatDate(event.date)})
+                                                </SelectItem>
+                                              );
+                                            })}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-participant-status">Статус *</Label>
+                                        <Select
+                                          value={editingParticipant.status}
+                                          onValueChange={(value) => setEditingParticipant({ ...editingParticipant, status: value as "registered" | "participated" | "winner" | "prize_winner" })}
+                                        >
+                                          <SelectTrigger id="edit-participant-status">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="registered">Зарегистрирован</SelectItem>
+                                            <SelectItem value="participated">Участвовал</SelectItem>
+                                            <SelectItem value="prize_winner">Призёр</SelectItem>
+                                            <SelectItem value="winner">Победитель</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <DialogFooter className="flex justify-between">
+                                    <Button
+                                      variant="destructive"
+                                      onClick={() => editingParticipant && handleDeleteParticipant(editingParticipant.universityId, editingParticipant.id)}
+                                    >
+                                      Удалить
+                                    </Button>
+                                    <div className="flex gap-2">
+                                      <Button variant="outline" onClick={() => setEditParticipantDialogOpen(false)}>
+                                        Отмена
+                                      </Button>
+                                      <Button 
+                                        onClick={handleSaveEditParticipant}
+                                        disabled={!editingParticipant?.employeeName.trim() || !editingParticipant?.eventId}
+                                      >
+                                        Сохранить
+                                      </Button>
+                                    </div>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
                             </TabsContent>
                           </Tabs>
                         </TabsContent>
