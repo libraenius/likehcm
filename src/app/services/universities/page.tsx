@@ -2671,6 +2671,22 @@ export default function UniversitiesPage() {
   const [newComment, setNewComment] = useState("");
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   
+  // Состояния для диалогов подтверждения удаления
+  const [deleteCooperationLineDialog, setDeleteCooperationLineDialog] = useState<{
+    open: boolean;
+    universityId: string;
+    lineId: string;
+    type: "main" | "branch";
+    branchId?: string;
+  }>({ open: false, universityId: "", lineId: "", type: "main" });
+  
+  const [deleteBranchDialog, setDeleteBranchDialog] = useState<{
+    open: boolean;
+    universityId: string;
+    branchId: string;
+    branchName: string;
+  }>({ open: false, universityId: "", branchId: "", branchName: "" });
+  
   // Состояние для стажировок
   // Проверяем query параметр для определения активной вкладки
   const tabFromQuery = searchParams.get("tab");
@@ -4837,7 +4853,7 @@ export default function UniversitiesPage() {
                                               variant="ghost"
                                               size="sm"
                                               className="h-8 w-8 p-0 shrink-0"
-                                              onClick={() => handleRemoveCooperationLineFromMain(university.id, record.id)}
+                                              onClick={() => setDeleteCooperationLineDialog({ open: true, universityId: university.id, lineId: record.id, type: "main" })}
                                             >
                                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                             </Button>
@@ -5166,7 +5182,7 @@ export default function UniversitiesPage() {
                                                   variant="ghost"
                                                   size="sm"
                                                   className="h-8 w-8 p-0 shrink-0"
-                                                  onClick={() => handleRemoveCuratorForUniversity(university.id, curator.id)}
+                                                  onClick={() => setDeleteBranchDialog({ open: true, universityId: university.id, branchId: curator.id, branchName: curator.branch })}
                                                   title="Удалить"
                                                 >
                                                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -5226,7 +5242,7 @@ export default function UniversitiesPage() {
                                                           variant="ghost"
                                                           size="sm"
                                                           className="h-8 w-8 p-0 shrink-0"
-                                                          onClick={() => handleRemoveCooperationLineFromBranch(university.id, curator.id, record.id)}
+                                                          onClick={() => setDeleteCooperationLineDialog({ open: true, universityId: university.id, lineId: record.id, type: "branch", branchId: curator.id })}
                                                         >
                                                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                                         </Button>
@@ -5472,7 +5488,7 @@ export default function UniversitiesPage() {
                                             {contract.contractFile && (
                                               <div className="flex items-start gap-2 md:col-span-2">
                                                 <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                                                <span className="text-muted-foreground whitespace-nowrap">Файл договора:</span>
+                                                <span className="text-muted-foreground whitespace-nowrap">Документ:</span>
                                                 <a 
                                                   href={contract.contractFile} 
                                                   target="_blank" 
@@ -5771,8 +5787,14 @@ export default function UniversitiesPage() {
                                               })()}
                             </span>
                           </div>
+                                      {event.comments && (
+                                            <div className="flex items-center gap-2">
+                                              <Label className="text-sm font-semibold">Комментарий:</Label>
+                                              <span className="text-sm text-muted-foreground">{event.comments}</span>
+                                            </div>
+                                          )}
                                       <div className="flex items-center gap-2">
-                                            <Label className="text-sm font-semibold">Ответственное лицо Банк:</Label>
+                                            <Label className="text-sm font-semibold">Ответственное лицо:</Label>
                                             <div className="flex items-center gap-2 flex-wrap">
                                               {event.responsiblePerson.length > 0 ? (
                                                 event.responsiblePerson.map((personId, index) => {
@@ -5794,12 +5816,6 @@ export default function UniversitiesPage() {
                                               )}
                                             </div>
                                                 </div>
-                                          {event.comments && (
-                                            <div className="flex items-center gap-2">
-                                              <Label className="text-sm font-semibold">Комментарий:</Label>
-                                              <span className="text-sm text-muted-foreground">{event.comments}</span>
-                                                        </div>
-                                                      )}
                                                     </div>
                                                 <div className="flex gap-1">
                               <Button
@@ -6394,7 +6410,7 @@ export default function UniversitiesPage() {
                                             const participant = university.caseChampionshipParticipants?.find(p => p.employeeName === intern.employeeName);
                                             if (participant) {
                                               return {
-                                                type: "Участник кейс-чемп",
+                                                type: "Участник кейс-чемпионата",
                                                 period: null,
                                                 comment: participant.comments,
                                               };
@@ -11867,26 +11883,6 @@ export default function UniversitiesPage() {
                     </div>
                 </div>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-1">
-                      <Label htmlFor="event-responsible-dialog">Ответственное лицо Банк</Label>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Выберите сотрудников Банка, ответственных за проведение мероприятия</p>
-                        </TooltipContent>
-                      </Tooltip>
-                  </div>
-                      <MultiSelect
-                        options={responsiblePersons.map(p => ({ value: p.value, label: p.label }))}
-                        selected={newEvent.responsiblePerson}
-                        onChange={(selected) => setNewEvent({ ...newEvent, responsiblePerson: selected })}
-                        placeholder="Выберите ответственное лицо"
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="space-y-2">
                   <div className="flex items-center gap-1">
                     <Label htmlFor="event-comments-dialog">Комментарий</Label>
                     <Tooltip>
@@ -11903,6 +11899,26 @@ export default function UniversitiesPage() {
                     value={newEvent.comments}
                     onChange={(e) => setNewEvent({ ...newEvent, comments: e.target.value })}
                     placeholder="Комментарий"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Label htmlFor="event-responsible-dialog">Ответственное лицо</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Выберите сотрудников, ответственных за проведение мероприятия</p>
+                        </TooltipContent>
+                      </Tooltip>
+                  </div>
+                      <MultiSelect
+                        options={responsiblePersons.map(p => ({ value: p.value, label: p.label }))}
+                        selected={newEvent.responsiblePerson}
+                        onChange={(selected) => setNewEvent({ ...newEvent, responsiblePerson: selected })}
+                        placeholder="Выберите ответственное лицо"
+                        className="w-full"
                       />
                     </div>
                   </div>
@@ -11963,6 +11979,7 @@ export default function UniversitiesPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="contract-type">Тип договора</Label>
@@ -11990,25 +12007,52 @@ export default function UniversitiesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="contract-number">Номер</Label>
-                  <Input
-                    id="contract-number"
-                    placeholder="Введите номер договора"
-                    value={newContractForTab.number}
-                    onChange={(e) => setNewContractForTab({ ...newContractForTab, number: e.target.value })}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="contract-branch">Головной офис / Филиал</Label>
+                    <Select
+                      value={newContractForTab.contractBranch}
+                      onValueChange={(value) => setNewContractForTab({ ...newContractForTab, contractBranch: value })}
+                    >
+                      <SelectTrigger id="contract-branch">
+                        <SelectValue placeholder="Выберите головной офис или филиал" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Головной офис">Головной офис</SelectItem>
+                        {selectedUniversity && (() => {
+                          const university = universities.find(u => u.id === selectedUniversity);
+                          const branches = university?.branchCurators || [];
+                          return branches.length > 0 ? (
+                            branches.map((curator) => (
+                              <SelectItem key={curator.id} value={curator.branch}>
+                                {curator.branch}
+                              </SelectItem>
+                            ))
+                          ) : null;
+                        })()}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="contract-date">Дата</Label>
-                  <Input
-                    id="contract-date"
-                    type="date"
-                    value={newContractForTab.date}
-                    onChange={(e) => setNewContractForTab({ ...newContractForTab, date: e.target.value })}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contract-number">Номер</Label>
+                    <Input
+                      id="contract-number"
+                      placeholder="Введите номер договора"
+                      value={newContractForTab.number}
+                      onChange={(e) => setNewContractForTab({ ...newContractForTab, number: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contract-date">Дата</Label>
+                    <Input
+                      id="contract-date"
+                      type="date"
+                      value={newContractForTab.date}
+                      onChange={(e) => setNewContractForTab({ ...newContractForTab, date: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -12044,32 +12088,6 @@ export default function UniversitiesPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="contract-branch">Головной офис / Филиал</Label>
-                  <Select
-                    value={newContractForTab.contractBranch}
-                    onValueChange={(value) => setNewContractForTab({ ...newContractForTab, contractBranch: value })}
-                  >
-                    <SelectTrigger id="contract-branch">
-                      <SelectValue placeholder="Выберите головной офис или филиал" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Головной офис">Головной офис</SelectItem>
-                      {selectedUniversity && (() => {
-                        const university = universities.find(u => u.id === selectedUniversity);
-                        const branches = university?.branchCurators || [];
-                        return branches.length > 0 ? (
-                          branches.map((curator) => (
-                            <SelectItem key={curator.id} value={curator.branch}>
-                              {curator.branch}
-                            </SelectItem>
-                          ))
-                        ) : null;
-                      })()}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="contract-file">Договор (файл)</Label>
                     <Tooltip>
@@ -12077,7 +12095,7 @@ export default function UniversitiesPage() {
                         <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Загрузите файл договора в формате PDF</p>
+                        <p>Загрузите документ в формате PDF</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -12139,6 +12157,58 @@ export default function UniversitiesPage() {
                 <AlertDialogCancel>Отмена</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDeleteUniversity}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Диалог подтверждения удаления линии сотрудничества */}
+          <AlertDialog open={deleteCooperationLineDialog.open} onOpenChange={(open) => !open && setDeleteCooperationLineDialog({ open: false, universityId: "", lineId: "", type: "main" })}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Вы уверены, что хотите удалить эту линию сотрудничества? Это действие нельзя отменить.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    if (deleteCooperationLineDialog.type === "main") {
+                      handleRemoveCooperationLineFromMain(deleteCooperationLineDialog.universityId, deleteCooperationLineDialog.lineId);
+                    } else if (deleteCooperationLineDialog.branchId) {
+                      handleRemoveCooperationLineFromBranch(deleteCooperationLineDialog.universityId, deleteCooperationLineDialog.branchId, deleteCooperationLineDialog.lineId);
+                    }
+                    setDeleteCooperationLineDialog({ open: false, universityId: "", lineId: "", type: "main" });
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Удалить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Диалог подтверждения удаления филиала */}
+          <AlertDialog open={deleteBranchDialog.open} onOpenChange={(open) => !open && setDeleteBranchDialog({ open: false, universityId: "", branchId: "", branchName: "" })}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Вы уверены, что хотите удалить филиал &quot;{deleteBranchDialog.branchName}&quot;? Все линии сотрудничества этого филиала также будут удалены. Это действие нельзя отменить.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    handleRemoveCuratorForUniversity(deleteBranchDialog.universityId, deleteBranchDialog.branchId);
+                    setDeleteBranchDialog({ open: false, universityId: "", branchId: "", branchName: "" });
+                  }}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   Удалить
