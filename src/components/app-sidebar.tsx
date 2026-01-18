@@ -93,8 +93,8 @@ export function AppSidebar() {
         >
           <div className="flex aspect-square h-10 w-10 group-data-[collapsible=icon]:size-9 items-center justify-center rounded-lg border-2 border-sidebar-border bg-sidebar-accent/50 overflow-hidden shrink-0 relative">
             <Image
-              src="/Снимок экрана 2025-11-27 125418.png"
-              alt="РИТМ Logo"
+              src="/b75f0527-1296-45d0-9735-a2f30de0e17d.png"
+              alt="ГПБ Logo"
               fill
               className="object-cover"
               priority
@@ -104,7 +104,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-xl font-bold text-sidebar-foreground">
-              РИТМ
+              ГПБ
             </span>
           </div>
         </Link>

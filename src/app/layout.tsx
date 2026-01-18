@@ -20,7 +20,7 @@ const geistSans = Geist({
  * Метаданные приложения для SEO и отображения в браузере
  */
 export const metadata: Metadata = {
-  title: "РИТМ",
+  title: "ГПБ",
   description: "Система управления компетенциями и карьерными треками",
 };
 
