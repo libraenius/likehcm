@@ -4615,7 +4615,7 @@ export default function UniversitiesPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-3 flex-1 min-w-0">
                           {university.image && (
-                            <Avatar className="h-20 w-20 flex-shrink-0">
+                            <Avatar className="h-20 w-20 flex-shrink-0 mt-1">
                               <AvatarImage src={university.image} alt={university.name} />
                               <AvatarFallback>
                                 {university.shortName?.slice(0, 2).toUpperCase() || university.name.slice(0, 2).toUpperCase()}
@@ -4630,13 +4630,22 @@ export default function UniversitiesPage() {
                           </CardDescription>
                             )}
                             {university.inn && (
-                              <CardDescription className="text-sm text-muted-foreground mt-0.5">
-                                ИНН: {university.inn} {university.city && `• ${university.city}`}
+                              <CardDescription className="text-sm mt-0.5">
+                                <span className="text-muted-foreground">ИНН:</span>{" "}
+                                <span className="font-medium text-foreground">{university.inn}</span>
+                                {university.city && (
+                                  <>
+                                    {" "}•{" "}
+                                    <span className="text-muted-foreground">Город:</span>{" "}
+                                    <span className="font-medium text-foreground">{university.city}</span>
+                                  </>
+                                )}
                               </CardDescription>
                             )}
                             {university.targetAudience && (
-                              <CardDescription className="text-sm text-muted-foreground mt-0.5">
-                                Целевая аудитория: {university.targetAudience}
+                              <CardDescription className="text-sm mt-1">
+                                <span className="text-muted-foreground">Целевая аудитория:</span>{" "}
+                                <span className="font-medium text-foreground">{university.targetAudience}</span>
                               </CardDescription>
                             )}
                                     </div>
@@ -4751,6 +4760,26 @@ export default function UniversitiesPage() {
                             
                             {/* Подтаб: Головной ВУЗ */}
                             <TabsContent value="main" className="space-y-4 mt-4">
+                              {/* Кнопка добавления линии сотрудничества */}
+                              <div className="flex items-center justify-end w-full">
+                                <Button
+                                  onClick={() => {
+                                    setNewCooperationLineForMain({
+                                      id: `clr-${Date.now()}`,
+                                      line: "drp",
+                                      year: new Date().getFullYear(),
+                                      responsible: [],
+                                    });
+                                    setEditingMainCooperationLine(null);
+                                    setIsMainCooperationLineDialogOpen(true);
+                                  }}
+                                  size="sm"
+                                  disabled={!selectedUniversity}
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Добавить линию сотрудничества
+                                </Button>
+                              </div>
                               {/* Линии сотрудничества */}
                               {((university.cooperationLines && university.cooperationLines.length > 0) || university.cooperationLine) ? (
                                 <div className="space-y-4">
@@ -4886,54 +4915,29 @@ export default function UniversitiesPage() {
                                       </div>
                                     </Card>
                                 )}
-                                <div className="flex items-center justify-end w-full">
-                                  <Button
-                                    onClick={() => {
-                                      setNewCooperationLineForMain({
-                                        id: `clr-${Date.now()}`,
-                                        line: "drp",
-                                        year: new Date().getFullYear(),
-                                        responsible: [],
-                                      });
-                                      setEditingMainCooperationLine(null);
-                                      setIsMainCooperationLineDialogOpen(true);
-                                    }}
-                                    size="sm"
-                                    disabled={!selectedUniversity}
-                                  >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Добавить линию сотрудничества
-                                  </Button>
-                                </div>
                                 </div>
                               ) : (
                                 <Card className="p-3">
                                   <p className="text-sm text-muted-foreground text-center">Линии сотрудничества не добавлены</p>
-                                  <div className="flex items-center justify-end w-full mt-3">
-                                    <Button
-                                      onClick={() => {
-                                        setNewCooperationLineForMain({
-                                          id: `clr-${Date.now()}`,
-                                          line: "drp",
-                                          year: new Date().getFullYear(),
-                                          responsible: [],
-                                        });
-                                        setEditingMainCooperationLine(null);
-                                        setIsMainCooperationLineDialogOpen(true);
-                                      }}
-                                      size="sm"
-                                      disabled={!selectedUniversity}
-                                    >
-                                      <Plus className="mr-2 h-4 w-4" />
-                                      Добавить линию сотрудничества
-                                    </Button>
-                                  </div>
                                 </Card>
                               )}
                             </TabsContent>
                             
                             {/* Подтаб: Филиалы ВУЗа */}
                             <TabsContent value="branches" className="space-y-4 mt-4">
+                              {/* Кнопка добавления филиала */}
+                              <div className="flex items-center justify-end w-full">
+                                <Button
+                                  onClick={() => {
+                                    setNewCuratorForUniversity({ city: "", branch: "", cooperationLines: [] });
+                                    setIsBranchDialogOpen(true);
+                                  }}
+                                  size="sm"
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Добавить филиал
+                                </Button>
+                              </div>
                               <div className="space-y-3">
                                 {university.branchCurators && university.branchCurators.length > 0 ? (
                                   <>
@@ -5242,19 +5246,6 @@ export default function UniversitiesPage() {
                                     <p className="text-sm text-muted-foreground text-center">Филиалы ВУЗа не добавлены</p>
                                   </Card>
                                 )}
-                                
-                                <div className="flex items-center justify-end w-full">
-                                  <Button
-                                    onClick={() => {
-                                      setNewCuratorForUniversity({ city: "", branch: "", cooperationLines: [] });
-                                      setIsBranchDialogOpen(true);
-                                    }}
-                                    size="sm"
-                                  >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Добавить филиал
-                                  </Button>
-                                </div>
                               </div>
                             </TabsContent>
                           </Tabs>
@@ -12586,26 +12577,6 @@ export default function UniversitiesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {uniqueRegions.length > 0 && (
-                  <>
-                    <Separator />
-                    <div className="space-y-2">
-                      <Label>Регион</Label>
-                      <Select value={regionFilter} onValueChange={setRegionFilter}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Выберите регион" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Все регионы</SelectItem>
-                          {uniqueRegions.map(region => (
-                            <SelectItem key={region} value={region}>{region}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </>
-                )}
 
                 <Separator />
 
