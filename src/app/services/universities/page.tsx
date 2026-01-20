@@ -152,6 +152,16 @@ interface TargetPractitioner {
   comments?: string; // Комментарии
 }
 
+// Тип для именного стипендианта
+interface NamedScholar {
+  id: string;
+  employeeName: string; // ФИО стипендианта
+  scholarshipName: string; // Название стипендии
+  appointmentDate: string; // Дата назначения (формат YYYY-MM-DD)
+  status: "active" | "completed" | "suspended"; // Статус: активна, завершена, приостановлена
+  comments?: string; // Комментарии
+}
+
 // Тип для элемента инфраструктуры ЦНТР
 interface CNTRInfrastructureItem {
   id: string;
@@ -255,6 +265,7 @@ interface University {
   practitionerList?: Practitioner[]; // Список практикантов
   caseChampionshipParticipants?: CaseChampionshipParticipant[]; // Участники кейс-чемпионатов
   targetPractitioners?: TargetPractitioner[]; // Целевые практиканты
+  namedScholars?: NamedScholar[]; // Именные стипендианты
   cntrInfrastructure?: CNTRInfrastructureItem[]; // Элементы инфраструктуры ЦНТР
   cntrProjects?: CNTRProjectItem[]; // Элементы проектов ЦНТР
   cntrAcceleratorEnabled?: boolean; // Участие в Акселераторе Газпромбанк.Тех: Наука
@@ -1328,6 +1339,11 @@ const mockUniversities: University[] = [
       { id: "tp-hse-4", employeeName: "Козлова Мария Дмитриевна", targetStartDate: "2025-03-15", targetEndDate: "2025-07-15", department: "Управление качества и тестирования", practiceSupervisor: "Козлова Елена Владимировна" },
       { id: "tp-hse-5", employeeName: "Новиков Игорь Владимирович", targetStartDate: "2025-01-10", targetEndDate: "2025-04-10", department: "Управление развития общекорпоративных систем", practiceSupervisor: "Федоров Сергей Николаевич", comments: "Проходит целевую практику в области системной разработки." },
     ],
+    namedScholars: [
+      { id: "ns-hse-1", employeeName: "Петрова Анна Сергеевна", scholarshipName: "Стипендия ГПБ за отличную учёбу", appointmentDate: "2024-09-01", status: "active", comments: "Отличник учёбы, активный участник научных конференций." },
+      { id: "ns-hse-2", employeeName: "Иванов Дмитрий Александрович", scholarshipName: "Именная стипендия им. А.И. Костина", appointmentDate: "2024-09-01", status: "completed", comments: "Победитель олимпиады по финансовой математике." },
+      { id: "ns-hse-3", employeeName: "Смирнова Екатерина Владимировна", scholarshipName: "Стипендия ГПБ за научную деятельность", appointmentDate: "2025-01-01", status: "active" },
+    ],
     cntrInfrastructure: [
       { 
         id: "cntr-infra-hse-1", 
@@ -2360,8 +2376,8 @@ export default function UniversitiesPage() {
   const [practitionersCurrentPage, setPractitionersCurrentPage] = useState(1);
   const [practitionersItemsPerPage, setPractitionersItemsPerPage] = useState(10);
   
-  // Состояние для переключения между практикантами, участниками кейс-чемпионатов и целевыми практикантами
-  const [practitionersSubTab, setPractitionersSubTab] = useState<"practitioners" | "caseChampionships" | "targetPractitioners">("practitioners");
+  // Состояние для переключения между практикантами, участниками кейс-чемпионатов, целевыми практикантами и именными стипендиантами
+  const [practitionersSubTab, setPractitionersSubTab] = useState<"practitioners" | "caseChampionships" | "targetPractitioners" | "namedScholars">("practitioners");
   
   // Состояние для добавления практиканта
   const [addPractitionerDialogOpen, setAddPractitionerDialogOpen] = useState(false);
@@ -2483,6 +2499,40 @@ export default function UniversitiesPage() {
     comments: "",
   });
   
+  // Состояние для добавления именного стипендианта
+  const [addNamedScholarDialogOpen, setAddNamedScholarDialogOpen] = useState(false);
+  const [newNamedScholar, setNewNamedScholar] = useState({
+    employeeName: "",
+    scholarshipName: "",
+    appointmentDate: "",
+    status: "active" as "active" | "completed" | "suspended",
+    comments: "",
+  });
+  
+  // Состояние для редактирования именного стипендианта
+  const [editNamedScholarDialogOpen, setEditNamedScholarDialogOpen] = useState(false);
+  const [editingNamedScholar, setEditingNamedScholar] = useState<{
+    id: string;
+    universityId: string;
+    employeeName: string;
+    scholarshipName: string;
+    appointmentDate: string;
+    status: "active" | "completed" | "suspended";
+    comments?: string;
+  } | null>(null);
+  
+  // Состояние для фильтров именных стипендиантов
+  const [namedScholarsFilterDialogOpen, setNamedScholarsFilterDialogOpen] = useState(false);
+  const [namedScholarsFilters, setNamedScholarsFilters] = useState<{
+    employeeName: string;
+    scholarshipName: string;
+    appointmentDate: string;
+  }>({
+    employeeName: "",
+    scholarshipName: "",
+    appointmentDate: "",
+  });
+  
   // Состояние для модального окна комментария практиканта
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [commentDialogPractitioner, setCommentDialogPractitioner] = useState<{ universityId: string; practitionerId: string; comment: string } | null>(null);
@@ -2494,6 +2544,10 @@ export default function UniversitiesPage() {
   // Состояние для модального окна комментария целевого практиканта
   const [commentDialogTargetPractitionerOpen, setCommentDialogTargetPractitionerOpen] = useState(false);
   const [commentDialogTargetPractitioner, setCommentDialogTargetPractitioner] = useState<{ universityId: string; targetPractitionerId: string; comment: string } | null>(null);
+  
+  // Состояние для модального окна комментария именного стипендианта
+  const [commentDialogScholarOpen, setCommentDialogScholarOpen] = useState(false);
+  const [commentDialogScholar, setCommentDialogScholar] = useState<{ universityId: string; scholarId: string; comment: string } | null>(null);
   
   // Состояние для формы создания университета
   const [universityFormData, setUniversityFormData] = useState({
@@ -3750,6 +3804,109 @@ export default function UniversitiesPage() {
   const handleOpenTargetPractitionerCommentDialog = (universityId: string, targetPractitionerId: string, currentComment?: string) => {
     setCommentDialogTargetPractitioner({ universityId, targetPractitionerId, comment: currentComment || "" });
     setCommentDialogTargetPractitionerOpen(true);
+  };
+  
+  // Обновление комментария именного стипендианта
+  const handleUpdateScholarComment = (comment: string) => {
+    if (!commentDialogScholar) return;
+    
+    setUniversities(universities.map(u => {
+      if (u.id === commentDialogScholar.universityId && u.namedScholars) {
+        return {
+          ...u,
+          namedScholars: u.namedScholars.map(s => 
+            s.id === commentDialogScholar.scholarId ? { ...s, comments: comment.trim() || undefined } : s
+          )
+        };
+      }
+      return u;
+    }));
+    setCommentDialogScholarOpen(false);
+    setCommentDialogScholar(null);
+  };
+
+  // Открытие модального окна комментария именного стипендианта
+  const handleOpenScholarCommentDialog = (universityId: string, scholarId: string, currentComment?: string) => {
+    setCommentDialogScholar({ universityId, scholarId, comment: currentComment || "" });
+    setCommentDialogScholarOpen(true);
+  };
+  
+  // Добавление именного стипендианта
+  const handleAddNamedScholar = (universityId: string) => {
+    if (!newNamedScholar.employeeName.trim() || !newNamedScholar.scholarshipName.trim() || !newNamedScholar.appointmentDate) {
+      return;
+    }
+    
+    const namedScholar: NamedScholar = {
+      id: `ns-${Date.now()}`,
+      employeeName: newNamedScholar.employeeName.trim(),
+      scholarshipName: newNamedScholar.scholarshipName.trim(),
+      appointmentDate: newNamedScholar.appointmentDate,
+      status: newNamedScholar.status,
+      comments: newNamedScholar.comments?.trim() || undefined,
+    };
+    
+    setUniversities(universities.map(u => {
+      if (u.id === universityId) {
+        return {
+          ...u,
+          namedScholars: [...(u.namedScholars || []), namedScholar],
+        };
+      }
+      return u;
+    }));
+    
+    setNewNamedScholar({
+      employeeName: "",
+      scholarshipName: "",
+      appointmentDate: "",
+      status: "active",
+      comments: "",
+    });
+    setAddNamedScholarDialogOpen(false);
+  };
+  
+  // Начать редактирование именного стипендианта
+  const handleStartEditNamedScholar = (universityId: string, scholar: NamedScholar) => {
+    setEditingNamedScholar({
+      id: scholar.id,
+      universityId,
+      employeeName: scholar.employeeName,
+      scholarshipName: scholar.scholarshipName,
+      appointmentDate: scholar.appointmentDate,
+      status: scholar.status,
+      comments: scholar.comments,
+    });
+    setEditNamedScholarDialogOpen(true);
+  };
+  
+  // Сохранение изменений именного стипендианта
+  const handleSaveNamedScholar = () => {
+    if (!editingNamedScholar) return;
+    
+    setUniversities(universities.map(u => {
+      if (u.id === editingNamedScholar.universityId && u.namedScholars) {
+        return {
+          ...u,
+          namedScholars: u.namedScholars.map(s => 
+            s.id === editingNamedScholar.id
+              ? {
+                  ...s,
+                  employeeName: editingNamedScholar.employeeName,
+                  scholarshipName: editingNamedScholar.scholarshipName,
+                  appointmentDate: editingNamedScholar.appointmentDate,
+                  status: editingNamedScholar.status,
+                  comments: editingNamedScholar.comments,
+                }
+              : s
+          ),
+        };
+      }
+      return u;
+    }));
+    
+    setEditingNamedScholar(null);
+    setEditNamedScholarDialogOpen(false);
   };
   
   // Удалить участника кейс-чемпионата
@@ -6367,7 +6524,7 @@ export default function UniversitiesPage() {
                                 <div className="border rounded-lg overflow-hidden">
                                   <Table>
                                     <TableHeader>
-                                      <TableRow>
+                                      <TableRow className="bg-muted/50">
                                         <TableHead className="w-[240px]">Сотрудник</TableHead>
                                         <TableHead className="w-[80px] text-center">Возраст</TableHead>
                                         <TableHead className="w-[290px]">Должность / Подразделение</TableHead>
@@ -6680,7 +6837,7 @@ export default function UniversitiesPage() {
                                 <div className="border rounded-lg overflow-hidden">
                                   <Table>
                                     <TableHeader>
-                                      <TableRow>
+                                      <TableRow className="bg-muted/50">
                                         <TableHead className="w-[250px]">Сотрудник</TableHead>
                                         <TableHead className="w-[80px] text-center">Возраст</TableHead>
                                         <TableHead className="w-[260px]">Должность / Подразделение</TableHead>
@@ -6735,6 +6892,16 @@ export default function UniversitiesPage() {
                                   Целевые практиканты
                                   {university.targetPractitioners && university.targetPractitioners.length > 0 && (
                                     <Badge variant="secondary" className="ml-2">{university.targetPractitioners.length}</Badge>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant={practitionersSubTab === "namedScholars" ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setPractitionersSubTab("namedScholars")}
+                                >
+                                  Именные стипендианты
+                                  {university.namedScholars && university.namedScholars.length > 0 && (
+                                    <Badge variant="secondary" className="ml-2">{university.namedScholars.length}</Badge>
                                   )}
                                 </Button>
                               </div>
@@ -7206,7 +7373,7 @@ export default function UniversitiesPage() {
                                   <div className="border rounded-lg overflow-hidden">
                                     <Table>
                                     <TableHeader>
-                                      <TableRow>
+                                      <TableRow className="bg-muted/50">
                                         <TableHead className="w-[240px]">ФИО</TableHead>
                                         <TableHead className="w-[200px]">Период прохождения практики</TableHead>
                                         <TableHead className="w-[250px]">Подразделение</TableHead>
@@ -7394,7 +7561,7 @@ export default function UniversitiesPage() {
                                 <div className="border rounded-lg overflow-hidden">
                                   <Table>
                                     <TableHeader>
-                                      <TableRow>
+                                      <TableRow className="bg-muted/50">
                                         <TableHead className="w-[240px]">ФИО</TableHead>
                                         <TableHead className="w-[200px]">Период прохождения практики</TableHead>
                                         <TableHead className="w-[250px]">Подразделение</TableHead>
@@ -7784,7 +7951,7 @@ export default function UniversitiesPage() {
                                     <div className="border rounded-lg overflow-hidden">
                                       <Table>
                                       <TableHeader>
-                                        <TableRow>
+                                        <TableRow className="bg-muted/50">
                                           <TableHead className="w-[300px]">ФИО</TableHead>
                                           <TableHead className="w-[350px]">Кейс-чемпионат</TableHead>
                                           <TableHead className="w-[150px] text-center">Статус</TableHead>
@@ -8272,7 +8439,7 @@ export default function UniversitiesPage() {
                                     <div className="border rounded-lg overflow-hidden">
                                       <Table>
                                       <TableHeader>
-                                        <TableRow>
+                                        <TableRow className="bg-muted/50">
                                           <TableHead className="w-[300px]">ФИО</TableHead>
                                           <TableHead className="w-[200px]">Период прохождения практики</TableHead>
                                           <TableHead className="w-[250px]">Подразделение</TableHead>
@@ -8401,6 +8568,379 @@ export default function UniversitiesPage() {
                                   </div>
                                 );
                               })()}
+
+                              {/* Таблица: Именные стипендианты */}
+                              {practitionersSubTab === "namedScholars" && (() => {
+                                // Фильтрация данных
+                                const filteredScholars = (university.namedScholars || []).filter((scholar) => {
+                                  // Фильтр по имени
+                                  if (namedScholarsFilters.employeeName) {
+                                    const searchName = namedScholarsFilters.employeeName.toLowerCase();
+                                    if (!scholar.employeeName.toLowerCase().includes(searchName)) {
+                                      return false;
+                                    }
+                                  }
+                                  // Фильтр по названию стипендии
+                                  if (namedScholarsFilters.scholarshipName) {
+                                    const searchScholarship = namedScholarsFilters.scholarshipName.toLowerCase();
+                                    if (!scholar.scholarshipName.toLowerCase().includes(searchScholarship)) {
+                                      return false;
+                                    }
+                                  }
+                                  // Фильтр по дате назначения
+                                  if (namedScholarsFilters.appointmentDate && scholar.appointmentDate !== namedScholarsFilters.appointmentDate) {
+                                    return false;
+                                  }
+                                  return true;
+                                });
+
+                                // Подсчёт активных фильтров
+                                const activeFiltersCount = 
+                                  (namedScholarsFilters.employeeName ? 1 : 0) +
+                                  (namedScholarsFilters.scholarshipName ? 1 : 0) +
+                                  (namedScholarsFilters.appointmentDate ? 1 : 0);
+                                
+                                return (university.namedScholars && university.namedScholars.length > 0) ? (
+                                  <>
+                                    {/* Панель с кнопками */}
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="text-sm text-muted-foreground">
+                                        Найдено: <span className="font-semibold text-foreground">{filteredScholars.length}</span> {filteredScholars.length === 1 ? 'стипендиант' : filteredScholars.length > 1 && filteredScholars.length < 5 ? 'стипендианта' : 'стипендиантов'}
+                                        {filteredScholars.length !== university.namedScholars.length && (
+                                          <span className="text-xs ml-1">из {university.namedScholars.length}</span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                      <Dialog open={namedScholarsFilterDialogOpen} onOpenChange={setNamedScholarsFilterDialogOpen}>
+                                        <DialogTrigger asChild>
+                                          <Button variant="outline">
+                                            <Filter className="mr-2 h-4 w-4" />
+                                            Фильтры
+                                            {activeFiltersCount > 0 && (
+                                              <Badge variant="secondary" className="ml-2">
+                                                {activeFiltersCount}
+                                              </Badge>
+                                            )}
+                                          </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                          <DialogHeader className="pb-3">
+                                            <DialogTitle className="text-lg">Фильтры именных стипендиантов</DialogTitle>
+                                          </DialogHeader>
+                                          <div className="space-y-4 py-2">
+                                            <div className="space-y-2">
+                                              <Label className="text-sm font-medium">ФИО</Label>
+                                              <Input
+                                                placeholder="Поиск по ФИО..."
+                                                value={namedScholarsFilters.employeeName}
+                                                onChange={(e) => setNamedScholarsFilters({ ...namedScholarsFilters, employeeName: e.target.value })}
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label className="text-sm font-medium">Название стипендии</Label>
+                                              <Input
+                                                placeholder="Поиск по названию..."
+                                                value={namedScholarsFilters.scholarshipName}
+                                                onChange={(e) => setNamedScholarsFilters({ ...namedScholarsFilters, scholarshipName: e.target.value })}
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label className="text-sm font-medium">Дата назначения</Label>
+                                              <Input
+                                                type="date"
+                                                value={namedScholarsFilters.appointmentDate}
+                                                onChange={(e) => setNamedScholarsFilters({ ...namedScholarsFilters, appointmentDate: e.target.value })}
+                                              />
+                                            </div>
+                                          </div>
+                                          <DialogFooter>
+                                            <Button
+                                              variant="outline"
+                                              onClick={() => setNamedScholarsFilters({
+                                                employeeName: "",
+                                                scholarshipName: "",
+                                                appointmentDate: "",
+                                              })}
+                                            >
+                                              Сбросить
+                                            </Button>
+                                            <Button onClick={() => setNamedScholarsFilterDialogOpen(false)}>
+                                              Применить
+                                            </Button>
+                                          </DialogFooter>
+                                        </DialogContent>
+                                      </Dialog>
+                                      
+                                      <Button variant="outline">
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        Импорт Excel
+                                      </Button>
+                                      
+                                      <Dialog open={addNamedScholarDialogOpen} onOpenChange={setAddNamedScholarDialogOpen}>
+                                        <DialogTrigger asChild>
+                                          <Button>
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Добавить стипендианта
+                                          </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-md">
+                                          <DialogHeader>
+                                            <DialogTitle>Добавить именного стипендианта</DialogTitle>
+                                          </DialogHeader>
+                                          <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                              <Label htmlFor="scholar-name">ФИО *</Label>
+                                              <Input
+                                                id="scholar-name"
+                                                value={newNamedScholar.employeeName}
+                                                onChange={(e) => setNewNamedScholar({ ...newNamedScholar, employeeName: e.target.value })}
+                                                placeholder="Введите ФИО"
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label htmlFor="scholar-scholarship">Название стипендии *</Label>
+                                              <Input
+                                                id="scholar-scholarship"
+                                                value={newNamedScholar.scholarshipName}
+                                                onChange={(e) => setNewNamedScholar({ ...newNamedScholar, scholarshipName: e.target.value })}
+                                                placeholder="Введите название стипендии"
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label htmlFor="scholar-appointment">Дата назначения *</Label>
+                                              <Input
+                                                id="scholar-appointment"
+                                                type="date"
+                                                value={newNamedScholar.appointmentDate}
+                                                onChange={(e) => setNewNamedScholar({ ...newNamedScholar, appointmentDate: e.target.value })}
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label htmlFor="scholar-status">Статус *</Label>
+                                              <Select
+                                                value={newNamedScholar.status}
+                                                onValueChange={(value: "active" | "completed" | "suspended") => setNewNamedScholar({ ...newNamedScholar, status: value })}
+                                              >
+                                                <SelectTrigger id="scholar-status">
+                                                  <SelectValue placeholder="Выберите статус" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="active">Активна</SelectItem>
+                                                  <SelectItem value="completed">Завершена</SelectItem>
+                                                  <SelectItem value="suspended">Приостановлена</SelectItem>
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label htmlFor="scholar-comments">Комментарий</Label>
+                                              <Input
+                                                id="scholar-comments"
+                                                value={newNamedScholar.comments}
+                                                onChange={(e) => setNewNamedScholar({ ...newNamedScholar, comments: e.target.value })}
+                                                placeholder="Комментарий (необязательно)"
+                                              />
+                                            </div>
+                                          </div>
+                                          <DialogFooter>
+                                            <Button variant="outline" onClick={() => setAddNamedScholarDialogOpen(false)}>
+                                              Отмена
+                                            </Button>
+                                            <Button 
+                                              onClick={() => handleAddNamedScholar(university.id)}
+                                              disabled={!newNamedScholar.employeeName.trim() || !newNamedScholar.scholarshipName.trim() || !newNamedScholar.appointmentDate}
+                                            >
+                                              Добавить
+                                            </Button>
+                                          </DialogFooter>
+                                        </DialogContent>
+                                      </Dialog>
+                                      </div>
+                                    </div>
+
+                                    {/* Активные фильтры */}
+                                    {activeFiltersCount > 0 && (
+                                      <div className="flex flex-wrap gap-2 mb-4">
+                                        {namedScholarsFilters.employeeName && (
+                                          <Badge variant="secondary" className="gap-1">
+                                            ФИО: {namedScholarsFilters.employeeName}
+                                            <button
+                                              onClick={() => setNamedScholarsFilters({ ...namedScholarsFilters, employeeName: "" })}
+                                              className="ml-1 hover:text-destructive"
+                                            >
+                                              ×
+                                            </button>
+                                          </Badge>
+                                        )}
+                                        {namedScholarsFilters.scholarshipName && (
+                                          <Badge variant="secondary" className="gap-1">
+                                            Стипендия: {namedScholarsFilters.scholarshipName}
+                                            <button
+                                              onClick={() => setNamedScholarsFilters({ ...namedScholarsFilters, scholarshipName: "" })}
+                                              className="ml-1 hover:text-destructive"
+                                            >
+                                              ×
+                                            </button>
+                                          </Badge>
+                                        )}
+                                        {namedScholarsFilters.appointmentDate && (
+                                          <Badge variant="secondary" className="gap-1">
+                                            Дата назначения: {new Date(namedScholarsFilters.appointmentDate).toLocaleDateString('ru-RU')}
+                                            <button
+                                              onClick={() => setNamedScholarsFilters({ ...namedScholarsFilters, appointmentDate: "" })}
+                                              className="ml-1 hover:text-destructive"
+                                            >
+                                              ×
+                                            </button>
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {filteredScholars.length > 0 ? (
+                                      <div className="border rounded-lg overflow-hidden">
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow className="bg-muted/50">
+                                              <TableHead className="w-[250px]">ФИО</TableHead>
+                                              <TableHead className="w-[200px]">Название стипендии</TableHead>
+                                              <TableHead className="w-[150px]">Дата назначения</TableHead>
+                                              <TableHead className="w-[150px] text-center">Статус</TableHead>
+                                              <TableHead className="w-[80px] text-center">Действия</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {filteredScholars.map((scholar) => (
+                                              <TableRow key={scholar.id}>
+                                                <TableCell className="font-medium">{scholar.employeeName}</TableCell>
+                                                <TableCell>{scholar.scholarshipName}</TableCell>
+                                                <TableCell>
+                                                  {new Date(scholar.appointmentDate).toLocaleDateString('ru-RU')}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                  <div className="flex items-center justify-center gap-2">
+                                                    <Badge
+                                                      variant="outline"
+                                                      className={cn(
+                                                        "text-xs px-2 py-0.5",
+                                                        scholar.status === "active" && "bg-green-100 text-green-800 border-green-200",
+                                                        scholar.status === "completed" && "bg-gray-100 text-gray-800 border-gray-200",
+                                                        scholar.status === "suspended" && "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                                      )}
+                                                    >
+                                                      {scholar.status === "active" && "Активна"}
+                                                      {scholar.status === "completed" && "Завершена"}
+                                                      {scholar.status === "suspended" && "Приостановлена"}
+                                                    </Badge>
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="icon"
+                                                      className="h-8 w-8"
+                                                      onClick={() => handleOpenScholarCommentDialog(university.id, scholar.id, scholar.comments)}
+                                                    >
+                                                      <MessageSquare className={`h-4 w-4 ${scholar.comments ? 'text-primary' : 'text-muted-foreground'}`} />
+                                                    </Button>
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => handleStartEditNamedScholar(university.id, scholar)}
+                                                  >
+                                                    <Pencil className="h-4 w-4" />
+                                                  </Button>
+                                                </TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </div>
+                                    ) : (
+                                      <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                                        Именные стипендианты не найдены по выбранным фильтрам
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                                    Именные стипендианты не добавлены
+                                  </div>
+                                );
+                              })()}
+                              
+                              {/* Модальное окно редактирования именного стипендианта */}
+                              <Dialog open={editNamedScholarDialogOpen} onOpenChange={setEditNamedScholarDialogOpen}>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Редактировать стипендианта</DialogTitle>
+                                  </DialogHeader>
+                                  {editingNamedScholar && (
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-scholar-name">ФИО *</Label>
+                                        <Input
+                                          id="edit-scholar-name"
+                                          value={editingNamedScholar.employeeName}
+                                          onChange={(e) => setEditingNamedScholar({ ...editingNamedScholar, employeeName: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-scholar-scholarship">Название стипендии *</Label>
+                                        <Input
+                                          id="edit-scholar-scholarship"
+                                          value={editingNamedScholar.scholarshipName}
+                                          onChange={(e) => setEditingNamedScholar({ ...editingNamedScholar, scholarshipName: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-scholar-appointment">Дата назначения *</Label>
+                                        <Input
+                                          id="edit-scholar-appointment"
+                                          type="date"
+                                          value={editingNamedScholar.appointmentDate}
+                                          onChange={(e) => setEditingNamedScholar({ ...editingNamedScholar, appointmentDate: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-scholar-status">Статус *</Label>
+                                        <Select
+                                          value={editingNamedScholar.status}
+                                          onValueChange={(value: "active" | "completed" | "suspended") => setEditingNamedScholar({ ...editingNamedScholar, status: value })}
+                                        >
+                                          <SelectTrigger id="edit-scholar-status">
+                                            <SelectValue placeholder="Выберите статус" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="active">Активна</SelectItem>
+                                            <SelectItem value="completed">Завершена</SelectItem>
+                                            <SelectItem value="suspended">Приостановлена</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="edit-scholar-comments">Комментарий</Label>
+                                        <Input
+                                          id="edit-scholar-comments"
+                                          value={editingNamedScholar.comments || ""}
+                                          onChange={(e) => setEditingNamedScholar({ ...editingNamedScholar, comments: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => setEditNamedScholarDialogOpen(false)}>
+                                      Отмена
+                                    </Button>
+                                    <Button 
+                                      onClick={handleSaveNamedScholar}
+                                      disabled={!editingNamedScholar?.employeeName.trim() || !editingNamedScholar?.scholarshipName.trim() || !editingNamedScholar?.appointmentDate}
+                                    >
+                                      Сохранить
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
                               
                               {/* Модальное окно редактирования практиканта */}
                               <Dialog open={editPractitionerDialogOpen} onOpenChange={setEditPractitionerDialogOpen}>
@@ -8774,6 +9314,42 @@ export default function UniversitiesPage() {
                                       Отмена
                                     </Button>
                                     <Button onClick={() => handleUpdateTargetPractitionerComment(commentDialogTargetPractitioner?.comment || "")}>
+                                      Сохранить
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                              
+                              {/* Модальное окно комментария именного стипендианта */}
+                              <Dialog open={commentDialogScholarOpen} onOpenChange={setCommentDialogScholarOpen}>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Комментарий к стипендианту</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="scholar-comment-dialog">Комментарий</Label>
+                                      <Textarea
+                                        id="scholar-comment-dialog"
+                                        placeholder="Введите комментарий..."
+                                        value={commentDialogScholar?.comment || ""}
+                                        onChange={(e) => {
+                                          if (commentDialogScholar) {
+                                            setCommentDialogScholar({
+                                              ...commentDialogScholar,
+                                              comment: e.target.value
+                                            });
+                                          }
+                                        }}
+                                        rows={5}
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => setCommentDialogScholarOpen(false)}>
+                                      Отмена
+                                    </Button>
+                                    <Button onClick={() => handleUpdateScholarComment(commentDialogScholar?.comment || "")}>
                                       Сохранить
                                     </Button>
                                   </DialogFooter>
