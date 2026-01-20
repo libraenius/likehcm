@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, User, ArrowRight, HelpCircle, Handshake, MessageCircle } from "lucide-react";
+import { GraduationCap, ClipboardCheck, Users, Settings, ExternalLink, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, MapPin, Building2, Archive, ArchiveRestore, Filter, SortAsc, SortDesc, BarChart3, MessageSquare, History, FileText as FileTextIcon, Edit3, Copy, Tag, Eye, EyeOff, Star, UserCheck, User, ArrowRight, HelpCircle, Handshake, MessageCircle, Phone } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -226,12 +226,23 @@ interface CNTRAgreementItem {
 // Тип для университета
 type CooperationLine = "drp" | "bko" | "cntr";
 
+// Интерфейс для контакта со стороны ВУЗа
+interface UniversityContact {
+  name: string; // ФИО контактного лица
+  position?: string; // Должность
+  phone?: string; // Телефон
+  email?: string; // Email
+  isPublic?: boolean; // Показать всем (видимость контакта)
+}
+
 // Интерфейс для записи линии сотрудничества
 interface CooperationLineRecord {
   id: string;
   line: CooperationLine;
   year: number;
   responsible: string[]; // Массив ID ответственных лиц
+  universityContact?: UniversityContact; // Контактное лицо со стороны ВУЗа (для обратной совместимости)
+  universityContacts?: UniversityContact[]; // Массив контактных лиц со стороны ВУЗа
 }
 
 interface University {
@@ -418,12 +429,37 @@ const mockUniversities: University[] = [
         line: "drp",
         year: 2020,
         responsible: ["person-1", "person-2"],
+        universityContacts: [
+          {
+            name: "Петров Сергей Александрович",
+            position: "Декан экономического факультета",
+            phone: "+7 (495) 939-22-33",
+            email: "petrov@econ.msu.ru",
+            isPublic: true,
+          },
+          {
+            name: "Кузнецова Мария Ивановна",
+            position: "Заведующая кафедрой",
+            phone: "+7 (495) 939-55-66",
+            email: "kuznetsova@econ.msu.ru",
+            isPublic: false,
+          },
+        ],
       },
       {
         id: "clr-mgu-2",
         line: "bko",
         year: 2022,
         responsible: ["person-3"],
+        universityContacts: [
+          {
+            name: "Сидорова Елена Викторовна",
+            position: "Заместитель декана по учебной работе",
+            phone: "+7 (495) 939-33-44",
+            email: "sidorova@msu.ru",
+            isPublic: false,
+          },
+        ],
       },
     ],
     targetAudience: "Студенты IT-направлений",
@@ -436,7 +472,21 @@ const mockUniversities: University[] = [
         city: "Москва", 
         branch: "Московский филиал", 
         cooperationLines: [
-          { id: "clr-cur-1-1", line: "drp", year: 2020, responsible: ["person-1"] },
+          { 
+            id: "clr-cur-1-1", 
+            line: "drp", 
+            year: 2020, 
+            responsible: ["person-1"],
+            universityContacts: [
+              {
+                name: "Козлов Андрей Михайлович",
+                position: "Координатор практик",
+                phone: "+7 (495) 123-45-67",
+                email: "kozlov@msu-branch.ru",
+                isPublic: true,
+              },
+            ],
+          },
           { id: "clr-cur-1-2", line: "bko", year: 2021, responsible: ["person-2"] },
         ],
         cooperationStartYear: 2020,
@@ -763,6 +813,36 @@ const mockUniversities: University[] = [
         line: "drp",
         year: 2018,
         responsible: ["person-1", "person-3"],
+        universityContacts: [
+          {
+            name: "Волкова Анна Сергеевна",
+            position: "Директор центра карьеры",
+            phone: "+7 (495) 772-95-90 (доб. 22334)",
+            email: "volkova@hse.ru",
+            isPublic: true,
+          },
+          {
+            name: "Краснов Павел Михайлович",
+            position: "Заместитель декана по практике",
+            phone: "+7 (495) 772-95-90 (доб. 22456)",
+            email: "pkrasnov@hse.ru",
+            isPublic: true,
+          },
+          {
+            name: "Титова Елена Владимировна",
+            position: "Координатор программ стажировок",
+            phone: "+7 (495) 772-95-90 (доб. 22567)",
+            email: "etitova@hse.ru",
+            isPublic: false,
+          },
+          {
+            name: "Семенов Алексей Игоревич",
+            position: "Специалист по работе с партнерами",
+            phone: "+7 (495) 772-95-90 (доб. 22678)",
+            email: "asemenov@hse.ru",
+            isPublic: false,
+          },
+        ],
       },
       {
         id: "clr-hse-2",
@@ -2466,6 +2546,7 @@ export default function UniversitiesPage() {
     practiceSupervisors: string[];
     practiceStatus: ("not_meets" | "meets" | "exceeds")[];
     isTarget: "all" | "target" | "regular";
+    responsibleEmployees: string[];
   }>({
     employeeName: "",
     departments: [],
@@ -2474,6 +2555,7 @@ export default function UniversitiesPage() {
     practiceSupervisors: [],
     practiceStatus: [],
     isTarget: "all",
+    responsibleEmployees: [],
   });
   
   // Состояние для фильтров участников кейс-чемпионатов
@@ -2606,6 +2688,9 @@ export default function UniversitiesPage() {
   
   // Состояние для отслеживания свернутых филиалов
   const [collapsedBranches, setCollapsedBranches] = useState<Set<string>>(new Set());
+  
+  // Состояние для отслеживания свернутых контактов в линиях сотрудничества
+  const [collapsedContacts, setCollapsedContacts] = useState<Set<string>>(new Set());
   
   // Состояние для добавления договора
   const [newContract, setNewContract] = useState({
@@ -3274,6 +3359,208 @@ export default function UniversitiesPage() {
       year: new Date().getFullYear(),
       responsible: [],
     });
+  };
+  
+  // Переключение видимости контакта в линии сотрудничества головного ВУЗа
+  const handleToggleContactVisibilityInMain = (universityId: string, lineId: string, contactIndex: number, isPublic: boolean) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            cooperationLines: (u.cooperationLines || []).map((cl) =>
+              cl.id === lineId
+                ? {
+                    ...cl,
+                    universityContacts: (cl.universityContacts || []).map((c, i) =>
+                      i === contactIndex ? { ...c, isPublic } : c
+                    ),
+                  }
+                : cl
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+  };
+  
+  // Добавление контакта в линию сотрудничества головного ВУЗа
+  const handleAddContactInMain = (universityId: string, lineId: string) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            cooperationLines: (u.cooperationLines || []).map((cl) =>
+              cl.id === lineId
+                ? {
+                    ...cl,
+                    universityContacts: [
+                      ...(cl.universityContacts || []),
+                      { name: "", position: "", phone: "", email: "", isPublic: false },
+                    ],
+                  }
+                : cl
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+  };
+  
+  // Обновление контакта в линии сотрудничества головного ВУЗа
+  const handleUpdateContactInMain = (universityId: string, lineId: string, contactIndex: number, contact: UniversityContact) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            cooperationLines: (u.cooperationLines || []).map((cl) =>
+              cl.id === lineId
+                ? {
+                    ...cl,
+                    universityContacts: (cl.universityContacts || []).map((c, i) =>
+                      i === contactIndex ? contact : c
+                    ),
+                  }
+                : cl
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+  };
+  
+  // Удаление контакта из линии сотрудничества головного ВУЗа
+  const handleDeleteContactInMain = (universityId: string, lineId: string, contactIndex: number) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            cooperationLines: (u.cooperationLines || []).map((cl) =>
+              cl.id === lineId
+                ? {
+                    ...cl,
+                    universityContacts: (cl.universityContacts || []).filter((_, i) => i !== contactIndex),
+                  }
+                : cl
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+  };
+  
+  // Переключение видимости контакта в линии сотрудничества филиала
+  const handleToggleContactVisibilityInBranch = (universityId: string, branchId: string, lineId: string, contactIndex: number, isPublic: boolean) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            branchCurators: (u.branchCurators || []).map((c) =>
+              c.id === branchId
+                ? {
+                    ...c,
+                    cooperationLines: (c.cooperationLines || []).map((cl) =>
+                      cl.id === lineId
+                        ? {
+                            ...cl,
+                            universityContacts: (cl.universityContacts || []).map((contact, i) =>
+                              i === contactIndex ? { ...contact, isPublic } : contact
+                            ),
+                          }
+                        : cl
+                    ),
+                  }
+                : c
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+  };
+  
+  // Добавление контакта в линию сотрудничества филиала
+  const handleAddContactInBranch = (universityId: string, branchId: string, lineId: string) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            branchCurators: (u.branchCurators || []).map((c) =>
+              c.id === branchId
+                ? {
+                    ...c,
+                    cooperationLines: (c.cooperationLines || []).map((cl) =>
+                      cl.id === lineId
+                        ? {
+                            ...cl,
+                            universityContacts: [
+                              ...(cl.universityContacts || []),
+                              { name: "", position: "", phone: "", email: "", isPublic: false },
+                            ],
+                          }
+                        : cl
+                    ),
+                  }
+                : c
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+  };
+  
+  // Обновление контакта в линии сотрудничества филиала
+  const handleUpdateContactInBranch = (universityId: string, branchId: string, lineId: string, contactIndex: number, contact: UniversityContact) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            branchCurators: (u.branchCurators || []).map((c) =>
+              c.id === branchId
+                ? {
+                    ...c,
+                    cooperationLines: (c.cooperationLines || []).map((cl) =>
+                      cl.id === lineId
+                        ? {
+                            ...cl,
+                            universityContacts: (cl.universityContacts || []).map((contact_, i) =>
+                              i === contactIndex ? contact : contact_
+                            ),
+                          }
+                        : cl
+                    ),
+                  }
+                : c
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
+  };
+  
+  // Удаление контакта из линии сотрудничества филиала
+  const handleDeleteContactInBranch = (universityId: string, branchId: string, lineId: string, contactIndex: number) => {
+    const updatedUniversities = universities.map((u) =>
+      u.id === universityId
+        ? {
+            ...u,
+            branchCurators: (u.branchCurators || []).map((c) =>
+              c.id === branchId
+                ? {
+                    ...c,
+                    cooperationLines: (c.cooperationLines || []).map((cl) =>
+                      cl.id === lineId
+                        ? {
+                            ...cl,
+                            universityContacts: (cl.universityContacts || []).filter((_, i) => i !== contactIndex),
+                          }
+                        : cl
+                    ),
+                  }
+                : c
+            ),
+          }
+        : u
+    );
+    setUniversities(updatedUniversities);
   };
   
   // Добавление договора
@@ -5001,6 +5288,159 @@ export default function UniversitiesPage() {
                                                 </div>
                                               </div>
                                             )}
+                                            {/* Контакты со стороны ВУЗа */}
+                                            {(() => {
+                                              const contacts = record.universityContacts || (record.universityContact?.name ? [record.universityContact] : []);
+                                              const contactsKey = `main-${record.id}`;
+                                              const isCollapsed = collapsedContacts.has(contactsKey);
+                                              
+                                              return contacts.length > 0 || true ? (
+                                                <div className="pt-3 border-t mt-3">
+                                                  <div 
+                                                    className="flex items-center justify-between cursor-pointer hover:bg-muted/30 rounded-md px-2 py-1.5 -mx-2 transition-colors"
+                                                    onClick={() => {
+                                                      const newCollapsed = new Set(collapsedContacts);
+                                                      if (isCollapsed) {
+                                                        newCollapsed.delete(contactsKey);
+                                                      } else {
+                                                        newCollapsed.add(contactsKey);
+                                                      }
+                                                      setCollapsedContacts(newCollapsed);
+                                                    }}
+                                                  >
+                                                    <div className="flex items-center gap-2">
+                                                      {isCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                                      <Users className="h-4 w-4 text-primary" />
+                                                      <span className="text-sm font-semibold">Контакты ВУЗа</span>
+                                                      {contacts.length > 0 && (
+                                                        <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs font-medium">
+                                                          {contacts.length}
+                                                        </Badge>
+                                                      )}
+                                                    </div>
+                                                    <Button
+                                                      variant="outline"
+                                                      size="sm"
+                                                      className="h-7 px-2 text-xs"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAddContactInMain(university.id, record.id);
+                                                        if (isCollapsed) {
+                                                          const newCollapsed = new Set(collapsedContacts);
+                                                          newCollapsed.delete(contactsKey);
+                                                          setCollapsedContacts(newCollapsed);
+                                                        }
+                                                      }}
+                                                    >
+                                                      <Plus className="h-3 w-3 mr-1" />
+                                                      Добавить
+                                                    </Button>
+                                                  </div>
+                                                  
+                                                  {!isCollapsed && (
+                                                    <div className="mt-3">
+                                                      {contacts.length > 0 ? (
+                                                        <div className="rounded-lg border overflow-hidden">
+                                                          <Table>
+                                                            <TableHeader>
+                                                              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                                                <TableHead className="h-9 text-xs font-semibold w-[200px]">ФИО</TableHead>
+                                                                <TableHead className="h-9 text-xs font-semibold w-[180px]">Должность</TableHead>
+                                                                <TableHead className="h-9 text-xs font-semibold w-[200px]">Телефон</TableHead>
+                                                                <TableHead className="h-9 text-xs font-semibold w-[180px]">Email</TableHead>
+                                                                <TableHead className="h-9 text-xs font-semibold w-[100px] text-center">Публичный</TableHead>
+                                                                <TableHead className="h-9 text-xs font-semibold w-[50px]"></TableHead>
+                                                              </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                              {contacts.map((contact, contactIdx) => (
+                                                                <TableRow key={contactIdx} className="group">
+                                                              <TableCell className="py-1.5 px-3">
+                                                                <Input
+                                                                  value={contact.name}
+                                                                  onChange={(e) => handleUpdateContactInMain(university.id, record.id, contactIdx, { ...contact, name: e.target.value })}
+                                                                  placeholder="ФИО"
+                                                                  className="h-7 text-xs border-0 bg-transparent hover:bg-muted/50 focus:bg-background px-1"
+                                                                />
+                                                              </TableCell>
+                                                                  <TableCell className="py-1.5 px-3">
+                                                                    <Input
+                                                                      value={contact.position || ""}
+                                                                      onChange={(e) => handleUpdateContactInMain(university.id, record.id, contactIdx, { ...contact, position: e.target.value })}
+                                                                      placeholder="Должность"
+                                                                      className="h-7 text-xs border-0 bg-transparent hover:bg-muted/50 focus:bg-background px-1"
+                                                                    />
+                                                                  </TableCell>
+                                                                  <TableCell className="py-1.5 px-3">
+                                                                    <div className="flex items-center gap-1">
+                                                                      <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                                                                      <Input
+                                                                        value={contact.phone || ""}
+                                                                        onChange={(e) => handleUpdateContactInMain(university.id, record.id, contactIdx, { ...contact, phone: e.target.value })}
+                                                                        placeholder="Телефон"
+                                                                        className="h-7 text-xs border-0 bg-transparent hover:bg-muted/50 focus:bg-background px-1"
+                                                                      />
+                                                                    </div>
+                                                                  </TableCell>
+                                                                  <TableCell className="py-1.5 px-3">
+                                                                    <div className="flex items-center gap-1">
+                                                                      <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
+                                                                      <Input
+                                                                        type="email"
+                                                                        value={contact.email || ""}
+                                                                        onChange={(e) => handleUpdateContactInMain(university.id, record.id, contactIdx, { ...contact, email: e.target.value })}
+                                                                        placeholder="Email"
+                                                                        className="h-7 text-xs border-0 bg-transparent hover:bg-muted/50 focus:bg-background px-1"
+                                                                      />
+                                                                    </div>
+                                                                  </TableCell>
+                                                                  <TableCell className="py-1.5 px-3 text-center">
+                                                                    <div className="flex items-center justify-center">
+                                                                      <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                          <div>
+                                                                            <Checkbox
+                                                                              id={`contact-visibility-main-${record.id}-${contactIdx}`}
+                                                                              checked={contact.isPublic || false}
+                                                                              onCheckedChange={(checked) => handleToggleContactVisibilityInMain(university.id, record.id, contactIdx, checked === true)}
+                                                                            />
+                                                                          </div>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                          <p>{contact.isPublic ? "Контакт виден всем" : "Контакт скрыт"}</p>
+                                                                        </TooltipContent>
+                                                                      </Tooltip>
+                                                                      {contact.isPublic && <Eye className="h-3 w-3 text-green-500 ml-1" />}
+                                                                      {!contact.isPublic && <EyeOff className="h-3 w-3 text-muted-foreground ml-1" />}
+                                                                    </div>
+                                                                  </TableCell>
+                                                                  <TableCell className="py-1.5 px-3">
+                                                                    <Button
+                                                                      variant="ghost"
+                                                                      size="icon"
+                                                                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                      onClick={() => handleDeleteContactInMain(university.id, record.id, contactIdx)}
+                                                                    >
+                                                                      <Trash2 className="h-3 w-3 text-destructive" />
+                                                                    </Button>
+                                                                  </TableCell>
+                                                                </TableRow>
+                                                              ))}
+                                                            </TableBody>
+                                                          </Table>
+                                                        </div>
+                                                      ) : (
+                                                        <div className="flex flex-col items-center justify-center py-6 text-center border rounded-lg bg-muted/20">
+                                                          <Users className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                                                          <p className="text-sm text-muted-foreground">Контакты не добавлены</p>
+                                                          <p className="text-xs text-muted-foreground/70 mt-1">Нажмите "Добавить" для создания контакта</p>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              ) : null;
+                                            })()}
                                           </div>
                                           <div className="flex gap-1 shrink-0">
                                             <Button
@@ -5390,6 +5830,159 @@ export default function UniversitiesPage() {
                                                             </div>
                                                           </div>
                                                         )}
+                                                        {/* Контакты со стороны ВУЗа */}
+                                                        {(() => {
+                                                          const contacts = record.universityContacts || (record.universityContact?.name ? [record.universityContact] : []);
+                                                          const contactsKey = `branch-${curator.id}-${record.id}`;
+                                                          const isCollapsed = collapsedContacts.has(contactsKey);
+                                                          
+                                                          return contacts.length > 0 || true ? (
+                                                            <div className="pt-3 border-t mt-3">
+                                                              <div 
+                                                                className="flex items-center justify-between cursor-pointer hover:bg-muted/30 rounded-md px-2 py-1.5 -mx-2 transition-colors"
+                                                                onClick={() => {
+                                                                  const newCollapsed = new Set(collapsedContacts);
+                                                                  if (isCollapsed) {
+                                                                    newCollapsed.delete(contactsKey);
+                                                                  } else {
+                                                                    newCollapsed.add(contactsKey);
+                                                                  }
+                                                                  setCollapsedContacts(newCollapsed);
+                                                                }}
+                                                              >
+                                                                <div className="flex items-center gap-2">
+                                                                  {isCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                                                  <Users className="h-4 w-4 text-primary" />
+                                                                  <span className="text-sm font-semibold">Контакты ВУЗа</span>
+                                                                  {contacts.length > 0 && (
+                                                                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs font-medium">
+                                                                      {contacts.length}
+                                                                    </Badge>
+                                                                  )}
+                                                                </div>
+                                                                <Button
+                                                                  variant="outline"
+                                                                  size="sm"
+                                                                  className="h-7 px-2 text-xs"
+                                                                  onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleAddContactInBranch(university.id, curator.id, record.id);
+                                                                    if (isCollapsed) {
+                                                                      const newCollapsed = new Set(collapsedContacts);
+                                                                      newCollapsed.delete(contactsKey);
+                                                                      setCollapsedContacts(newCollapsed);
+                                                                    }
+                                                                  }}
+                                                                >
+                                                                  <Plus className="h-3 w-3 mr-1" />
+                                                                  Добавить
+                                                                </Button>
+                                                              </div>
+                                                              
+                                                              {!isCollapsed && (
+                                                                <div className="mt-3">
+                                                                  {contacts.length > 0 ? (
+                                                                    <div className="rounded-lg border overflow-hidden">
+                                                                      <Table>
+                                                                        <TableHeader>
+                                                                          <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                                                            <TableHead className="h-9 text-xs font-semibold w-[200px]">ФИО</TableHead>
+                                                                            <TableHead className="h-9 text-xs font-semibold w-[180px]">Должность</TableHead>
+                                                                            <TableHead className="h-9 text-xs font-semibold w-[200px]">Телефон</TableHead>
+                                                                            <TableHead className="h-9 text-xs font-semibold w-[180px]">Email</TableHead>
+                                                                            <TableHead className="h-9 text-xs font-semibold w-[100px] text-center">Публичный</TableHead>
+                                                                            <TableHead className="h-9 text-xs font-semibold w-[50px]"></TableHead>
+                                                                          </TableRow>
+                                                                        </TableHeader>
+                                                                        <TableBody>
+                                                                          {contacts.map((contact, contactIdx) => (
+                                                                            <TableRow key={contactIdx} className="group">
+                                                                              <TableCell className="py-1.5 px-3">
+                                                                                <Input
+                                                                                  value={contact.name}
+                                                                                  onChange={(e) => handleUpdateContactInBranch(university.id, curator.id, record.id, contactIdx, { ...contact, name: e.target.value })}
+                                                                                  placeholder="ФИО"
+                                                                                  className="h-7 text-xs border-0 bg-transparent hover:bg-muted/50 focus:bg-background px-1"
+                                                                                />
+                                                                              </TableCell>
+                                                                              <TableCell className="py-1.5 px-3">
+                                                                                <Input
+                                                                                  value={contact.position || ""}
+                                                                                  onChange={(e) => handleUpdateContactInBranch(university.id, curator.id, record.id, contactIdx, { ...contact, position: e.target.value })}
+                                                                                  placeholder="Должность"
+                                                                                  className="h-7 text-xs border-0 bg-transparent hover:bg-muted/50 focus:bg-background px-1"
+                                                                                />
+                                                                              </TableCell>
+                                                                              <TableCell className="py-1.5 px-3">
+                                                                                <div className="flex items-center gap-1">
+                                                                                  <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                                                                                  <Input
+                                                                                    value={contact.phone || ""}
+                                                                                    onChange={(e) => handleUpdateContactInBranch(university.id, curator.id, record.id, contactIdx, { ...contact, phone: e.target.value })}
+                                                                                    placeholder="Телефон"
+                                                                                    className="h-7 text-xs border-0 bg-transparent hover:bg-muted/50 focus:bg-background px-1"
+                                                                                  />
+                                                                                </div>
+                                                                              </TableCell>
+                                                                              <TableCell className="py-1.5 px-3">
+                                                                                <div className="flex items-center gap-1">
+                                                                                  <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
+                                                                                  <Input
+                                                                                    type="email"
+                                                                                    value={contact.email || ""}
+                                                                                    onChange={(e) => handleUpdateContactInBranch(university.id, curator.id, record.id, contactIdx, { ...contact, email: e.target.value })}
+                                                                                    placeholder="Email"
+                                                                                    className="h-7 text-xs border-0 bg-transparent hover:bg-muted/50 focus:bg-background px-1"
+                                                                                  />
+                                                                                </div>
+                                                                              </TableCell>
+                                                                              <TableCell className="py-1.5 px-3 text-center">
+                                                                                <div className="flex items-center justify-center">
+                                                                                  <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                      <div>
+                                                                                        <Checkbox
+                                                                                          id={`contact-visibility-branch-${curator.id}-${record.id}-${contactIdx}`}
+                                                                                          checked={contact.isPublic || false}
+                                                                                          onCheckedChange={(checked) => handleToggleContactVisibilityInBranch(university.id, curator.id, record.id, contactIdx, checked === true)}
+                                                                                        />
+                                                                                      </div>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent>
+                                                                                      <p>{contact.isPublic ? "Контакт виден всем" : "Контакт скрыт"}</p>
+                                                                                    </TooltipContent>
+                                                                                  </Tooltip>
+                                                                                  {contact.isPublic && <Eye className="h-3 w-3 text-green-500 ml-1" />}
+                                                                                  {!contact.isPublic && <EyeOff className="h-3 w-3 text-muted-foreground ml-1" />}
+                                                                                </div>
+                                                                              </TableCell>
+                                                                              <TableCell className="py-1.5 px-3">
+                                                                                <Button
+                                                                                  variant="ghost"
+                                                                                  size="icon"
+                                                                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                                  onClick={() => handleDeleteContactInBranch(university.id, curator.id, record.id, contactIdx)}
+                                                                                >
+                                                                                  <Trash2 className="h-3 w-3 text-destructive" />
+                                                                                </Button>
+                                                                              </TableCell>
+                                                                            </TableRow>
+                                                                          ))}
+                                                                        </TableBody>
+                                                                      </Table>
+                                                                    </div>
+                                                                  ) : (
+                                                                    <div className="flex flex-col items-center justify-center py-6 text-center border rounded-lg bg-muted/20">
+                                                                      <Users className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                                                                      <p className="text-sm text-muted-foreground">Контакты не добавлены</p>
+                                                                      <p className="text-xs text-muted-foreground/70 mt-1">Нажмите "Добавить" для создания контакта</p>
+                                                                    </div>
+                                                                  )}
+                                                                </div>
+                                                              )}
+                                                            </div>
+                                                          ) : null;
+                                                        })()}
                                                       </div>
                                                       <div className="flex gap-1 shrink-0">
                                                         <Button
@@ -6951,6 +7544,14 @@ export default function UniversitiesPage() {
                                     return false;
                                   }
                                   
+                                  // Фильтр по ответственному лицу у целевых практикантов
+                                  if (practitionersFilters.responsibleEmployees.length > 0) {
+                                    if (!practitioner.isTarget || !practitioner.responsibleEmployee || 
+                                        !practitionersFilters.responsibleEmployees.includes(practitioner.responsibleEmployee)) {
+                                      return false;
+                                    }
+                                  }
+                                  
                                   return true;
                                 });
                                 
@@ -6980,7 +7581,8 @@ export default function UniversitiesPage() {
                                               (practitionersFilters.practiceStartDate || practitionersFilters.practiceEndDate ? 1 : 0) +
                                               practitionersFilters.practiceSupervisors.length +
                                               practitionersFilters.practiceStatus.length +
-                                              (practitionersFilters.isTarget !== "all" ? 1 : 0);
+                                              (practitionersFilters.isTarget !== "all" ? 1 : 0) +
+                                              practitionersFilters.responsibleEmployees.length;
                                             return activeFiltersCount > 0 ? (
                                               <Badge variant="secondary" className="ml-2">
                                                 {activeFiltersCount}
@@ -7155,6 +7757,51 @@ export default function UniversitiesPage() {
                                               </SelectContent>
                                             </Select>
                                           </div>
+                                          
+                                          {/* Фильтр по ответственному лицу у целевых */}
+                                          <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Ответственное лицо (целевые)</Label>
+                                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                              {(() => {
+                                                const uniqueResponsible = Array.from(new Set(
+                                                  university.practitionerList
+                                                    ?.filter(p => p.isTarget && p.responsibleEmployee)
+                                                    .map(p => p.responsibleEmployee!) || []
+                                                ));
+                                                return uniqueResponsible.length > 0 ? (
+                                                  uniqueResponsible.map((responsible) => (
+                                                    <div key={responsible} className="flex items-center space-x-2">
+                                                      <Checkbox
+                                                        id={`filter-practitioner-responsible-${responsible}`}
+                                                        checked={practitionersFilters.responsibleEmployees.includes(responsible)}
+                                                        onCheckedChange={(checked) => {
+                                                          if (checked) {
+                                                            setPractitionersFilters({
+                                                              ...practitionersFilters,
+                                                              responsibleEmployees: [...practitionersFilters.responsibleEmployees, responsible],
+                                                            });
+                                                          } else {
+                                                            setPractitionersFilters({
+                                                              ...practitionersFilters,
+                                                              responsibleEmployees: practitionersFilters.responsibleEmployees.filter((r) => r !== responsible),
+                                                            });
+                                                          }
+                                                        }}
+                                                      />
+                                                      <Label
+                                                        htmlFor={`filter-practitioner-responsible-${responsible}`}
+                                                        className="text-sm font-normal cursor-pointer"
+                                                      >
+                                                        {responsible}
+                                                      </Label>
+                                                    </div>
+                                                  ))
+                                                ) : (
+                                                  <span className="text-xs text-muted-foreground">Нет целевых практикантов с ответственными</span>
+                                                );
+                                              })()}
+                                            </div>
+                                          </div>
                                         </div>
                                         <DialogFooter className="pt-2">
                                           <Button
@@ -7169,6 +7816,7 @@ export default function UniversitiesPage() {
                                                 practiceSupervisors: [],
                                                 practiceStatus: [],
                                                 isTarget: "all",
+                                                responsibleEmployees: [],
                                               });
                                               setPractitionersCurrentPage(1);
                                             }}
@@ -7372,6 +8020,17 @@ export default function UniversitiesPage() {
                                         onRemove: () => setPractitionersFilters({ ...practitionersFilters, isTarget: "all" }),
                                       });
                                     }
+                                    
+                                    // Фильтр по ответственному лицу у целевых
+                                    practitionersFilters.responsibleEmployees.forEach((responsible) => {
+                                      activeFilters.push({
+                                        label: `Ответственный: ${responsible}`,
+                                        onRemove: () => setPractitionersFilters({
+                                          ...practitionersFilters,
+                                          responsibleEmployees: practitionersFilters.responsibleEmployees.filter((r) => r !== responsible),
+                                        }),
+                                      });
+                                    });
                                     
                                     if (activeFilters.length === 0) return null;
                                     
