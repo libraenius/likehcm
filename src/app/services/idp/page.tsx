@@ -91,22 +91,13 @@ const getInitials = (fullName: string) => {
 export default function IDPPage() {
   const router = useRouter();
   
-  // Состояние для администрирования - загружаем из localStorage или используем начальные данные
-  const [idps, setIDPs] = useState<IDP[]>(() => {
-    if (typeof window !== "undefined") {
-      return getIDPs();
-    }
-    return initialMockIDPs;
-  });
+  // Начальное состояние всегда из моков (одинаково на сервере и клиенте) — избегаем hydration mismatch
+  const [idps, setIDPs] = useState<IDP[]>(initialMockIDPs);
 
-  // Синхронизация данных при монтировании
+  // После гидрации подгружаем данные из localStorage (только на клиенте)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = getIDPs();
-      if (stored.length > 0) {
-        setIDPs(stored);
-      }
-    }
+    const stored = getIDPs();
+    setIDPs(stored);
   }, []);
   const [selectedIDP, setSelectedIDP] = useState<IDP | null>(null);
   const [expandedIDPs, setExpandedIDPs] = useState<Set<string>>(new Set());
@@ -444,13 +435,7 @@ export default function IDPPage() {
         </TabsList>
 
         <TabsContent value="my-idp" className="mt-4 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">Мои ИПР</h2>
-              <p className="text-muted-foreground">
-                Управление вашими индивидуальными планами развития
-              </p>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
             <Button onClick={() => handleCreate(true)} size="lg" className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Создать ИПР
@@ -477,8 +462,8 @@ export default function IDPPage() {
             <>
               {/* Активные ИПР */}
               {(() => {
-                const activeIDPs = myIDPs.filter(
-                  (idp) => idp.status === "draft" || idp.status === "in-progress"
+                const activeIDPs = myIDPs.filter((idp) =>
+                  ["draft", "in-progress", "pending-approval"].includes(idp.status)
                 );
                 if (activeIDPs.length === 0) return null;
                 return (
@@ -536,17 +521,17 @@ export default function IDPPage() {
                 );
               })()}
 
-              {/* Завершенные ИПР */}
+              {/* Архивные ИПР */}
               {(() => {
-                const completedIDPs = myIDPs.filter(
+                const archivedIDPs = myIDPs.filter(
                   (idp) => idp.status === "completed" || idp.status === "cancelled"
                 );
-                if (completedIDPs.length === 0) return null;
+                if (archivedIDPs.length === 0) return null;
                 return (
                   <div className="space-y-3">
-                    <h2 className="text-lg font-semibold text-foreground">Завершенные</h2>
+                    <h2 className="text-lg font-semibold text-foreground">Архивные</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {completedIDPs.map((idp) => (
+                      {archivedIDPs.map((idp) => (
                         <Card 
                           key={idp.id} 
                           className="border cursor-pointer hover:border-primary transition-colors"
@@ -600,7 +585,7 @@ export default function IDPPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="employees-idp" className="mt-4 space-y-4">
+        <TabsContent value="employees-idp" className="mt-4 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -611,65 +596,139 @@ export default function IDPPage() {
                 Просмотр и управление индивидуальными планами развития сотрудников
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               {employeesIDPs.length === 0 ? (
                 <p className="text-muted-foreground">
                   У сотрудников пока нет индивидуальных планов развития
                 </p>
               ) : (
-                <div className="space-y-4">
-                  {employeesIDPs.map((idp) => (
-                    <Card 
-                      key={idp.id} 
-                      className="border cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => router.push(`/services/idp/${idp.id}`)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarFallback>{getInitials(idp.employeeName)}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <h3 className="font-semibold">{idp.employeeName}</h3>
-                                <p className="text-sm text-muted-foreground">{idp.employeePosition}</p>
-                              </div>
-                            </div>
-                            <div className="ml-13 space-y-1">
-                              <div className="flex items-start justify-between gap-2">
-                                <h4 className="font-medium">{idp.title}</h4>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs px-2 py-0.5"
-                                  >
-                                    {getIDPTypeText(idp.type)}
-                                  </Badge>
-                                  <Badge
-                                    variant="outline"
-                                    className={cn("text-xs px-2 py-0.5", getStatusColor(idp.status))}
-                                  >
-                                    {getStatusText(idp.status)}
-                                  </Badge>
+                <>
+                  {/* Активные ИПР сотрудников */}
+                  {(() => {
+                    const activeEmployees = employeesIDPs.filter((idp) =>
+                      ["draft", "in-progress", "pending-approval"].includes(idp.status)
+                    );
+                    if (activeEmployees.length === 0) return null;
+                    return (
+                      <div className="space-y-3">
+                        <h2 className="text-lg font-semibold text-foreground">Активные</h2>
+                        <div className="space-y-3">
+                          {activeEmployees.map((idp) => (
+                            <Card
+                              key={idp.id}
+                              className="border cursor-pointer hover:border-primary transition-colors"
+                              onClick={() => router.push(`/services/idp/${idp.id}`)}
+                            >
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1 space-y-2">
+                                    <div className="flex items-center gap-3">
+                                      <Avatar className="h-10 w-10">
+                                        <AvatarFallback>{getInitials(idp.employeeName)}</AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <h3 className="font-semibold">{idp.employeeName}</h3>
+                                        <p className="text-sm text-muted-foreground">{idp.employeePosition}</p>
+                                      </div>
+                                    </div>
+                                    <div className="ml-13 space-y-1">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <h4 className="font-medium">{idp.title}</h4>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                            {getIDPTypeText(idp.scenario)}
+                                          </Badge>
+                                          <Badge
+                                            variant="outline"
+                                            className={cn("text-xs px-2 py-0.5", getStatusColor(idp.status))}
+                                          >
+                                            {getStatusText(idp.status)}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                      {idp.description && (
+                                        <p className="text-sm text-muted-foreground">{idp.description}</p>
+                                      )}
+                                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                        <span>
+                                          <Calendar className="h-3.5 w-3.5 inline mr-1" />
+                                          {formatDate(idp.startDate)} - {formatDate(idp.endDate)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                              {idp.description && (
-                                <p className="text-sm text-muted-foreground">{idp.description}</p>
-                              )}
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <span>
-                                  <Calendar className="h-3.5 w-3.5 inline mr-1" />
-                                  {formatDate(idp.startDate)} - {formatDate(idp.endDate)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Архивные ИПР сотрудников */}
+                  {(() => {
+                    const archivedEmployees = employeesIDPs.filter(
+                      (idp) => idp.status === "completed" || idp.status === "cancelled"
+                    );
+                    if (archivedEmployees.length === 0) return null;
+                    return (
+                      <div className="space-y-3">
+                        <h2 className="text-lg font-semibold text-foreground">Архивные</h2>
+                        <div className="space-y-3">
+                          {archivedEmployees.map((idp) => (
+                            <Card
+                              key={idp.id}
+                              className="border cursor-pointer hover:border-primary transition-colors"
+                              onClick={() => router.push(`/services/idp/${idp.id}`)}
+                            >
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1 space-y-2">
+                                    <div className="flex items-center gap-3">
+                                      <Avatar className="h-10 w-10">
+                                        <AvatarFallback>{getInitials(idp.employeeName)}</AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <h3 className="font-semibold">{idp.employeeName}</h3>
+                                        <p className="text-sm text-muted-foreground">{idp.employeePosition}</p>
+                                      </div>
+                                    </div>
+                                    <div className="ml-13 space-y-1">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <h4 className="font-medium">{idp.title}</h4>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                            {getIDPTypeText(idp.scenario)}
+                                          </Badge>
+                                          <Badge
+                                            variant="outline"
+                                            className={cn("text-xs px-2 py-0.5", getStatusColor(idp.status))}
+                                          >
+                                            {getStatusText(idp.status)}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                      {idp.description && (
+                                        <p className="text-sm text-muted-foreground">{idp.description}</p>
+                                      )}
+                                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                        <span>
+                                          <Calendar className="h-3.5 w-3.5 inline mr-1" />
+                                          {formatDate(idp.startDate)} - {formatDate(idp.endDate)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
               )}
             </CardContent>
           </Card>
@@ -710,7 +769,7 @@ export default function IDPPage() {
             )}
           </div>
 
-          {/* Список ИПР */}
+          {/* Список ИПР: Активные / Архивные */}
           {filteredIDPs.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
@@ -734,76 +793,152 @@ export default function IDPPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
-              {filteredIDPs.map((idp) => (
-                <Card 
-                  key={idp.id} 
-                  className="border cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => router.push(`/services/idp/${idp.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-base mb-1">{idp.title}</h3>
-                            <div className="flex items-center gap-3 mb-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="text-xs">
-                                  {getInitials(idp.employeeName)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="text-sm font-medium">{idp.employeeName}</p>
-                                <p className="text-xs text-muted-foreground">{idp.employeePosition}</p>
+            <div className="space-y-6">
+              {/* Активные */}
+              {(() => {
+                const activeFiltered = filteredIDPs.filter((idp) =>
+                  ["draft", "in-progress", "pending-approval"].includes(idp.status)
+                );
+                if (activeFiltered.length === 0) return null;
+                return (
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold text-foreground">Активные</h2>
+                    <div className="space-y-3">
+                      {activeFiltered.map((idp) => (
+                        <Card
+                          key={idp.id}
+                          className="border cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => router.push(`/services/idp/${idp.id}`)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1">
+                                    <h3 className="font-semibold text-base mb-1">{idp.title}</h3>
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <Avatar className="h-8 w-8">
+                                        <AvatarFallback className="text-xs">
+                                          {getInitials(idp.employeeName)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <p className="text-sm font-medium">{idp.employeeName}</p>
+                                        <p className="text-xs text-muted-foreground">{idp.employeePosition}</p>
+                                      </div>
+                                    </div>
+                                    {idp.description && (
+                                      <p className="text-sm text-muted-foreground mb-2">{idp.description}</p>
+                                    )}
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                      <span>
+                                        <Calendar className="h-3.5 w-3.5 inline mr-1" />
+                                        {formatDate(idp.startDate)} - {formatDate(idp.endDate)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                        {getIDPTypeText(idp.scenario)}
+                                      </Badge>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn("text-xs px-2 py-0.5", getStatusColor(idp.status))}
+                                      >
+                                        {getStatusText(idp.status)}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <Button variant="outline" size="icon" onClick={() => handleEditIDP(idp)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" onClick={() => handleDeleteIDP(idp.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
-                            {idp.description && (
-                              <p className="text-sm text-muted-foreground mb-2">{idp.description}</p>
-                            )}
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <span>
-                                <Calendar className="h-3.5 w-3.5 inline mr-1" />
-                                {formatDate(idp.startDate)} - {formatDate(idp.endDate)}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                variant="secondary"
-                                className="text-xs px-2 py-0.5"
-                              >
-                                {getIDPTypeText(idp.type)}
-                              </Badge>
-                              <Badge
-                                variant="outline"
-                                className={cn("text-xs px-2 py-0.5", getStatusColor(idp.status))}
-                              >
-                                {getStatusText(idp.status)}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleEditIDP(idp)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleDeleteIDP(idp.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                );
+              })()}
+
+              {/* Архивные */}
+              {(() => {
+                const archivedFiltered = filteredIDPs.filter(
+                  (idp) => idp.status === "completed" || idp.status === "cancelled"
+                );
+                if (archivedFiltered.length === 0) return null;
+                return (
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-semibold text-foreground">Архивные</h2>
+                    <div className="space-y-3">
+                      {archivedFiltered.map((idp) => (
+                        <Card
+                          key={idp.id}
+                          className="border cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => router.push(`/services/idp/${idp.id}`)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1">
+                                    <h3 className="font-semibold text-base mb-1">{idp.title}</h3>
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <Avatar className="h-8 w-8">
+                                        <AvatarFallback className="text-xs">
+                                          {getInitials(idp.employeeName)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <p className="text-sm font-medium">{idp.employeeName}</p>
+                                        <p className="text-xs text-muted-foreground">{idp.employeePosition}</p>
+                                      </div>
+                                    </div>
+                                    {idp.description && (
+                                      <p className="text-sm text-muted-foreground mb-2">{idp.description}</p>
+                                    )}
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                      <span>
+                                        <Calendar className="h-3.5 w-3.5 inline mr-1" />
+                                        {formatDate(idp.startDate)} - {formatDate(idp.endDate)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                        {getIDPTypeText(idp.scenario)}
+                                      </Badge>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn("text-xs px-2 py-0.5", getStatusColor(idp.status))}
+                                      >
+                                        {getStatusText(idp.status)}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <Button variant="outline" size="icon" onClick={() => handleEditIDP(idp)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" onClick={() => handleDeleteIDP(idp.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </TabsContent>

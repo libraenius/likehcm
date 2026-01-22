@@ -41,6 +41,7 @@ import { getStatusBadgeColor } from "@/lib/badge-colors";
 import {
   mockCompetencies,
   mockAssessments,
+  mockIDPs,
   getIDPs,
   saveIDPs,
   updateIDP,
@@ -100,7 +101,12 @@ export default function IDPDetailsPage() {
   const { setCustomLabel } = useBreadcrumb();
   const idpId = params.id as string;
 
-  const [idps, setIDPs] = useState<IDP[]>(() => getIDPs());
+  const [idps, setIDPs] = useState<IDP[]>(mockIDPs);
+
+  useEffect(() => {
+    setIDPs(getIDPs());
+  }, []);
+
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddGoalDialogOpen, setIsAddGoalDialogOpen] = useState(false);
   const [isSendForApprovalDialogOpen, setIsSendForApprovalDialogOpen] = useState(false);
