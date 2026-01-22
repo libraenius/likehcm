@@ -96,6 +96,16 @@ export const mockEmployees = [
   { id: "emp-3", fullName: "Сидоров Алексей Дмитриевич", position: "Старший менеджер", email: "sidorov@example.com" },
   { id: "emp-4", fullName: "Смирнова Елена Викторовна", position: "QA инженер", email: "smirnova@example.com" },
   { id: "emp-5", fullName: "Помыткин Сергей Олегович", position: "Руководитель разработки", email: "s.pomytkin@example.com" },
+  { id: "emp-6", fullName: "Кузнецов Дмитрий Петрович", position: "Разработчик", email: "kuznetsov@example.com" },
+  { id: "emp-7", fullName: "Волкова Анна Игоревна", position: "Аналитик", email: "volkova@example.com" },
+  { id: "emp-8", fullName: "Новиков Павел Александрович", position: "DevOps инженер", email: "novikov@example.com" },
+  { id: "emp-9", fullName: "Морозова Татьяна Владимировна", position: "Дизайнер", email: "morozova@example.com" },
+  { id: "emp-10", fullName: "Лебедев Игорь Сергеевич", position: "Тестировщик", email: "lebedev@example.com" },
+  { id: "emp-11", fullName: "Соколова Ольга Николаевна", position: "Бизнес-аналитик", email: "sokolova@example.com" },
+  { id: "emp-12", fullName: "Попов Максим Викторович", position: "Продуктовый менеджер", email: "popov@example.com" },
+  { id: "emp-13", fullName: "Васильева Екатерина Дмитриевна", position: "Маркетолог", email: "vasilieva@example.com" },
+  { id: "emp-14", fullName: "Петров Андрей Олегович", position: "Системный администратор", email: "petrov@example.com" },
+  { id: "emp-15", fullName: "Семенова Наталья Игоревна", position: "Контент-менеджер", email: "semenova@example.com" },
 ];
 
 // Моковые данные для ИПР: 3 активных, 3 архивных (для «Мои ИПР»)
@@ -358,6 +368,84 @@ export const mockIDPs: IDP[] = [
       },
     ],
   },
+  // Генерация 44 ИПР для сотрудников (не emp-1)
+  ...(() => {
+    const additionalIDPs: IDP[] = [];
+    const statuses: IDP["status"][] = ["draft", "in-progress", "pending-approval", "completed", "cancelled"];
+    const types: IDPType[] = ["competency", "career", "adaptation", "assessment"];
+    const scenarios: IDPScenario[] = ["classic", "one-to-one"];
+    const employeeIds = ["emp-2", "emp-3", "emp-4", "emp-5", "emp-6", "emp-7", "emp-8", "emp-9", "emp-10", "emp-11", "emp-12", "emp-13", "emp-14", "emp-15"];
+    const titles = [
+      "Развитие технических навыков",
+      "Повышение экспертизы в разработке",
+      "Развитие лидерских компетенций",
+      "Улучшение навыков коммуникации",
+      "Развитие аналитического мышления",
+      "Повышение квалификации в тестировании",
+      "Развитие навыков управления проектами",
+      "Улучшение навыков дизайна",
+      "Развитие DevOps компетенций",
+      "Повышение экспертизы в бизнес-анализе",
+      "Развитие продуктового мышления",
+      "Улучшение маркетинговых навыков",
+      "Развитие системного администрирования",
+      "Повышение навыков контент-менеджмента",
+      "Развитие стратегического мышления",
+      "Улучшение навыков работы в команде",
+      "Развитие эмоционального интеллекта",
+      "Повышение навыков клиентоориентированности",
+      "Развитие навыков принятия решений",
+      "Улучшение навыков адаптивности",
+    ];
+    
+    for (let i = 0; i < 44; i++) {
+      const empIndex = i % employeeIds.length;
+      const employee = mockEmployees.find(e => e.id === employeeIds[empIndex]) || mockEmployees[1];
+      const manager = mockManagers[i % mockManagers.length];
+      const status = statuses[i % statuses.length];
+      const type = types[i % types.length];
+      const scenario = scenarios[i % scenarios.length];
+      const titleIndex = i % titles.length;
+      const startDate = new Date(2024, (i % 12), 1 + (i % 28));
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 6 + (i % 6));
+      
+      additionalIDPs.push({
+        id: `idp-emp-${i + 1}`,
+        title: titles[titleIndex],
+        description: `План развития для ${employee.fullName}`,
+        type,
+        scenario,
+        employeeId: employee.id,
+        employeeName: employee.fullName,
+        employeePosition: employee.position,
+        employeeEmail: employee.email,
+        managerId: manager.id,
+        managerName: manager.fullName,
+        startDate,
+        endDate,
+        status,
+        competencyIds: [`comp-${(i % 15) + 1}`, `comp-${((i + 1) % 15) + 1}`],
+        assessmentId: status !== "draft" ? `assess-${(i % 3) + 1}` : undefined,
+        isVisible: true,
+        createdAt: new Date(startDate.getTime() - 7 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(startDate.getTime() + (i % 30) * 24 * 60 * 60 * 1000),
+        goals: [
+          {
+            id: `goal-emp-${i + 1}-1`,
+            competencyId: `comp-${(i % 15) + 1}`,
+            title: `Цель развития ${i + 1}`,
+            description: `Описание цели для ${employee.fullName}`,
+            status: status === "completed" ? "completed" : status === "in-progress" ? "in-progress" : "not-started",
+            targetDate: new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000),
+            completedDate: status === "completed" ? new Date(endDate.getTime() - 15 * 24 * 60 * 60 * 1000) : undefined,
+            actions: [],
+          },
+        ],
+      });
+    }
+    return additionalIDPs;
+  })(),
 ];
 
 // Функции для работы с ИПР (в реальном приложении будут API вызовы)
@@ -368,7 +456,7 @@ export function getIDPs(): IDP[] {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        return parsed.map((idp: any) => ({
+        const storedIDPs = parsed.map((idp: any) => ({
           ...idp,
           startDate: new Date(idp.startDate),
           endDate: new Date(idp.endDate),
@@ -385,6 +473,12 @@ export function getIDPs(): IDP[] {
             })),
           })),
         }));
+        
+        // Объединяем сохраненные ИПР с моковыми, убирая дубликаты по ID
+        // Приоритет у сохраненных данных (они могут быть изменены пользователем)
+        const storedIds = new Set(storedIDPs.map((idp: IDP) => idp.id));
+        const additionalMockIDPs = mockIDPs.filter((idp) => !storedIds.has(idp.id));
+        return [...storedIDPs, ...additionalMockIDPs];
       } catch {
         return mockIDPs;
       }

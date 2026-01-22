@@ -11,8 +11,6 @@ const nextConfig: NextConfig = {
   // Оптимизация производительности
   compress: true,
   poweredByHeader: false,
-  // Оптимизация компиляции
-  swcMinify: true,
   // Экспериментальные оптимизации
   experimental: {
     optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],

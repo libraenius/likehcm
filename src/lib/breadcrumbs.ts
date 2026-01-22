@@ -24,6 +24,7 @@ const pathLabels: Record<string, string> = {
   "/services/assessment-center": "Ассессмент",
   "/services/goals": "Целеполагание",
   "/services/goals-kold": "Целеполагание Стримы",
+  "/services/idp": "ИПР",
   "/services/external-providers": "Внешние поставщики",
   "/services/universities": "Единая платформа по работе с ВУЗами",
   "/services/universities/internship": "Стажировки",
@@ -48,6 +49,7 @@ const segmentLabels: Record<string, string> = {
   "assessment-center": "Ассессмент",
   "goals": "Целеполагание",
   "goals-kold": "Целеполагание Стримы",
+  "idp": "ИПР",
   "external-providers": "Внешние поставщики",
   "universities": "Единая платформа по работе с ВУЗами",
   "internship": "Стажировка",
@@ -125,8 +127,14 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
     
     // Если путь не найден, проверяем специальные случаи
     if (!label) {
+      // Если это ID ИПР (находится после "idp")
+      if (i > 0 && segments[i - 1] === "idp" && segments[i] !== "idp") {
+        // Название будет установлено через customLabel из компонента
+        // Временное название, которое будет заменено через customLabel
+        label = "ИПР";
+      }
       // Если это ID стажировки (начинается с "internship-")
-      if (segments[i].startsWith("internship-") && i > 0 && segments[i - 1] === "internship") {
+      else if (segments[i].startsWith("internship-") && i > 0 && segments[i - 1] === "internship") {
         label = "Детали стажировки";
       } else {
         label = translateSegment(segments[i]);

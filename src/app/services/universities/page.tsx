@@ -12984,7 +12984,7 @@ export default function UniversitiesPage() {
               setNewCuratorForUniversity({ city: "", branch: "", cooperationLines: [] });
             }
           }}>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Добавить филиал</DialogTitle>
                 <DialogDescription>

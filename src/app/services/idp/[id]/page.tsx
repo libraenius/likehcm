@@ -112,10 +112,6 @@ export default function IDPDetailsPage() {
   const [isSendForApprovalDialogOpen, setIsSendForApprovalDialogOpen] = useState(false);
   const [selectedCompetencyForGoal, setSelectedCompetencyForGoal] = useState<string>("");
 
-  const selectedIDP = useMemo(() => {
-    return idps.find(idp => idp.id === idpId) || null;
-  }, [idps, idpId]);
-
   // Состояние для редактирования
   const [editFormData, setEditFormData] = useState({
     title: "",
@@ -132,10 +128,51 @@ export default function IDPDetailsPage() {
     targetDate: "",
   });
 
+  const selectedIDP = useMemo(() => {
+    return idps.find(idp => idp.id === idpId) || null;
+  }, [idps, idpId]);
+
+  // Получаем компетенции для отображения
+  const selectedCompetencies = useMemo(() => {
+    if (!selectedIDP) return [];
+    return mockCompetencies.filter(comp => selectedIDP.competencyIds.includes(comp.id));
+  }, [selectedIDP]);
+
+  // Группируем цели по компетенциям
+  const goalsByCompetency = useMemo(() => {
+    if (!selectedIDP) return {};
+    const grouped: Record<string, { competency: Competency; goals: IDPGoal[] }> = {};
+    
+    selectedIDP.competencyIds.forEach(compId => {
+      const competency = mockCompetencies.find(c => c.id === compId);
+      if (competency) {
+        const goals = selectedIDP.goals.filter(g => g.competencyId === compId);
+        if (goals.length > 0 || selectedIDP.competencyIds.includes(compId)) {
+          grouped[compId] = { competency, goals };
+        }
+      }
+    });
+
+    // Добавляем компетенции без целей
+    selectedIDP.competencyIds.forEach(compId => {
+      if (!grouped[compId]) {
+        const competency = mockCompetencies.find(c => c.id === compId);
+        if (competency) {
+          grouped[compId] = { competency, goals: [] };
+        }
+      }
+    });
+
+    return grouped;
+  }, [selectedIDP]);
+
   // Устанавливаем название ИПР в breadcrumbs
   useEffect(() => {
     if (selectedIDP) {
       setCustomLabel(selectedIDP.title);
+    } else {
+      // Если ИПР еще не загружен, устанавливаем временное название
+      setCustomLabel("Загрузка...");
     }
     return () => {
       setCustomLabel(null);
@@ -167,38 +204,6 @@ export default function IDPDetailsPage() {
       </div>
     );
   }
-
-  // Получаем компетенции для отображения
-  const selectedCompetencies = useMemo(() => {
-    return mockCompetencies.filter(comp => selectedIDP.competencyIds.includes(comp.id));
-  }, [selectedIDP]);
-
-  // Группируем цели по компетенциям
-  const goalsByCompetency = useMemo(() => {
-    const grouped: Record<string, { competency: Competency; goals: IDPGoal[] }> = {};
-    
-    selectedIDP.competencyIds.forEach(compId => {
-      const competency = mockCompetencies.find(c => c.id === compId);
-      if (competency) {
-        const goals = selectedIDP.goals.filter(g => g.competencyId === compId);
-        if (goals.length > 0 || selectedIDP.competencyIds.includes(compId)) {
-          grouped[compId] = { competency, goals };
-        }
-      }
-    });
-
-    // Добавляем компетенции без целей
-    selectedIDP.competencyIds.forEach(compId => {
-      if (!grouped[compId]) {
-        const competency = mockCompetencies.find(c => c.id === compId);
-        if (competency) {
-          grouped[compId] = { competency, goals: [] };
-        }
-      }
-    });
-
-    return grouped;
-  }, [selectedIDP]);
 
   // Открытие диалога редактирования
   const handleOpenEdit = () => {
