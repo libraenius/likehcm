@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { MouseEvent } from "react";
@@ -548,7 +548,222 @@ export default function GoalsKoldPage() {
   const [streamSortOrder, setStreamSortOrder] = useState<"asc" | "desc">("asc");
 
   // Состояние для выбранного типа справочника
-  const [selectedReferenceType, setSelectedReferenceType] = useState<"units" | "formulas" | "streams">("units");
+  const [selectedReferenceType, setSelectedReferenceType] = useState<"units" | "formulas" | "streams" | "timeframes">("units");
+
+  // Состояние для временных рамок
+  type PeriodType = "year" | "halfYear" | "quarter" | "month";
+  interface TimeframePeriod {
+    id: string;
+    name: string;
+    type: PeriodType;
+  }
+  
+  const [timeframePeriods, setTimeframePeriods] = useState<Record<PeriodType, TimeframePeriod[]>>({
+    year: [
+      { id: "year-2025", name: "2025", type: "year" },
+      { id: "year-2026", name: "2026", type: "year" },
+    ],
+    halfYear: [],
+    quarter: [
+      { id: "quarter-1Q2025", name: "1Q2025", type: "quarter" },
+      { id: "quarter-2Q2025", name: "2Q2025", type: "quarter" },
+      { id: "quarter-3Q2025", name: "3Q2025", type: "quarter" },
+      { id: "quarter-4Q2025", name: "4Q2025", type: "quarter" },
+    ],
+    month: [],
+  });
+  
+  const [selectedPeriodType, setSelectedPeriodType] = useState<PeriodType | null>(null);
+  const [expandedPeriodTypes, setExpandedPeriodTypes] = useState<Set<PeriodType>>(new Set(["year", "halfYear", "quarter", "month"]));
+  const [addPeriodDialogOpen, setAddPeriodDialogOpen] = useState(false);
+  const [newPeriodName, setNewPeriodName] = useState("");
+  const [editingPeriod, setEditingPeriod] = useState<{ type: PeriodType; id: string } | null>(null);
+  const [selectedTimeframePeriod, setSelectedTimeframePeriod] = useState<TimeframePeriod | null>(null);
+  const [timeframeDetailTab, setTimeframeDetailTab] = useState<"kpi-registry" | "performance-cards" | "pfk-table">("kpi-registry");
+  
+  // Состояние для коллапсируемых элементов карт результативности
+  const [expandedPerformanceCards, setExpandedPerformanceCards] = useState<Set<string>>(new Set());
+  const [performanceCardSubTab, setPerformanceCardSubTab] = useState<"cascading" | "high-level">("cascading");
+  
+  const togglePerformanceCard = (role: string) => {
+    setExpandedPerformanceCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(role)) {
+        newSet.delete(role);
+      } else {
+        newSet.add(role);
+      }
+      return newSet;
+    });
+  };
+  
+  const performanceCardRoles = [
+    { id: "tsor-participant", label: "Участник ЦОР" },
+    { id: "manager", label: "Руководитель" },
+    { id: "gts-manager", label: "Руководитель ГЦ" },
+    { id: "coordinator", label: "Координатор" },
+    { id: "domrr-methodologist", label: "Методолог ДОМРР" },
+    { id: "drp-methodologist", label: "Методолог ДРП" },
+  ];
+
+  // Состояние для дат действий
+  const [performanceCardActionDates, setPerformanceCardActionDates] = useState<Record<string, Record<string, {
+    blueBadgeStart: string;
+    blueBadgeEnd: string;
+    redBadgeStart: string;
+    redBadgeEnd: string;
+  }>>>({
+    manager: {
+      "action-1": { 
+        blueBadgeStart: "01.01.2025", 
+        blueBadgeEnd: "15.01.2025", 
+        redBadgeStart: "16.01.2025", 
+        redBadgeEnd: "31.01.2025" 
+      },
+      "action-2": { 
+        blueBadgeStart: "01.02.2025", 
+        blueBadgeEnd: "14.02.2025", 
+        redBadgeStart: "15.02.2025", 
+        redBadgeEnd: "28.02.2025" 
+      },
+      "action-3": { 
+        blueBadgeStart: "01.03.2025", 
+        blueBadgeEnd: "15.03.2025", 
+        redBadgeStart: "16.03.2025", 
+        redBadgeEnd: "31.03.2025" 
+      },
+    },
+  });
+
+  // Данные действий для ролей
+  const performanceCardActions: Record<string, Array<{
+    id: string;
+    action: string;
+  }>> = {
+    manager: [
+      {
+        id: "action-1",
+        action: "Необходимо создать КР для сотрудников прямого подчинения и отправить на акцептование",
+      },
+      {
+        id: "action-2",
+        action: "Необходимо оценить ЗРД сотрудников прямого подчинения",
+      },
+      {
+        id: "action-3",
+        action: "Необходимо утвердить оценку сотрудников прямого подчинения",
+      },
+    ],
+  };
+
+  // Функция для форматирования даты в дд.мм.гггг
+  const formatDateInput = (value: string): string => {
+    // Удаляем все кроме цифр
+    const digits = value.replace(/\D/g, '');
+    
+    if (digits.length === 0) return '';
+    
+    // Форматируем как дд.мм.гггг
+    if (digits.length <= 2) {
+      return digits;
+    } else if (digits.length <= 4) {
+      return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+    } else {
+      return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4, 8)}`;
+    }
+  };
+
+  // Обработчик изменения даты
+  const handleDateChange = (roleId: string, actionId: string, field: "blueBadgeStart" | "blueBadgeEnd" | "redBadgeStart" | "redBadgeEnd", value: string) => {
+    const formatted = formatDateInput(value);
+    setPerformanceCardActionDates(prev => ({
+      ...prev,
+      [roleId]: {
+        ...prev[roleId],
+        [actionId]: {
+          ...prev[roleId]?.[actionId],
+          [field]: formatted,
+        },
+      },
+    }));
+  };
+
+  // Функции для работы с периодами
+  const handleAddPeriod = (type: PeriodType) => {
+    setSelectedPeriodType(type);
+    setNewPeriodName("");
+    setEditingPeriod(null);
+    setAddPeriodDialogOpen(true);
+  };
+
+  const handleSavePeriod = () => {
+    if (!newPeriodName.trim() || !selectedPeriodType) return;
+    
+    if (editingPeriod) {
+      // Редактирование существующего периода
+      setTimeframePeriods(prev => ({
+        ...prev,
+        [editingPeriod.type]: prev[editingPeriod.type].map(p =>
+          p.id === editingPeriod.id ? { ...p, name: newPeriodName.trim() } : p
+        ),
+      }));
+    } else {
+      // Добавление нового периода
+      const newPeriod: TimeframePeriod = {
+        id: `period-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        name: newPeriodName.trim(),
+        type: selectedPeriodType,
+      };
+      setTimeframePeriods(prev => ({
+        ...prev,
+        [selectedPeriodType]: [...prev[selectedPeriodType], newPeriod],
+      }));
+    }
+    
+    setAddPeriodDialogOpen(false);
+    setNewPeriodName("");
+    setSelectedPeriodType(null);
+    setEditingPeriod(null);
+  };
+
+  const handleEditPeriod = (type: PeriodType, period: TimeframePeriod) => {
+    setSelectedPeriodType(type);
+    setNewPeriodName(period.name);
+    setEditingPeriod({ type, id: period.id });
+    setAddPeriodDialogOpen(true);
+  };
+
+  const handleDeletePeriod = (type: PeriodType, id: string) => {
+    setTimeframePeriods(prev => ({
+      ...prev,
+      [type]: prev[type].filter(p => p.id !== id),
+    }));
+    // Сбрасываем выбор, если удаляется выбранный период
+    if (selectedTimeframePeriod?.id === id) {
+      setSelectedTimeframePeriod(null);
+    }
+  };
+
+  const togglePeriodType = (type: PeriodType) => {
+    setExpandedPeriodTypes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(type)) {
+        newSet.delete(type);
+      } else {
+        newSet.add(type);
+      }
+      return newSet;
+    });
+  };
+
+  const getPeriodTypeLabel = (type: PeriodType): string => {
+    switch (type) {
+      case "year": return "Год";
+      case "halfYear": return "Полугодие";
+      case "quarter": return "Квартал";
+      case "month": return "Месяц";
+    }
+  };
 
   // Сброс страницы при изменении поиска или количества элементов
   useEffect(() => {
@@ -2953,7 +3168,7 @@ export default function GoalsKoldPage() {
           {/* Выпадающий список для выбора типа справочника */}
           <div className="flex items-center gap-4">
             <Label className="text-sm font-medium whitespace-nowrap">Тип справочника:</Label>
-            <Select value={selectedReferenceType} onValueChange={(value) => setSelectedReferenceType(value as "units" | "formulas" | "streams")}>
+            <Select value={selectedReferenceType} onValueChange={(value) => setSelectedReferenceType(value as "units" | "formulas" | "streams" | "timeframes")}>
               <SelectTrigger className="w-[280px] h-11 border-2 border-border bg-background shadow-sm hover:border-primary/50 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20">
                 <SelectValue placeholder="Выберите тип справочника" />
               </SelectTrigger>
@@ -2961,6 +3176,7 @@ export default function GoalsKoldPage() {
                 <SelectItem value="units">Единицы измерения</SelectItem>
                 <SelectItem value="formulas">Формулы</SelectItem>
                 <SelectItem value="streams">Стримы</SelectItem>
+                <SelectItem value="timeframes">Временные рамки</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -3942,6 +4158,516 @@ export default function GoalsKoldPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {selectedReferenceType === "timeframes" && (
+            <div className="flex gap-4 min-h-[calc(100vh-280px)] w-full overflow-x-hidden">
+              {/* Левая колонка - Периоды */}
+              <div className="w-[20rem] flex-shrink-0 flex flex-col border rounded-lg overflow-hidden bg-card h-[calc(100vh-280px)]">
+                <div className="p-2 border-b bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-semibold text-sm">Периоды</h3>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <div className="space-y-1 p-2">
+                    {(["year", "halfYear", "quarter", "month"] as PeriodType[]).map((type) => {
+                      const periods = timeframePeriods[type];
+                      const isExpanded = expandedPeriodTypes.has(type);
+                      
+                      return (
+                        <div key={type} className="space-y-1">
+                          {/* Заголовок типа периода */}
+                          <div
+                            className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                            onClick={() => togglePeriodType(type)}
+                          >
+                            <div className="flex items-center gap-2 flex-1">
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              )}
+                              <span className="font-medium text-sm">{getPeriodTypeLabel(type)}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {periods.length}
+                              </Badge>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddPeriod(type);
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* Список периодов */}
+                          {isExpanded && (
+                            <div className="ml-6 space-y-1">
+                              {periods.length === 0 ? (
+                                <div className="text-xs text-muted-foreground p-2">
+                                  Нет периодов
+                                </div>
+                              ) : (
+                                periods.map((period) => (
+                                  <div
+                                    key={period.id}
+                                    className={cn(
+                                      "flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors group",
+                                      selectedTimeframePeriod?.id === period.id
+                                        ? "bg-accent text-accent-foreground"
+                                        : "hover:bg-muted/50"
+                                    )}
+                                    onClick={() => setSelectedTimeframePeriod(period)}
+                                  >
+                                    <span className="text-sm text-foreground">{period.name}</span>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditPeriod(type, period);
+                                        }}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-destructive hover:text-destructive"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeletePeriod(type, period.id);
+                                        }}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Правая колонка - детальная информация */}
+              <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-[calc(100vh-280px)]">
+                {selectedTimeframePeriod ? (
+                  <Card className="w-full max-w-full overflow-hidden">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-xl mb-1 break-words">{selectedTimeframePeriod.name}</CardTitle>
+                            <CardDescription className="text-base break-words">
+                              Период: {getPeriodTypeLabel(selectedTimeframePeriod.type)}
+                            </CardDescription>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEditPeriod(selectedTimeframePeriod.type, selectedTimeframePeriod)}
+                            title="Редактировать период"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeletePeriod(selectedTimeframePeriod.type, selectedTimeframePeriod.id)}
+                            title="Удалить период"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="overflow-x-hidden">
+                      <Tabs value={timeframeDetailTab} onValueChange={(v) => setTimeframeDetailTab(v as typeof timeframeDetailTab)} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="kpi-registry">Реестр КПЭ</TabsTrigger>
+                          <TabsTrigger value="performance-cards">Карты результативности</TabsTrigger>
+                          <TabsTrigger value="pfk-table">Таблица ПФК</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="kpi-registry" className="space-y-4 mt-4">
+                          <div className="space-y-4">
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                  <FileText className="h-5 w-5" />
+                                  Реестр КПЭ
+                                </CardTitle>
+                                <CardDescription>
+                                  Реестр ключевых показателей эффективности для периода {selectedTimeframePeriod.name}
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-muted-foreground">
+                                  Раздел находится в разработке. Здесь будет отображаться реестр ключевых показателей эффективности для выбранного периода.
+                                </p>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="performance-cards" className="space-y-4 mt-4">
+                          <Tabs 
+                            value={performanceCardSubTab} 
+                            onValueChange={(v) => setPerformanceCardSubTab(v as "cascading" | "high-level")}
+                            className="w-full"
+                          >
+                            <TabsList className="grid w-full grid-cols-2">
+                              <TabsTrigger value="cascading">Каскадируемые карты</TabsTrigger>
+                              <TabsTrigger value="high-level">Верхнеуровневые карты</TabsTrigger>
+                            </TabsList>
+                            
+                            <TabsContent value="cascading" className="space-y-3 mt-4">
+                              {performanceCardRoles
+                                .filter(role => role.id !== "domrr-methodologist" && role.id !== "drp-methodologist" && role.id !== "gts-manager")
+                                .map((role) => {
+                                  const isExpanded = expandedPerformanceCards.has(role.id);
+                                  return (
+                                    <Card key={role.id} className="overflow-hidden">
+                                      <div
+                                        className="cursor-pointer"
+                                        onClick={() => togglePerformanceCard(role.id)}
+                                      >
+                                        <CardHeader className="pb-3">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              {isExpanded ? (
+                                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                              ) : (
+                                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                              )}
+                                              <CardTitle className="text-base font-semibold">
+                                                {role.label}
+                                              </CardTitle>
+                                            </div>
+                                          </div>
+                                        </CardHeader>
+                                      </div>
+                                      {isExpanded && (
+                                        <CardContent className="pt-0">
+                                          <div className="pl-6 space-y-4">
+                                            <Table>
+                                              <TableHeader>
+                                                <TableRow>
+                                                  <TableHead rowSpan={2}>Действие</TableHead>
+                                                  <TableHead colSpan={2}>Период отображения синего баджа</TableHead>
+                                                  <TableHead colSpan={2}>Период отображения красного баджа</TableHead>
+                                                </TableRow>
+                                                <TableRow>
+                                                  <TableHead>Дата начала</TableHead>
+                                                  <TableHead>Дата окончания</TableHead>
+                                                  <TableHead>Дата начала</TableHead>
+                                                  <TableHead>Дата окончания</TableHead>
+                                                </TableRow>
+                                              </TableHeader>
+                                              <TableBody>
+                                                {performanceCardActions[role.id] && performanceCardActions[role.id].length > 0 ? (
+                                                  performanceCardActions[role.id].map((action) => {
+                                                    const dates = performanceCardActionDates[role.id]?.[action.id] || {
+                                                      blueBadgeStart: "",
+                                                      blueBadgeEnd: "",
+                                                      redBadgeStart: "",
+                                                      redBadgeEnd: "",
+                                                    };
+                                                    return (
+                                                      <TableRow key={action.id}>
+                                                        <TableCell className="min-w-[300px]">{action.action}</TableCell>
+                                                        <TableCell>
+                                                          <Input
+                                                            type="text"
+                                                            placeholder="дд.мм.гггг"
+                                                            value={dates.blueBadgeStart}
+                                                            onChange={(e) => handleDateChange(role.id, action.id, "blueBadgeStart", e.target.value)}
+                                                            maxLength={10}
+                                                            className="w-full"
+                                                          />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <Input
+                                                            type="text"
+                                                            placeholder="дд.мм.гггг"
+                                                            value={dates.blueBadgeEnd}
+                                                            onChange={(e) => handleDateChange(role.id, action.id, "blueBadgeEnd", e.target.value)}
+                                                            maxLength={10}
+                                                            className="w-full"
+                                                          />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <Input
+                                                            type="text"
+                                                            placeholder="дд.мм.гггг"
+                                                            value={dates.redBadgeStart}
+                                                            onChange={(e) => handleDateChange(role.id, action.id, "redBadgeStart", e.target.value)}
+                                                            maxLength={10}
+                                                            className="w-full"
+                                                          />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <Input
+                                                            type="text"
+                                                            placeholder="дд.мм.гггг"
+                                                            value={dates.redBadgeEnd}
+                                                            onChange={(e) => handleDateChange(role.id, action.id, "redBadgeEnd", e.target.value)}
+                                                            maxLength={10}
+                                                            className="w-full"
+                                                          />
+                                                        </TableCell>
+                                                      </TableRow>
+                                                    );
+                                                  })
+                                                ) : (
+                                                  <TableRow>
+                                                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                                                      Нет данных
+                                                    </TableCell>
+                                                  </TableRow>
+                                                )}
+                                              </TableBody>
+                                            </Table>
+                                        </div>
+                                      </CardContent>
+                                    )}
+                                  </Card>
+                                );
+                              })}
+                            </TabsContent>
+                            
+                            <TabsContent value="high-level" className="space-y-3 mt-4">
+                              {performanceCardRoles.map((role) => {
+                                const isExpanded = expandedPerformanceCards.has(role.id);
+                                return (
+                                  <Card key={role.id} className="overflow-hidden">
+                                    <div
+                                      className="cursor-pointer"
+                                      onClick={() => togglePerformanceCard(role.id)}
+                                    >
+                                      <CardHeader className="pb-3">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            {isExpanded ? (
+                                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                            ) : (
+                                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                            )}
+                                            <CardTitle className="text-base font-semibold">
+                                              {role.label}
+                                            </CardTitle>
+                                          </div>
+                                        </div>
+                                      </CardHeader>
+                                    </div>
+                                    {isExpanded && (
+                                      <CardContent className="pt-0">
+                                        <div className="pl-6 space-y-4">
+                                            <Table>
+                                              <TableHeader>
+                                                <TableRow>
+                                                  <TableHead rowSpan={2}>Действие</TableHead>
+                                                  <TableHead colSpan={2}>Период отображения синего баджа</TableHead>
+                                                  <TableHead colSpan={2}>Период отображения красного баджа</TableHead>
+                                                </TableRow>
+                                                <TableRow>
+                                                  <TableHead>Дата начала</TableHead>
+                                                  <TableHead>Дата окончания</TableHead>
+                                                  <TableHead>Дата начала</TableHead>
+                                                  <TableHead>Дата окончания</TableHead>
+                                                </TableRow>
+                                              </TableHeader>
+                                              <TableBody>
+                                                {performanceCardActions[role.id] && performanceCardActions[role.id].length > 0 ? (
+                                                  performanceCardActions[role.id].map((action) => {
+                                                    const dates = performanceCardActionDates[role.id]?.[action.id] || {
+                                                      blueBadgeStart: "",
+                                                      blueBadgeEnd: "",
+                                                      redBadgeStart: "",
+                                                      redBadgeEnd: "",
+                                                    };
+                                                    return (
+                                                      <TableRow key={action.id}>
+                                                        <TableCell className="min-w-[300px]">{action.action}</TableCell>
+                                                        <TableCell>
+                                                          <Input
+                                                            type="text"
+                                                            placeholder="дд.мм.гггг"
+                                                            value={dates.blueBadgeStart}
+                                                            onChange={(e) => handleDateChange(role.id, action.id, "blueBadgeStart", e.target.value)}
+                                                            maxLength={10}
+                                                            className="w-full"
+                                                          />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <Input
+                                                            type="text"
+                                                            placeholder="дд.мм.гггг"
+                                                            value={dates.blueBadgeEnd}
+                                                            onChange={(e) => handleDateChange(role.id, action.id, "blueBadgeEnd", e.target.value)}
+                                                            maxLength={10}
+                                                            className="w-full"
+                                                          />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <Input
+                                                            type="text"
+                                                            placeholder="дд.мм.гггг"
+                                                            value={dates.redBadgeStart}
+                                                            onChange={(e) => handleDateChange(role.id, action.id, "redBadgeStart", e.target.value)}
+                                                            maxLength={10}
+                                                            className="w-full"
+                                                          />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <Input
+                                                            type="text"
+                                                            placeholder="дд.мм.гггг"
+                                                            value={dates.redBadgeEnd}
+                                                            onChange={(e) => handleDateChange(role.id, action.id, "redBadgeEnd", e.target.value)}
+                                                            maxLength={10}
+                                                            className="w-full"
+                                                          />
+                                                        </TableCell>
+                                                      </TableRow>
+                                                    );
+                                                  })
+                                                ) : (
+                                                  <TableRow>
+                                                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                                                      Нет данных
+                                                    </TableCell>
+                                                  </TableRow>
+                                                )}
+                                              </TableBody>
+                                            </Table>
+                                        </div>
+                                      </CardContent>
+                                    )}
+                                  </Card>
+                                );
+                              })}
+                            </TabsContent>
+                          </Tabs>
+                        </TabsContent>
+
+                        <TabsContent value="pfk-table" className="space-y-4 mt-4">
+                          <div className="space-y-4">
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                  <TableIcon className="h-5 w-5" />
+                                  Таблица ПФК
+                                </CardTitle>
+                                <CardDescription>
+                                  Таблица плановых фактических критических значений для периода {selectedTimeframePeriod.name}
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-muted-foreground">
+                                  Раздел находится в разработке. Здесь будет отображаться таблица плановых фактических критических значений для выбранного периода.
+                                </p>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="w-full max-w-full overflow-hidden">
+                    <CardHeader>
+                      <CardTitle>Детальная информация</CardTitle>
+                      <CardDescription>
+                        Выберите период для просмотра детальной информации
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground text-center py-8">
+                        Выберите период из списка слева для просмотра детальной информации
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Диалог добавления/редактирования периода */}
+              <Dialog open={addPeriodDialogOpen} onOpenChange={(open) => {
+                setAddPeriodDialogOpen(open);
+                if (!open) {
+                  setNewPeriodName("");
+                  setSelectedPeriodType(null);
+                  setEditingPeriod(null);
+                }
+              }}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingPeriod ? "Редактировать период" : "Добавить период"}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {selectedPeriodType && `Тип периода: ${getPeriodTypeLabel(selectedPeriodType)}`}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="period-name">
+                        Название периода <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="period-name"
+                        value={newPeriodName}
+                        onChange={(e) => setNewPeriodName(e.target.value)}
+                        placeholder={
+                          selectedPeriodType === "year" ? "Например: 2025" :
+                          selectedPeriodType === "halfYear" ? "Например: 1H2025" :
+                          selectedPeriodType === "quarter" ? "Например: 1Q2025" :
+                          selectedPeriodType === "month" ? "Например: 1M2025" :
+                          "Введите название периода"
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleSavePeriod();
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {selectedPeriodType === "year" && "Введите год, например: 2025, 2026, 2027"}
+                        {selectedPeriodType === "halfYear" && "Введите полугодие, например: 1H2025, 2H2025"}
+                        {selectedPeriodType === "quarter" && "Введите квартал, например: 1Q2025, 2Q2025, 3Q2025, 4Q2025"}
+                        {selectedPeriodType === "month" && "Введите месяц, например: 1M2025, 2M2025"}
+                      </p>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setAddPeriodDialogOpen(false)}>
+                      Отмена
+                    </Button>
+                    <Button onClick={handleSavePeriod} disabled={!newPeriodName.trim()}>
+                      {editingPeriod ? "Сохранить" : "Добавить"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="dashboard" className="mt-4 space-y-6">
