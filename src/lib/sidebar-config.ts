@@ -17,6 +17,7 @@ import {
   Settings,
   Users,
   GraduationCap,
+  NotebookPen,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -84,6 +85,11 @@ export const menuSections: MenuSection[] = [
         title: "Оценка внешние провайдеры",
         href: "/services/external-providers",
         icon: Building2,
+      },
+      {
+        title: "ИПР",
+        href: "/services/idp",
+        icon: NotebookPen,
       },
       {
         title: "Преемники",
