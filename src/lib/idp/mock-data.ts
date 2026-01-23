@@ -368,7 +368,7 @@ export const mockIDPs: IDP[] = [
       },
     ],
   },
-  // Генерация 44 ИПР для сотрудников (не emp-1)
+  // Генерация 45 ИПР для сотрудников (не emp-1)
   ...(() => {
     const additionalIDPs: IDP[] = [];
     const statuses: IDP["status"][] = ["draft", "in-progress", "pending-approval", "completed", "cancelled"];
@@ -398,7 +398,7 @@ export const mockIDPs: IDP[] = [
       "Улучшение навыков адаптивности",
     ];
     
-    for (let i = 0; i < 44; i++) {
+    for (let i = 0; i < 45; i++) {
       const empIndex = i % employeeIds.length;
       const employee = mockEmployees.find(e => e.id === employeeIds[empIndex]) || mockEmployees[1];
       const manager = mockManagers[i % mockManagers.length];
