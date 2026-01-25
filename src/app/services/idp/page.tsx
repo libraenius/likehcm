@@ -840,30 +840,37 @@ export default function IDPPage() {
   }, [employeesIDPs, employeesSearchQuery, employeesFilters]);
 
   return (
-    <div className="space-y-6">
+    <div className="idp-ritm space-y-6">
       <Tabs defaultValue="my-idp" className="w-full">
         <TabsList variant="grid3">
           <TabsTrigger value="my-idp">
-            Мои ИПР
+            <NotebookPen className="h-4 w-4" />
+            <span>Мои ИПР</span>
           </TabsTrigger>
           <TabsTrigger value="employees-idp">
-            ИПР сотрудников
+            <Users className="h-4 w-4" />
+            <span>ИПР сотрудников</span>
           </TabsTrigger>
           <TabsTrigger value="administration">
-            Администрирование
+            <Settings className="h-4 w-4" />
+            <span>Администрирование</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="my-idp" className="mt-4 space-y-6">
-          <div className="bg-muted/50 rounded-lg p-4 mb-4 border">
+          <div className="idp-ritm-soft-panel p-4 mb-4">
             <p className="text-sm font-medium text-foreground">
               Здесь вы можете просматривать и управлять своими индивидуальными планами развития. Создавайте новые ИПР, отслеживайте прогресс по целям, редактируйте планы в статусе "Черновик" или "На согласовании".
             </p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
-            <Button onClick={() => handleCreate(true)} size="lg" className="w-full sm:w-auto">
+            <Button
+              onClick={() => handleCreate(true)}
+              size="lg"
+              className="w-full sm:w-auto rounded-full px-5 shadow-sm idp-ritm-create-btn"
+            >
               <Plus className="mr-2 h-4 w-4" />
-              Создать ИПР
+              Создать
             </Button>
           </div>
 
@@ -876,9 +883,9 @@ export default function IDPPage() {
                   <p className="text-muted-foreground mb-4">
                     Создайте свой первый ИПР, чтобы начать планировать развитие
                   </p>
-                  <Button onClick={() => handleCreate(true)} size="lg">
+                  <Button onClick={() => handleCreate(true)} size="lg" className="idp-ritm-create-btn">
                     <Plus className="mr-2 h-4 w-4" />
-                    Создать ИПР
+                    Создать
                   </Button>
                 </div>
               </CardContent>
@@ -1011,7 +1018,7 @@ export default function IDPPage() {
         </TabsContent>
 
         <TabsContent value="employees-idp" className="mt-4 space-y-4">
-          <div className="bg-muted/50 rounded-lg p-4 mb-4 border">
+          <div className="idp-ritm-soft-panel p-4 mb-4">
             <p className="text-sm font-medium text-foreground">
               Здесь вы можете просматривать и управлять индивидуальными планами развития сотрудников. Используйте поиск и фильтры для быстрого нахождения нужных ИПР. Кликните на ФИО сотрудника для просмотра деталей ИПР.
             </p>
@@ -1028,8 +1035,8 @@ export default function IDPPage() {
                     <Badge
                       variant="outline"
                       className={cn(
-                        "!bg-blue-500 !text-white !border-blue-500 hover:!bg-blue-600 cursor-pointer",
-                        employeesFilters.types.includes("competency") && "ring-2 ring-blue-600"
+                        "idp-ritm-badge idp-ritm-badge--blue cursor-pointer",
+                        employeesFilters.types.includes("competency") && "ring-2 ring-primary/30"
                       )}
                       onClick={() => {
                         if (employeesFilters.types.includes("competency")) {
@@ -1054,8 +1061,8 @@ export default function IDPPage() {
                     <Badge
                       variant="outline"
                       className={cn(
-                        "!bg-purple-500 !text-white !border-purple-500 hover:!bg-purple-600 cursor-pointer",
-                        employeesFilters.types.includes("career") && "ring-2 ring-purple-600"
+                        "idp-ritm-badge idp-ritm-badge--violet cursor-pointer",
+                        employeesFilters.types.includes("career") && "ring-2 ring-primary/30"
                       )}
                       onClick={() => {
                         if (employeesFilters.types.includes("career")) {
@@ -1080,8 +1087,8 @@ export default function IDPPage() {
                     <Badge
                       variant="outline"
                       className={cn(
-                        "!bg-green-500 !text-white !border-green-500 hover:!bg-green-600 cursor-pointer",
-                        employeesFilters.types.includes("adaptation") && "ring-2 ring-green-600"
+                        "idp-ritm-badge idp-ritm-badge--emerald cursor-pointer",
+                        employeesFilters.types.includes("adaptation") && "ring-2 ring-primary/30"
                       )}
                       onClick={() => {
                         if (employeesFilters.types.includes("adaptation")) {
@@ -1107,8 +1114,8 @@ export default function IDPPage() {
                       <Badge
                         variant="outline"
                         className={cn(
-                          "!bg-orange-500 !text-white !border-orange-500 hover:!bg-orange-600 cursor-pointer",
-                          employeesFilters.types.includes("assessment") && "ring-2 ring-orange-600"
+                          "idp-ritm-badge idp-ritm-badge--amber cursor-pointer",
+                          employeesFilters.types.includes("assessment") && "ring-2 ring-primary/30"
                         )}
                         onClick={() => {
                           if (employeesFilters.types.includes("assessment")) {
@@ -1446,9 +1453,9 @@ export default function IDPPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Button onClick={() => handleCreate(false)} size="lg">
+            <Button onClick={() => handleCreate(false)} size="lg" className="idp-ritm-create-btn rounded-full px-5 shadow-sm">
               <Plus className="mr-2 h-4 w-4" />
-              Создать ИПР
+              Создать
             </Button>
           </div>
 
@@ -1529,9 +1536,9 @@ export default function IDPPage() {
                       : "Создайте первый ИПР для сотрудника"}
                   </p>
                   {!employeesSearchQuery && employeesFilters.statuses.length === 0 && employeesFilters.types.length === 0 && employeesFilters.scenarios.length === 0 && (
-                    <Button onClick={() => handleCreate(false)} size="lg">
+                    <Button onClick={() => handleCreate(false)} size="lg" className="idp-ritm-create-btn">
                       <Plus className="mr-2 h-4 w-4" />
-                      Создать ИПР
+                      Создать
                     </Button>
                   )}
                 </div>
@@ -1742,9 +1749,9 @@ export default function IDPPage() {
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-2">Администрирование</h2>
             </div>
-            <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto">
+            <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto rounded-full px-5 shadow-sm idp-ritm-create-btn">
               <Plus className="mr-2 h-4 w-4" />
-              Создать ИПР
+              Создать
             </Button>
           </div>
 
@@ -1979,15 +1986,15 @@ export default function IDPPage() {
                 </p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2 text-xs">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600/80 mt-0.5 shrink-0" />
                     <span>Выбор типа ИПР, компетенций и связи с оценкой</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600/80 mt-0.5 shrink-0" />
                     <span>Настройка периода, руководителя и видимости</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600/80 mt-0.5 shrink-0" />
                     <span>Максимальная гибкость в настройке</span>
                   </div>
                 </div>
@@ -2014,15 +2021,15 @@ export default function IDPPage() {
                 </p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2 text-xs">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600/80 mt-0.5 shrink-0" />
                     <span>Автоматическое заполнение на основе встречи</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600/80 mt-0.5 shrink-0" />
                     <span>Связь с результатами оценки и обратной связи</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600/80 mt-0.5 shrink-0" />
                     <span>Быстрое создание после встречи</span>
                   </div>
                 </div>
@@ -2104,7 +2111,7 @@ export default function IDPPage() {
                           "flex items-center gap-2 px-3 py-2 rounded-lg transition-all w-full justify-center",
                           "hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed",
                           isCurrent && "bg-primary/10 ring-2 ring-primary shadow-sm",
-                          isCompleted && "bg-green-50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-950/30",
+                          isCompleted && "bg-emerald-500/10 hover:bg-emerald-500/15 dark:bg-emerald-950/15 dark:hover:bg-emerald-950/25",
                           !isCurrent && !isCompleted && isAccessible && "hover:bg-muted"
                         )}
                       >
@@ -2112,7 +2119,7 @@ export default function IDPPage() {
                           className={cn(
                             "flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold transition-colors flex-shrink-0",
                             isCompleted
-                              ? "bg-green-500 text-white"
+                              ? "bg-emerald-600 text-white"
                               : isCurrent
                               ? "bg-primary text-primary-foreground"
                               : "bg-muted text-muted-foreground"
@@ -2129,7 +2136,7 @@ export default function IDPPage() {
                             className={cn(
                               "text-base font-medium truncate",
                               isCurrent && "text-primary font-semibold",
-                              isCompleted && "text-green-700 dark:text-green-300",
+                              isCompleted && "text-emerald-700 dark:text-emerald-300",
                               !isCurrent && !isCompleted && "text-muted-foreground"
                             )}
                             title={step.title}
@@ -2676,7 +2683,7 @@ export default function IDPPage() {
                                 ? avgLevel.toFixed(1)
                                 : "не оценивались",
                               badgeClassName: avgLevel !== null
-                                ? "bg-blue-50 text-blue-700 border-blue-300"
+                                ? "bg-primary/10 text-primary border-primary/20"
                                 : "bg-gray-50 text-gray-600 border-gray-300",
                             };
                           })}
@@ -2733,7 +2740,7 @@ export default function IDPPage() {
                                   {avgLevel !== null ? (
                                     <Badge 
                                       variant="outline" 
-                                      className="bg-blue-50 text-blue-700 border-blue-300 text-xs"
+                                      className="bg-primary/10 text-primary border-primary/20 text-xs"
                                     >
                                       {avgLevel.toFixed(1)}
                                     </Badge>
@@ -2775,9 +2782,9 @@ export default function IDPPage() {
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   ) : (
-                    <Button onClick={handleSaveIDP} size="sm">
+                    <Button onClick={handleSaveIDP} size="sm" className="idp-ritm-create-btn">
                       <CheckCircle2 className="h-4 w-4 mr-1" />
-                      Создать ИПР
+                      Создать
                     </Button>
                   )}
                 </div>
@@ -3045,13 +3052,13 @@ export default function IDPPage() {
             {helpContent?.tips && helpContent.tips.length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600/80" />
                   Советы по заполнению:
                 </Label>
                 <ul className="space-y-2">
                   {helpContent.tips.map((tip, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
-                      <span className="text-green-600 mt-1">✓</span>
+                      <span className="text-emerald-600/80 mt-1">✓</span>
                       <span>{tip}</span>
                     </li>
                   ))}
@@ -3063,13 +3070,13 @@ export default function IDPPage() {
             {helpContent?.commonMistakes && helpContent.commonMistakes.length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertCircle className="h-4 w-4 text-amber-700/80" />
                   Частые ошибки:
                 </Label>
                 <ul className="space-y-2">
                   {helpContent.commonMistakes.map((mistake, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
-                      <span className="text-amber-600 mt-1">⚠</span>
+                      <span className="text-amber-700/80 mt-1">⚠</span>
                       <span>{mistake}</span>
                     </li>
                   ))}
@@ -3079,12 +3086,12 @@ export default function IDPPage() {
 
             {/* Дополнительная информация */}
             {helpContent?.additionalInfo && (
-              <div className="space-y-2 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <Label className="text-sm font-semibold flex items-center gap-2 text-blue-900 dark:text-blue-100">
+              <div className="idp-ritm-info-panel space-y-2 p-4">
+                <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
                   <Info className="h-4 w-4" />
                   Дополнительная информация:
                 </Label>
-                <p className="text-sm text-blue-800 dark:text-blue-200">
+                <p className="text-sm text-muted-foreground">
                   {helpContent.additionalInfo}
                 </p>
               </div>

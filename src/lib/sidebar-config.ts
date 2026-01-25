@@ -87,7 +87,7 @@ export const menuSections: MenuSection[] = [
         icon: Building2,
       },
       {
-        title: "ИПР",
+        title: "ИПР и 1-on-1",
         href: "/services/idp",
         icon: NotebookPen,
       },

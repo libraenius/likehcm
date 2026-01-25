@@ -77,6 +77,9 @@
   --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: oklch(0.90 0.01 250);
   --sidebar-ring: oklch(0.45 0.10 250);
+
+  /* RITM brand */
+  --ritm-blue: #2f6bff;
 }
 
 .dark {
@@ -152,5 +155,75 @@
   
   .gradient-card-unlocked {
     background: linear-gradient(135deg, oklch(0.98 0.02 250) 0%, oklch(0.96 0.03 250) 100%);
+  }
+
+  /* RITM-like стиль (как на скрине) — локально для страницы ИПР */
+  .idp-ritm {
+    background:
+      radial-gradient(900px 420px at 18% 8%, oklch(0.92 0.05 250 / 0.55), transparent 60%),
+      radial-gradient(900px 420px at 82% 12%, oklch(0.95 0.03 265 / 0.6), transparent 55%),
+      linear-gradient(180deg, oklch(0.98 0.01 250) 0%, oklch(0.985 0.01 250) 60%, oklch(0.99 0 0) 100%);
+    border-radius: 1.25rem;
+    border: 1px solid oklch(0.90 0.01 250 / 0.9);
+    padding: 1.25rem;
+  }
+
+  .idp-ritm [data-slot="tabs-list"] {
+    @apply rounded-full bg-white/70 backdrop-blur-md border border-white/50 shadow-sm h-12 p-1;
+  }
+
+  .idp-ritm [data-slot="tabs-trigger"] {
+    @apply rounded-full px-4 py-2 text-sm font-medium text-foreground/70;
+  }
+
+  .idp-ritm [data-slot="tabs-trigger"][data-state="inactive"] {
+    @apply hover:bg-white/60 hover:text-foreground;
+  }
+
+  .idp-ritm [data-slot="tabs-trigger"][data-state="active"] {
+    @apply bg-white text-foreground shadow-sm border border-white/60;
+  }
+
+  .idp-ritm [data-slot="card"] {
+    @apply rounded-2xl border border-white/50 bg-white/70 backdrop-blur-md shadow-sm;
+  }
+
+  .idp-ritm .idp-ritm-soft-panel {
+    @apply rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md shadow-sm;
+  }
+
+  .idp-ritm .idp-ritm-badge {
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors;
+  }
+
+  /* Мягкая палитра "РИТМ" */
+  .idp-ritm .idp-ritm-badge--blue {
+    @apply bg-primary/10 text-primary border-primary/20 hover:bg-primary/15;
+  }
+  .idp-ritm .idp-ritm-badge--violet {
+    @apply bg-violet-500/10 text-violet-700 border-violet-500/20 hover:bg-violet-500/15 dark:text-violet-300;
+  }
+  .idp-ritm .idp-ritm-badge--emerald {
+    @apply bg-emerald-500/10 text-emerald-700 border-emerald-500/20 hover:bg-emerald-500/15 dark:text-emerald-300;
+  }
+  .idp-ritm .idp-ritm-badge--amber {
+    @apply bg-amber-500/10 text-amber-800 border-amber-500/20 hover:bg-amber-500/15 dark:text-amber-300;
+  }
+
+  .idp-ritm .idp-ritm-info-panel {
+    @apply rounded-2xl border border-primary/15 bg-primary/5 backdrop-blur-md;
+  }
+
+  .idp-ritm .idp-ritm-create-btn {
+    background: var(--ritm-blue);
+    color: white;
+  }
+  .idp-ritm .idp-ritm-create-btn:hover {
+    filter: brightness(0.95);
+  }
+
+  .idp-ritm .idp-ritm-avatar {
+    background: color-mix(in oklab, var(--ritm-blue) 14%, white);
+    color: color-mix(in oklab, var(--ritm-blue) 70%, black);
   }
 }
