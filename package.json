@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "bash start-dev.sh",
+    "dev:direct": "next dev",
+    "dev:nvm": "bash start-dev.sh",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

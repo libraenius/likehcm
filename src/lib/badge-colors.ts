@@ -181,6 +181,11 @@ export function getStatusBadgeColor(status: string): string {
     'in_progress': 'inProgress',
     'pending': 'pending',
     'cancelled': 'cancelled',
+    
+    // Статусы ИПР (Individual Development Plans)
+    'draft': 'notStarted',
+    'pending-approval': 'pending',
+    'pending_approval': 'pending',
   };
   
   const key = statusMap[normalizedStatus];

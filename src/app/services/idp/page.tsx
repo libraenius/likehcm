@@ -395,11 +395,11 @@ export default function IDPPage() {
     
     // Предзаполнение данных в зависимости от сценария
     if (scenario === "one-to-one") {
-      // Для one-to-one можно предзаполнить некоторые поля
+      // Для 1-on-1 можно предзаполнить некоторые поля
       setIDPFormData({
         title: "",
         description: "",
-        type: "assessment", // По умолчанию для one-to-one
+        type: "assessment", // По умолчанию для 1-on-1
         employeeId: isCreatingForCurrentUser ? "emp-1" : "",
         managerId: "",
         startDate: "",
@@ -411,7 +411,7 @@ export default function IDPPage() {
       });
       setIsCreateDialogOpen(true);
     } else {
-      // Классический сценарий - пошаговая модель, всегда создается в статусе черновик
+      // ИПР сценарий - пошаговая модель, всегда создается в статусе черновик
       setIDPFormData({
         title: "",
         description: "",
@@ -683,10 +683,10 @@ export default function IDPPage() {
         managerName: manager.fullName,
         startDate: new Date(idpFormData.startDate),
         endDate: new Date(idpFormData.endDate),
-        status: createScenario === "classic" ? "draft" : idpFormData.status, // Классический ИПР всегда создается в статусе черновик
+        status: createScenario === "classic" ? "draft" : idpFormData.status, // ИПР всегда создается в статусе черновик
         competencyIds: idpFormData.competencyIds,
         assessmentId: idpFormData.assessmentId || undefined,
-        isVisible: createScenario === "classic" ? true : idpFormData.isVisible, // Классический ИПР всегда видимый
+        isVisible: createScenario === "classic" ? true : idpFormData.isVisible, // ИПР всегда видимый
         goals: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1586,7 +1586,7 @@ export default function IDPPage() {
                           >
                             <div className="flex items-center gap-3">
                               <Avatar className="h-10 w-10 shrink-0">
-                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                <AvatarFallback className="text-sm font-semibold text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>
                                   {getInitials(idp.employeeName)}
                                 </AvatarFallback>
                               </Avatar>
@@ -1632,7 +1632,7 @@ export default function IDPPage() {
                             {idp.managerName ? (
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10 shrink-0">
-                                  <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                  <AvatarFallback className="text-sm font-semibold text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>
                                     {getInitials(idp.managerName)}
                                   </AvatarFallback>
                                 </Avatar>
@@ -1825,7 +1825,7 @@ export default function IDPPage() {
                                     <h3 className="font-semibold text-base mb-1">{idp.title}</h3>
                                     <div className="flex items-center gap-3 mb-2">
                                       <Avatar className="h-8 w-8">
-                                        <AvatarFallback className="text-xs">
+                                        <AvatarFallback className="text-xs text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>
                                           {getInitials(idp.employeeName)}
                                         </AvatarFallback>
                                       </Avatar>
@@ -1898,7 +1898,7 @@ export default function IDPPage() {
                                     <h3 className="font-semibold text-base mb-1">{idp.title}</h3>
                                     <div className="flex items-center gap-3 mb-2">
                                       <Avatar className="h-8 w-8">
-                                        <AvatarFallback className="text-xs">
+                                        <AvatarFallback className="text-xs text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>
                                           {getInitials(idp.employeeName)}
                                         </AvatarFallback>
                                       </Avatar>
@@ -1969,7 +1969,7 @@ export default function IDPPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            {/* Классический ИПР */}
+            {/* ИПР */}
             <Card 
               className="cursor-pointer hover:border-primary transition-colors"
               onClick={() => handleOpenCreateDialog("classic")}
@@ -1977,7 +1977,7 @@ export default function IDPPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <NotebookPen className="h-5 w-5 text-primary" />
-                  Классический ИПР
+                  ИПР
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -2004,7 +2004,7 @@ export default function IDPPage() {
               </CardContent>
             </Card>
 
-            {/* Результат one to one */}
+            {/* Результат 1-on-1 */}
             <Card 
               className="cursor-pointer hover:border-primary transition-colors"
               onClick={() => handleOpenCreateDialog("one-to-one")}
@@ -2012,12 +2012,12 @@ export default function IDPPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
-                  Результат one to one
+                  Результат 1-on-1
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Создание ИПР на основе результатов встречи один-на-один с руководителем. План формируется из обсужденных тем и договоренностей.
+                  Создание ИПР на основе результатов встречи 1-on-1 с руководителем. План формируется из обсужденных тем и договоренностей.
                 </p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2 text-xs">
@@ -2078,7 +2078,7 @@ export default function IDPPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingIDP ? "Редактировать ИПР" : createScenario === "classic" ? "Создать классический ИПР" : "Создать ИПР"}
+              {editingIDP ? "Редактировать ИПР" : createScenario === "classic" ? "Создать ИПР" : "Создать ИПР"}
             </DialogTitle>
             <DialogDescription>
               {editingIDP
@@ -2791,7 +2791,7 @@ export default function IDPPage() {
               </div>
             </div>
           ) : (
-            /* Обычная форма для редактирования и one-to-one */
+            /* Обычная форма для редактирования и 1-on-1 */
             <div className="space-y-4 py-4">
             {/* Название ИПР */}
             <div className="space-y-2">
@@ -3003,7 +3003,7 @@ export default function IDPPage() {
             </div>
           )}
 
-          {/* Footer для обычной формы (редактирование и one-to-one) */}
+          {/* Footer для обычной формы (редактирование и 1-on-1) */}
           {(!createScenario || createScenario !== "classic" || editingIDP) && (
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>

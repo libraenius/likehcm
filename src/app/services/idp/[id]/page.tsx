@@ -364,7 +364,7 @@ export default function IDPDetailsPage() {
           <CardContent>
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarFallback>{getInitials(selectedIDP.employeeName)}</AvatarFallback>
+                <AvatarFallback className="text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>{getInitials(selectedIDP.employeeName)}</AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-medium">{selectedIDP.employeeName}</p>
@@ -384,7 +384,7 @@ export default function IDPDetailsPage() {
           <CardContent>
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarFallback>{getInitials(selectedIDP.managerName)}</AvatarFallback>
+                <AvatarFallback className="text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>{getInitials(selectedIDP.managerName)}</AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-medium">{selectedIDP.managerName}</p>

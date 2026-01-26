@@ -508,9 +508,9 @@ export function updateIDP(updatedIDP: IDP): void {
 export function getIDPTypeText(scenario: IDPScenario): string {
   switch (scenario) {
     case "classic":
-      return "Классический";
+      return "ИПР";
     case "one-to-one":
-      return "Результат one to one";
+      return "Результат 1-on-1";
     default:
       return scenario;
   }
