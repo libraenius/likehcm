@@ -308,6 +308,22 @@ export default function IDPPage() {
     const stored = getIDPs();
     setIDPs(stored);
   }, []);
+
+  // Закрытие выпадающих списков при клике вне их
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.employee-autocomplete') && !target.closest('.manager-autocomplete')) {
+        setShowEmployeeSuggestions(false);
+        setShowManagerSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   const [selectedIDP, setSelectedIDP] = useState<IDP | null>(null);
   const [expandedIDPs, setExpandedIDPs] = useState<Set<string>>(new Set());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -348,6 +364,12 @@ export default function IDPPage() {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [isOrgStructureDialogOpen, setIsOrgStructureDialogOpen] = useState(false);
 
+  // Состояние для автодополнения в форме 1-on-1
+  const [employeeSearch, setEmployeeSearch] = useState("");
+  const [managerSearch, setManagerSearch] = useState("");
+  const [showEmployeeSuggestions, setShowEmployeeSuggestions] = useState(false);
+  const [showManagerSuggestions, setShowManagerSuggestions] = useState(false);
+
   // Состояние для формы создания ИПР
   const [idpFormData, setIDPFormData] = useState({
     title: "",
@@ -361,6 +383,9 @@ export default function IDPPage() {
     competencyIds: [] as string[],
     assessmentId: "",
     isVisible: true,
+    // Поля для 1-on-1 встреч
+    meetingDate: "",
+    meetingSummary: "",
   });
 
   // Функция для открытия модального окна помощи
@@ -402,19 +427,22 @@ export default function IDPPage() {
     
     // Предзаполнение данных в зависимости от сценария
     if (scenario === "one-to-one") {
-      // Для 1-on-1 можно предзаполнить некоторые поля
+      // Для 1-on-1 предзаполняем минимальные поля
+      const today = new Date().toISOString().split('T')[0];
       setIDPFormData({
         title: "",
         description: "",
         type: "assessment", // По умолчанию для 1-on-1
         employeeId: isCreatingForCurrentUser ? "emp-1" : "",
         managerId: "",
-        startDate: "",
+        startDate: today,
         endDate: "",
         status: "draft",
         competencyIds: [],
         assessmentId: "",
         isVisible: true,
+        meetingDate: today,
+        meetingSummary: "",
       });
       setIsCreateDialogOpen(true);
     } else {
@@ -614,6 +642,24 @@ export default function IDPPage() {
       });
   }, [idpFormData.employeeId, currentUserId, employeeCompetencyAssessments]);
 
+  // Фильтрация сотрудников для автодополнения
+  const filteredEmployees = useMemo(() => {
+    if (!employeeSearch.trim()) return mockEmployees;
+    const query = employeeSearch.toLowerCase();
+    return mockEmployees.filter((employee) =>
+      employee.fullName.toLowerCase().includes(query)
+    );
+  }, [employeeSearch]);
+
+  // Фильтрация руководителей для автодополнения
+  const filteredManagers = useMemo(() => {
+    if (!managerSearch.trim()) return mockManagers;
+    const query = managerSearch.toLowerCase();
+    return mockManagers.filter((manager) =>
+      manager.fullName.toLowerCase().includes(query)
+    );
+  }, [managerSearch]);
+
   // Обработка выбора сценария участников
   const handleParticipantScenarioChange = (scenario: "for-myself" | "for-subordinate") => {
     setParticipantScenario(scenario);
@@ -651,44 +697,160 @@ export default function IDPPage() {
 
   // Создание или обновление ИПР
   const handleSaveIDP = () => {
+    // Для 1-on-1: находим сотрудника и руководителя по ФИО, если ID не установлен
+    if (createScenario === "one-to-one" || (editingIDP && editingIDP.scenario === "one-to-one")) {
+      let foundEmployeeId = idpFormData.employeeId;
+      let foundManagerId = idpFormData.managerId;
+
+      // Если employeeId не установлен, но есть текст поиска, ищем по ФИО
+      if (!foundEmployeeId && employeeSearch.trim()) {
+        const foundEmployee = mockEmployees.find(
+          (e) => e.fullName.toLowerCase() === employeeSearch.trim().toLowerCase()
+        );
+        if (foundEmployee) {
+          foundEmployeeId = foundEmployee.id;
+        }
+      }
+
+      // Если managerId не установлен, но есть текст поиска, ищем по ФИО
+      if (!foundManagerId && managerSearch.trim()) {
+        const foundManager = mockManagers.find(
+          (m) => m.fullName.toLowerCase() === managerSearch.trim().toLowerCase()
+        );
+        if (foundManager) {
+          foundManagerId = foundManager.id;
+        }
+      }
+
+      // Обновляем idpFormData с найденными ID
+      if (foundEmployeeId !== idpFormData.employeeId || foundManagerId !== idpFormData.managerId) {
+        setIDPFormData({
+          ...idpFormData,
+          employeeId: foundEmployeeId,
+          managerId: foundManagerId,
+        });
+      }
+
+      // Проверка для 1-on-1
+      if (createScenario === "one-to-one" && !editingIDP) {
+        if (!foundEmployeeId || !foundManagerId || !idpFormData.meetingDate || !idpFormData.meetingSummary?.trim()) {
+          // Устанавливаем ошибки валидации
+          const errors: Record<string, string> = {};
+          if (!foundEmployeeId) errors.employeeId = "Выберите сотрудника из списка";
+          if (!foundManagerId) errors.managerId = "Выберите руководителя из списка";
+          if (!idpFormData.meetingDate) errors.meetingDate = "Укажите дату встречи";
+          if (!idpFormData.meetingSummary?.trim()) errors.meetingSummary = "Заполните итоги встречи";
+          setIdpErrors(errors);
+          return;
+        }
+      }
+    }
     // Проверка для администрирования
-    if (isCreatingFromAdministration && createScenario === "classic") {
+    else if (isCreatingFromAdministration && createScenario === "classic") {
       if (!idpFormData.title.trim() || selectedEmployees.length === 0 || !idpFormData.managerId || !idpFormData.startDate || !idpFormData.endDate) {
         return;
       }
     } else {
-      // Проверка для обычного создания
+      // Проверка для обычного создания (классический ИПР)
       if (!idpFormData.title.trim() || !idpFormData.employeeId || !idpFormData.managerId || !idpFormData.startDate || !idpFormData.endDate) {
         return;
       }
     }
 
-    const manager = mockManagers.find((m) => m.id === idpFormData.managerId);
-    if (!manager) return;
+    // Дополнительная проверка для редактирования 1-on-1 (уже обработано выше)
+
+    // Для 1-on-1 используем найденные ID из текстового поиска
+    let finalEmployeeId = idpFormData.employeeId;
+    let finalManagerId = idpFormData.managerId;
+
+    if (createScenario === "one-to-one" || (editingIDP && editingIDP.scenario === "one-to-one")) {
+      // Если ID не установлен, но есть текст поиска, ищем по ФИО
+      if (!finalEmployeeId && employeeSearch.trim()) {
+        const foundEmployee = mockEmployees.find(
+          (e) => e.fullName.toLowerCase() === employeeSearch.trim().toLowerCase()
+        );
+        if (foundEmployee) {
+          finalEmployeeId = foundEmployee.id;
+        }
+      }
+
+      if (!finalManagerId && managerSearch.trim()) {
+        const foundManager = mockManagers.find(
+          (m) => m.fullName.toLowerCase() === managerSearch.trim().toLowerCase()
+        );
+        if (foundManager) {
+          finalManagerId = foundManager.id;
+        }
+      }
+    }
+
+    const employee = mockEmployees.find((e) => e.id === finalEmployeeId);
+    const manager = mockManagers.find((m) => m.id === finalManagerId);
+    if (!employee || !manager) return;
 
     if (editingIDP) {
       // Редактирование существующего ИПР
-      const employee = mockEmployees.find((e) => e.id === idpFormData.employeeId);
-      if (!employee) return;
-
       const updatedIDP: IDP = {
         ...editingIDP,
-        title: idpFormData.title.trim(),
-        description: idpFormData.description.trim() || undefined,
+        title: editingIDP.scenario === "one-to-one" 
+          ? `Результат 1-on-1: ${employee.fullName}`
+          : idpFormData.title.trim(),
+        description: editingIDP.scenario === "one-to-one"
+          ? idpFormData.meetingSummary?.trim() || undefined
+          : idpFormData.description.trim() || undefined,
         type: idpFormData.type,
         scenario: editingIDP.scenario, // Сохраняем существующий сценарий
-        employeeId: idpFormData.employeeId,
+        employeeId: finalEmployeeId,
         employeeName: employee.fullName,
         employeePosition: employee.position,
         employeeEmail: employee.email,
-        managerId: idpFormData.managerId,
+        managerId: finalManagerId,
         managerName: manager.fullName,
-        startDate: new Date(idpFormData.startDate),
-        endDate: new Date(idpFormData.endDate),
+        startDate: editingIDP.scenario === "one-to-one" && idpFormData.meetingDate
+          ? new Date(idpFormData.meetingDate)
+          : new Date(idpFormData.startDate),
+        endDate: editingIDP.scenario === "one-to-one" && idpFormData.meetingDate
+          ? new Date(new Date(idpFormData.meetingDate).getTime() + 365 * 24 * 60 * 60 * 1000)
+          : new Date(idpFormData.endDate),
         status: idpFormData.status,
         competencyIds: idpFormData.competencyIds,
         assessmentId: idpFormData.assessmentId || undefined,
         isVisible: idpFormData.isVisible,
+        meetingDate: editingIDP.scenario === "one-to-one" && idpFormData.meetingDate
+          ? new Date(idpFormData.meetingDate)
+          : editingIDP.meetingDate,
+        meetingSummary: editingIDP.scenario === "one-to-one"
+          ? idpFormData.meetingSummary?.trim() || undefined
+          : editingIDP.meetingSummary,
+        meetingHistory: editingIDP.scenario === "one-to-one" && idpFormData.meetingDate && idpFormData.meetingSummary
+          ? (() => {
+              // Обновляем последнюю встречу или добавляем новую, если история пуста
+              const existingHistory = editingIDP.meetingHistory || [];
+              if (existingHistory.length > 0) {
+                // Обновляем последнюю встречу
+                const updatedHistory = [...existingHistory];
+                updatedHistory[updatedHistory.length - 1] = {
+                  ...updatedHistory[updatedHistory.length - 1],
+                  date: new Date(idpFormData.meetingDate),
+                  managerId: finalManagerId,
+                  managerName: manager.fullName,
+                  summary: idpFormData.meetingSummary.trim(),
+                };
+                return updatedHistory;
+              } else {
+                // Добавляем первую встречу
+                return [
+                  {
+                    id: `meeting-${Date.now()}`,
+                    date: new Date(idpFormData.meetingDate),
+                    managerId: finalManagerId,
+                    managerName: manager.fullName,
+                    summary: idpFormData.meetingSummary.trim(),
+                  },
+                ];
+              }
+            })()
+          : editingIDP.meetingHistory,
         updatedAt: new Date(),
       };
 
@@ -730,8 +892,48 @@ export default function IDPPage() {
         const updated = [...idps, ...newIDPs];
         setIDPs(updated);
         saveIDPs(updated);
+      } else if (createScenario === "one-to-one") {
+        // Создание ИПР типа "Результат 1-on-1"
+        const meetingDate = new Date(idpFormData.meetingDate);
+        const newIDP: IDP = {
+          id: `idp-${Date.now()}`,
+          title: `Результат 1-on-1: ${employee.fullName}`,
+          description: idpFormData.meetingSummary.trim(),
+          type: "assessment",
+          scenario: "one-to-one",
+          employeeId: finalEmployeeId,
+          employeeName: employee.fullName,
+          employeePosition: employee.position,
+          employeeEmail: employee.email,
+          managerId: finalManagerId,
+          managerName: manager.fullName,
+          startDate: meetingDate,
+          endDate: new Date(meetingDate.getTime() + 365 * 24 * 60 * 60 * 1000), // Год от даты встречи
+          status: "in-progress",
+          competencyIds: [],
+          assessmentId: undefined,
+          isVisible: true,
+          goals: [],
+          meetingDate: meetingDate,
+          meetingSummary: idpFormData.meetingSummary.trim(),
+          meetingHistory: [
+            {
+              id: `meeting-${Date.now()}`,
+              date: meetingDate,
+              managerId: idpFormData.managerId,
+              managerName: manager.fullName,
+              summary: idpFormData.meetingSummary.trim(),
+            },
+          ],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        const updated = [...idps, newIDP];
+        setIDPs(updated);
+        saveIDPs(updated);
       } else {
-        // Обычное создание для одного сотрудника
+        // Обычное создание для одного сотрудника (классический ИПР)
         const employee = mockEmployees.find((e) => e.id === idpFormData.employeeId);
         if (!employee) return;
 
@@ -769,6 +971,10 @@ export default function IDPPage() {
     setIsCreatingFromAdministration(false);
     setSelectedEmployees([]);
     setEditingIDP(null);
+    setEmployeeSearch("");
+    setManagerSearch("");
+    setShowEmployeeSuggestions(false);
+    setShowManagerSuggestions(false);
     setIDPFormData({
       title: "",
       description: "",
@@ -781,6 +987,8 @@ export default function IDPPage() {
       competencyIds: [],
       assessmentId: "",
       isVisible: true,
+      meetingDate: "",
+      meetingSummary: "",
     });
   };
 
@@ -798,9 +1006,21 @@ export default function IDPPage() {
   const handleEditIDP = (idp: IDP) => {
     setEditingIDP(idp);
     setIsCreatingForCurrentUser(false);
-    setCreateScenario(null);
+    setCreateScenario(idp.scenario);
     setCurrentStep(1);
     setIdpErrors({});
+    
+    // Устанавливаем текстовые поля поиска для 1-on-1
+    if (idp.scenario === "one-to-one") {
+      const employee = mockEmployees.find((e) => e.id === idp.employeeId);
+      const manager = mockManagers.find((m) => m.id === idp.managerId);
+      setEmployeeSearch(employee?.fullName || "");
+      setManagerSearch(manager?.fullName || "");
+    } else {
+      setEmployeeSearch("");
+      setManagerSearch("");
+    }
+    
     setIDPFormData({
       title: idp.title,
       description: idp.description || "",
@@ -813,6 +1033,8 @@ export default function IDPPage() {
       competencyIds: idp.competencyIds,
       assessmentId: idp.assessmentId || "",
       isVisible: idp.isVisible,
+      meetingDate: idp.meetingDate ? idp.meetingDate.toISOString().split("T")[0] : "",
+      meetingSummary: idp.meetingSummary || "",
     });
     setIsCreateDialogOpen(true);
   };
@@ -914,7 +1136,7 @@ export default function IDPPage() {
         <TabsList variant="grid3">
           <TabsTrigger value="my-idp">
             <NotebookPen className="h-4 w-4" />
-            <span>Мои ИПР</span>
+            <span>Мои ИПР и 1-on-1</span>
           </TabsTrigger>
           <TabsTrigger value="employees-idp">
             <Users className="h-4 w-4" />
@@ -929,7 +1151,7 @@ export default function IDPPage() {
         <TabsContent value="my-idp" className="mt-4 space-y-6">
           <div className="idp-ritm-soft-panel p-4 mb-4">
             <p className="text-sm font-medium text-foreground">
-              Здесь вы можете просматривать и управлять своими индивидуальными планами развития. Создавайте новые ИПР, отслеживайте прогресс по целям, редактируйте планы в статусе "Черновик" или "На согласовании".
+              Здесь вы можете просматривать и управлять своими планами развития и результатами встреч 1-on-1. Создавайте новые планы и протоколы встреч, отслеживайте прогресс по целям, редактируйте планы в статусе "Черновик" или "На согласовании"
             </p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
@@ -2032,10 +2254,7 @@ export default function IDPPage() {
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Выберите сценарий создания ИПР</DialogTitle>
-            <DialogDescription>
-              Выберите подходящий способ создания индивидуального плана развития
-            </DialogDescription>
+            <DialogTitle>Выберите сценарий</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             {/* ИПР */}
@@ -2086,24 +2305,24 @@ export default function IDPPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Создание ИПР на основе результатов встречи 1-on-1 с руководителем. План формируется из обсужденных тем и договоренностей.
+                  Фиксация итогов встречи 1-on-1 с сотрудником. План формируется из обсужденных тем и доступен только руководителю.
                 </p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2 text-xs">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600/80 mt-0.5 shrink-0" />
-                    <span>Автоматическое заполнение на основе встречи</span>
+                    <span>Удобная фиксация итогов встречи в простой форме</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600/80 mt-0.5 shrink-0" />
-                    <span>Связь с результатами оценки и обратной связи</span>
+                    <span>Информация о предыдущих встречах доступна в карточке сотрудника</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600/80 mt-0.5 shrink-0" />
-                    <span>Быстрое создание после встречи</span>
+                    <span>Удобный поиск и фильтрация</span>
                   </div>
                 </div>
                 <p className="text-xs font-medium text-primary mt-3">
-                  Подходит для: плановых встреч с руководителем, обсуждения развития, работы над обратной связью
+                  Подходит для: плановых встреч с сотрудниками, обсуждения развития, работы над обратной связью в динамике
                 </p>
               </CardContent>
             </Card>
@@ -2130,6 +2349,10 @@ export default function IDPPage() {
             setCreateScenario(null);
             setParticipantScenario(null);
             setIdpErrors({});
+            setEmployeeSearch("");
+            setManagerSearch("");
+            setShowEmployeeSuggestions(false);
+            setShowManagerSuggestions(false);
             setIDPFormData({
               title: "",
               description: "",
@@ -2142,6 +2365,8 @@ export default function IDPPage() {
               competencyIds: [],
               assessmentId: "",
               isVisible: true,
+              meetingDate: "",
+              meetingSummary: "",
             });
           }
         }}
@@ -2149,20 +2374,28 @@ export default function IDPPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingIDP ? "Редактировать ИПР" : createScenario === "classic" ? "Создать ИПР" : "Создать ИПР"}
+              {editingIDP 
+                ? "Редактировать ИПР" 
+                : createScenario === "classic" 
+                ? "Создать ИПР" 
+                : createScenario === "one-to-one"
+                ? "Создать результат 1-on-1"
+                : "Создать ИПР"}
               {isCreatingFromAdministration && createScenario === "classic" && selectedEmployees.length > 0 && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
                   (для {selectedEmployees.length} {selectedEmployees.length === 1 ? 'сотрудника' : 'сотрудников'})
                 </span>
               )}
             </DialogTitle>
-            <DialogDescription>
-              {editingIDP
-                ? "Внесите изменения в индивидуальный план развития"
-                : createScenario === "classic"
-                ? "Заполните форму пошагово для создания индивидуального плана развития"
-                : "Заполните форму для создания нового индивидуального плана развития"}
-            </DialogDescription>
+            {!(createScenario === "one-to-one" && !editingIDP) && (
+              <DialogDescription>
+                {editingIDP
+                  ? "Внесите изменения в индивидуальный план развития"
+                  : createScenario === "classic"
+                  ? "Заполните форму пошагово для создания индивидуального плана развития"
+                  : "Заполните форму для создания нового индивидуального плана развития"}
+              </DialogDescription>
+            )}
           </DialogHeader>
 
           {/* Пошаговая модель для классического ИПР */}
@@ -3041,216 +3274,375 @@ export default function IDPPage() {
               </div>
             </div>
           ) : (
-            /* Обычная форма для редактирования и 1-on-1 */
-            <div className="space-y-4 py-4">
-            {/* Название ИПР */}
-            <div className="space-y-2">
-              <Label htmlFor="title">Название ИПР *</Label>
-              <Input
-                id="title"
-                value={idpFormData.title}
-                onChange={(e) =>
-                  setIDPFormData({ ...idpFormData, title: e.target.value })
-                }
-                placeholder="Например: Развитие лидерских компетенций"
-              />
-            </div>
-
-            {/* Тип ИПР */}
-            <div className="space-y-2">
-              <Label htmlFor="type">Тип ИПР *</Label>
-              <Select
-                value={idpFormData.type}
-                onValueChange={(value: IDPType) =>
-                  setIDPFormData({ ...idpFormData, type: value })
-                }
-              >
-                <SelectTrigger id="type">
-                  <SelectValue placeholder="Выберите тип ИПР" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="assessment">По результатам оценки</SelectItem>
-                  <SelectItem value="career">Карьерное развитие</SelectItem>
-                  <SelectItem value="adaptation">Адаптация</SelectItem>
-                  <SelectItem value="competency">Развитие компетенций</SelectItem>
-                  <SelectItem value="new-role">Подготовка к новой роли</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Описание */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Описание / обоснование</Label>
-              <Textarea
-                id="description"
-                value={idpFormData.description}
-                onChange={(e) =>
-                  setIDPFormData({ ...idpFormData, description: e.target.value })
-                }
-                placeholder="Описание целей и задач ИПР, обоснование необходимости развития"
-                rows={3}
-              />
-            </div>
-
-            <Separator />
-
-            {/* Сотрудник */}
-            <div className="space-y-2">
-              <Label htmlFor="employee">Сотрудник *</Label>
-              {isCreatingForCurrentUser && !editingIDP ? (
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-md border">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">
-                      {mockEmployees.find((e) => e.id === idpFormData.employeeId)?.fullName || ""}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {mockEmployees.find((e) => e.id === idpFormData.employeeId)?.position || ""}
-                    </p>
+            <>
+              {/* Форма для редактирования и 1-on-1 */}
+              {(createScenario === "one-to-one" || (editingIDP && editingIDP.scenario === "one-to-one")) ? (
+                <>
+                  {/* Специальная форма для создания результата 1-on-1 */}
+                  <div className="space-y-4 py-4">
+                {/* Сотрудник */}
+                <div className="space-y-2 relative employee-autocomplete">
+                  <Label htmlFor="one-on-one-employee">Сотрудник *</Label>
+                  <div className="relative">
+                    <Input
+                      id="one-on-one-employee"
+                      type="text"
+                      placeholder="Введите ФИО сотрудника"
+                      value={employeeSearch}
+                      onChange={(e) => {
+                        setEmployeeSearch(e.target.value);
+                        setShowEmployeeSuggestions(true);
+                        if (idpErrors.employeeId) setIdpErrors({ ...idpErrors, employeeId: "" });
+                        // Очищаем employeeId, если текст изменился
+                        if (idpFormData.employeeId) {
+                          const currentEmployee = mockEmployees.find((e) => e.id === idpFormData.employeeId);
+                          if (currentEmployee?.fullName !== e.target.value) {
+                            setIDPFormData({ ...idpFormData, employeeId: "" });
+                          }
+                        }
+                      }}
+                      onFocus={() => setShowEmployeeSuggestions(true)}
+                      className={cn(idpErrors.employeeId && "border-destructive")}
+                    />
+                    {showEmployeeSuggestions && employeeSearch && filteredEmployees.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-60 overflow-auto">
+                        {filteredEmployees.map((employee) => (
+                          <div
+                            key={employee.id}
+                            className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                            onClick={() => {
+                              setEmployeeSearch(employee.fullName);
+                              setIDPFormData({ ...idpFormData, employeeId: employee.id });
+                              setShowEmployeeSuggestions(false);
+                            }}
+                          >
+                            <div className="font-medium">{employee.fullName}</div>
+                            <div className="text-xs text-muted-foreground">{employee.position}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    Текущий пользователь
-                  </Badge>
+                  {idpErrors.employeeId && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {idpErrors.employeeId}
+                    </p>
+                  )}
                 </div>
+
+                {/* Руководитель, проводивший встречу */}
+                <div className="space-y-2 relative manager-autocomplete">
+                  <Label htmlFor="one-on-one-manager">Руководитель, проводивший встречу *</Label>
+                  <div className="relative">
+                    <Input
+                      id="one-on-one-manager"
+                      type="text"
+                      placeholder="Введите ФИО руководителя"
+                      value={managerSearch}
+                      onChange={(e) => {
+                        setManagerSearch(e.target.value);
+                        setShowManagerSuggestions(true);
+                        if (idpErrors.managerId) setIdpErrors({ ...idpErrors, managerId: "" });
+                        // Очищаем managerId, если текст изменился
+                        if (idpFormData.managerId) {
+                          const currentManager = mockManagers.find((m) => m.id === idpFormData.managerId);
+                          if (currentManager?.fullName !== e.target.value) {
+                            setIDPFormData({ ...idpFormData, managerId: "" });
+                          }
+                        }
+                      }}
+                      onFocus={() => setShowManagerSuggestions(true)}
+                      className={cn(idpErrors.managerId && "border-destructive")}
+                    />
+                    {showManagerSuggestions && managerSearch && filteredManagers.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-60 overflow-auto">
+                        {filteredManagers.map((manager) => (
+                          <div
+                            key={manager.id}
+                            className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                            onClick={() => {
+                              setManagerSearch(manager.fullName);
+                              setIDPFormData({ ...idpFormData, managerId: manager.id });
+                              setShowManagerSuggestions(false);
+                            }}
+                          >
+                            <div className="font-medium">{manager.fullName}</div>
+                            <div className="text-xs text-muted-foreground">{manager.position}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {idpErrors.managerId && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {idpErrors.managerId}
+                    </p>
+                  )}
+                </div>
+
+                {/* Дата встречи */}
+                <div className="space-y-2">
+                  <Label htmlFor="one-on-one-meeting-date">Дата встречи *</Label>
+                  <Input
+                    id="one-on-one-meeting-date"
+                    type="date"
+                    value={idpFormData.meetingDate}
+                    onChange={(e) => {
+                      setIDPFormData({ ...idpFormData, meetingDate: e.target.value });
+                      if (idpErrors.meetingDate) setIdpErrors({ ...idpErrors, meetingDate: "" });
+                    }}
+                    className={cn(idpErrors.meetingDate && "border-destructive")}
+                  />
+                  {idpErrors.meetingDate && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {idpErrors.meetingDate}
+                    </p>
+                  )}
+                </div>
+
+                {/* Итоги встречи */}
+                <div className="space-y-2">
+                  <Label htmlFor="one-on-one-summary">Итоги встречи *</Label>
+                  <Textarea
+                    id="one-on-one-summary"
+                    value={idpFormData.meetingSummary}
+                    onChange={(e) => {
+                      setIDPFormData({ ...idpFormData, meetingSummary: e.target.value });
+                      if (idpErrors.meetingSummary) setIdpErrors({ ...idpErrors, meetingSummary: "" });
+                    }}
+                    placeholder="Опишите итоги встречи, обсужденные темы и договоренности"
+                    rows={6}
+                    className={cn(idpErrors.meetingSummary && "border-destructive")}
+                  />
+                  {idpErrors.meetingSummary && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {idpErrors.meetingSummary}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Опишите основные темы, обсужденные на встрече, договоренности и планы развития
+                  </p>
+                </div>
+                  </div>
+                </>
               ) : (
-                <Select
-                  value={idpFormData.employeeId}
-                  onValueChange={(value) =>
-                    setIDPFormData({ ...idpFormData, employeeId: value })
-                  }
-                  disabled={isCreatingForCurrentUser && !editingIDP}
-                >
-                  <SelectTrigger id="employee">
-                    <SelectValue placeholder="Выберите сотрудника" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockEmployees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id}>
-                        {employee.fullName} - {employee.position}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* Руководитель */}
-            <div className="space-y-2">
-              <Label htmlFor="manager">Руководитель *</Label>
-              <Select
-                value={idpFormData.managerId}
-                onValueChange={(value) =>
-                  setIDPFormData({ ...idpFormData, managerId: value })
-                }
-              >
-                <SelectTrigger id="manager">
-                  <SelectValue placeholder="Выберите руководителя" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockManagers.map((manager) => (
-                    <SelectItem key={manager.id} value={manager.id}>
-                      {manager.fullName} - {manager.position}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Руководитель согласует и контролирует выполнение ИПР
-              </p>
-            </div>
-
-            {/* Период */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Дата начала *</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={idpFormData.startDate}
-                  onChange={(e) =>
-                    setIDPFormData({ ...idpFormData, startDate: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="endDate">Дата окончания *</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={idpFormData.endDate}
-                  onChange={(e) =>
-                    setIDPFormData({ ...idpFormData, endDate: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Связь с оценкой */}
-            <div className="space-y-2">
-              <Label htmlFor="assessment" className="flex items-center gap-2">
-                <ClipboardCheck className="h-4 w-4" />
-                Связь с оценкой
-              </Label>
-              <Select
-                value={idpFormData.assessmentId || "none"}
-                onValueChange={(value) =>
-                  setIDPFormData({ ...idpFormData, assessmentId: value === "none" ? "" : value })
-                }
-              >
-                <SelectTrigger id="assessment">
-                  <SelectValue placeholder="Выберите оценку (опционально)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Не выбрано</SelectItem>
-                  {mockAssessments.map((assessment) => (
-                    <SelectItem key={assessment.id} value={assessment.id}>
-                      {assessment.name} ({assessment.type}, {formatDate(assessment.date)})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Выберите оценку, по результатам которой создается ИПР
-              </p>
-            </div>
-
-            {/* Компетенции для развития */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Компетенции для развития
-              </Label>
-              <MultiSelect
-                options={mockCompetencies.map((comp) => ({
-                  value: comp.id,
-                  label: comp.name,
-                  badge: comp.category,
-                }))}
-                selected={idpFormData.competencyIds}
-                onChange={(values) =>
-                  setIDPFormData({ ...idpFormData, competencyIds: values })
-                }
-                placeholder="Выберите компетенции"
-              />
-              <p className="text-xs text-muted-foreground">
-                Выберите компетенции, которые планируется развивать
-              </p>
-              {idpFormData.competencyIds.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {idpFormData.competencyIds.map((compId) => {
-                    const comp = mockCompetencies.find((c) => c.id === compId);
-                    return comp ? (
-                      <Badge key={compId} variant="secondary" className="text-xs">
-                        {comp.name}
-                      </Badge>
-                    ) : null;
-                  })}
+                  <>
+                    {/* Обычная форма для редактирования классического ИПР */}
+                    <div className="space-y-4 py-4">
+                {/* Название ИПР */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Название ИПР *</Label>
+                  <Input
+                    id="title"
+                    value={idpFormData.title}
+                    onChange={(e) =>
+                      setIDPFormData({ ...idpFormData, title: e.target.value })
+                    }
+                    placeholder="Например: Развитие лидерских компетенций"
+                  />
                 </div>
-              )}
-            </div>
 
-            </div>
+                {/* Тип ИПР */}
+                <div className="space-y-2">
+                  <Label htmlFor="type">Тип ИПР *</Label>
+                  <Select
+                    value={idpFormData.type}
+                    onValueChange={(value: IDPType) =>
+                      setIDPFormData({ ...idpFormData, type: value })
+                    }
+                  >
+                    <SelectTrigger id="type">
+                      <SelectValue placeholder="Выберите тип ИПР" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="assessment">По результатам оценки</SelectItem>
+                      <SelectItem value="career">Карьерное развитие</SelectItem>
+                      <SelectItem value="adaptation">Адаптация</SelectItem>
+                      <SelectItem value="competency">Развитие компетенций</SelectItem>
+                      <SelectItem value="new-role">Подготовка к новой роли</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Описание */}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Описание / обоснование</Label>
+                  <Textarea
+                    id="description"
+                    value={idpFormData.description}
+                    onChange={(e) =>
+                      setIDPFormData({ ...idpFormData, description: e.target.value })
+                    }
+                    placeholder="Описание целей и задач ИПР, обоснование необходимости развития"
+                    rows={3}
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Сотрудник */}
+                <div className="space-y-2">
+                  <Label htmlFor="employee">Сотрудник *</Label>
+                  {isCreatingForCurrentUser && !editingIDP ? (
+                    <div className="flex items-center gap-2 p-3 bg-muted rounded-md border">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          {mockEmployees.find((e) => e.id === idpFormData.employeeId)?.fullName || ""}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {mockEmployees.find((e) => e.id === idpFormData.employeeId)?.position || ""}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        Текущий пользователь
+                      </Badge>
+                    </div>
+                  ) : (
+                    <Select
+                      value={idpFormData.employeeId}
+                      onValueChange={(value) =>
+                        setIDPFormData({ ...idpFormData, employeeId: value })
+                      }
+                      disabled={isCreatingForCurrentUser && !editingIDP}
+                    >
+                      <SelectTrigger id="employee">
+                        <SelectValue placeholder="Выберите сотрудника" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockEmployees.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            {employee.fullName} - {employee.position}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                {/* Руководитель */}
+                <div className="space-y-2">
+                  <Label htmlFor="manager">Руководитель *</Label>
+                  <Select
+                    value={idpFormData.managerId}
+                    onValueChange={(value) =>
+                      setIDPFormData({ ...idpFormData, managerId: value })
+                    }
+                  >
+                    <SelectTrigger id="manager">
+                      <SelectValue placeholder="Выберите руководителя" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockManagers.map((manager) => (
+                        <SelectItem key={manager.id} value={manager.id}>
+                          {manager.fullName} - {manager.position}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Руководитель согласует и контролирует выполнение ИПР
+                  </p>
+                </div>
+
+                {/* Период */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">Дата начала *</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={idpFormData.startDate}
+                      onChange={(e) =>
+                        setIDPFormData({ ...idpFormData, startDate: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endDate">Дата окончания *</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={idpFormData.endDate}
+                      onChange={(e) =>
+                        setIDPFormData({ ...idpFormData, endDate: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Связь с оценкой */}
+                <div className="space-y-2">
+                  <Label htmlFor="assessment" className="flex items-center gap-2">
+                    <ClipboardCheck className="h-4 w-4" />
+                    Связь с оценкой
+                  </Label>
+                  <Select
+                    value={idpFormData.assessmentId || "none"}
+                    onValueChange={(value) =>
+                      setIDPFormData({ ...idpFormData, assessmentId: value === "none" ? "" : value })
+                    }
+                  >
+                    <SelectTrigger id="assessment">
+                      <SelectValue placeholder="Выберите оценку (опционально)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Не выбрано</SelectItem>
+                      {mockAssessments.map((assessment) => (
+                        <SelectItem key={assessment.id} value={assessment.id}>
+                          {assessment.name} ({assessment.type}, {formatDate(assessment.date)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Выберите оценку, по результатам которой создается ИПР
+                  </p>
+                </div>
+
+                {/* Компетенции для развития */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    Компетенции для развития
+                  </Label>
+                  <MultiSelect
+                    options={mockCompetencies.map((comp) => ({
+                      value: comp.id,
+                      label: comp.name,
+                      badge: comp.category,
+                    }))}
+                    selected={idpFormData.competencyIds}
+                    onChange={(values) =>
+                      setIDPFormData({ ...idpFormData, competencyIds: values })
+                    }
+                    placeholder="Выберите компетенции"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Выберите компетенции, которые планируется развивать
+                  </p>
+                  {idpFormData.competencyIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {idpFormData.competencyIds.map((compId) => {
+                        const comp = mockCompetencies.find((c) => c.id === compId);
+                        return comp ? (
+                          <Badge key={compId} variant="secondary" className="text-xs">
+                            {comp.name}
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                </div>
+                    </div>
+                  </>
+                )}
+              </>
           )}
 
           {/* Footer для обычной формы (редактирование и 1-on-1) */}

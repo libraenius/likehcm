@@ -528,6 +528,11 @@ export function getIDPs(): IDP[] {
           endDate: new Date(idp.endDate),
           createdAt: new Date(idp.createdAt),
           updatedAt: new Date(idp.updatedAt),
+          meetingDate: idp.meetingDate ? new Date(idp.meetingDate) : undefined,
+          meetingHistory: idp.meetingHistory ? idp.meetingHistory.map((meeting: any) => ({
+            ...meeting,
+            date: new Date(meeting.date),
+          })) : undefined,
           goals: idp.goals.map((goal: any) => ({
             ...goal,
             targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,

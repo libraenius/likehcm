@@ -79,8 +79,12 @@ const getStatusText = (status: IDP["status"]) => {
   }
 };
 
-const formatDate = (date: Date) => {
-  return date.toLocaleDateString("ru-RU", {
+const formatDate = (date: Date | string) => {
+  const dateObj = date instanceof Date ? date : new Date(date);
+  if (isNaN(dateObj.getTime())) {
+    return "Неверная дата";
+  }
+  return dateObj.toLocaleDateString("ru-RU", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
