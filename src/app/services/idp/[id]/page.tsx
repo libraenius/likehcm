@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { getStatusBadgeColor } from "@/lib/badge-colors";
 
@@ -53,6 +54,7 @@ import {
   type IDPAction,
   type IDPType,
   type IDPScenario,
+  type OneOnOneMeeting,
 } from "@/lib/idp/mock-data";
 
 
@@ -164,6 +166,43 @@ export default function IDPDetailsPage() {
     });
 
     return grouped;
+  }, [selectedIDP]);
+
+  // Подсчет задач по статусам
+  const taskStats = useMemo(() => {
+    if (!selectedIDP) {
+      return { overdue: 0, active: 0, notCompleted: 0 };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let overdue = 0;
+    let active = 0;
+    let notCompleted = 0;
+
+    selectedIDP.goals.forEach(goal => {
+      // Просроченные задачи: есть срок, срок прошел, задача не завершена
+      if (goal.targetDate && goal.status !== "completed" && goal.status !== "cancelled") {
+        const targetDate = new Date(goal.targetDate);
+        targetDate.setHours(0, 0, 0, 0);
+        if (targetDate < today) {
+          overdue++;
+        }
+      }
+
+      // Активные задачи: статус "in-progress"
+      if (goal.status === "in-progress") {
+        active++;
+      }
+
+      // Невыполненные задачи: статус "not-started"
+      if (goal.status === "not-started") {
+        notCompleted++;
+      }
+    });
+
+    return { overdue, active, notCompleted };
   }, [selectedIDP]);
 
   // Устанавливаем название ИПР в breadcrumbs
@@ -352,65 +391,291 @@ export default function IDPDetailsPage() {
         </div>
       </div>
 
-      {/* Основная информация */}
+      {/* Основная информация - для 1-on-1 показываем специальный контент */}
+      {selectedIDP.scenario === "one-to-one" ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Сотрудник
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>{getInitials(selectedIDP.employeeName)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{selectedIDP.employeeName}</p>
+                    <p className="text-sm text-muted-foreground">{selectedIDP.employeePosition}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Руководитель, проводивший встречу
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>{getInitials(selectedIDP.managerName)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{selectedIDP.managerName}</p>
+                    <p className="text-sm text-muted-foreground">Руководитель</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Дата встречи
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">
+                  {selectedIDP.meetingDate ? formatDate(selectedIDP.meetingDate) : formatDate(selectedIDP.startDate)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Итоги встречи */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Итоги встречи</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {selectedIDP.meetingSummary || selectedIDP.description || "Итоги встречи не указаны"}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* История встреч */}
+          <Card>
+            <CardHeader>
+              <CardTitle>История встреч</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {selectedIDP.meetingHistory && selectedIDP.meetingHistory.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Дата встречи</TableHead>
+                      <TableHead>Руководитель</TableHead>
+                      <TableHead>Превью итогов встречи</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedIDP.meetingHistory.map((meeting) => (
+                      <TableRow key={meeting.id}>
+                        <TableCell className="font-medium">
+                          {formatDate(meeting.date)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-xs text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>
+                                {getInitials(meeting.managerName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm">{meeting.managerName}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {meeting.summary}
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  История встреч пока пуста
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Сотрудник
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>{getInitials(selectedIDP.employeeName)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{selectedIDP.employeeName}</p>
+                    <p className="text-sm text-muted-foreground">{selectedIDP.employeePosition}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Руководитель
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>{getInitials(selectedIDP.managerName)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{selectedIDP.managerName}</p>
+                    <p className="text-sm text-muted-foreground">Руководитель</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Период
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">
+                  {formatDate(selectedIDP.startDate)} - {formatDate(selectedIDP.endDate)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Плашки с задачами - только для классических ИПР */}
+          {selectedIDP.scenario !== "one-to-one" && (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Сотрудник
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>{getInitials(selectedIDP.employeeName)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">{selectedIDP.employeeName}</p>
-                <p className="text-sm text-muted-foreground">{selectedIDP.employeePosition}</p>
+        <Card className={cn(
+          "border-2",
+          taskStats.overdue > 0 ? "border-destructive/50 bg-destructive/5" : "border-border"
+        )}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "p-2 rounded-lg",
+                  taskStats.overdue > 0 ? "bg-destructive/10" : "bg-muted"
+                )}>
+                  <AlertCircle className={cn(
+                    "h-5 w-5",
+                    taskStats.overdue > 0 ? "text-destructive" : "text-muted-foreground"
+                  )} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Просроченные задачи</p>
+                  <p className="text-xs text-muted-foreground">Задачи с истекшим сроком</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={cn(
+                  "text-2xl font-bold",
+                  taskStats.overdue > 0 ? "text-destructive" : "text-muted-foreground"
+                )}>
+                  {taskStats.overdue}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Руководитель
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>{getInitials(selectedIDP.managerName)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">{selectedIDP.managerName}</p>
-                <p className="text-sm text-muted-foreground">Руководитель</p>
+        <Card className={cn(
+          "border-2",
+          taskStats.active > 0 ? "border-primary/50 bg-primary/5" : "border-border"
+        )}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "p-2 rounded-lg",
+                  taskStats.active > 0 ? "bg-primary/10" : "bg-muted"
+                )}>
+                  <Clock className={cn(
+                    "h-5 w-5",
+                    taskStats.active > 0 ? "text-primary" : "text-muted-foreground"
+                  )} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Активные задачи</p>
+                  <p className="text-xs text-muted-foreground">Задачи в процессе</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={cn(
+                  "text-2xl font-bold",
+                  taskStats.active > 0 ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {taskStats.active}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Период
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">
-              {formatDate(selectedIDP.startDate)} - {formatDate(selectedIDP.endDate)}
-            </p>
+        <Card className={cn(
+          "border-2",
+          taskStats.notCompleted > 0 ? "border-amber-500/50 bg-amber-500/5" : "border-border"
+        )}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "p-2 rounded-lg",
+                  taskStats.notCompleted > 0 ? "bg-amber-500/10" : "bg-muted"
+                )}>
+                  <Target className={cn(
+                    "h-5 w-5",
+                    taskStats.notCompleted > 0 ? "text-amber-600" : "text-muted-foreground"
+                  )} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Невыполненные задачи</p>
+                  <p className="text-xs text-muted-foreground">Задачи не начаты</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={cn(
+                  "text-2xl font-bold",
+                  taskStats.notCompleted > 0 ? "text-amber-600" : "text-muted-foreground"
+                )}>
+                  {taskStats.notCompleted}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
+          )}
+        </>
+      )}
 
-      {/* Описание */}
-      {selectedIDP.description && (
+      {/* Описание - только для классических ИПР */}
+      {selectedIDP.scenario !== "one-to-one" && selectedIDP.description && (
         <Card>
           <CardHeader>
             <CardTitle>Описание</CardTitle>
@@ -421,7 +686,8 @@ export default function IDPDetailsPage() {
         </Card>
       )}
 
-      {/* Компетенции и цели */}
+      {/* Компетенции и цели - только для классических ИПР */}
+      {selectedIDP.scenario !== "one-to-one" && (
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -551,6 +817,7 @@ export default function IDPDetailsPage() {
           ))}
         </CardContent>
       </Card>
+      )}
 
       {/* Диалог редактирования */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

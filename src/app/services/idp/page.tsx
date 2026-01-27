@@ -343,6 +343,11 @@ export default function IDPPage() {
     additionalInfo?: string;
   } | null>(null);
 
+  // Состояние для создания из администрирования
+  const [isCreatingFromAdministration, setIsCreatingFromAdministration] = useState(false);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [isOrgStructureDialogOpen, setIsOrgStructureDialogOpen] = useState(false);
+
   // Состояние для формы создания ИПР
   const [idpFormData, setIDPFormData] = useState({
     title: "",
@@ -381,6 +386,8 @@ export default function IDPPage() {
   // Открытие диалога выбора сценария создания
   const handleCreate = (forCurrentUser: boolean = false) => {
     setIsCreatingForCurrentUser(forCurrentUser);
+    // Определяем, что создание идет из администрирования, если не для текущего пользователя
+    setIsCreatingFromAdministration(!forCurrentUser);
     setIsScenarioDialogOpen(true);
   };
 
@@ -449,14 +456,25 @@ export default function IDPPage() {
         }
         break;
       case 2: // Участники
-        if (!participantScenario) {
-          errors.employeeId = "Выберите сценарий создания ИПР";
-        }
-        if (!idpFormData.employeeId) {
-          errors.employeeId = "Выберите сотрудника";
-        }
-        if (!idpFormData.managerId) {
-          errors.managerId = "Выберите руководителя";
+        if (isCreatingFromAdministration && createScenario === "classic") {
+          // Для администрирования проверяем выбранных сотрудников
+          if (selectedEmployees.length === 0) {
+            errors.employeeId = "Выберите хотя бы одного сотрудника";
+          }
+          if (!idpFormData.managerId) {
+            errors.managerId = "Выберите руководителя";
+          }
+        } else {
+          // Для обычного создания проверяем стандартные поля
+          if (!participantScenario) {
+            errors.employeeId = "Выберите сценарий создания ИПР";
+          }
+          if (!idpFormData.employeeId) {
+            errors.employeeId = "Выберите сотрудника";
+          }
+          if (!idpFormData.managerId) {
+            errors.managerId = "Выберите руководителя";
+          }
         }
         break;
       case 3: // Компетенции и оценка
@@ -633,16 +651,26 @@ export default function IDPPage() {
 
   // Создание или обновление ИПР
   const handleSaveIDP = () => {
-    if (!idpFormData.title.trim() || !idpFormData.employeeId || !idpFormData.managerId || !idpFormData.startDate || !idpFormData.endDate) {
-      return;
+    // Проверка для администрирования
+    if (isCreatingFromAdministration && createScenario === "classic") {
+      if (!idpFormData.title.trim() || selectedEmployees.length === 0 || !idpFormData.managerId || !idpFormData.startDate || !idpFormData.endDate) {
+        return;
+      }
+    } else {
+      // Проверка для обычного создания
+      if (!idpFormData.title.trim() || !idpFormData.employeeId || !idpFormData.managerId || !idpFormData.startDate || !idpFormData.endDate) {
+        return;
+      }
     }
 
-    const employee = mockEmployees.find((e) => e.id === idpFormData.employeeId);
     const manager = mockManagers.find((m) => m.id === idpFormData.managerId);
-    if (!employee || !manager) return;
+    if (!manager) return;
 
     if (editingIDP) {
       // Редактирование существующего ИПР
+      const employee = mockEmployees.find((e) => e.id === idpFormData.employeeId);
+      if (!employee) return;
+
       const updatedIDP: IDP = {
         ...editingIDP,
         title: idpFormData.title.trim(),
@@ -668,37 +696,78 @@ export default function IDPPage() {
       setIDPs(updated);
       saveIDPs(updated);
     } else {
-      // Создание нового ИПР - всегда в статусе черновик для классического сценария
-      const newIDP: IDP = {
-        id: `idp-${Date.now()}`,
-        title: idpFormData.title.trim(),
-        description: idpFormData.description.trim() || undefined,
-        type: idpFormData.type,
-        scenario: createScenario || "classic", // Сохраняем сценарий создания
-        employeeId: idpFormData.employeeId,
-        employeeName: employee.fullName,
-        employeePosition: employee.position,
-        employeeEmail: employee.email,
-        managerId: idpFormData.managerId,
-        managerName: manager.fullName,
-        startDate: new Date(idpFormData.startDate),
-        endDate: new Date(idpFormData.endDate),
-        status: createScenario === "classic" ? "draft" : idpFormData.status, // ИПР всегда создается в статусе черновик
-        competencyIds: idpFormData.competencyIds,
-        assessmentId: idpFormData.assessmentId || undefined,
-        isVisible: createScenario === "classic" ? true : idpFormData.isVisible, // ИПР всегда видимый
-        goals: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      // Создание нового ИПР
+      if (isCreatingFromAdministration && createScenario === "classic") {
+        // Создание для нескольких сотрудников из администрирования
+        const newIDPs: IDP[] = selectedEmployees.map((employeeId, index) => {
+          const employee = mockEmployees.find((e) => e.id === employeeId);
+          if (!employee) return null;
 
-      const updated = [...idps, newIDP];
-      setIDPs(updated);
-      saveIDPs(updated);
+          return {
+            id: `idp-${Date.now()}-${index}`,
+            title: idpFormData.title.trim(),
+            description: idpFormData.description.trim() || undefined,
+            type: idpFormData.type,
+            scenario: createScenario || "classic",
+            employeeId: employee.id,
+            employeeName: employee.fullName,
+            employeePosition: employee.position,
+            employeeEmail: employee.email,
+            managerId: idpFormData.managerId,
+            managerName: manager.fullName,
+            startDate: new Date(idpFormData.startDate),
+            endDate: new Date(idpFormData.endDate),
+            status: "draft",
+            competencyIds: idpFormData.competencyIds,
+            assessmentId: idpFormData.assessmentId || undefined,
+            isVisible: true,
+            goals: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        }).filter((idp): idp is IDP => idp !== null);
+
+        const updated = [...idps, ...newIDPs];
+        setIDPs(updated);
+        saveIDPs(updated);
+      } else {
+        // Обычное создание для одного сотрудника
+        const employee = mockEmployees.find((e) => e.id === idpFormData.employeeId);
+        if (!employee) return;
+
+        const newIDP: IDP = {
+          id: `idp-${Date.now()}`,
+          title: idpFormData.title.trim(),
+          description: idpFormData.description.trim() || undefined,
+          type: idpFormData.type,
+          scenario: createScenario || "classic",
+          employeeId: idpFormData.employeeId,
+          employeeName: employee.fullName,
+          employeePosition: employee.position,
+          employeeEmail: employee.email,
+          managerId: idpFormData.managerId,
+          managerName: manager.fullName,
+          startDate: new Date(idpFormData.startDate),
+          endDate: new Date(idpFormData.endDate),
+          status: createScenario === "classic" ? "draft" : idpFormData.status,
+          competencyIds: idpFormData.competencyIds,
+          assessmentId: idpFormData.assessmentId || undefined,
+          isVisible: createScenario === "classic" ? true : idpFormData.isVisible,
+          goals: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        const updated = [...idps, newIDP];
+        setIDPs(updated);
+        saveIDPs(updated);
+      }
     }
 
     setIsCreateDialogOpen(false);
     setIsCreatingForCurrentUser(false);
+    setIsCreatingFromAdministration(false);
+    setSelectedEmployees([]);
     setEditingIDP(null);
     setIDPFormData({
       title: "",
@@ -2054,6 +2123,8 @@ export default function IDPPage() {
           setIsCreateDialogOpen(open);
           if (!open) {
             setIsCreatingForCurrentUser(false);
+            setIsCreatingFromAdministration(false);
+            setSelectedEmployees([]);
             setEditingIDP(null);
             setCurrentStep(1);
             setCreateScenario(null);
@@ -2079,6 +2150,11 @@ export default function IDPPage() {
           <DialogHeader>
             <DialogTitle>
               {editingIDP ? "Редактировать ИПР" : createScenario === "classic" ? "Создать ИПР" : "Создать ИПР"}
+              {isCreatingFromAdministration && createScenario === "classic" && selectedEmployees.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  (для {selectedEmployees.length} {selectedEmployees.length === 1 ? 'сотрудника' : 'сотрудников'})
+                </span>
+              )}
             </DialogTitle>
             <DialogDescription>
               {editingIDP
@@ -2329,10 +2405,108 @@ export default function IDPPage() {
                 {/* Шаг 2: Участники */}
                 {currentStep === 2 && (
                   <div className="space-y-6">
-                    {/* Выбор сценария */}
-                    <div className="space-y-3">
-                      <Label>Выберите сценарий создания ИПР</Label>
-                      <div className="grid grid-cols-2 gap-4">
+                    {/* Для администрирования показываем название, тип и сроки */}
+                    {isCreatingFromAdministration && createScenario === "classic" && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="admin-title">
+                            Название ИПР <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="admin-title"
+                            value={idpFormData.title}
+                            onChange={(e) => {
+                              setIDPFormData({ ...idpFormData, title: e.target.value });
+                              if (idpErrors.title) setIdpErrors({ ...idpErrors, title: "" });
+                            }}
+                            placeholder="Например: Развитие лидерских компетенций"
+                            className={cn(idpErrors.title && "border-destructive")}
+                          />
+                          {idpErrors.title && (
+                            <p className="text-xs text-destructive flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              {idpErrors.title}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="admin-type">
+                            Тип ИПР <span className="text-destructive">*</span>
+                          </Label>
+                          <Select
+                            value={idpFormData.type}
+                            onValueChange={(value: IDPType) =>
+                              setIDPFormData({ ...idpFormData, type: value })
+                            }
+                          >
+                            <SelectTrigger id="admin-type">
+                              <SelectValue placeholder="Выберите тип ИПР" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="assessment">По результатам оценки</SelectItem>
+                              <SelectItem value="career">Карьерное развитие</SelectItem>
+                              <SelectItem value="adaptation">Адаптация</SelectItem>
+                              <SelectItem value="competency">Развитие компетенций</SelectItem>
+                              <SelectItem value="new-role">Подготовка к новой роли</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="admin-startDate">
+                              Дата начала <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="admin-startDate"
+                              type="date"
+                              value={idpFormData.startDate}
+                              onChange={(e) => {
+                                setIDPFormData({ ...idpFormData, startDate: e.target.value });
+                                if (idpErrors.startDate) setIdpErrors({ ...idpErrors, startDate: "" });
+                              }}
+                              className={cn(idpErrors.startDate && "border-destructive")}
+                            />
+                            {idpErrors.startDate && (
+                              <p className="text-xs text-destructive flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                {idpErrors.startDate}
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="admin-endDate">
+                              Дата окончания <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="admin-endDate"
+                              type="date"
+                              value={idpFormData.endDate}
+                              onChange={(e) => {
+                                setIDPFormData({ ...idpFormData, endDate: e.target.value });
+                                if (idpErrors.endDate) setIdpErrors({ ...idpErrors, endDate: "" });
+                              }}
+                              className={cn(idpErrors.endDate && "border-destructive")}
+                            />
+                            {idpErrors.endDate && (
+                              <p className="text-xs text-destructive flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                {idpErrors.endDate}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <Separator />
+                      </>
+                    )}
+
+                    {/* Выбор сценария (только если не из администрирования) */}
+                    {!isCreatingFromAdministration && (
+                      <div className="space-y-3">
+                        <Label>Выберите сценарий создания ИПР</Label>
+                        <div className="grid grid-cols-2 gap-4">
                         <Card
                           className={cn(
                             "cursor-pointer border-2 transition-colors",
@@ -2397,8 +2571,9 @@ export default function IDPPage() {
                             </div>
                           </CardContent>
                         </Card>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <Separator />
 
@@ -2406,7 +2581,7 @@ export default function IDPPage() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Label htmlFor="employee">
-                          Сотрудник <span className="text-destructive">*</span>
+                          {isCreatingFromAdministration && createScenario === "classic" ? "Сотрудники" : "Сотрудник"} <span className="text-destructive">*</span>
                         </Label>
                         <Button
                           type="button"
@@ -2418,7 +2593,52 @@ export default function IDPPage() {
                           <Info className="h-4 w-4" />
                         </Button>
                       </div>
-                      {participantScenario === "for-myself" ? (
+                      {isCreatingFromAdministration && createScenario === "classic" ? (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => setIsOrgStructureDialogOpen(true)}
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            {selectedEmployees.length > 0
+                              ? `Выбрано сотрудников: ${selectedEmployees.length}`
+                              : "Выберите сотрудников из оргструктуры"}
+                          </Button>
+                          {selectedEmployees.length > 0 && (
+                            <div className="space-y-2 mt-2">
+                              <div className="flex flex-wrap gap-2">
+                                {selectedEmployees.map((empId) => {
+                                  const emp = mockEmployees.find((e) => e.id === empId);
+                                  return emp ? (
+                                    <Badge key={empId} variant="secondary" className="flex items-center gap-1">
+                                      {emp.fullName}
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-3 w-3 p-0 hover:bg-destructive/20"
+                                        onClick={() => {
+                                          setSelectedEmployees(selectedEmployees.filter((id) => id !== empId));
+                                        }}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </Badge>
+                                  ) : null;
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          {idpErrors.employeeId && (
+                            <p className="text-xs text-destructive flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              {idpErrors.employeeId}
+                            </p>
+                          )}
+                        </>
+                      ) : participantScenario === "for-myself" ? (
                         <div className="flex items-center gap-2 p-3 bg-muted rounded-md border">
                           <div className="flex-1">
                             <p className="text-sm font-medium">
@@ -2484,7 +2704,37 @@ export default function IDPPage() {
                           <Info className="h-4 w-4" />
                         </Button>
                       </div>
-                      {participantScenario === "for-subordinate" ? (
+                      {isCreatingFromAdministration && createScenario === "classic" ? (
+                        <>
+                          <Select
+                            value={idpFormData.managerId}
+                            onValueChange={(value) => {
+                              setIDPFormData({ ...idpFormData, managerId: value });
+                              if (idpErrors.managerId) setIdpErrors({ ...idpErrors, managerId: "" });
+                            }}
+                          >
+                            <SelectTrigger id="manager" className={cn(idpErrors.managerId && "border-destructive")}>
+                              <SelectValue placeholder="Выберите руководителя" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {mockManagers.map((manager) => (
+                                <SelectItem key={manager.id} value={manager.id}>
+                                  {manager.fullName} - {manager.position}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Руководитель будет назначен для всех выбранных сотрудников
+                          </p>
+                          {idpErrors.managerId && (
+                            <p className="text-xs text-destructive flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              {idpErrors.managerId}
+                            </p>
+                          )}
+                        </>
+                      ) : participantScenario === "for-subordinate" ? (
                         <>
                           <Select
                             value={idpFormData.managerId}
@@ -3097,6 +3347,98 @@ export default function IDPPage() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Модальное окно выбора сотрудников из оргструктуры */}
+      <Dialog open={isOrgStructureDialogOpen} onOpenChange={setIsOrgStructureDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Выбор сотрудников из оргструктуры</DialogTitle>
+            <DialogDescription>
+              Выберите одного или нескольких сотрудников для создания ИПР
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border rounded-lg p-4 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-2">
+                {mockEmployees.map((employee) => {
+                  const isSelected = selectedEmployees.includes(employee.id);
+                  return (
+                    <div
+                      key={employee.id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                        isSelected
+                          ? "bg-primary/10 border-primary"
+                          : "hover:bg-muted border-border"
+                      )}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedEmployees(selectedEmployees.filter((id) => id !== employee.id));
+                        } else {
+                          setSelectedEmployees([...selectedEmployees, employee.id]);
+                        }
+                      }}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedEmployees([...selectedEmployees, employee.id]);
+                          } else {
+                            setSelectedEmployees(selectedEmployees.filter((id) => id !== employee.id));
+                          }
+                        }}
+                      />
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="text-sm text-white" style={{ backgroundColor: 'var(--ritm-blue)' }}>
+                          {getInitials(employee.fullName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-medium">{employee.fullName}</p>
+                        <p className="text-sm text-muted-foreground">{employee.position}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {selectedEmployees.length > 0 && (
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm font-medium">
+                  Выбрано сотрудников: {selectedEmployees.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedEmployees([])}
+                >
+                  Очистить выбор
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsOrgStructureDialogOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedEmployees.length > 0) {
+                  setIsOrgStructureDialogOpen(false);
+                  if (idpErrors.employeeId) setIdpErrors({ ...idpErrors, employeeId: "" });
+                }
+              }}
+              disabled={selectedEmployees.length === 0}
+            >
+              Выбрать ({selectedEmployees.length})
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

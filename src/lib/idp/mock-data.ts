@@ -36,6 +36,14 @@ export interface IDPAction {
   completedDate?: Date;
 }
 
+export interface OneOnOneMeeting {
+  id: string;
+  date: Date;
+  managerId: string;
+  managerName: string;
+  summary: string; // Итоги встречи
+}
+
 export interface IDP {
   id: string;
   title: string;
@@ -57,6 +65,10 @@ export interface IDP {
   goals: IDPGoal[];
   createdAt: Date;
   updatedAt: Date;
+  // Поля для 1-on-1 встреч
+  meetingDate?: Date; // Дата последней встречи
+  meetingSummary?: string; // Итоги последней встречи
+  meetingHistory?: OneOnOneMeeting[]; // История встреч
 }
 
 export const mockCompetencies: Competency[] = [
@@ -130,6 +142,24 @@ export const mockIDPs: IDP[] = [
     isVisible: true,
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-02-15"),
+    meetingDate: new Date("2024-02-15"),
+    meetingSummary: "Обсудили текущие задачи по развитию лидерских компетенций. Сотрудник показал хороший прогресс в управлении командой. Определили приоритетные направления для дальнейшего развития: работа над стратегическим мышлением и принятием решений. Договорились о регулярных встречах раз в месяц.",
+    meetingHistory: [
+      {
+        id: "meeting-1-1",
+        date: new Date("2024-01-15"),
+        managerId: "mgr-1",
+        managerName: "Козлов Андрей Викторович",
+        summary: "Первая встреча по плану развития. Обсудили цели и ожидания. Определили ключевые компетенции для развития.",
+      },
+      {
+        id: "meeting-1-2",
+        date: new Date("2024-02-15"),
+        managerId: "mgr-1",
+        managerName: "Козлов Андрей Викторович",
+        summary: "Обсудили текущие задачи по развитию лидерских компетенций. Сотрудник показал хороший прогресс в управлении командой. Определили приоритетные направления для дальнейшего развития.",
+      },
+    ],
     goals: [
       {
         id: "goal-1",
@@ -226,6 +256,17 @@ export const mockIDPs: IDP[] = [
     isVisible: true,
     createdAt: new Date("2024-04-01"),
     updatedAt: new Date("2024-04-15"),
+    meetingDate: new Date("2024-04-15"),
+    meetingSummary: "Обсудили план развития навыков управления проектами. Сотрудник заинтересован в получении сертификации PMP. Определили этапы подготовки и сроки.",
+    meetingHistory: [
+      {
+        id: "meeting-1c-1",
+        date: new Date("2024-04-15"),
+        managerId: "mgr-2",
+        managerName: "Николаева Ольга Сергеевна",
+        summary: "Обсудили план развития навыков управления проектами. Сотрудник заинтересован в получении сертификации PMP. Определили этапы подготовки и сроки.",
+      },
+    ],
     goals: [
       {
         id: "goal-1c",
@@ -307,6 +348,31 @@ export const mockIDPs: IDP[] = [
     isVisible: false,
     createdAt: new Date("2023-12-01"),
     updatedAt: new Date("2024-11-30"),
+    meetingDate: new Date("2024-11-15"),
+    meetingSummary: "Итоговая встреча по завершенному плану развития коммуникативных навыков. Обсудили достигнутые результаты и дальнейшие планы развития.",
+    meetingHistory: [
+      {
+        id: "meeting-3-1",
+        date: new Date("2023-12-10"),
+        managerId: "mgr-2",
+        managerName: "Николаева Ольга Сергеевна",
+        summary: "Первичное обсуждение плана развития коммуникативных навыков. Определили основные направления работы.",
+      },
+      {
+        id: "meeting-3-2",
+        date: new Date("2024-06-15"),
+        managerId: "mgr-2",
+        managerName: "Николаева Ольга Сергеевна",
+        summary: "Промежуточная встреча. Обсудили прогресс в развитии навыков презентации. Сотрудник показал значительные улучшения.",
+      },
+      {
+        id: "meeting-3-3",
+        date: new Date("2024-11-15"),
+        managerId: "mgr-2",
+        managerName: "Николаева Ольга Сергеевна",
+        summary: "Итоговая встреча по завершенному плану развития коммуникативных навыков. Обсудили достигнутые результаты и дальнейшие планы развития.",
+      },
+    ],
     goals: [
       {
         id: "goal-4",
