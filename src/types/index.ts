@@ -4,6 +4,55 @@ export type SkillLevel = 1 | 2 | 3 | 4 | 5;
 
 export type AssessmentRole = "самооценка" | "руководитель" | "коллега" | "подчиненный";
 
+// Расширенная структура для многосторонней оценки (360-degree feedback)
+export interface MultiRoleAssessment {
+  competenceId: string;
+  selfAssessment?: SkillLevel;
+  managerAssessment?: SkillLevel;
+  peerAssessments: SkillLevel[]; // Массив оценок от коллег (анонимные)
+  subordinateAssessments: SkillLevel[]; // Массив оценок от подчиненных
+  lastUpdated: Date;
+  comments?: {
+    self?: string;
+    manager?: string;
+    peers?: string[]; // Комментарии коллег
+    subordinates?: string[]; // Комментарии подчиненных
+  };
+}
+
+// Агрегированные оценки для визуализации
+export interface AggregatedAssessment {
+  competenceId: string;
+  selfAssessment?: SkillLevel;
+  managerAssessment?: SkillLevel;
+  avgPeerAssessment?: number; // Средняя оценка коллег
+  avgSubordinateAssessment?: number; // Средняя оценка подчиненных
+  peerCount: number; // Количество оценок от коллег
+  subordinateCount: number; // Количество оценок от подчиненных
+}
+
+// Окно Джохари - квадрант компетенции
+export type JohariQuadrant = "arena" | "blind_spot" | "facade" | "unknown";
+
+// Данные для окна Джохари по компетенции
+export interface JohariWindowData {
+  competenceId: string;
+  competenceName: string;
+  quadrant: JohariQuadrant;
+  selfAssessment: SkillLevel;
+  othersAssessment: number; // Средняя оценка других (руководитель + коллеги + подчиненные)
+  gap: number; // Разница между самооценкой и оценкой других (может быть отрицательной)
+}
+
+// Статистика по окну Джохари
+export interface JohariWindowStats {
+  arena: number; // Количество компетенций в открытой области
+  blindSpot: number; // Количество компетенций в слепой зоне
+  facade: number; // Количество компетенций в скрытой области
+  unknown: number; // Количество компетенций в неизвестной области
+  total: number; // Общее количество оцененных компетенций
+}
+
 export interface Competence {
   id: string;
   name: string;
@@ -100,6 +149,7 @@ export interface UserProfile {
   mainProfileId?: string;
   additionalProfileIds?: string[];
   skills: UserSkill[];
+  multiRoleAssessments?: MultiRoleAssessment[]; // Многосторонние оценки компетенций
   careerTrackProgress?: CareerTrackProgress;
   avatar?: string; // URL или base64 data URL фотографии
   tags?: string[]; // Теги пользователя

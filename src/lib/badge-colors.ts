@@ -122,6 +122,10 @@ export const BADGE_COLORS = {
   
   /** ЦНТР - корпоративный циан */
   cntr: "bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-900 dark:text-cyan-200 dark:border-cyan-700",
+
+  // ========== Статус заявки на оценку ==========
+  /** Заявка — ожидает рассмотрения администратором */
+  request: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900 dark:text-amber-200 dark:border-amber-700",
 } as const;
 
 /**
@@ -162,6 +166,7 @@ export function getStatusBadgeColor(status: string): string {
     'in_progress': 'inProgress',
     'completed': 'completed',
     'cancelled': 'cancelled',
+    'request': 'request',
     
     // Статусы участников
     'not-started': 'notStarted',

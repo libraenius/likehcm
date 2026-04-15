@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Building2, ClipboardCheck, Users, Settings, ExternalLink, QrCode, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock } from "lucide-react";
+import { Building2, ClipboardCheck, Users, Settings, ExternalLink, QrCode, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, Upload, Download, User, ShieldCheck, BarChart3, Eye, Filter } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,6 +18,20 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { getStatusBadgeColor } from "@/lib/badge-colors";
+import { RoleSwitcher } from "@/components/external-reports/role-switcher";
+import { ReportUploadDialog } from "@/components/external-reports/report-upload-dialog";
+import { VisibilityPolicyEditor } from "@/components/external-reports/visibility-policy-editor";
+import { ReportsList } from "@/components/external-reports/reports-list";
+import { AddParticipantsDialog } from "@/components/external-reports/add-participants-dialog";
+import { ProcedureInfoDialog } from "@/components/external-reports/procedure-info-dialog";
+import { ProcedureResultDialog } from "@/components/external-reports/procedure-result-dialog";
+import { RequestAssessmentDialog } from "@/components/external-reports/request-assessment-dialog";
+import type { ProcedureInfo } from "@/components/external-reports/procedure-info-dialog";
+import type { ProcedureResult } from "@/components/external-reports/procedure-result-dialog";
+import { seedReports, defaultPolicies, users as reportUsers, orgUnits as reportOrgUnits } from "@/lib/external-reports/mock-data";
+import { getVisibleReports, getSubordinateUserIds } from "@/lib/external-reports/access";
+import { roleLabels, reportTypeLabels } from "@/lib/external-reports/types";
+import type { Report, VisibilityPolicy } from "@/lib/external-reports/types";
 
 // Тип для провайдера
 interface ExternalProvider {
@@ -127,7 +141,7 @@ interface AssessmentProcedure {
   endDate: Date;
   link: string;
   qrCodeLink: string;
-  status: "planned" | "in-progress" | "completed" | "cancelled";
+  status: "planned" | "in-progress" | "completed" | "cancelled" | "request";
   reportUrl?: string;
   participants?: ProcedureParticipant[];
 }
@@ -177,6 +191,25 @@ const mockProviders: ExternalProvider[] = [
           { id: "p1-23", fullName: "Ларина Марина Игоревна", position: "Backend разработчик", email: "larina@example.com", status: "completed" as const, reportUrl: "/reports/assessment-1-p23.pdf", departmentId: "dept-3", uniqueLink: "https://assessment.example.com/procedure/1?participant=p1-23" },
           { id: "p1-24", fullName: "Рыбаков Денис Сергеевич", position: "Мобильный разработчик", email: "rybakov@example.com", status: "completed" as const, reportUrl: "/reports/assessment-1-p24.pdf", departmentId: "dept-4", uniqueLink: "https://assessment.example.com/procedure/1?participant=p1-24" },
           { id: "p1-25", fullName: "Горшкова Анастасия Петровна", position: "UX/UI дизайнер", email: "gorshkova@example.com", status: "completed" as const, reportUrl: "/reports/assessment-1-p25.pdf", departmentId: "dept-5", uniqueLink: "https://assessment.example.com/procedure/1?participant=p1-25" },
+        ],
+      },
+      {
+        id: "hogan-2",
+        name: "Оценка деструкторов лидерства (HDS)",
+        providerId: "provider-1",
+        providerName: "Hogan Assessment Systems",
+        description: "Оценка рисков деструктивного поведения в стрессовых условиях",
+        startDate: new Date("2024-03-10"),
+        endDate: new Date("2024-03-15"),
+        link: "https://assessment.example.com/procedure/hogan-2",
+        qrCodeLink: "https://assessment.example.com/qr/hogan-2",
+        status: "in-progress",
+        participants: [
+          { id: "p1-1", fullName: "Иванов Иван Иванович", position: "Руководитель отдела", email: "ivanov@example.com", status: "in-progress" as const, departmentId: "dept-1", uniqueLink: "https://assessment.example.com/procedure/hogan-2?participant=p1-1" },
+          { id: "p1-5", fullName: "Морозов Дмитрий Александрович", position: "Специалист", email: "morozov@example.com", status: "in-progress" as const, departmentId: "dept-3", uniqueLink: "https://assessment.example.com/procedure/hogan-2?participant=p1-5" },
+          { id: "p1-10", fullName: "Орлов Максим Сергеевич", position: "Архитектор", email: "orlov@example.com", status: "not-started" as const, departmentId: "dept-1", uniqueLink: "https://assessment.example.com/procedure/hogan-2?participant=p1-10" },
+          { id: "p1-11", fullName: "Федорова Татьяна Николаевна", position: "Руководитель команды", email: "fedorova@example.com", status: "not-started" as const, departmentId: "dept-1", uniqueLink: "https://assessment.example.com/procedure/hogan-2?participant=p1-11" },
+          { id: "p1-20", fullName: "Борисов Владимир Олегович", position: "Руководитель разработки", email: "borisov@example.com", status: "invited" as const, departmentId: "dept-5", uniqueLink: "https://assessment.example.com/procedure/hogan-2?participant=p1-20" },
         ],
       },
     ],
@@ -293,6 +326,24 @@ const mockProviders: ExternalProvider[] = [
       },
     ],
   },
+  {
+    id: "provider-4",
+    name: "Zetic",
+    description: "Оценка когнитивных способностей и потенциала",
+    procedures: [],
+  },
+  {
+    id: "provider-5",
+    name: "Azimut",
+    description: "Комплексная оценка персонала и развитие компетенций",
+    procedures: [],
+  },
+  {
+    id: "provider-6",
+    name: "HT Lab",
+    description: "Психометрическая оценка и профилирование",
+    procedures: [],
+  },
 ];
 
 // Моковые данные для вкладки "Мои оценочные процедуры"
@@ -333,6 +384,151 @@ const mockProcedures: AssessmentProcedure[] = [
   },
 ];
 
+// ===== Внутренние оценки (360/ФКР, ассессмент-центр, ЦОР) =====
+type InternalAssessmentType = "360_FKR" | "ASSESSMENT_CENTER" | "COR";
+type InternalAssessmentStatus = "active" | "completed" | "planned";
+
+interface InternalAssessment {
+  id: string;
+  type: InternalAssessmentType;
+  name: string;
+  status: InternalAssessmentStatus;
+  startDate: Date;
+  endDate: Date;
+  score?: number;
+  resultUrl?: string;
+}
+
+interface EmployeeAssessmentRecord {
+  employeeId: string;
+  fullName: string;
+  position: string;
+  departmentId: string;
+  externalProcedures: { procedure: AssessmentProcedure; participantStatus: ProcedureParticipant["status"] }[];
+  internalAssessments: InternalAssessment[];
+}
+
+const INTERNAL_ASSESSMENT_LABELS: Record<InternalAssessmentType, string> = {
+  "360_FKR": "Оценка 360 (ФКР)",
+  "ASSESSMENT_CENTER": "Ассессмент-центр",
+  "COR": "Оценка результативности (ЦОР)",
+};
+
+const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
+  {
+    employeeId: "emp-1",
+    fullName: "Петров Иван Сергеевич",
+    position: "Главный инженер",
+    departmentId: "dept-2",
+    externalProcedures: [
+      {
+        procedure: mockProviders[0].procedures[0],
+        participantStatus: "completed",
+      },
+      {
+        procedure: mockProviders[0].procedures[1],
+        participantStatus: "in-progress",
+      },
+    ],
+    internalAssessments: [
+      { id: "ia-1", type: "360_FKR", name: "Оценка 360 Q1 2024", status: "completed", startDate: new Date("2024-01-10"), endDate: new Date("2024-01-31"), score: 4.2, resultUrl: "/results/360-emp1.pdf" },
+      { id: "ia-2", type: "COR", name: "ЦОР 2024", status: "active", startDate: new Date("2024-03-01"), endDate: new Date("2024-06-30") },
+    ],
+  },
+  {
+    employeeId: "emp-2",
+    fullName: "Сидорова Мария Александровна",
+    position: "Ведущий разработчик",
+    departmentId: "dept-2",
+    externalProcedures: [
+      {
+        procedure: mockProviders[1].procedures[0],
+        participantStatus: "in-progress",
+      },
+    ],
+    internalAssessments: [
+      { id: "ia-3", type: "360_FKR", name: "Оценка 360 Q1 2024", status: "completed", startDate: new Date("2024-01-10"), endDate: new Date("2024-01-31"), score: 3.8, resultUrl: "/results/360-emp2.pdf" },
+      { id: "ia-4", type: "ASSESSMENT_CENTER", name: "Ассессмент HiPo 2024", status: "planned", startDate: new Date("2024-04-15"), endDate: new Date("2024-04-20") },
+    ],
+  },
+  {
+    employeeId: "emp-3",
+    fullName: "Иванов Алексей Дмитриевич",
+    position: "Старший разработчик",
+    departmentId: "dept-3",
+    externalProcedures: [
+      {
+        procedure: mockProviders[0].procedures[0],
+        participantStatus: "completed",
+      },
+    ],
+    internalAssessments: [
+      { id: "ia-5", type: "COR", name: "ЦОР 2024", status: "active", startDate: new Date("2024-03-01"), endDate: new Date("2024-06-30"), score: 87 },
+      { id: "ia-6", type: "ASSESSMENT_CENTER", name: "Ассессмент управленцев 2024", status: "completed", startDate: new Date("2024-02-10"), endDate: new Date("2024-02-15"), score: 72, resultUrl: "/results/ac-emp3.pdf" },
+    ],
+  },
+  {
+    employeeId: "emp-5",
+    fullName: "Помыткин Сергей Олегович",
+    position: "Руководитель разработки",
+    departmentId: "dept-1",
+    externalProcedures: [
+      {
+        procedure: mockProviders[0].procedures[0],
+        participantStatus: "completed",
+      },
+      {
+        procedure: mockProviders[1].procedures[0],
+        participantStatus: "invited",
+      },
+    ],
+    internalAssessments: [
+      { id: "ia-7", type: "360_FKR", name: "Оценка 360 Q1 2024", status: "completed", startDate: new Date("2024-01-10"), endDate: new Date("2024-01-31"), score: 4.5, resultUrl: "/results/360-emp5.pdf" },
+      { id: "ia-8", type: "COR", name: "ЦОР 2024", status: "active", startDate: new Date("2024-03-01"), endDate: new Date("2024-06-30") },
+      { id: "ia-9", type: "ASSESSMENT_CENTER", name: "Ассессмент управленцев 2024", status: "completed", startDate: new Date("2024-02-10"), endDate: new Date("2024-02-15"), score: 89, resultUrl: "/results/ac-emp5.pdf" },
+    ],
+  },
+  {
+    employeeId: "emp-7",
+    fullName: "Морозов Дмитрий Александрович",
+    position: "Специалист",
+    departmentId: "dept-3",
+    externalProcedures: [
+      {
+        procedure: mockProviders[2].procedures[0],
+        participantStatus: "not-started",
+      },
+    ],
+    internalAssessments: [
+      { id: "ia-10", type: "360_FKR", name: "Оценка 360 Q1 2024", status: "completed", startDate: new Date("2024-01-10"), endDate: new Date("2024-01-31"), score: 3.5, resultUrl: "/results/360-emp7.pdf" },
+    ],
+  },
+  {
+    employeeId: "emp-12",
+    fullName: "Орлов Максим Сергеевич",
+    position: "Архитектор",
+    departmentId: "dept-1",
+    externalProcedures: [
+      {
+        procedure: mockProviders[0].procedures[1],
+        participantStatus: "not-started",
+      },
+    ],
+    internalAssessments: [
+      { id: "ia-11", type: "COR", name: "ЦОР 2024", status: "planned", startDate: new Date("2024-04-01"), endDate: new Date("2024-06-30") },
+    ],
+  },
+];
+
+const getInternalAssessmentStatusText = (status: InternalAssessmentStatus) => {
+  switch (status) {
+    case "active": return "В процессе";
+    case "completed": return "Завершено";
+    case "planned": return "Запланировано";
+    default: return status;
+  }
+};
+
 // Функция для получения цвета статуса
 // Использует централизованные цвета из badge-colors.ts
 const getStatusColor = (status: AssessmentProcedure["status"]) => {
@@ -350,6 +546,8 @@ const getStatusText = (status: AssessmentProcedure["status"]) => {
       return "Завершено";
     case "cancelled":
       return "Отменено";
+    case "request":
+      return "Заявка";
     default:
       return status;
   }
@@ -408,6 +606,7 @@ export default function ExternalProvidersPage() {
   const [createType, setCreateType] = useState<"provider" | "procedure" | null>(null);
   const [editingProcedure, setEditingProcedure] = useState<AssessmentProcedure | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [adminStatusFilter, setAdminStatusFilter] = useState<"all" | "request" | "active" | "completed">("all");
   
   // Состояние для пагинации таблицы участников
   const [participantsCurrentPage, setParticipantsCurrentPage] = useState(1);
@@ -428,7 +627,7 @@ export default function ExternalProvidersPage() {
     endDate: "",
     link: "",
     qrCodeLink: "",
-    status: "planned" as "planned" | "in-progress" | "completed" | "cancelled",
+    status: "planned" as "planned" | "in-progress" | "completed" | "cancelled" | "request",
   });
   
   // Состояние для модального окна добавления участников
@@ -446,6 +645,141 @@ export default function ExternalProvidersPage() {
   });
   const [notificationSearchQuery, setNotificationSearchQuery] = useState("");
   
+  // Состояние для отчетов внешних провайдеров
+  const [currentUserId, setCurrentUserId] = useState("u-employee");
+  const [reports, setReports] = useState<Report[]>(seedReports);
+  const [policies, setPolicies] = useState<VisibilityPolicy[]>(defaultPolicies);
+  const [isReportUploadOpen, setIsReportUploadOpen] = useState(false);
+
+  // Модалки оценочных процедур: data !== null → открыта, null → закрыта.
+  const [procedureInfoData, setProcedureInfoData] = useState<ProcedureInfo | null>(null);
+  const [procedureResultData, setProcedureResultData] = useState<ProcedureResult | null>(null);
+  const [isRequestAssessmentOpen, setIsRequestAssessmentOpen] = useState(false);
+
+  const openProcedureInfo = (data: ProcedureInfo) => {
+    setProcedureResultData(null);
+    setProcedureInfoData(data);
+  };
+  const openProcedureResult = (data: ProcedureResult) => {
+    setProcedureInfoData(null);
+    setProcedureResultData(data);
+  };
+  const [employeeAssessments, setEmployeeAssessments] = useState<EmployeeAssessmentRecord[]>(mockEmployeeAssessments);
+  
+  // Фильтры по колонкам таблицы оценочных процедур сотрудников
+  const [empFilterName, setEmpFilterName] = useState("");
+  const [empFilterDept, setEmpFilterDept] = useState<string>("all");
+  const [empFilterExtStatus, setEmpFilterExtStatus] = useState<string>("all");
+  const [empFilter360, setEmpFilter360] = useState<string>("all");
+  const [empFilterAC, setEmpFilterAC] = useState<string>("all");
+  const [empFilterCOR, setEmpFilterCOR] = useState<string>("all");
+  const [isEmpFiltersOpen, setIsEmpFiltersOpen] = useState(false);
+
+  const handleReportUpload = (newReports: Report[]) => {
+    setReports((prev) => [...prev, ...newReports]);
+  };
+
+  const allProcedures = useMemo(() =>
+    providers.flatMap((p) =>
+      p.procedures.map((proc) => ({
+        id: proc.id,
+        name: proc.name,
+        providerId: p.id,
+        providerName: p.name,
+        participants: proc.participants?.map((part) => ({
+          id: part.id,
+          fullName: part.fullName,
+          position: part.position,
+          email: part.email,
+        })),
+      })),
+    ),
+    [providers],
+  );
+
+  const visibleReports = useMemo(
+    () => getVisibleReports(currentUserId, reports, policies),
+    [currentUserId, reports, policies],
+  );
+
+  const subordinateIds = useMemo(
+    () => getSubordinateUserIds(currentUserId),
+    [currentUserId],
+  );
+
+  const handleAddParticipants = (employeeIds: string[]) => {
+    if (!selectedProcedure) return;
+    const participants: ProcedureParticipant[] = employeeIds.map((eid) => {
+      const emp = mockEmployees.find((e) => e.id === eid);
+      const existing = selectedProcedure.participants?.find(
+        (p) => p.id === eid || p.email === emp?.email,
+      );
+      if (existing) return existing;
+      return {
+        id: eid,
+        fullName: emp?.fullName ?? eid,
+        position: emp?.position ?? "",
+        email: emp?.email ?? "",
+        status: "not-started" as const,
+        departmentId: emp?.departmentId,
+        uniqueLink: `https://assess.example.com/p/${eid}`,
+      };
+    });
+    const updated: AssessmentProcedure = { ...selectedProcedure, participants };
+    setSelectedProcedure(updated);
+    setProviders((prev) =>
+      prev.map((p) =>
+        p.procedures.some((pr) => pr.id === updated.id)
+          ? { ...p, procedures: p.procedures.map((pr) => (pr.id === updated.id ? updated : pr)) }
+          : p,
+      ),
+    );
+  };
+
+  const handleRequestAssessment = (data: {
+    type: "external" | "360_FKR" | "ASSESSMENT_CENTER" | "COR";
+    providerId?: string;
+    name: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    participantIds: string[];
+    comment: string;
+  }) => {
+    if (data.type === "external" && data.providerId) {
+      const newProcedure: AssessmentProcedure = {
+        id: `req-${Date.now()}`,
+        name: data.name,
+        providerId: data.providerId,
+        providerName: providers.find((p) => p.id === data.providerId)?.name ?? "",
+        description: data.description || undefined,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        link: "",
+        qrCodeLink: "",
+        status: "request",
+        participants: data.participantIds.map((eid) => {
+          const emp = mockEmployees.find((e) => e.id === eid);
+          return {
+            id: eid,
+            fullName: emp?.fullName ?? eid,
+            position: emp?.position ?? "",
+            email: emp?.email ?? "",
+            status: "not-started" as const,
+            departmentId: emp?.departmentId,
+          };
+        }),
+      };
+      setProviders((prev) =>
+        prev.map((p) =>
+          p.id === data.providerId
+            ? { ...p, procedures: [...p.procedures, newProcedure] }
+            : p,
+        ),
+      );
+    }
+  };
+
   // Переключение раскрытия провайдера
   const toggleProvider = (providerId: string) => {
     const newExpanded = new Set(expandedProviders);
@@ -616,10 +950,26 @@ export default function ExternalProvidersPage() {
   
   // Фильтрация провайдеров и процедур
   const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return providers;
+    let result = providers;
+
+    if (adminStatusFilter !== "all") {
+      const statusSet = adminStatusFilter === "active"
+        ? new Set(["planned", "in-progress", "request"])
+        : adminStatusFilter === "request"
+          ? new Set(["request"])
+          : new Set(["completed"]);
+
+      result = result.map((provider) => {
+        const filtered = provider.procedures.filter((proc) => statusSet.has(proc.status));
+        if (filtered.length > 0) return { ...provider, procedures: filtered };
+        return null;
+      }).filter(Boolean) as ExternalProvider[];
+    }
+
+    if (!searchQuery.trim()) return result;
     
     const query = searchQuery.toLowerCase();
-    return providers.map(provider => {
+    return result.map(provider => {
       const providerMatches = 
         provider.name.toLowerCase().includes(query) ||
         provider.description?.toLowerCase().includes(query);
@@ -634,7 +984,7 @@ export default function ExternalProvidersPage() {
       }
       return null;
     }).filter(Boolean) as ExternalProvider[];
-  }, [providers, searchQuery]);
+  }, [providers, searchQuery, adminStatusFilter]);
 
   return (
     <div className="space-y-6">
@@ -646,6 +996,11 @@ export default function ExternalProvidersPage() {
           </p>
         </div>
       </div>
+
+      <RoleSwitcher
+        currentUserId={currentUserId}
+        onUserChange={setCurrentUserId}
+      />
 
       <Tabs defaultValue="my-procedures" className="w-full">
         <TabsList variant="grid3">
@@ -866,25 +1221,502 @@ export default function ExternalProvidersPage() {
               })()}
             </>
           )}
+
+          {/* Секция отчетов от внешних провайдеров */}
+          <Separator />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Отчеты от внешних провайдеров
+              </h2>
+              <Badge variant="outline" className="text-xs">
+                Доступно: {visibleReports.length}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Отчеты отображаются в соответствии с вашей ролью и уровнем доступа.
+              Переключите роль выше, чтобы увидеть отчеты от лица другого пользователя.
+            </p>
+            <ReportsList
+              reports={reports}
+              policies={policies}
+              currentUserId={currentUserId}
+              providers={providers.map((p) => ({ id: p.id, name: p.name }))}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="employees-procedures" className="mt-4 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Оценочные процедуры сотрудников
-              </CardTitle>
-              <CardDescription>
-                Просмотр и управление оценочными процедурами сотрудников с внешними провайдерами
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Раздел находится в разработке. Здесь будет отображаться список оценочных процедур сотрудников с внешними провайдерами.
-              </p>
-            </CardContent>
-          </Card>
+          {(() => {
+            const currentUser = reportUsers.find((u) => u.id === currentUserId);
+            const isEmployee = currentUser?.role === "EMPLOYEE";
+
+            if (isEmployee) {
+              return (
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="text-center">
+                      <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                      <h3 className="text-lg font-semibold mb-2">Нет подчиненных</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Для роли &laquo;Сотрудник&raquo; данный раздел недоступен.
+                        Выберите руководящую роль, чтобы увидеть оценки подчиненных.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
+
+            const internalStatusMatch = (ia: InternalAssessment | undefined, filter: string) => {
+              if (filter === "all") return true;
+              if (filter === "none") return !ia;
+              if (filter === "has") return !!ia;
+              return ia?.status === filter;
+            };
+
+            const filteredAssessments = employeeAssessments.filter((rec) => {
+              if (empFilterName) {
+                const q = empFilterName.toLowerCase();
+                if (!rec.fullName.toLowerCase().includes(q) && !rec.position.toLowerCase().includes(q)) return false;
+              }
+              if (empFilterDept !== "all" && rec.departmentId !== empFilterDept) return false;
+              if (empFilterExtStatus !== "all") {
+                if (empFilterExtStatus === "none" && rec.externalProcedures.length > 0) return false;
+                if (empFilterExtStatus === "has" && rec.externalProcedures.length === 0) return false;
+                if (empFilterExtStatus !== "none" && empFilterExtStatus !== "has") {
+                  const hasMatchingStatus = rec.externalProcedures.some((ep) => ep.participantStatus === empFilterExtStatus);
+                  if (!hasMatchingStatus) return false;
+                }
+              }
+              const a360 = rec.internalAssessments.find((ia) => ia.type === "360_FKR");
+              if (!internalStatusMatch(a360, empFilter360)) return false;
+              const aAC = rec.internalAssessments.find((ia) => ia.type === "ASSESSMENT_CENTER");
+              if (!internalStatusMatch(aAC, empFilterAC)) return false;
+              const aCOR = rec.internalAssessments.find((ia) => ia.type === "COR");
+              if (!internalStatusMatch(aCOR, empFilterCOR)) return false;
+              return true;
+            });
+
+            const activeFilterCount = [empFilterDept, empFilterExtStatus, empFilter360, empFilterAC, empFilterCOR].filter((v) => v !== "all").length;
+            const hasActiveFilters = empFilterName !== "" || activeFilterCount > 0;
+
+            const internalFilterSelect = (label: string, value: string, onChange: (v: string) => void) => (
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">{label}</label>
+                <Select value={value} onValueChange={onChange}>
+                  <SelectTrigger className="h-9 text-sm w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все</SelectItem>
+                    <SelectItem value="has">Есть</SelectItem>
+                    <SelectItem value="none">Нет</SelectItem>
+                    <SelectItem value="completed">Завершено</SelectItem>
+                    <SelectItem value="active">В процессе</SelectItem>
+                    <SelectItem value="planned">Запланировано</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+
+            return (
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Оценочные процедуры сотрудников
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        Дашборд руководителя · роль &laquo;{currentUser ? roleLabels[currentUser.role] : ""}&raquo;
+                        {hasActiveFilters && (
+                          <span className="ml-2 text-primary">
+                            · показано {filteredAssessments.length} из {employeeAssessments.length}
+                          </span>
+                        )}
+                      </CardDescription>
+                    </div>
+                    <Button type="button" className="gap-1.5" onClick={(e) => { e.stopPropagation(); setIsRequestAssessmentOpen(true); }}>
+                      <Send className="h-4 w-4" />
+                      Подать заявку на оценку
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Строка поиска + кнопка фильтров */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={empFilterName}
+                        onChange={(e) => setEmpFilterName(e.target.value)}
+                        placeholder="Поиск по ФИО или должности..."
+                        className="h-9 pl-9"
+                      />
+                      {empFilterName && (
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground"
+                          onClick={() => setEmpFilterName("")}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant={activeFilterCount > 0 ? "default" : "outline"}
+                      size="sm"
+                      className="h-9 gap-1.5 px-3 shrink-0"
+                      onClick={() => setIsEmpFiltersOpen(true)}
+                    >
+                      <Filter className="h-4 w-4" />
+                      Фильтры
+                      {activeFilterCount > 0 && (
+                        <Badge variant="secondary" className="h-5 min-w-[20px] px-1 text-[10px] rounded-full bg-primary-foreground/20 text-primary-foreground">
+                          {activeFilterCount}
+                        </Badge>
+                      )}
+                    </Button>
+                    {hasActiveFilters && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-2 text-xs gap-1 text-muted-foreground shrink-0"
+                        onClick={() => {
+                          setEmpFilterName("");
+                          setEmpFilterDept("all");
+                          setEmpFilterExtStatus("all");
+                          setEmpFilter360("all");
+                          setEmpFilterAC("all");
+                          setEmpFilterCOR("all");
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Сбросить
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Активные фильтры — бейджи */}
+                  {activeFilterCount > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {empFilterDept !== "all" && (
+                        <Badge variant="secondary" className="gap-1 pr-1">
+                          Подразделение: {mockDepartments.find((d) => d.id === empFilterDept)?.name ?? empFilterDept}
+                          <button type="button" className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5" onClick={() => setEmpFilterDept("all")}><X className="h-3 w-3" /></button>
+                        </Badge>
+                      )}
+                      {empFilter360 !== "all" && (
+                        <Badge variant="secondary" className="gap-1 pr-1">
+                          360 (ФКР): {empFilter360 === "has" ? "Есть" : empFilter360 === "none" ? "Нет" : empFilter360 === "completed" ? "Завершено" : empFilter360 === "active" ? "В процессе" : "Запланировано"}
+                          <button type="button" className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5" onClick={() => setEmpFilter360("all")}><X className="h-3 w-3" /></button>
+                        </Badge>
+                      )}
+                      {empFilterAC !== "all" && (
+                        <Badge variant="secondary" className="gap-1 pr-1">
+                          Ассессмент: {empFilterAC === "has" ? "Есть" : empFilterAC === "none" ? "Нет" : empFilterAC === "completed" ? "Завершено" : empFilterAC === "active" ? "В процессе" : "Запланировано"}
+                          <button type="button" className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5" onClick={() => setEmpFilterAC("all")}><X className="h-3 w-3" /></button>
+                        </Badge>
+                      )}
+                      {empFilterCOR !== "all" && (
+                        <Badge variant="secondary" className="gap-1 pr-1">
+                          ЦОР: {empFilterCOR === "has" ? "Есть" : empFilterCOR === "none" ? "Нет" : empFilterCOR === "completed" ? "Завершено" : empFilterCOR === "active" ? "В процессе" : "Запланировано"}
+                          <button type="button" className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5" onClick={() => setEmpFilterCOR("all")}><X className="h-3 w-3" /></button>
+                        </Badge>
+                      )}
+                      {empFilterExtStatus !== "all" && (
+                        <Badge variant="secondary" className="gap-1 pr-1">
+                          Внеш. процедуры: {empFilterExtStatus === "has" ? "Есть" : empFilterExtStatus === "none" ? "Нет" : empFilterExtStatus === "completed" ? "Завершено" : empFilterExtStatus === "in-progress" ? "В процессе" : empFilterExtStatus === "invited" ? "Приглашен" : "Не начато"}
+                          <button type="button" className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5" onClick={() => setEmpFilterExtStatus("all")}><X className="h-3 w-3" /></button>
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Модалка фильтров */}
+                  <Dialog open={isEmpFiltersOpen} onOpenChange={setIsEmpFiltersOpen}>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Filter className="h-5 w-5" />
+                          Фильтры таблицы
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-2">
+                        <div>
+                          <label className="text-sm font-medium text-foreground mb-1.5 block">Подразделение</label>
+                          <Select value={empFilterDept} onValueChange={setEmpFilterDept}>
+                            <SelectTrigger className="h-9 text-sm w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Все подразделения</SelectItem>
+                              {mockDepartments.map((d) => (
+                                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Separator />
+                        <div className="grid grid-cols-2 gap-4">
+                          {internalFilterSelect("360 (ФКР)", empFilter360, setEmpFilter360)}
+                          {internalFilterSelect("Ассессмент-центр", empFilterAC, setEmpFilterAC)}
+                          {internalFilterSelect("ЦОР", empFilterCOR, setEmpFilterCOR)}
+                          <div>
+                            <label className="text-xs font-medium text-foreground mb-1.5 block">Внеш. процедуры</label>
+                            <Select value={empFilterExtStatus} onValueChange={setEmpFilterExtStatus}>
+                              <SelectTrigger className="h-9 text-sm w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Все</SelectItem>
+                                <SelectItem value="has">Есть</SelectItem>
+                                <SelectItem value="none">Нет</SelectItem>
+                                <SelectItem value="completed">Завершено</SelectItem>
+                                <SelectItem value="in-progress">В процессе</SelectItem>
+                                <SelectItem value="invited">Приглашен</SelectItem>
+                                <SelectItem value="not-started">Не начато</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <Separator />
+                        <div className="flex items-center justify-between">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground gap-1"
+                            onClick={() => {
+                              setEmpFilterDept("all");
+                              setEmpFilterExtStatus("all");
+                              setEmpFilter360("all");
+                              setEmpFilterAC("all");
+                              setEmpFilterCOR("all");
+                            }}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            Сбросить все
+                          </Button>
+                          <Button type="button" onClick={() => setIsEmpFiltersOpen(false)}>
+                            Применить
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Таблица */}
+                  <div className="border rounded-lg overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="w-[200px]">Сотрудник</TableHead>
+                          <TableHead className="w-[140px]">Подразделение</TableHead>
+                          <TableHead className="w-[110px]">360 (ФКР)</TableHead>
+                          <TableHead className="w-[110px]">Ассессмент</TableHead>
+                          <TableHead className="w-[110px]">ЦОР</TableHead>
+                          <TableHead>Внешние процедуры</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAssessments.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-8">
+                              <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground">Нет сотрудников по заданным фильтрам</p>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredAssessments.map((rec) => {
+                            const dept = mockDepartments.find((d) => d.id === rec.departmentId);
+                            const a360 = rec.internalAssessments.find((ia) => ia.type === "360_FKR");
+                            const aAC = rec.internalAssessments.find((ia) => ia.type === "ASSESSMENT_CENTER");
+                            const aCOR = rec.internalAssessments.find((ia) => ia.type === "COR");
+
+                            const renderInternalCell = (ia: InternalAssessment | undefined, type: InternalAssessmentType) => {
+                              if (!ia) return <span className="text-xs text-muted-foreground">—</span>;
+                              const isDone = ia.status === "completed";
+                              return (
+                                <div className="flex flex-col gap-1">
+                                  <Badge variant="outline" className={cn("text-[10px] w-fit", getStatusBadgeColor(ia.status === "active" ? "in-progress" : ia.status))}>
+                                    {getInternalAssessmentStatusText(ia.status)}
+                                  </Badge>
+                                  {ia.score !== undefined && (
+                                    <span className="text-xs font-semibold text-primary">{ia.score}</span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="inline-flex items-center gap-1 h-6 px-1.5 text-xs rounded-md hover:bg-muted transition-colors w-fit"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (isDone) {
+                                        openProcedureResult({
+                                          name: ia.name,
+                                          kind: "internal",
+                                          providerOrTypeLabel: INTERNAL_ASSESSMENT_LABELS[type],
+                                          endDate: ia.endDate,
+                                          score: ia.score,
+                                          resultUrl: ia.resultUrl,
+                                        });
+                                      } else {
+                                        openProcedureInfo({
+                                          kind: "internal",
+                                          name: ia.name,
+                                          type,
+                                          typeLabel: INTERNAL_ASSESSMENT_LABELS[type],
+                                          status: ia.status === "active" ? "in-progress" : ia.status,
+                                          statusLabel: getInternalAssessmentStatusText(ia.status),
+                                          startDate: ia.startDate,
+                                          endDate: ia.endDate,
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    {isDone ? <><FileText className="h-3 w-3" />Результат</> : <><Eye className="h-3 w-3" />Просмотр</>}
+                                  </button>
+                                </div>
+                              );
+                            };
+
+                            return (
+                              <TableRow key={rec.employeeId}>
+                                <TableCell className="align-top">
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-7 w-7">
+                                      <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+                                        {getInitials(rec.fullName)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <div className="font-medium text-sm leading-tight">{rec.fullName}</div>
+                                      <div className="text-xs text-muted-foreground">{rec.position}</div>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground align-top">{dept?.name ?? "—"}</TableCell>
+                                <TableCell className="align-top">{renderInternalCell(a360, "360_FKR")}</TableCell>
+                                <TableCell className="align-top">{renderInternalCell(aAC, "ASSESSMENT_CENTER")}</TableCell>
+                                <TableCell className="align-top">{renderInternalCell(aCOR, "COR")}</TableCell>
+                                <TableCell className="align-top py-2">
+                                  {rec.externalProcedures.length === 0 ? (
+                                    <span className="text-xs text-muted-foreground">—</span>
+                                  ) : (
+                                    <div className="flex flex-wrap gap-2">
+                                      {rec.externalProcedures.map((ep) => {
+                                        const isDone = ep.procedure.status === "completed" || ep.participantStatus === "completed";
+                                        const epReports = reports.filter((r) => r.procedureId === ep.procedure.id);
+                                        const hasIndividual = epReports.some((r) => r.type === "INDIVIDUAL");
+                                        const otherTypes = [...new Set(epReports.filter((r) => r.type !== "INDIVIDUAL").map((r) => reportTypeLabels[r.type]))];
+
+                                        return (
+                                          <div
+                                            key={ep.procedure.id}
+                                            className={cn(
+                                              "rounded-lg border p-3 w-[300px] flex flex-col gap-2 transition-colors",
+                                              isDone ? "bg-green-50/50 border-green-200 dark:bg-green-950/20 dark:border-green-800" : "bg-card hover:bg-muted/30"
+                                            )}
+                                          >
+                                            {/* Верхняя строка: даты слева, статус справа */}
+                                            <div className="flex items-center justify-between gap-2">
+                                              <span className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
+                                                <Calendar className="h-3 w-3" />
+                                                {formatDate(ep.procedure.startDate)} — {formatDate(ep.procedure.endDate)}
+                                              </span>
+                                              <Badge variant="outline" className={cn("text-[10px] h-5 px-1.5 shrink-0", getStatusBadgeColor(ep.participantStatus === "not-started" ? "not-started" : ep.participantStatus))}>
+                                                {getParticipantStatusText(ep.participantStatus)}
+                                              </Badge>
+                                            </div>
+
+                                            {/* Название + провайдер */}
+                                            <div>
+                                              <div className="text-sm font-semibold leading-tight truncate" title={ep.procedure.name}>
+                                                {ep.procedure.name}
+                                              </div>
+                                              <div className="text-xs text-muted-foreground truncate">{ep.procedure.providerName}</div>
+                                            </div>
+
+                                            {/* Отчёты */}
+                                            {(hasIndividual || otherTypes.length > 0) && (
+                                              <div className="flex flex-wrap gap-1">
+                                                {hasIndividual && (
+                                                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700">
+                                                    <FileText className="h-3 w-3 mr-0.5" />Индивид.
+                                                  </Badge>
+                                                )}
+                                                {otherTypes.map((lbl) => (
+                                                  <Badge key={lbl} variant="outline" className="text-[10px] h-5 px-1.5 bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+                                                    <FileText className="h-3 w-3 mr-0.5" />{lbl}
+                                                  </Badge>
+                                                ))}
+                                              </div>
+                                            )}
+
+                                            {/* Кнопка действия */}
+                                            <div className="flex gap-1.5 pt-1.5 border-t">
+                                              <button
+                                                type="button"
+                                                className={cn(
+                                                  "inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md transition-colors flex-1 justify-center",
+                                                  isDone
+                                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                                    : "bg-muted hover:bg-muted/80 text-foreground"
+                                                )}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (isDone) {
+                                                    const empReports = reports.filter(
+                                                      (r) => r.procedureId === ep.procedure.id && r.type === "INDIVIDUAL",
+                                                    );
+                                                    openProcedureResult({
+                                                      name: ep.procedure.name,
+                                                      kind: "external",
+                                                      providerOrTypeLabel: ep.procedure.providerName,
+                                                      endDate: ep.procedure.endDate,
+                                                      resultUrl: ep.procedure.reportUrl,
+                                                      reports: empReports.map((r) => ({ id: r.id, title: r.title, type: r.type })),
+                                                    });
+                                                  } else {
+                                                    openProcedureInfo({
+                                                      kind: "external",
+                                                      name: ep.procedure.name,
+                                                      providerName: ep.procedure.providerName,
+                                                      status: ep.procedure.status,
+                                                      startDate: ep.procedure.startDate,
+                                                      endDate: ep.procedure.endDate,
+                                                      link: ep.procedure.link,
+                                                      qrCodeLink: ep.procedure.qrCodeLink,
+                                                      description: ep.procedure.description,
+                                                      participantStatus: ep.participantStatus,
+                                                    });
+                                                  }
+                                                }}
+                                              >
+                                                {isDone ? <><FileText className="h-4 w-4" />Результат</> : <><Eye className="h-4 w-4" />Подробнее</>}
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
         </TabsContent>
 
         <TabsContent value="administration" className="mt-4 space-y-4">
@@ -895,21 +1727,28 @@ export default function ExternalProvidersPage() {
                 Управление провайдерами и оценочными процедурами
               </p>
             </div>
-            <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              Добавить провайдера/процедуру
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button onClick={() => setIsReportUploadOpen(true)} size="lg" variant="outline" className="w-full sm:w-auto">
+                <Upload className="mr-2 h-4 w-4" />
+                Загрузить отчет
+              </Button>
+              <Button onClick={handleCreate} size="lg" className="w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                Добавить провайдера/процедуру
+              </Button>
+            </div>
           </div>
 
-          {/* Поиск */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Поиск по провайдерам и процедурам..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          {/* Поиск и фильтр */}
+          <div className="flex gap-3 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по провайдерам и процедурам..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
             {searchQuery && (
               <Button
                 variant="ghost"
@@ -920,6 +1759,18 @@ export default function ExternalProvidersPage() {
                 <X className="h-4 w-4" />
               </Button>
             )}
+            </div>
+            <Select value={adminStatusFilter} onValueChange={(v) => setAdminStatusFilter(v as typeof adminStatusFilter)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все статусы</SelectItem>
+                <SelectItem value="request">Заявки</SelectItem>
+                <SelectItem value="active">Активные</SelectItem>
+                <SelectItem value="completed">Завершенные</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Двухколоночная структура */}
@@ -1084,12 +1935,56 @@ export default function ExternalProvidersPage() {
                         {/* Статус */}
                         <div className="space-y-2">
                           <Label className="text-sm font-semibold">Статус</Label>
-                          <Badge
-                            variant="outline"
-                            className={cn("text-sm px-3 py-1", getStatusColor(selectedProcedure.status))}
-                          >
-                            {getStatusText(selectedProcedure.status)}
-                          </Badge>
+                          <div className="flex items-center gap-3">
+                            <Badge
+                              variant="outline"
+                              className={cn("text-sm px-3 py-1", getStatusColor(selectedProcedure.status))}
+                            >
+                              {getStatusText(selectedProcedure.status)}
+                            </Badge>
+                            {selectedProcedure.status === "request" && (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="gap-1.5"
+                                  onClick={() => {
+                                    const updated: AssessmentProcedure = { ...selectedProcedure, status: "planned" };
+                                    setSelectedProcedure(updated);
+                                    setProviders((prev) =>
+                                      prev.map((p) =>
+                                        p.procedures.some((pr) => pr.id === updated.id)
+                                          ? { ...p, procedures: p.procedures.map((pr) => (pr.id === updated.id ? updated : pr)) }
+                                          : p,
+                                      ),
+                                    );
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Принять в работу
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="gap-1.5"
+                                  onClick={() => {
+                                    const updated: AssessmentProcedure = { ...selectedProcedure, status: "cancelled" };
+                                    setSelectedProcedure(updated);
+                                    setProviders((prev) =>
+                                      prev.map((p) =>
+                                        p.procedures.some((pr) => pr.id === updated.id)
+                                          ? { ...p, procedures: p.procedures.map((pr) => (pr.id === updated.id ? updated : pr)) }
+                                          : p,
+                                      ),
+                                    );
+                                  }}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                  Отклонить
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <Separator />
@@ -1405,6 +2300,194 @@ export default function ExternalProvidersPage() {
             </div>
           )}
 
+          {/* Загруженные отчеты */}
+          <Separator />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Загруженные отчеты ({reports.length})
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsReportUploadOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Загрузить отчет
+              </Button>
+            </div>
+            {reports.length === 0 ? (
+              <Card>
+                <CardContent className="py-8">
+                  <div className="text-center">
+                    <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Отчеты еще не загружены
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsReportUploadOpen(true)}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Загрузить первый отчет
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Название</TableHead>
+                      <TableHead className="w-[120px]">Тип</TableHead>
+                      <TableHead className="w-[180px]">Подразделение</TableHead>
+                      <TableHead className="w-[150px]">Владелец</TableHead>
+                      <TableHead className="w-[200px]">Доп. доступ</TableHead>
+                      <TableHead className="w-[90px]">Дата</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reports.map((report) => {
+                      const unit = report.unitId
+                        ? reportOrgUnits.find((u) => u.id === report.unitId)
+                        : null;
+                      const owner = report.ownerUserId
+                        ? reportUsers.find((u) => u.id === report.ownerUserId)
+                        : null;
+
+                      return (
+                        <TableRow key={report.id}>
+                          <TableCell>
+                            <div className="font-medium text-sm">{report.title}</div>
+                            <div className="text-xs text-muted-foreground">{report.procedureName}</div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px]",
+                                report.type === "INDIVIDUAL" && "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700",
+                                report.type === "GROUP" && "bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700",
+                                report.type === "SUMMARY" && "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700",
+                                report.type === "OVERALL" && "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-700",
+                                report.type === "ANALYTIC" && "bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900 dark:text-rose-200 dark:border-rose-700",
+                              )}
+                            >
+                              {reportTypeLabels[report.type]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={report.unitId ?? ""}
+                              onValueChange={(v) => {
+                                setReports((prev) =>
+                                  prev.map((r) => r.id === report.id ? { ...r, unitId: v || null } : r),
+                                );
+                              }}
+                            >
+                              <SelectTrigger className="h-7 text-xs">
+                                <SelectValue placeholder="Не указано" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {reportOrgUnits.map((u) => (
+                                  <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {owner?.fullName ?? "—"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap items-center gap-1">
+                              {report.customViewerUserIds.map((uid) => {
+                                const u = reportUsers.find((x) => x.id === uid);
+                                return (
+                                  <Badge key={uid} variant="secondary" className="text-[10px] gap-0.5 pr-0.5">
+                                    {u?.fullName.split(" ").slice(0, 2).join(" ") ?? uid}
+                                    <X
+                                      className="h-2.5 w-2.5 cursor-pointer hover:text-destructive"
+                                      onClick={() => {
+                                        setReports((prev) =>
+                                          prev.map((r) =>
+                                            r.id === report.id
+                                              ? { ...r, customViewerUserIds: r.customViewerUserIds.filter((id) => id !== uid) }
+                                              : r,
+                                          ),
+                                        );
+                                      }}
+                                    />
+                                  </Badge>
+                                );
+                              })}
+                              <Select
+                                onValueChange={(uid) => {
+                                  setReports((prev) =>
+                                    prev.map((r) =>
+                                      r.id === report.id && !r.customViewerUserIds.includes(uid)
+                                        ? { ...r, customViewerUserIds: [...r.customViewerUserIds, uid] }
+                                        : r,
+                                    ),
+                                  );
+                                }}
+                              >
+                                <SelectTrigger className="h-6 w-6 p-0 border-dashed [&>svg:last-child]:hidden">
+                                  <Plus className="h-3 w-3" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {reportUsers
+                                    .filter((u) => !report.customViewerUserIds.includes(u.id))
+                                    .map((u) => (
+                                      <SelectItem key={u.id} value={u.id}>
+                                        {u.fullName} — {roleLabels[u.role]}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {new Date(report.uploadedAt).toLocaleDateString("ru-RU")}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+
+          {/* Настройка видимости */}
+          <Separator />
+          <VisibilityPolicyEditor
+            policies={policies}
+            onPoliciesChange={setPolicies}
+            reports={reports}
+            onReportsChange={setReports}
+            employees={mockEmployees.map((e) => ({ id: e.id, fullName: e.fullName, position: e.position }))}
+          />
+
+          {/* Диалог загрузки отчетов */}
+          <ReportUploadDialog
+            open={isReportUploadOpen}
+            onOpenChange={setIsReportUploadOpen}
+            onUpload={handleReportUpload}
+            procedures={allProcedures}
+          />
+
+          {/* Диалог добавления участников */}
+          <AddParticipantsDialog
+            open={isAddParticipantsDialogOpen}
+            onOpenChange={setIsAddParticipantsDialogOpen}
+            employees={mockEmployees}
+            departments={mockDepartments}
+            existingParticipantIds={selectedEmployeeIds}
+            onAddParticipants={handleAddParticipants}
+          />
+
           {/* Модальное окно создания провайдера или процедуры */}
           <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
             setIsCreateDialogOpen(open);
@@ -1644,6 +2727,7 @@ export default function ExternalProvidersPage() {
                         <SelectItem value="in-progress">В процессе</SelectItem>
                         <SelectItem value="completed">Завершено</SelectItem>
                         <SelectItem value="cancelled">Отменено</SelectItem>
+                        <SelectItem value="request">Заявка</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1684,6 +2768,25 @@ export default function ExternalProvidersPage() {
           </Dialog>
         </TabsContent>
       </Tabs>
+
+      {/* Модалки оценочных процедур сотрудников — вне Tabs, чтобы работали с любой вкладки */}
+      <ProcedureInfoDialog
+        open={procedureInfoData !== null}
+        onOpenChange={(open) => { if (!open) setProcedureInfoData(null); }}
+        procedure={procedureInfoData}
+      />
+      <ProcedureResultDialog
+        open={procedureResultData !== null}
+        onOpenChange={(open) => { if (!open) setProcedureResultData(null); }}
+        result={procedureResultData}
+      />
+      <RequestAssessmentDialog
+        open={isRequestAssessmentOpen}
+        onOpenChange={setIsRequestAssessmentOpen}
+        providers={providers.map((p) => ({ id: p.id, name: p.name }))}
+        employees={mockEmployees.map((e) => ({ id: e.id, fullName: e.fullName, position: e.position }))}
+        onSubmit={handleRequestAssessment}
+      />
 
       {/* Модальное окно управления нотификациями */}
       <Dialog open={isNotificationsDialogOpen} onOpenChange={setIsNotificationsDialogOpen}>

@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>External Reporting Service</title>
+    <style>
+      :root {
+        font-family: Inter, Segoe UI, Arial, sans-serif;
+        color: #111827;
+        background: #f3f4f6;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      .container {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .header h1 {
+        margin: 0 0 6px;
+      }
+      .sub {
+        margin: 0;
+        color: #4b5563;
+      }
+      .chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        gap: 14px;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .tab-button {
+        background: #e5e7eb;
+        color: #111827;
+        border: 1px solid #d1d5db;
+      }
+      .tab-button.active {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+      }
+      .tab-panel {
+        display: none;
+      }
+      .tab-panel.active {
+        display: block;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .card h3 {
+        margin: 0 0 10px;
+      }
+      .hint {
+        margin: 0 0 10px;
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .field-help {
+        margin: 0;
+        font-size: 11px;
+        color: #6b7280;
+      }
+      .row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      label {
+        font-size: 12px;
+        color: #4b5563;
+      }
+      input,
+      select,
+      button {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 14px;
+        min-height: 36px;
+      }
+      button {
+        border: none;
+        cursor: pointer;
+        background: #2563eb;
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 140px;
+      }
+      button.secondary {
+        background: #4b5563;
+      }
+      button.ghost {
+        background: #e5e7eb;
+        color: #111827;
+      }
+      button.small {
+        padding: 6px 8px;
+        font-size: 12px;
+        min-height: 30px;
+        min-width: 88px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid #e5e7eb;
+        padding: 6px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: #374151;
+        background: #f9fafb;
+      }
+      .mono {
+        font-family: Consolas, monospace;
+      }
+      .actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .actions button {
+        flex: 1 1 0;
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .status {
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 8px;
+        font-size: 12px;
+        background: #eef2ff;
+        white-space: pre-wrap;
+      }
+      .ok {
+        background: #dcfce7;
+      }
+      .error {
+        background: #fee2e2;
+      }
+      .scroll {
+        max-height: 360px;
+        overflow: auto;
+      }
+      .tree {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .tree li {
+        margin-bottom: 6px;
+      }
+      @media (max-width: 1100px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <div>
+          <h1>External Reporting Service</h1>
+          <p class="sub">Загрузка отчетов, настройка видимости и проверка доступа в одном окне.</p>
+        </div>
+        <div class="chips">
+          <div id="count-users" class="chip">Пользователи: -</div>
+          <div id="count-units" class="chip">Подразделения: -</div>
+          <div id="count-reports" class="chip">Отчеты: -</div>
+        </div>
+      </header>
+
+      <div class="tabs">
+        <button id="tab-admin" class="tab-button active">Администрирование</button>
+        <button id="tab-user-view" class="tab-button">Пользовательский просмотр</button>
+      </div>
+
+      <div id="panel-admin" class="tab-panel active">
+      <div class="grid">
+        <aside class="stack">
+          <section class="card">
+            <h3>Загрузить отчет</h3>
+            <p class="hint">ID подставляются из справочников, ручной ввод почти не нужен.</p>
+            <div class="toolbar" style="margin-bottom: 10px;">
+              <button id="seed-mock-reports" type="button" class="ghost">Добавить мок-отчеты</button>
+              <button id="clear-reports" type="button" class="secondary">Очистить отчеты</button>
+            </div>
+            <p class="field-help">Мок-отчеты помогут сразу проверить, как влияют настройки политик на реальную видимость.</p>
+            <form id="upload-form">
+              <div class="row">
+                <label for="providerId">Provider ID</label>
+                <input id="providerId" value="provider-1" required />
+                <p class="field-help">Идентификатор внешнего провайдера оценки (например, SHL, TalentQ, внутренний код подрядчика).</p>
+              </div>
+              <div class="row">
+                <label for="title">Название отчета</label>
+                <input id="title" value="Тестовый отчет" required />
+                <p class="field-help">Человеко-читаемое название, которое увидят пользователи в списке отчетов.</p>
+              </div>
+              <div class="row">
+                <label for="type">Тип отчета</label>
+                <select id="type"></select>
+                <p class="field-help">INDIVIDUAL/GROUP/SUMMARY/OVERALL/ANALYTIC определяют базовую политику видимости.</p>
+              </div>
+              <div class="row">
+                <label for="ownerUserId">Владелец (для индивидуального)</label>
+                <select id="ownerUserId"></select>
+                <p class="field-help">Для индивидуального отчета это сотрудник, которому отчет принадлежит.</p>
+              </div>
+              <div class="row">
+                <label for="unitId">Подразделение</label>
+                <select id="unitId"></select>
+                <p class="field-help">Орг-единица, к которой относится отчет. Нужна для иерархического доступа руководителей.</p>
+              </div>
+              <div class="row">
+                <label for="file">Файл отчета</label>
+                <input id="file" type="file" required />
+                <p class="field-help">Загружаемый файл отчета от провайдера (PDF/другой формат файла).</p>
+              </div>
+              <button type="submit">Загрузить</button>
+            </form>
+            <div id="upload-status" class="status">Готов к загрузке.</div>
+          </section>
+
+          <section class="card">
+            <h3>Проверка видимости</h3>
+            <div class="row">
+              <label for="viewerSelect">Пользователь</label>
+              <select id="viewerSelect"></select>
+              <p class="field-help">Проверяем, какие отчеты доступны выбранному пользователю с учетом иерархии и политик.</p>
+            </div>
+            <button id="load-visible">Показать отчеты пользователя</button>
+            <div id="visible-status" class="status">Выберите пользователя и нажмите кнопку.</div>
+            <div class="scroll">
+              <table id="visible-table"></table>
+            </div>
+          </section>
+
+          <section class="card">
+            <h3>Точечный доступ</h3>
+            <p class="hint">Выберите отчет в таблице справа кнопкой "Выбрать".</p>
+            <div class="row">
+              <label for="grantReportId">Report ID</label>
+              <input id="grantReportId" readonly />
+              <p class="field-help">ID отчета, для которого будет выдано дополнительное право просмотра.</p>
+            </div>
+            <div class="row">
+              <label for="grantUserId">Пользователь</label>
+              <select id="grantUserId"></select>
+              <p class="field-help">Пользователь, которому нужен доступ вне стандартной иерархии (например, аналитик/заказчик).</p>
+            </div>
+            <button id="grant-button" class="secondary">Выдать доступ</button>
+            <div id="grant-status" class="status">Нет действий.</div>
+          </section>
+        </aside>
+
+        <main class="stack">
+          <section class="card">
+            <h3>Политики доступа (редактируемые)</h3>
+            <p class="hint">Пояснения: Self - владелец; Chain - цепочка руководителей владельца; Unit hierarchy - руководители по дереву подразделений; Min rank - минимальный уровень роли.</p>
+            <div class="scroll">
+              <table id="policies-table"></table>
+            </div>
+          </section>
+
+          <section class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <h3 style="margin:0;">Отчеты</h3>
+              <div class="row-2" style="min-width:360px;">
+                <select id="quick-check-user"></select>
+                <button id="reload-reports" class="ghost">Обновить список</button>
+              </div>
+            </div>
+            <p class="hint">Быстрые действия: выбрать отчет для grant, проверить доступ выбранного пользователя, скачать.</p>
+            <div class="scroll">
+              <table id="reports-table"></table>
+            </div>
+          </section>
+        </main>
+      </div>
+      </div>
+
+      <div id="panel-user-view" class="tab-panel">
+        <div class="grid" style="grid-template-columns: 360px 1fr;">
+          <aside class="stack">
+            <section class="card">
+              <h3>Контекст просмотра</h3>
+              <p class="hint">Выберите роль и пользователя - интерфейс покажет, какие отчеты он реально видит.</p>
+              <div class="row">
+                <label for="viewRole">Роль</label>
+                <select id="viewRole"></select>
+                <p class="field-help">Фильтр по роли для имперсонации, чтобы быстро переключаться между уровнями управления.</p>
+              </div>
+              <div class="row">
+                <label for="viewUser">Пользователь</label>
+                <select id="viewUser"></select>
+                <p class="field-help">Конкретный пользователь, "из-под которого" выполняется просмотр.</p>
+              </div>
+              <button id="run-user-view">Показать доступные отчеты</button>
+              <div id="user-view-status" class="status">Выберите роль и пользователя.</div>
+            </section>
+
+            <section class="card">
+              <h3>Иерархия подразделений</h3>
+              <p class="hint">Дерево орг-структуры с руководителями. Используется для расчета доступа к GROUP/SUMMARY/OVERALL отчетам.</p>
+              <div id="org-tree"></div>
+            </section>
+          </aside>
+
+          <main class="stack">
+            <section class="card">
+              <h3>Видимость отчетов пользователя</h3>
+              <div class="scroll">
+                <table id="user-view-table"></table>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const state = {
+        users: [],
+        units: [],
+        reportTypes: [],
+        reports: [],
+        policies: [],
+        currentUserViewReports: []
+      };
+
+      const byId = (id) => document.getElementById(id);
+
+      const setStatus = (id, value, mode = "info") => {
+        const node = byId(id);
+        node.className = "status";
+        if (mode === "ok") {
+          node.classList.add("ok");
+        }
+        if (mode === "error") {
+          node.classList.add("error");
+        }
+        node.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+      };
+
+      const fetchJson = async (url, options = {}) => {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.error ? JSON.stringify(data.error) : JSON.stringify(data));
+        }
+        return data;
+      };
+
+      const getUserLabel = (user) => `${user.fullName} (${user.role}, ${user.id})`;
+      const getUnitLabel = (unit) => `${unit.name} (${unit.id})`;
+      const getUserName = (userId) => {
+        const user = state.users.find((item) => item.id === userId);
+        return user ? user.fullName : userId;
+      };
+
+      const fillSelect = (id, items, formatter, includeEmpty = false) => {
+        const select = byId(id);
+        const empty = includeEmpty ? `<option value="">Не выбрано</option>` : "";
+        select.innerHTML = empty + items.map((item) => `<option value="${item.id}">${formatter(item)}</option>`).join("");
+      };
+
+      const updateCounters = () => {
+        byId("count-users").textContent = `Пользователи: ${state.users.length}`;
+        byId("count-units").textContent = `Подразделения: ${state.units.length}`;
+        byId("count-reports").textContent = `Отчеты: ${state.reports.length}`;
+      };
+
+      const initTabs = () => {
+        const tabAdmin = byId("tab-admin");
+        const tabUserView = byId("tab-user-view");
+        const panelAdmin = byId("panel-admin");
+        const panelUserView = byId("panel-user-view");
+
+        const activate = (target) => {
+          const isAdmin = target === "admin";
+          tabAdmin.classList.toggle("active", isAdmin);
+          tabUserView.classList.toggle("active", !isAdmin);
+          panelAdmin.classList.toggle("active", isAdmin);
+          panelUserView.classList.toggle("active", !isAdmin);
+        };
+
+        tabAdmin.addEventListener("click", () => activate("admin"));
+        tabUserView.addEventListener("click", () => activate("user-view"));
+      };
+
+      const loadReference = async () => {
+        const [reportTypes, users, units] = await Promise.all([
+          fetchJson("/api/reference/report-types"),
+          fetchJson("/api/users"),
+          fetchJson("/api/reference/org-units")
+        ]);
+
+        state.reportTypes = reportTypes;
+        state.users = users;
+        state.units = units;
+
+        byId("type").innerHTML = reportTypes.map((type) => `<option value="${type}">${type}</option>`).join("");
+        fillSelect("ownerUserId", users, getUserLabel, true);
+        fillSelect("viewerSelect", users, getUserLabel);
+        fillSelect("grantUserId", users, getUserLabel);
+        fillSelect("quick-check-user", users, getUserLabel);
+        fillSelect("unitId", units, getUnitLabel, true);
+
+        const roles = Array.from(new Set(users.map((item) => item.role)));
+        byId("viewRole").innerHTML = roles.map((role) => `<option value="${role}">${role}</option>`).join("");
+      };
+
+      const loadReports = async () => {
+        state.reports = await fetchJson("/api/reports");
+        updateCounters();
+      };
+
+      const loadPolicies = async () => {
+        state.policies = await fetchJson("/api/policies");
+      };
+
+      const renderPolicies = () => {
+        const rows = state.policies
+          .map(
+            (policy) => `
+            <tr>
+              <td class="mono">${policy.reportType}</td>
+              <td><input type="checkbox" data-policy="${policy.reportType}" data-key="allowSelfOwner" ${policy.allowSelfOwner ? "checked" : ""}></td>
+              <td><input type="checkbox" data-policy="${policy.reportType}" data-key="allowOwnerManagerChain" ${policy.allowOwnerManagerChain ? "checked" : ""}></td>
+              <td><input type="checkbox" data-policy="${policy.reportType}" data-key="allowUnitManagerHierarchy" ${policy.allowUnitManagerHierarchy ? "checked" : ""}></td>
+              <td><input type="number" min="1" max="6" value="${policy.minimumRoleRankForUnitHierarchy}" data-policy="${policy.reportType}" data-key="minimumRoleRankForUnitHierarchy" style="width:70px;"></td>
+              <td><input type="checkbox" data-policy="${policy.reportType}" data-key="allowResearchCustomers" ${policy.allowResearchCustomers ? "checked" : ""}></td>
+              <td><button class="small save-policy" data-policy="${policy.reportType}">Сохранить</button></td>
+            </tr>`
+          )
+          .join("");
+
+        byId("policies-table").innerHTML = `
+          <tr>
+            <th>Тип</th>
+            <th>Self</th>
+            <th>Chain</th>
+            <th>Unit hierarchy</th>
+            <th>Min rank</th>
+            <th>Research customer</th>
+            <th>Action</th>
+          </tr>
+          ${rows}
+        `;
+
+        Array.from(document.querySelectorAll(".save-policy")).forEach((button) => {
+          button.addEventListener("click", async (event) => {
+            const type = event.target.getAttribute("data-policy");
+            const current = state.policies.find((item) => item.reportType === type);
+            const selectors = document.querySelectorAll(`[data-policy="${type}"]`);
+            const next = {
+              allowSelfOwner: current.allowSelfOwner,
+              allowOwnerManagerChain: current.allowOwnerManagerChain,
+              allowUnitManagerHierarchy: current.allowUnitManagerHierarchy,
+              minimumRoleRankForUnitHierarchy: current.minimumRoleRankForUnitHierarchy,
+              allowResearchCustomers: current.allowResearchCustomers,
+              additionalViewerRoleRanks: current.additionalViewerRoleRanks
+            };
+
+            selectors.forEach((node) => {
+              const key = node.getAttribute("data-key");
+              if (!key) return;
+              if (node.type === "checkbox") {
+                next[key] = node.checked;
+              } else {
+                next[key] = Number(node.value);
+              }
+            });
+
+            try {
+              await fetchJson(`/api/policies/${type}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(next)
+              });
+              await loadPolicies();
+              renderPolicies();
+              setStatus("grant-status", `Политика ${type} сохранена`, "ok");
+            } catch (error) {
+              setStatus("grant-status", String(error), "error");
+            }
+          });
+        });
+      };
+
+      const renderOrgTree = () => {
+        const rootUnits = state.units.filter((unit) => !unit.parentUnitId);
+        const childrenOf = (unitId) => state.units.filter((unit) => unit.parentUnitId === unitId);
+
+        const renderNode = (unit) => {
+          const children = childrenOf(unit.id);
+          const managerName = getUserName(unit.managerUserId);
+          const childHtml = children.length ? `<ul class="tree">${children.map(renderNode).join("")}</ul>` : "";
+          return `<li><strong>${unit.name}</strong> <span class="mono">(${unit.id})</span><br><span class="field-help">Руководитель: ${managerName}</span>${childHtml}</li>`;
+        };
+
+        byId("org-tree").innerHTML = `<ul class="tree">${rootUnits.map(renderNode).join("")}</ul>`;
+      };
+
+      const renderVisibleReports = (reports) => {
+        if (!reports.length) {
+          byId("visible-table").innerHTML = "<tr><td>Для пользователя нет доступных отчетов.</td></tr>";
+          return;
+        }
+
+        byId("visible-table").innerHTML =
+          "<tr><th>ID</th><th>Тип</th><th>Название</th><th>Unit</th></tr>" +
+          reports
+            .map((report) => `<tr><td class="mono">${report.id}</td><td>${report.type}</td><td>${report.title}</td><td class="mono">${report.unitId || "-"}</td></tr>`)
+            .join("");
+      };
+
+      const renderUserViewUsers = () => {
+        const role = byId("viewRole").value;
+        const usersByRole = state.users.filter((user) => user.role === role);
+        fillSelect("viewUser", usersByRole, getUserLabel, usersByRole.length === 0);
+      };
+
+      const renderUserViewTable = () => {
+        const reports = state.currentUserViewReports;
+        if (!reports.length) {
+          byId("user-view-table").innerHTML = "<tr><td>Нет доступных отчетов для выбранного пользователя.</td></tr>";
+          return;
+        }
+
+        byId("user-view-table").innerHTML =
+          "<tr><th>ID</th><th>Тип</th><th>Название</th><th>Owner</th><th>Unit</th><th>Действие</th></tr>" +
+          reports
+            .map(
+              (report) => `
+              <tr>
+                <td class="mono">${report.id}</td>
+                <td>${report.type}</td>
+                <td>${report.title}</td>
+                <td>${report.ownerUserId ? getUserName(report.ownerUserId) : "-"}</td>
+                <td class="mono">${report.unitId || "-"}</td>
+                <td><button class="small" data-user-view-download="${report.id}">Скачать</button></td>
+              </tr>`
+            )
+            .join("");
+
+        Array.from(document.querySelectorAll("[data-user-view-download]")).forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const reportId = event.target.getAttribute("data-user-view-download");
+            const userId = byId("viewUser").value;
+            window.open(`/api/reports/${reportId}/download?userId=${encodeURIComponent(userId)}`, "_blank");
+          });
+        });
+      };
+
+      const bindReportActions = () => {
+        Array.from(document.querySelectorAll("[data-action='pick']")).forEach((button) => {
+          button.addEventListener("click", (event) => {
+            byId("grantReportId").value = event.target.getAttribute("data-report-id");
+            setStatus("grant-status", "Отчет выбран для выдачи точечного доступа.");
+          });
+        });
+
+        Array.from(document.querySelectorAll("[data-action='check']")).forEach((button) => {
+          button.addEventListener("click", async (event) => {
+            const reportId = event.target.getAttribute("data-report-id");
+            const userId = byId("quick-check-user").value;
+            try {
+              const result = await fetchJson(`/api/reports/${reportId}/access/${userId}`);
+              setStatus("visible-status", result.canView ? `Доступ ЕСТЬ: ${reportId}` : `Доступ НЕТ: ${reportId}`, result.canView ? "ok" : "error");
+            } catch (error) {
+              setStatus("visible-status", String(error), "error");
+            }
+          });
+        });
+
+        Array.from(document.querySelectorAll("[data-action='download']")).forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const reportId = event.target.getAttribute("data-report-id");
+            const userId = byId("quick-check-user").value;
+            window.open(`/api/reports/${reportId}/download?userId=${encodeURIComponent(userId)}`, "_blank");
+          });
+        });
+      };
+
+      const renderReports = () => {
+        if (!state.reports.length) {
+          byId("reports-table").innerHTML = "<tr><td>Отчеты пока не загружены.</td></tr>";
+          return;
+        }
+
+        byId("reports-table").innerHTML =
+          "<tr><th>ID</th><th>Тип</th><th>Название</th><th>Owner</th><th>Unit</th><th>Загружен</th><th>Действия</th></tr>" +
+          state.reports
+            .map(
+              (report) => `
+              <tr>
+                <td class="mono">${report.id}</td>
+                <td>${report.type}</td>
+                <td>${report.title}</td>
+                <td class="mono">${report.ownerUserId || "-"}</td>
+                <td class="mono">${report.unitId || "-"}</td>
+                <td>${new Date(report.uploadedAt).toLocaleString()}</td>
+                <td>
+                  <div class="actions">
+                    <button class="small ghost" data-action="pick" data-report-id="${report.id}">Выбрать</button>
+                    <button class="small secondary" data-action="check" data-report-id="${report.id}">Проверить</button>
+                    <button class="small" data-action="download" data-report-id="${report.id}">Скачать</button>
+                  </div>
+                </td>
+              </tr>`
+            )
+            .join("");
+
+        bindReportActions();
+      };
+
+      const bindUploadAutoFill = () => {
+        byId("ownerUserId").addEventListener("change", () => {
+          const ownerId = byId("ownerUserId").value;
+          if (!ownerId) return;
+          const user = state.users.find((item) => item.id === ownerId);
+          if (user) {
+            byId("unitId").value = user.unitId;
+          }
+        });
+      };
+
+      byId("upload-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const fileInput = byId("file");
+        if (!fileInput.files.length) {
+          setStatus("upload-status", "Выберите файл перед загрузкой.", "error");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("providerId", byId("providerId").value.trim());
+        formData.append("type", byId("type").value);
+        formData.append("title", byId("title").value.trim());
+
+        if (byId("ownerUserId").value) {
+          formData.append("ownerUserId", byId("ownerUserId").value);
+        }
+        if (byId("unitId").value) {
+          formData.append("unitId", byId("unitId").value);
+        }
+
+        try {
+          const result = await fetchJson("/api/reports/upload", { method: "POST", body: formData });
+          setStatus("upload-status", `Отчет загружен: ${result.id}`, "ok");
+          byId("grantReportId").value = result.id;
+          await loadReports();
+          renderReports();
+        } catch (error) {
+          setStatus("upload-status", String(error), "error");
+        }
+      });
+
+      byId("load-visible").addEventListener("click", async () => {
+        const userId = byId("viewerSelect").value;
+        try {
+          const result = await fetchJson(`/api/users/${userId}/reports`);
+          setStatus("visible-status", `Найдено отчетов: ${result.length}`, "ok");
+          renderVisibleReports(result);
+        } catch (error) {
+          setStatus("visible-status", String(error), "error");
+        }
+      });
+
+      byId("grant-button").addEventListener("click", async () => {
+        const reportId = byId("grantReportId").value.trim();
+        const userId = byId("grantUserId").value;
+        if (!reportId) {
+          setStatus("grant-status", "Сначала выберите отчет.", "error");
+          return;
+        }
+
+        try {
+          const result = await fetchJson(`/api/reports/${reportId}/grants`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId })
+          });
+          setStatus("grant-status", `Доступ выдан пользователю ${userId} к отчету ${result.id}`, "ok");
+        } catch (error) {
+          setStatus("grant-status", String(error), "error");
+        }
+      });
+
+      byId("reload-reports").addEventListener("click", async () => {
+        try {
+          await loadReports();
+          renderReports();
+          setStatus("visible-status", "Список отчетов обновлен.", "ok");
+        } catch (error) {
+          setStatus("visible-status", String(error), "error");
+        }
+      });
+
+      byId("seed-mock-reports").addEventListener("click", async () => {
+        try {
+          const result = await fetchJson("/api/reports/mock-seed", { method: "POST" });
+          await loadReports();
+          renderReports();
+          setStatus("upload-status", `Создано мок-отчетов: ${result.created}`, "ok");
+          setStatus("visible-status", "Проверьте вкладку пользовательского просмотра или кнопку проверки доступа.", "ok");
+        } catch (error) {
+          setStatus("upload-status", String(error), "error");
+        }
+      });
+
+      byId("clear-reports").addEventListener("click", async () => {
+        try {
+          await fetchJson("/api/reports", { method: "DELETE" });
+          state.currentUserViewReports = [];
+          await loadReports();
+          renderReports();
+          renderUserViewTable();
+          renderVisibleReports([]);
+          setStatus("upload-status", "Все отчеты очищены.", "ok");
+        } catch (error) {
+          setStatus("upload-status", String(error), "error");
+        }
+      });
+
+      byId("viewRole").addEventListener("change", () => {
+        renderUserViewUsers();
+      });
+
+      byId("run-user-view").addEventListener("click", async () => {
+        const userId = byId("viewUser").value;
+        if (!userId) {
+          setStatus("user-view-status", "Выберите пользователя.", "error");
+          return;
+        }
+
+        try {
+          const reports = await fetchJson(`/api/users/${userId}/reports`);
+          state.currentUserViewReports = reports;
+          const user = state.users.find((item) => item.id === userId);
+          setStatus("user-view-status", `Роль: ${user.role}\nПользователь: ${user.fullName}\nДоступных отчетов: ${reports.length}`, "ok");
+          renderUserViewTable();
+        } catch (error) {
+          setStatus("user-view-status", String(error), "error");
+        }
+      });
+
+      const bootstrap = async () => {
+        try {
+          await loadReference();
+          await loadPolicies();
+          await loadReports();
+          updateCounters();
+          renderPolicies();
+          renderReports();
+          renderVisibleReports([]);
+          renderOrgTree();
+          initTabs();
+          renderUserViewUsers();
+          renderUserViewTable();
+          bindUploadAutoFill();
+          setStatus("upload-status", "Система готова к работе.", "ok");
+        } catch (error) {
+          setStatus("upload-status", String(error), "error");
+        }
+      };
+
+      bootstrap();
+    </script>
+  </body>
+</html>
