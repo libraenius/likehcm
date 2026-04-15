@@ -396,6 +396,9 @@ interface InternalAssessment {
   startDate: Date;
   endDate: Date;
   score?: number;
+  scoreUnit?: "points" | "percent";
+  scoreLabel?: string;
+  details?: { label: string; value: string }[];
   resultUrl?: string;
 }
 
@@ -431,8 +434,28 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
       },
     ],
     internalAssessments: [
-      { id: "ia-1", type: "360_FKR", name: "Оценка 360 Q1 2024", status: "completed", startDate: new Date("2024-01-10"), endDate: new Date("2024-01-31"), score: 4.2, resultUrl: "/results/360-emp1.pdf" },
-      { id: "ia-2", type: "COR", name: "ЦОР 2024", status: "active", startDate: new Date("2024-03-01"), endDate: new Date("2024-06-30") },
+      {
+        id: "ia-1",
+        type: "360_FKR",
+        name: "ФКР 2024",
+        status: "completed",
+        startDate: new Date("2024-01-10"),
+        endDate: new Date("2024-01-31"),
+        score: 4,
+        scoreUnit: "points",
+        scoreLabel: "Превосходит ожидания",
+        resultUrl: "/results/fkr-2024-emp1.pdf",
+      },
+      {
+        id: "ia-2",
+        type: "COR",
+        name: "КР1Q2025",
+        status: "active",
+        startDate: new Date("2025-01-01"),
+        endDate: new Date("2025-03-31"),
+        score: 108,
+        scoreUnit: "percent",
+      },
     ],
   },
   {
@@ -447,8 +470,31 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
       },
     ],
     internalAssessments: [
-      { id: "ia-3", type: "360_FKR", name: "Оценка 360 Q1 2024", status: "completed", startDate: new Date("2024-01-10"), endDate: new Date("2024-01-31"), score: 3.8, resultUrl: "/results/360-emp2.pdf" },
-      { id: "ia-4", type: "ASSESSMENT_CENTER", name: "Ассессмент HiPo 2024", status: "planned", startDate: new Date("2024-04-15"), endDate: new Date("2024-04-20") },
+      {
+        id: "ia-3",
+        type: "360_FKR",
+        name: "ФКР 2025",
+        status: "completed",
+        startDate: new Date("2025-01-10"),
+        endDate: new Date("2025-01-31"),
+        score: 3,
+        scoreUnit: "points",
+        scoreLabel: "Соответствует ожиданиям",
+        resultUrl: "/results/fkr-2025-emp2.pdf",
+      },
+      {
+        id: "ia-4",
+        type: "ASSESSMENT_CENTER",
+        name: "Ассессмент-центр",
+        status: "planned",
+        startDate: new Date("2025-04-15"),
+        endDate: new Date("2025-04-20"),
+        details: [
+          { label: "Профиль", value: "Профиль Backend разработчика" },
+          { label: "Soft skills", value: "Senior" },
+          { label: "Hard skills", value: "Senior+" },
+        ],
+      },
     ],
   },
   {
@@ -463,8 +509,30 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
       },
     ],
     internalAssessments: [
-      { id: "ia-5", type: "COR", name: "ЦОР 2024", status: "active", startDate: new Date("2024-03-01"), endDate: new Date("2024-06-30"), score: 87 },
-      { id: "ia-6", type: "ASSESSMENT_CENTER", name: "Ассессмент управленцев 2024", status: "completed", startDate: new Date("2024-02-10"), endDate: new Date("2024-02-15"), score: 72, resultUrl: "/results/ac-emp3.pdf" },
+      {
+        id: "ia-5",
+        type: "COR",
+        name: "КР2Q2025",
+        status: "active",
+        startDate: new Date("2025-04-01"),
+        endDate: new Date("2025-06-30"),
+        score: 96,
+        scoreUnit: "percent",
+      },
+      {
+        id: "ia-6",
+        type: "ASSESSMENT_CENTER",
+        name: "Ассессмент-центр",
+        status: "completed",
+        startDate: new Date("2025-02-10"),
+        endDate: new Date("2025-02-15"),
+        details: [
+          { label: "Профиль", value: "Профиль Frontend разработчика" },
+          { label: "Soft skills", value: "Expert" },
+          { label: "Hard skills", value: "Senior+" },
+        ],
+        resultUrl: "/results/ac-profile-emp3.pdf",
+      },
     ],
   },
   {
@@ -483,9 +551,42 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
       },
     ],
     internalAssessments: [
-      { id: "ia-7", type: "360_FKR", name: "Оценка 360 Q1 2024", status: "completed", startDate: new Date("2024-01-10"), endDate: new Date("2024-01-31"), score: 4.5, resultUrl: "/results/360-emp5.pdf" },
-      { id: "ia-8", type: "COR", name: "ЦОР 2024", status: "active", startDate: new Date("2024-03-01"), endDate: new Date("2024-06-30") },
-      { id: "ia-9", type: "ASSESSMENT_CENTER", name: "Ассессмент управленцев 2024", status: "completed", startDate: new Date("2024-02-10"), endDate: new Date("2024-02-15"), score: 89, resultUrl: "/results/ac-emp5.pdf" },
+      {
+        id: "ia-7",
+        type: "360_FKR",
+        name: "ФКР 2024",
+        status: "completed",
+        startDate: new Date("2024-01-10"),
+        endDate: new Date("2024-01-31"),
+        score: 5,
+        scoreUnit: "points",
+        scoreLabel: "Выдающийся результат",
+        resultUrl: "/results/fkr-2024-emp5.pdf",
+      },
+      {
+        id: "ia-8",
+        type: "COR",
+        name: "КР3Q2025",
+        status: "active",
+        startDate: new Date("2025-07-01"),
+        endDate: new Date("2025-09-30"),
+        score: 112,
+        scoreUnit: "percent",
+      },
+      {
+        id: "ia-9",
+        type: "ASSESSMENT_CENTER",
+        name: "Ассессмент-центр",
+        status: "completed",
+        startDate: new Date("2025-02-10"),
+        endDate: new Date("2025-02-15"),
+        details: [
+          { label: "Профиль", value: "Профиль DevOps" },
+          { label: "Soft skills", value: "Senior+" },
+          { label: "Hard skills", value: "Expert+" },
+        ],
+        resultUrl: "/results/ac-profile-emp5.pdf",
+      },
     ],
   },
   {
@@ -500,7 +601,18 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
       },
     ],
     internalAssessments: [
-      { id: "ia-10", type: "360_FKR", name: "Оценка 360 Q1 2024", status: "completed", startDate: new Date("2024-01-10"), endDate: new Date("2024-01-31"), score: 3.5, resultUrl: "/results/360-emp7.pdf" },
+      {
+        id: "ia-10",
+        type: "360_FKR",
+        name: "ФКР 2025",
+        status: "completed",
+        startDate: new Date("2025-01-10"),
+        endDate: new Date("2025-01-31"),
+        score: 2,
+        scoreUnit: "points",
+        scoreLabel: "Не соответствует ожиданиям",
+        resultUrl: "/results/fkr-2025-emp7.pdf",
+      },
     ],
   },
   {
@@ -515,7 +627,16 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
       },
     ],
     internalAssessments: [
-      { id: "ia-11", type: "COR", name: "ЦОР 2024", status: "planned", startDate: new Date("2024-04-01"), endDate: new Date("2024-06-30") },
+      {
+        id: "ia-11",
+        type: "COR",
+        name: "КР4Q2025",
+        status: "planned",
+        startDate: new Date("2025-10-01"),
+        endDate: new Date("2025-12-31"),
+        score: 100,
+        scoreUnit: "percent",
+      },
     ],
   },
 ];
@@ -1542,13 +1663,31 @@ export default function ExternalProvidersPage() {
                             const renderInternalCell = (ia: InternalAssessment | undefined, type: InternalAssessmentType) => {
                               if (!ia) return <span className="text-xs text-muted-foreground">—</span>;
                               const isDone = ia.status === "completed";
+                              const scoreText =
+                                ia.score === undefined
+                                  ? undefined
+                                  : ia.scoreUnit === "percent"
+                                    ? `${ia.score}%`
+                                    : `${ia.score}`;
                               return (
                                 <div className="flex flex-col gap-1">
                                   <Badge variant="outline" className={cn("text-[10px] w-fit", getStatusBadgeColor(ia.status === "active" ? "in-progress" : ia.status))}>
                                     {getInternalAssessmentStatusText(ia.status)}
                                   </Badge>
-                                  {ia.score !== undefined && (
-                                    <span className="text-xs font-semibold text-primary">{ia.score}</span>
+                                  {scoreText && (
+                                    <span className="text-xs font-semibold text-primary">{scoreText}</span>
+                                  )}
+                                  {ia.scoreLabel && (
+                                    <span className="text-[11px] text-muted-foreground leading-tight">{ia.scoreLabel}</span>
+                                  )}
+                                  {ia.type === "ASSESSMENT_CENTER" && ia.details && (
+                                    <div className="text-[11px] text-muted-foreground leading-tight space-y-0.5">
+                                      {ia.details
+                                        .filter((d) => d.label === "Soft skills" || d.label === "Hard skills")
+                                        .map((d) => (
+                                          <div key={d.label}>{d.label}: <span className="text-foreground/80">{d.value}</span></div>
+                                        ))}
+                                    </div>
                                   )}
                                   <button
                                     type="button"
@@ -1561,7 +1700,10 @@ export default function ExternalProvidersPage() {
                                           kind: "internal",
                                           providerOrTypeLabel: INTERNAL_ASSESSMENT_LABELS[type],
                                           endDate: ia.endDate,
-                                          score: ia.score,
+                                          score: ia.scoreUnit === "percent" ? ia.score : ia.score,
+                                          scoreUnit: ia.scoreUnit,
+                                          scoreLabel: ia.scoreLabel,
+                                          details: ia.details,
                                           resultUrl: ia.resultUrl,
                                         });
                                       } else {

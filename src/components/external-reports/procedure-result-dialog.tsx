@@ -14,6 +14,9 @@ interface ProcedureResult {
   providerOrTypeLabel: string;
   endDate: Date;
   score?: number;
+  scoreUnit?: "points" | "percent";
+  scoreLabel?: string;
+  details?: { label: string; value: string }[];
   resultUrl?: string;
   reports?: { id: string; title: string; type: string }[];
 }
@@ -28,6 +31,12 @@ const formatDate = (date: Date) =>
   date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
 
 export function ProcedureResultDialog({ open, onOpenChange, result }: ProcedureResultDialogProps) {
+  const scoreText =
+    result?.score === undefined
+      ? undefined
+      : result.scoreUnit === "percent"
+        ? `${result.score}%`
+        : `${result.score}`;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -57,21 +66,40 @@ export function ProcedureResultDialog({ open, onOpenChange, result }: ProcedureR
             <span className="font-medium">{formatDate(result.endDate)}</span>
           </div>
 
-          {result.score !== undefined && (
+          {(result.score !== undefined || (result.details && result.details.length > 0) || result.scoreLabel) && (
             <>
               <Separator />
-              <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-lg border">
-                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
-                  {result.kind === "internal" ? (
-                    <BarChart3 className="h-6 w-6 text-primary" />
-                  ) : (
-                    <Star className="h-6 w-6 text-primary" />
-                  )}
+              <div className="space-y-3 p-4 bg-primary/5 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
+                    {result.kind === "internal" ? (
+                      <BarChart3 className="h-6 w-6 text-primary" />
+                    ) : (
+                      <Star className="h-6 w-6 text-primary" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    {scoreText && (
+                      <>
+                        <div className="text-xs text-muted-foreground">Оценка</div>
+                        <div className="text-2xl font-bold text-primary">{scoreText}</div>
+                      </>
+                    )}
+                    {result.scoreLabel && (
+                      <div className="text-sm text-muted-foreground leading-snug">{result.scoreLabel}</div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Оценка / Балл</div>
-                  <div className="text-2xl font-bold text-primary">{result.score}</div>
-                </div>
+                {result.details && result.details.length > 0 && (
+                  <div className="grid grid-cols-1 gap-1">
+                    {result.details.map((d) => (
+                      <div key={d.label} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-muted-foreground">{d.label}</span>
+                        <span className="font-medium text-foreground truncate">{d.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
