@@ -456,6 +456,17 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
         score: 108,
         scoreUnit: "percent",
       },
+      {
+        id: "ia-2b",
+        type: "COR",
+        name: "КР2Q2025",
+        status: "completed",
+        startDate: new Date("2025-04-01"),
+        endDate: new Date("2025-06-30"),
+        score: 101,
+        scoreUnit: "percent",
+        resultUrl: "/results/cor-kr2-emp1.pdf",
+      },
     ],
   },
   {
@@ -572,6 +583,28 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
         endDate: new Date("2025-09-30"),
         score: 112,
         scoreUnit: "percent",
+      },
+      {
+        id: "ia-8b",
+        type: "COR",
+        name: "КР1Q2025",
+        status: "completed",
+        startDate: new Date("2025-01-01"),
+        endDate: new Date("2025-03-31"),
+        score: 98,
+        scoreUnit: "percent",
+        resultUrl: "/results/cor-kr1-emp5.pdf",
+      },
+      {
+        id: "ia-8c",
+        type: "COR",
+        name: "КР2Q2025",
+        status: "completed",
+        startDate: new Date("2025-04-01"),
+        endDate: new Date("2025-06-30"),
+        score: 104,
+        scoreUnit: "percent",
+        resultUrl: "/results/cor-kr2-emp5.pdf",
       },
       {
         id: "ia-9",
@@ -1390,11 +1423,11 @@ export default function ExternalProvidersPage() {
               );
             }
 
-            const internalStatusMatch = (ia: InternalAssessment | undefined, filter: string) => {
+            const internalStatusMatch = (list: InternalAssessment[], filter: string) => {
               if (filter === "all") return true;
-              if (filter === "none") return !ia;
-              if (filter === "has") return !!ia;
-              return ia?.status === filter;
+              if (filter === "none") return list.length === 0;
+              if (filter === "has") return list.length > 0;
+              return list.some((ia) => ia.status === filter);
             };
 
             const filteredAssessments = employeeAssessments.filter((rec) => {
@@ -1411,11 +1444,11 @@ export default function ExternalProvidersPage() {
                   if (!hasMatchingStatus) return false;
                 }
               }
-              const a360 = rec.internalAssessments.find((ia) => ia.type === "360_FKR");
+              const a360 = rec.internalAssessments.filter((ia) => ia.type === "360_FKR");
               if (!internalStatusMatch(a360, empFilter360)) return false;
-              const aAC = rec.internalAssessments.find((ia) => ia.type === "ASSESSMENT_CENTER");
+              const aAC = rec.internalAssessments.filter((ia) => ia.type === "ASSESSMENT_CENTER");
               if (!internalStatusMatch(aAC, empFilterAC)) return false;
-              const aCOR = rec.internalAssessments.find((ia) => ia.type === "COR");
+              const aCOR = rec.internalAssessments.filter((ia) => ia.type === "COR");
               if (!internalStatusMatch(aCOR, empFilterCOR)) return false;
               return true;
             });
@@ -1656,72 +1689,116 @@ export default function ExternalProvidersPage() {
                         ) : (
                           filteredAssessments.map((rec) => {
                             const dept = mockDepartments.find((d) => d.id === rec.departmentId);
-                            const a360 = rec.internalAssessments.find((ia) => ia.type === "360_FKR");
-                            const aAC = rec.internalAssessments.find((ia) => ia.type === "ASSESSMENT_CENTER");
-                            const aCOR = rec.internalAssessments.find((ia) => ia.type === "COR");
+                            const a360 = rec.internalAssessments.filter((ia) => ia.type === "360_FKR");
+                            const aAC = rec.internalAssessments.filter((ia) => ia.type === "ASSESSMENT_CENTER");
+                            const aCOR = rec.internalAssessments.filter((ia) => ia.type === "COR");
 
-                            const renderInternalCell = (ia: InternalAssessment | undefined, type: InternalAssessmentType) => {
-                              if (!ia) return <span className="text-xs text-muted-foreground">—</span>;
-                              const isDone = ia.status === "completed";
-                              const scoreText =
-                                ia.score === undefined
-                                  ? undefined
-                                  : ia.scoreUnit === "percent"
-                                    ? `${ia.score}%`
-                                    : `${ia.score}`;
+                            const renderInternalCell = (list: InternalAssessment[], type: InternalAssessmentType) => {
+                              if (list.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
                               return (
-                                <div className="flex flex-col gap-1">
-                                  <Badge variant="outline" className={cn("text-[10px] w-fit", getStatusBadgeColor(ia.status === "active" ? "in-progress" : ia.status))}>
-                                    {getInternalAssessmentStatusText(ia.status)}
-                                  </Badge>
-                                  {scoreText && (
-                                    <span className="text-xs font-semibold text-primary">{scoreText}</span>
-                                  )}
-                                  {ia.scoreLabel && (
-                                    <span className="text-[11px] text-muted-foreground leading-tight">{ia.scoreLabel}</span>
-                                  )}
-                                  {ia.type === "ASSESSMENT_CENTER" && ia.details && (
-                                    <div className="text-[11px] text-muted-foreground leading-tight space-y-0.5">
-                                      {ia.details
-                                        .filter((d) => d.label === "Soft skills" || d.label === "Hard skills")
-                                        .map((d) => (
-                                          <div key={d.label}>{d.label}: <span className="text-foreground/80">{d.value}</span></div>
-                                        ))}
-                                    </div>
-                                  )}
-                                  <button
-                                    type="button"
-                                    className="inline-flex items-center gap-1 h-6 px-1.5 text-xs rounded-md hover:bg-muted transition-colors w-fit"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (isDone) {
-                                        openProcedureResult({
-                                          name: ia.name,
-                                          kind: "internal",
-                                          providerOrTypeLabel: INTERNAL_ASSESSMENT_LABELS[type],
-                                          endDate: ia.endDate,
-                                          score: ia.scoreUnit === "percent" ? ia.score : ia.score,
-                                          scoreUnit: ia.scoreUnit,
-                                          scoreLabel: ia.scoreLabel,
-                                          details: ia.details,
-                                          resultUrl: ia.resultUrl,
-                                        });
-                                      } else {
-                                        openProcedureInfo({
-                                          kind: "internal",
-                                          name: ia.name,
-                                          type,
-                                          typeLabel: INTERNAL_ASSESSMENT_LABELS[type],
-                                          status: ia.status === "active" ? "in-progress" : ia.status,
-                                          statusLabel: getInternalAssessmentStatusText(ia.status),
-                                          startDate: ia.startDate,
-                                          endDate: ia.endDate,
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    {isDone ? <><FileText className="h-3 w-3" />Результат</> : <><Eye className="h-3 w-3" />Просмотр</>}
-                                  </button>
+                                <div className="flex flex-col gap-2">
+                                  {list
+                                    .slice()
+                                    .sort((a, b) => b.endDate.getTime() - a.endDate.getTime())
+                                    .map((ia) => {
+                                      const isDone = ia.status === "completed";
+                                      const scoreText =
+                                        ia.score === undefined
+                                          ? undefined
+                                          : ia.scoreUnit === "percent"
+                                            ? `${ia.score}%`
+                                            : `${ia.score}`;
+
+                                      const profileName =
+                                        ia.type !== "ASSESSMENT_CENTER"
+                                          ? undefined
+                                          : ia.details?.find((d) => d.label === "Профиль")?.value;
+
+                                      return (
+                                        <div key={ia.id} className="rounded-md border bg-muted/10 px-2 py-1.5">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                              {(type === "360_FKR" || type === "COR") && (
+                                                <div className="text-[11px] font-medium leading-tight truncate" title={ia.name}>
+                                                  {ia.name}
+                                                </div>
+                                              )}
+                                              {type === "ASSESSMENT_CENTER" && profileName && (
+                                                <div className="text-[11px] font-medium leading-tight truncate" title={profileName}>
+                                                  {profileName}
+                                                </div>
+                                              )}
+                                              {type === "ASSESSMENT_CENTER" && !profileName && (
+                                                <div className="text-[11px] font-medium leading-tight truncate" title={ia.name}>
+                                                  {ia.name}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <Badge
+                                              variant="outline"
+                                              className={cn(
+                                                "text-[10px] h-5 px-1.5 shrink-0",
+                                                getStatusBadgeColor(ia.status === "active" ? "in-progress" : ia.status),
+                                              )}
+                                            >
+                                              {getInternalAssessmentStatusText(ia.status)}
+                                            </Badge>
+                                          </div>
+
+                                          <div className="flex items-center justify-between gap-2 mt-1">
+                                            <div className="min-w-0">
+                                              {scoreText && (
+                                                <span className="text-xs font-semibold text-primary">{scoreText}</span>
+                                              )}
+                                              {ia.scoreLabel && (
+                                                <div className="text-[11px] text-muted-foreground leading-tight">{ia.scoreLabel}</div>
+                                              )}
+                                              {ia.type === "ASSESSMENT_CENTER" && ia.details && (
+                                                <div className="text-[11px] text-muted-foreground leading-tight">
+                                                  {ia.details
+                                                    .filter((d) => d.label === "Soft skills" || d.label === "Hard skills")
+                                                    .map((d) => `${d.label}: ${d.value}`)
+                                                    .join(" · ")}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <button
+                                              type="button"
+                                              className="inline-flex items-center gap-1 h-7 px-2 text-xs rounded-md hover:bg-muted transition-colors shrink-0"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (isDone) {
+                                                  openProcedureResult({
+                                                    name: ia.name,
+                                                    kind: "internal",
+                                                    providerOrTypeLabel: INTERNAL_ASSESSMENT_LABELS[type],
+                                                    endDate: ia.endDate,
+                                                    score: ia.score,
+                                                    scoreUnit: ia.scoreUnit,
+                                                    scoreLabel: ia.scoreLabel,
+                                                    details: ia.details,
+                                                    resultUrl: ia.resultUrl,
+                                                  });
+                                                } else {
+                                                  openProcedureInfo({
+                                                    kind: "internal",
+                                                    name: ia.name,
+                                                    type,
+                                                    typeLabel: INTERNAL_ASSESSMENT_LABELS[type],
+                                                    status: ia.status === "active" ? "in-progress" : ia.status,
+                                                    statusLabel: getInternalAssessmentStatusText(ia.status),
+                                                    startDate: ia.startDate,
+                                                    endDate: ia.endDate,
+                                                  });
+                                                }
+                                              }}
+                                            >
+                                              {isDone ? <><FileText className="h-3 w-3" />Результат</> : <><Eye className="h-3 w-3" />Просмотр</>}
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
                                 </div>
                               );
                             };
