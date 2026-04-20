@@ -411,6 +411,9 @@ interface EmployeeAssessmentRecord {
   departmentId: string;
   employeeCategory: "A" | "B" | "C" | "D";
   attritionRisk: "low" | "medium" | "high";
+  engagement?: number;
+  loyalty?: number;
+  happyIndex?: number;
   externalProcedures: { procedure: AssessmentProcedure; participantStatus: ProcedureParticipant["status"] }[];
   internalAssessments: InternalAssessment[];
 }
@@ -976,6 +979,19 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
   },
 ];
 
+const mockEmployeeAssessmentsEnriched: EmployeeAssessmentRecord[] = mockEmployeeAssessments.map((e) => {
+  const seed = Number(e.employeeId.replace(/\D/g, "")) || 1;
+  const engagement = 62 + (seed * 7) % 35; // 62..96
+  const loyalty = 58 + (seed * 11) % 39; // 58..96
+  const happyIndex = 60 + (seed * 13) % 37; // 60..96
+  return {
+    ...e,
+    engagement,
+    loyalty,
+    happyIndex,
+  };
+});
+
 const getInternalAssessmentStatusText = (status: InternalAssessmentStatus) => {
   switch (status) {
     case "active": return "В процессе";
@@ -1050,14 +1066,6 @@ const getInitials = (fullName: string) => {
   return "??";
 };
 
-const getEmployeePulseMetrics = (employeeId: string) => {
-  const seed = Number(employeeId.replace(/\D/g, "")) || 1;
-  const engagement = 62 + (seed * 7) % 35; // 62..96
-  const loyalty = 58 + (seed * 11) % 39; // 58..96
-  const happyIndex = 60 + (seed * 13) % 37; // 60..96
-  return { engagement, loyalty, happyIndex };
-};
-
 export default function ExternalProvidersPage() {
   const [selectedQrCode, setSelectedQrCode] = useState<string | null>(null);
   
@@ -1128,7 +1136,7 @@ export default function ExternalProvidersPage() {
     setProcedureInfoData(null);
     setProcedureResultData(data);
   };
-  const [employeeAssessments, setEmployeeAssessments] = useState<EmployeeAssessmentRecord[]>(mockEmployeeAssessments);
+  const [employeeAssessments, setEmployeeAssessments] = useState<EmployeeAssessmentRecord[]>(mockEmployeeAssessmentsEnriched);
   
   // Фильтры по колонкам таблицы оценочных процедур сотрудников
   const [empFilterName, setEmpFilterName] = useState("");
@@ -1140,6 +1148,14 @@ export default function ExternalProvidersPage() {
   const [isEmpFiltersOpen, setIsEmpFiltersOpen] = useState(false);
   const [teamDepartmentId, setTeamDepartmentId] = useState<string>("all");
   const [selectedTeamEmployeeId, setSelectedTeamEmployeeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const viewer = reportUsers.find((u) => u.id === currentUserId);
+    if (viewer?.role !== "DEPARTMENT_HEAD") {
+      setTeamDepartmentId("all");
+    }
+    setSelectedTeamEmployeeId(null);
+  }, [currentUserId]);
 
   const handleReportUpload = (newReports: Report[]) => {
     setReports((prev) => [...prev, ...newReports]);
@@ -2295,7 +2311,11 @@ export default function ExternalProvidersPage() {
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <CardTitle>Команда</CardTitle>
+                          <CardTitle>
+                            Команда · {teamDepartmentId === "all"
+                              ? "Все подразделения"
+                              : (mockDepartments.find((d) => d.id === teamDepartmentId)?.name ?? teamDepartmentId)}
+                          </CardTitle>
                           <CardDescription className="mt-1">
                             Матрица команды по категории сотрудника и риску увольнения
                           </CardDescription>
@@ -2329,14 +2349,35 @@ export default function ExternalProvidersPage() {
                           medium: "Средняя",
                           high: "Высокая",
                         };
-                        const selectedDeptName =
-                          teamDepartmentId === "all"
-                            ? "Все управления"
-                            : (mockDepartments.find((d) => d.id === teamDepartmentId)?.name ?? teamDepartmentId);
+                        const allDepartmentIds = mockDepartments.map((d) => d.id);
+                        const managementDeptIds = mockDepartments.filter((d) => d.name.includes("Управление")).map((d) => d.id);
+                        const unitScope: Record<string, string[]> = {
+                          "unit-assessment": ["dept-2"],
+                          "unit-directorate": managementDeptIds,
+                          "unit-department": ["dept-1", ...managementDeptIds],
+                          "unit-company": allDepartmentIds,
+                        };
+                        const roleScope =
+                          currentUser?.role === "EXECUTIVE"
+                            ? allDepartmentIds
+                            : (unitScope[currentUser?.unitId ?? ""] ?? managementDeptIds);
+                        const canChooseDepartment = currentUser?.role === "DEPARTMENT_HEAD";
 
-                        const teamEmployees = employeeAssessments.filter(
-                          (e) => teamDepartmentId === "all" || e.departmentId === teamDepartmentId,
-                        );
+                        const availableDeptIds = canChooseDepartment ? roleScope : roleScope;
+                        const selectedDeptName =
+                          !canChooseDepartment
+                            ? (availableDeptIds.length === 1
+                              ? (mockDepartments.find((d) => d.id === availableDeptIds[0])?.name ?? "Подразделение")
+                              : "Несколько подразделений")
+                            : teamDepartmentId === "all"
+                              ? "Все управления"
+                              : (mockDepartments.find((d) => d.id === teamDepartmentId)?.name ?? teamDepartmentId);
+
+                        const teamEmployees = employeeAssessments.filter((e) => {
+                          if (!availableDeptIds.includes(e.departmentId)) return false;
+                          if (canChooseDepartment && teamDepartmentId !== "all" && e.departmentId !== teamDepartmentId) return false;
+                          return true;
+                        });
 
                         const grouped = teamEmployees.reduce<Record<string, EmployeeAssessmentRecord[]>>((acc, e) => {
                           const key = `${e.attritionRisk}:${e.employeeCategory}`;
@@ -2347,7 +2388,20 @@ export default function ExternalProvidersPage() {
                         const selectedEmployee = selectedTeamEmployeeId
                           ? teamEmployees.find((e) => e.employeeId === selectedTeamEmployeeId) ?? employeeAssessments.find((e) => e.employeeId === selectedTeamEmployeeId)
                           : null;
-                        const pulse = selectedEmployee ? getEmployeePulseMetrics(selectedEmployee.employeeId) : null;
+                        const pulse = selectedEmployee
+                          ? {
+                              engagement: selectedEmployee.engagement ?? 0,
+                              loyalty: selectedEmployee.loyalty ?? 0,
+                              happyIndex: selectedEmployee.happyIndex ?? 0,
+                            }
+                          : null;
+                        const departmentPulse = teamEmployees.length === 0
+                          ? { engagement: 0, loyalty: 0, happyIndex: 0 }
+                          : {
+                              engagement: Math.round(teamEmployees.reduce((sum, e) => sum + (e.engagement ?? 0), 0) / teamEmployees.length),
+                              loyalty: Math.round(teamEmployees.reduce((sum, e) => sum + (e.loyalty ?? 0), 0) / teamEmployees.length),
+                              happyIndex: Math.round(teamEmployees.reduce((sum, e) => sum + (e.happyIndex ?? 0), 0) / teamEmployees.length),
+                            };
                         const latestByType = (type: InternalAssessmentType) =>
                           selectedEmployee?.internalAssessments
                             .filter((ia) => ia.type === type)
@@ -2363,9 +2417,14 @@ export default function ExternalProvidersPage() {
                               <div className="text-sm text-muted-foreground">
                                 Управление: <span className="font-medium text-foreground">{selectedDeptName}</span>
                               </div>
-                              <Badge variant="outline" className="text-xs">
-                                Сотрудников: {teamEmployees.length}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  Сотрудников: {teamEmployees.length}
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">Вовлечённость: {departmentPulse.engagement}%</Badge>
+                                <Badge variant="secondary" className="text-xs">Лояльность: {departmentPulse.loyalty}%</Badge>
+                                <Badge variant="secondary" className="text-xs">Happy index: {departmentPulse.happyIndex}%</Badge>
+                              </div>
                             </div>
                             <div className="grid grid-cols-5 gap-3 items-stretch">
                               <div />
