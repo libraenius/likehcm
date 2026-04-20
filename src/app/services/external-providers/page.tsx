@@ -1490,7 +1490,14 @@ export default function ExternalProvidersPage() {
             );
 
             return (
-              <Card>
+              <Tabs defaultValue="employees" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="employees">Сотрудники</TabsTrigger>
+                  <TabsTrigger value="team">Команда</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="employees" className="mt-4">
+                  <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1982,7 +1989,25 @@ export default function ExternalProvidersPage() {
                     </Table>
                   </div>
                 </CardContent>
-              </Card>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="team" className="mt-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle>Команда</CardTitle>
+                      <CardDescription className="mt-1">
+                        Пока пусто. Здесь появится командный срез.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-sm text-muted-foreground">
+                        Нет данных.
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
             );
           })()}
         </TabsContent>
