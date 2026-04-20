@@ -407,6 +407,8 @@ interface EmployeeAssessmentRecord {
   fullName: string;
   position: string;
   departmentId: string;
+  employeeCategory: "A" | "B" | "C" | "D";
+  attritionRisk: "low" | "medium" | "high";
   externalProcedures: { procedure: AssessmentProcedure; participantStatus: ProcedureParticipant["status"] }[];
   internalAssessments: InternalAssessment[];
 }
@@ -423,6 +425,8 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
     fullName: "Петров Иван Сергеевич",
     position: "Главный инженер",
     departmentId: "dept-2",
+    employeeCategory: "A",
+    attritionRisk: "low",
     externalProcedures: [
       {
         procedure: mockProviders[0].procedures[0],
@@ -474,6 +478,8 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
     fullName: "Сидорова Мария Александровна",
     position: "Ведущий разработчик",
     departmentId: "dept-2",
+    employeeCategory: "B",
+    attritionRisk: "medium",
     externalProcedures: [
       {
         procedure: mockProviders[1].procedures[0],
@@ -513,6 +519,8 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
     fullName: "Иванов Алексей Дмитриевич",
     position: "Старший разработчик",
     departmentId: "dept-3",
+    employeeCategory: "B",
+    attritionRisk: "low",
     externalProcedures: [
       {
         procedure: mockProviders[0].procedures[0],
@@ -551,6 +559,8 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
     fullName: "Помыткин Сергей Олегович",
     position: "Руководитель разработки",
     departmentId: "dept-1",
+    employeeCategory: "A",
+    attritionRisk: "high",
     externalProcedures: [
       {
         procedure: mockProviders[0].procedures[0],
@@ -627,6 +637,8 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
     fullName: "Морозов Дмитрий Александрович",
     position: "Специалист",
     departmentId: "dept-3",
+    employeeCategory: "C",
+    attritionRisk: "medium",
     externalProcedures: [
       {
         procedure: mockProviders[2].procedures[0],
@@ -653,6 +665,8 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
     fullName: "Орлов Максим Сергеевич",
     position: "Архитектор",
     departmentId: "dept-1",
+    employeeCategory: "D",
+    attritionRisk: "low",
     externalProcedures: [
       {
         procedure: mockProviders[0].procedures[1],
@@ -1676,12 +1690,14 @@ export default function ExternalProvidersPage() {
                           <TableHead className="w-[110px]">Ассессмент</TableHead>
                           <TableHead className="w-[110px]">ЦОР</TableHead>
                           <TableHead>Внешние процедуры</TableHead>
+                          <TableHead className="w-[170px]">Категория сотрудника</TableHead>
+                          <TableHead className="w-[170px]">Вероятность увольнения</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredAssessments.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={6} className="text-center py-8">
+                            <TableCell colSpan={8} className="text-center py-8">
                               <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                               <p className="text-sm text-muted-foreground">Нет сотрудников по заданным фильтрам</p>
                             </TableCell>
@@ -1802,6 +1818,14 @@ export default function ExternalProvidersPage() {
                                 </div>
                               );
                             };
+
+                            const riskLabel = rec.attritionRisk === "low" ? "Низкая" : rec.attritionRisk === "medium" ? "Средняя" : "Высокая";
+                            const riskColor =
+                              rec.attritionRisk === "low"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700"
+                                : rec.attritionRisk === "medium"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
+                                  : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700";
 
                             return (
                               <TableRow key={rec.employeeId}>
@@ -1924,6 +1948,31 @@ export default function ExternalProvidersPage() {
                                       })}
                                     </div>
                                   )}
+                                </TableCell>
+                                <TableCell className="align-top py-2">
+                                  <Select
+                                    value={rec.employeeCategory}
+                                    onValueChange={(v) => {
+                                      setEmployeeAssessments((prev) =>
+                                        prev.map((x) => x.employeeId === rec.employeeId ? { ...x, employeeCategory: v as EmployeeAssessmentRecord["employeeCategory"] } : x),
+                                      );
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-9 text-sm w-full">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="A">A</SelectItem>
+                                      <SelectItem value="B">B</SelectItem>
+                                      <SelectItem value="C">C</SelectItem>
+                                      <SelectItem value="D">D</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell className="align-top py-2">
+                                  <Badge variant="outline" className={cn("text-xs h-9 px-3 w-fit", riskColor)}>
+                                    {riskLabel}
+                                  </Badge>
                                 </TableCell>
                               </TableRow>
                             );
