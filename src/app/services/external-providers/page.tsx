@@ -16,6 +16,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { cn } from "@/lib/utils";
 import { getStatusBadgeColor } from "@/lib/badge-colors";
 import { RoleSwitcher } from "@/components/external-reports/role-switcher";
@@ -555,6 +556,45 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
     ],
   },
   {
+    employeeId: "emp-4",
+    fullName: "Смирнова Елена Викторовна",
+    position: "QA инженер",
+    departmentId: "dept-4",
+    employeeCategory: "C",
+    attritionRisk: "high",
+    externalProcedures: [
+      { procedure: mockProviders[2].procedures[0], participantStatus: "completed" },
+    ],
+    internalAssessments: [
+      {
+        id: "ia-12",
+        type: "ASSESSMENT_CENTER",
+        name: "Ассессмент-центр",
+        status: "completed",
+        startDate: new Date("2025-03-05"),
+        endDate: new Date("2025-03-06"),
+        details: [
+          { label: "Профиль", value: "Профиль QA Engineer" },
+          { label: "Soft skills", value: "Senior" },
+          { label: "Hard skills", value: "Expert" },
+        ],
+        resultUrl: "/results/ac-profile-emp4.pdf",
+      },
+      {
+        id: "ia-13",
+        type: "360_FKR",
+        name: "ФКР 2025",
+        status: "completed",
+        startDate: new Date("2025-01-10"),
+        endDate: new Date("2025-01-31"),
+        score: 3,
+        scoreUnit: "points",
+        scoreLabel: "Соответствует ожиданиям",
+        resultUrl: "/results/fkr-2025-emp4.pdf",
+      },
+    ],
+  },
+  {
     employeeId: "emp-5",
     fullName: "Помыткин Сергей Олегович",
     position: "Руководитель разработки",
@@ -661,6 +701,145 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
     ],
   },
   {
+    employeeId: "emp-6",
+    fullName: "Козлова Анна Петровна",
+    position: "Менеджер проектов",
+    departmentId: "dept-1",
+    employeeCategory: "B",
+    attritionRisk: "medium",
+    externalProcedures: [
+      { procedure: mockProviders[0].procedures[1], participantStatus: "invited" },
+    ],
+    internalAssessments: [
+      {
+        id: "ia-14",
+        type: "360_FKR",
+        name: "ФКР 2024",
+        status: "completed",
+        startDate: new Date("2024-01-10"),
+        endDate: new Date("2024-01-31"),
+        score: 4,
+        scoreUnit: "points",
+        scoreLabel: "Превосходит ожидания",
+        resultUrl: "/results/fkr-2024-emp6.pdf",
+      },
+      {
+        id: "ia-15",
+        type: "COR",
+        name: "КР1Q2025",
+        status: "completed",
+        startDate: new Date("2025-01-01"),
+        endDate: new Date("2025-03-31"),
+        score: 95,
+        scoreUnit: "percent",
+        resultUrl: "/results/cor-kr1-emp6.pdf",
+      },
+    ],
+  },
+  {
+    employeeId: "emp-8",
+    fullName: "Волков Сергей Петрович",
+    position: "Разработчик",
+    departmentId: "dept-2",
+    employeeCategory: "D",
+    attritionRisk: "low",
+    externalProcedures: [],
+    internalAssessments: [
+      {
+        id: "ia-16",
+        type: "360_FKR",
+        name: "ФКР 2025",
+        status: "planned",
+        startDate: new Date("2025-05-10"),
+        endDate: new Date("2025-05-31"),
+      },
+    ],
+  },
+  {
+    employeeId: "emp-9",
+    fullName: "Новикова Анна Игоревна",
+    position: "Аналитик",
+    departmentId: "dept-4",
+    employeeCategory: "C",
+    attritionRisk: "medium",
+    externalProcedures: [
+      { procedure: mockProviders[1].procedures[0], participantStatus: "completed" },
+    ],
+    internalAssessments: [
+      {
+        id: "ia-17",
+        type: "ASSESSMENT_CENTER",
+        name: "Ассессмент-центр",
+        status: "completed",
+        startDate: new Date("2025-02-10"),
+        endDate: new Date("2025-02-15"),
+        details: [
+          { label: "Профиль", value: "Профиль системного аналитика" },
+          { label: "Soft skills", value: "Expert" },
+          { label: "Hard skills", value: "Expert+" },
+        ],
+        resultUrl: "/results/ac-profile-emp9.pdf",
+      },
+      {
+        id: "ia-18",
+        type: "COR",
+        name: "КР4Q2025",
+        status: "planned",
+        startDate: new Date("2025-10-01"),
+        endDate: new Date("2025-12-31"),
+        score: 100,
+        scoreUnit: "percent",
+      },
+    ],
+  },
+  {
+    employeeId: "emp-10",
+    fullName: "Лебедев Павел Олегович",
+    position: "Тестировщик",
+    departmentId: "dept-5",
+    employeeCategory: "D",
+    attritionRisk: "low",
+    externalProcedures: [],
+    internalAssessments: [
+      {
+        id: "ia-19",
+        type: "COR",
+        name: "КР1Q2025",
+        status: "completed",
+        startDate: new Date("2025-01-01"),
+        endDate: new Date("2025-03-31"),
+        score: 92,
+        scoreUnit: "percent",
+        resultUrl: "/results/cor-kr1-emp10.pdf",
+      },
+    ],
+  },
+  {
+    employeeId: "emp-11",
+    fullName: "Соколова Ольга Владимировна",
+    position: "Дизайнер",
+    departmentId: "dept-2",
+    employeeCategory: "C",
+    attritionRisk: "medium",
+    externalProcedures: [
+      { procedure: mockProviders[0].procedures[0], participantStatus: "invited" },
+    ],
+    internalAssessments: [
+      {
+        id: "ia-20",
+        type: "360_FKR",
+        name: "ФКР 2024",
+        status: "completed",
+        startDate: new Date("2024-01-10"),
+        endDate: new Date("2024-01-31"),
+        score: 5,
+        scoreUnit: "points",
+        scoreLabel: "Выдающийся результат",
+        resultUrl: "/results/fkr-2024-emp11.pdf",
+      },
+    ],
+  },
+  {
     employeeId: "emp-12",
     fullName: "Орлов Максим Сергеевич",
     position: "Архитектор",
@@ -683,6 +862,114 @@ const mockEmployeeAssessments: EmployeeAssessmentRecord[] = [
         endDate: new Date("2025-12-31"),
         score: 100,
         scoreUnit: "percent",
+      },
+    ],
+  },
+  {
+    employeeId: "emp-13",
+    fullName: "Федорова Татьяна Николаевна",
+    position: "Руководитель команды",
+    departmentId: "dept-3",
+    employeeCategory: "A",
+    attritionRisk: "low",
+    externalProcedures: [
+      { procedure: mockProviders[0].procedures[0], participantStatus: "completed" },
+    ],
+    internalAssessments: [
+      {
+        id: "ia-21",
+        type: "360_FKR",
+        name: "ФКР 2025",
+        status: "completed",
+        startDate: new Date("2025-01-10"),
+        endDate: new Date("2025-01-31"),
+        score: 4,
+        scoreUnit: "points",
+        scoreLabel: "Превосходит ожидания",
+        resultUrl: "/results/fkr-2025-emp13.pdf",
+      },
+      {
+        id: "ia-22",
+        type: "COR",
+        name: "КР3Q2025",
+        status: "active",
+        startDate: new Date("2025-07-01"),
+        endDate: new Date("2025-09-30"),
+        score: 110,
+        scoreUnit: "percent",
+      },
+    ],
+  },
+  {
+    employeeId: "emp-14",
+    fullName: "Григорьев Андрей Валерьевич",
+    position: "DevOps инженер",
+    departmentId: "dept-4",
+    employeeCategory: "B",
+    attritionRisk: "medium",
+    externalProcedures: [
+      { procedure: mockProviders[2].procedures[0], participantStatus: "in-progress" },
+    ],
+    internalAssessments: [
+      {
+        id: "ia-23",
+        type: "ASSESSMENT_CENTER",
+        name: "Ассессмент-центр",
+        status: "planned",
+        startDate: new Date("2025-05-15"),
+        endDate: new Date("2025-05-20"),
+        details: [
+          { label: "Профиль", value: "Профиль DevOps" },
+          { label: "Soft skills", value: "Senior" },
+          { label: "Hard skills", value: "Expert" },
+        ],
+      },
+      {
+        id: "ia-24",
+        type: "COR",
+        name: "КР2Q2025",
+        status: "completed",
+        startDate: new Date("2025-04-01"),
+        endDate: new Date("2025-06-30"),
+        score: 120,
+        scoreUnit: "percent",
+        resultUrl: "/results/cor-kr2-emp14.pdf",
+      },
+    ],
+  },
+  {
+    employeeId: "emp-15",
+    fullName: "Романова Юлия Дмитриевна",
+    position: "Product Manager",
+    departmentId: "dept-1",
+    employeeCategory: "A",
+    attritionRisk: "high",
+    externalProcedures: [
+      { procedure: mockProviders[1].procedures[0], participantStatus: "in-progress" },
+    ],
+    internalAssessments: [
+      {
+        id: "ia-25",
+        type: "360_FKR",
+        name: "ФКР 2024",
+        status: "completed",
+        startDate: new Date("2024-01-10"),
+        endDate: new Date("2024-01-31"),
+        score: 2,
+        scoreUnit: "points",
+        scoreLabel: "Не соответствует ожиданиям",
+        resultUrl: "/results/fkr-2024-emp15.pdf",
+      },
+      {
+        id: "ia-26",
+        type: "COR",
+        name: "КР1Q2025",
+        status: "completed",
+        startDate: new Date("2025-01-01"),
+        endDate: new Date("2025-03-31"),
+        score: 90,
+        scoreUnit: "percent",
+        resultUrl: "/results/cor-kr1-emp15.pdf",
       },
     ],
   },
@@ -1997,13 +2284,77 @@ export default function ExternalProvidersPage() {
                     <CardHeader className="pb-3">
                       <CardTitle>Команда</CardTitle>
                       <CardDescription className="mt-1">
-                        Пока пусто. Здесь появится командный срез.
+                        Матрица команды по категории сотрудника и риску увольнения
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-sm text-muted-foreground">
-                        Нет данных.
-                      </div>
+                      {(() => {
+                        const categoryOrder: EmployeeAssessmentRecord["employeeCategory"][] = ["A", "B", "C", "D"];
+                        const riskOrder: EmployeeAssessmentRecord["attritionRisk"][] = ["low", "medium", "high"];
+                        const riskLabel: Record<EmployeeAssessmentRecord["attritionRisk"], string> = {
+                          low: "Низкая",
+                          medium: "Средняя",
+                          high: "Высокая",
+                        };
+
+                        const grouped = employeeAssessments.reduce<Record<string, EmployeeAssessmentRecord[]>>((acc, e) => {
+                          const key = `${e.attritionRisk}:${e.employeeCategory}`;
+                          (acc[key] ??= []).push(e);
+                          return acc;
+                        }, {});
+
+                        return (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-5 gap-3 items-stretch">
+                              <div />
+                              {categoryOrder.map((c) => (
+                                <div key={c} className="text-xs font-semibold text-muted-foreground text-center">
+                                  Категория {c}
+                                </div>
+                              ))}
+
+                              {riskOrder.map((r) => (
+                                <div key={r} className="contents">
+                                  <div className="flex items-center justify-end pr-1 text-xs font-semibold text-muted-foreground">
+                                    {riskLabel[r]}
+                                  </div>
+                                  {categoryOrder.map((c) => {
+                                    const list = (grouped[`${r}:${c}`] ?? []).slice().sort((a, b) => a.fullName.localeCompare(b.fullName, "ru-RU"));
+                                    return (
+                                      <BentoGrid key={`${r}-${c}`} className="grid-cols-1">
+                                        <BentoGridItem
+                                          title={`${list.length} сотрудн.`}
+                                          description={list.length === 0 ? "Пусто" : "Состав ячейки"}
+                                          className="min-h-[110px]"
+                                        >
+                                          {list.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5">
+                                              {list.slice(0, 6).map((e) => (
+                                                <Badge key={e.employeeId} variant="secondary" className="text-[11px]">
+                                                  {e.fullName.split(" ").slice(0, 2).join(" ")}
+                                                </Badge>
+                                              ))}
+                                              {list.length > 6 && (
+                                                <Badge variant="outline" className="text-[11px] text-muted-foreground">
+                                                  +{list.length - 6}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          )}
+                                        </BentoGridItem>
+                                      </BentoGrid>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="text-xs text-muted-foreground">
+                              По вертикали — вероятность увольнения, по горизонтали — категория сотрудника.
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 </TabsContent>
