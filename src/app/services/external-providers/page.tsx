@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { Building2, ClipboardCheck, Users, Settings, ExternalLink, QrCode, FileText, Calendar, Link2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Search, X, ChevronLeft, ChevronsLeft, ChevronsRight, AlertCircle, Mail, Send, CheckCircle2, Clock, Upload, Download, User, ShieldCheck, BarChart3, Eye, Filter } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -1049,6 +1050,14 @@ const getInitials = (fullName: string) => {
   return "??";
 };
 
+const getEmployeePulseMetrics = (employeeId: string) => {
+  const seed = Number(employeeId.replace(/\D/g, "")) || 1;
+  const engagement = 62 + (seed * 7) % 35; // 62..96
+  const loyalty = 58 + (seed * 11) % 39; // 58..96
+  const happyIndex = 60 + (seed * 13) % 37; // 60..96
+  return { engagement, loyalty, happyIndex };
+};
+
 export default function ExternalProvidersPage() {
   const [selectedQrCode, setSelectedQrCode] = useState<string | null>(null);
   
@@ -1129,6 +1138,8 @@ export default function ExternalProvidersPage() {
   const [empFilterAC, setEmpFilterAC] = useState<string>("all");
   const [empFilterCOR, setEmpFilterCOR] = useState<string>("all");
   const [isEmpFiltersOpen, setIsEmpFiltersOpen] = useState(false);
+  const [teamDepartmentId, setTeamDepartmentId] = useState<string>("all");
+  const [selectedTeamEmployeeId, setSelectedTeamEmployeeId] = useState<string | null>(null);
 
   const handleReportUpload = (newReports: Report[]) => {
     setReports((prev) => [...prev, ...newReports]);
@@ -2282,29 +2293,80 @@ export default function ExternalProvidersPage() {
                 <TabsContent value="team" className="mt-4">
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle>Команда</CardTitle>
-                      <CardDescription className="mt-1">
-                        Матрица команды по категории сотрудника и риску увольнения
-                      </CardDescription>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <CardTitle>Команда</CardTitle>
+                          <CardDescription className="mt-1">
+                            Матрица команды по категории сотрудника и риску увольнения
+                          </CardDescription>
+                        </div>
+                        {currentUser?.role === "DEPARTMENT_HEAD" && (
+                          <div className="w-[260px]">
+                            <Label className="text-xs text-muted-foreground mb-1 block">Управление</Label>
+                            <Select value={teamDepartmentId} onValueChange={setTeamDepartmentId}>
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Выберите управление" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Все управления</SelectItem>
+                                {mockDepartments
+                                  .filter((d) => d.name.includes("Управление"))
+                                  .map((d) => (
+                                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent>
                       {(() => {
                         const categoryOrder: EmployeeAssessmentRecord["employeeCategory"][] = ["A", "B", "C", "D"];
-                        const riskOrder: EmployeeAssessmentRecord["attritionRisk"][] = ["low", "medium", "high"];
+                        const riskOrder: EmployeeAssessmentRecord["attritionRisk"][] = ["high", "medium", "low"];
                         const riskLabel: Record<EmployeeAssessmentRecord["attritionRisk"], string> = {
                           low: "Низкая",
                           medium: "Средняя",
                           high: "Высокая",
                         };
+                        const selectedDeptName =
+                          teamDepartmentId === "all"
+                            ? "Все управления"
+                            : (mockDepartments.find((d) => d.id === teamDepartmentId)?.name ?? teamDepartmentId);
 
-                        const grouped = employeeAssessments.reduce<Record<string, EmployeeAssessmentRecord[]>>((acc, e) => {
+                        const teamEmployees = employeeAssessments.filter(
+                          (e) => teamDepartmentId === "all" || e.departmentId === teamDepartmentId,
+                        );
+
+                        const grouped = teamEmployees.reduce<Record<string, EmployeeAssessmentRecord[]>>((acc, e) => {
                           const key = `${e.attritionRisk}:${e.employeeCategory}`;
                           (acc[key] ??= []).push(e);
                           return acc;
                         }, {});
 
+                        const selectedEmployee = selectedTeamEmployeeId
+                          ? teamEmployees.find((e) => e.employeeId === selectedTeamEmployeeId) ?? employeeAssessments.find((e) => e.employeeId === selectedTeamEmployeeId)
+                          : null;
+                        const pulse = selectedEmployee ? getEmployeePulseMetrics(selectedEmployee.employeeId) : null;
+                        const latestByType = (type: InternalAssessmentType) =>
+                          selectedEmployee?.internalAssessments
+                            .filter((ia) => ia.type === type)
+                            .slice()
+                            .sort((a, b) => b.endDate.getTime() - a.endDate.getTime())[0];
+                        const latest360 = latestByType("360_FKR");
+                        const latestAC = latestByType("ASSESSMENT_CENTER");
+                        const latestCOR = latestByType("COR");
+
                         return (
                           <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-muted-foreground">
+                                Управление: <span className="font-medium text-foreground">{selectedDeptName}</span>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                Сотрудников: {teamEmployees.length}
+                              </Badge>
+                            </div>
                             <div className="grid grid-cols-5 gap-3 items-stretch">
                               <div />
                               {categoryOrder.map((c) => (
@@ -2328,11 +2390,21 @@ export default function ExternalProvidersPage() {
                                           className="min-h-[110px]"
                                         >
                                           {list.length > 0 && (
-                                            <div className="flex flex-wrap gap-1.5">
+                                            <div className="flex flex-wrap gap-2">
                                               {list.slice(0, 6).map((e) => (
-                                                <Badge key={e.employeeId} variant="secondary" className="text-[11px]">
-                                                  {e.fullName.split(" ").slice(0, 2).join(" ")}
-                                                </Badge>
+                                                <button
+                                                  key={e.employeeId}
+                                                  type="button"
+                                                  className="rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                                  onClick={() => setSelectedTeamEmployeeId(e.employeeId)}
+                                                  title={e.fullName}
+                                                >
+                                                  <Avatar className="h-8 w-8 border">
+                                                    <AvatarFallback className="text-[10px] font-semibold bg-primary/10 text-primary">
+                                                      {getInitials(e.fullName)}
+                                                    </AvatarFallback>
+                                                  </Avatar>
+                                                </button>
                                               ))}
                                               {list.length > 6 && (
                                                 <Badge variant="outline" className="text-[11px] text-muted-foreground">
@@ -2352,6 +2424,68 @@ export default function ExternalProvidersPage() {
                             <div className="text-xs text-muted-foreground">
                               По вертикали — вероятность увольнения, по горизонтали — категория сотрудника.
                             </div>
+
+                            <Dialog open={selectedTeamEmployeeId !== null} onOpenChange={(open) => { if (!open) setSelectedTeamEmployeeId(null); }}>
+                              <DialogContent className="max-w-xl">
+                                <DialogHeader>
+                                  <DialogTitle>Карточка сотрудника</DialogTitle>
+                                  <DialogDescription>
+                                    Сводная информация по оценкам и метрикам команды
+                                  </DialogDescription>
+                                </DialogHeader>
+                                {!selectedEmployee || !pulse ? (
+                                  <div className="text-sm text-muted-foreground">Нет данных</div>
+                                ) : (
+                                  <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                      <Avatar className="h-10 w-10 border">
+                                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                          {getInitials(selectedEmployee.fullName)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="min-w-0">
+                                        <div className="font-medium truncate">{selectedEmployee.fullName}</div>
+                                        <div className="text-sm text-muted-foreground truncate">
+                                          {selectedEmployee.position} · {mockDepartments.find((d) => d.id === selectedEmployee.departmentId)?.name ?? selectedEmployee.departmentId}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                      {[
+                                        { label: "Вовлечённость", value: pulse.engagement },
+                                        { label: "Лояльность", value: pulse.loyalty },
+                                        { label: "Happy index", value: pulse.happyIndex },
+                                      ].map((m) => (
+                                        <div key={m.label} className="rounded-lg border p-3">
+                                          <div className="text-xs text-muted-foreground mb-1">{m.label}</div>
+                                          <div className="text-lg font-semibold">{m.value}%</div>
+                                          <Progress value={m.value} className="h-1.5 mt-2" />
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                      <div className="rounded-lg border p-3">
+                                        <div className="text-xs text-muted-foreground mb-1">360 (ФКР)</div>
+                                        <div className="font-medium">{latest360?.name ?? "—"}</div>
+                                        <div className="text-muted-foreground">{latest360?.score !== undefined ? `${latest360.score}` : "Нет оценки"}</div>
+                                      </div>
+                                      <div className="rounded-lg border p-3">
+                                        <div className="text-xs text-muted-foreground mb-1">Ассессмент</div>
+                                        <div className="font-medium">{latestAC?.details?.find((d) => d.label === "Профиль")?.value ?? latestAC?.name ?? "—"}</div>
+                                        <div className="text-muted-foreground">{latestAC?.status ? getInternalAssessmentStatusText(latestAC.status) : "Нет оценки"}</div>
+                                      </div>
+                                      <div className="rounded-lg border p-3">
+                                        <div className="text-xs text-muted-foreground mb-1">ЦОР</div>
+                                        <div className="font-medium">{latestCOR?.name ?? "—"}</div>
+                                        <div className="text-muted-foreground">{latestCOR?.score !== undefined ? `${latestCOR.score}%` : "Нет оценки"}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </DialogContent>
+                            </Dialog>
                           </div>
                         );
                       })()}
